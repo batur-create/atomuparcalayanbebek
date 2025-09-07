@@ -4,11 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "engines": { "node": ">=18" },
-  "scripts": {
+   "scripts": {
     "dev": "vite",
     "build": "node ./node_modules/vite/bin/vite.js build",
-    "preview": "node ./node_modules/vite/bin/vite.js preview",
-    "postinstall": "chmod +x ./node_modules/.bin/vite || true"
+    "preview": "node ./node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {
     "lucide-react": "^0.263.1",
