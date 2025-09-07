@@ -170,11 +170,4 @@ function App() {
   );
 }
 
-// App'i BrowserRouter ile sarmalayan kök bileşen
-export default function Root() {
-  return (
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  );
-}
+export default App;
