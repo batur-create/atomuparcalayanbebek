@@ -10,7 +10,7 @@ import HomePage from './components/HomePage';
 import ProductDetail from './components/ProductDetail';
 import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
-
+console.log("1. Kaynaktan gelen orjinal ürün verisi:", productsData);
 // Tema Yapılandırması (Değişmedi)
 const themes = {
   default: { primary: '#1e293b', secondary: '#64748b', accent: '#3b82f6', background: 'from-slate-50 to-white', cardBg: 'bg-white', text: 'text-slate-900', animation: 'pulse' },
@@ -70,7 +70,7 @@ function App() {
       (!activeFilters.science || product.science === activeFilters.science)
     );
   }, [activeFilters, searchTerm]);
-
+console.log("2. HomePage'e gönderilen filtrelenmiş ürünler:", filteredProducts);
   // Fonksiyonlar (Sadece sepetle ilgili olmayanlar)
   const handleProductClick = (product) => navigate(`/product/${product.id}`);
   const handleBackToHome = () => navigate('/');
