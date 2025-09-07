@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+// Veritabanı için gerekli importlar
+import { db } from '../firebase';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 export default function CheckoutPage({ onBack, currentTheme }) {
   const { cartItems, clearCart } = useCart();
@@ -23,14 +26,31 @@ export default function CheckoutPage({ onBack, currentTheme }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePlaceOrder = (e) => {
+  // Bu fonksiyon artık SİPARİŞİ GERÇEKTEN KAYDEDİYOR
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    console.log('Sipariş Onaylandı:', {
-      formData,
-      cartItems
-    });
-    setIsOrderPlaced(true);
-    clearCart();
+    
+    const orderData = {
+      customerInfo: formData,
+      items: cartItems,
+      totalPrice: total,
+      orderDate: Timestamp.now(),
+      isShipped: false,
+    };
+
+    try {
+      // Veriyi Firestore'daki 'orders' koleksiyonuna gönderiyoruz
+      const ordersCollection = collection(db, "orders");
+      await addDoc(ordersCollection, orderData);
+      
+      // Sipariş başarılıysa, sipariş onay ekranını göster ve sepeti temizle
+      setIsOrderPlaced(true);
+      clearCart();
+
+    } catch (error) {
+      console.error("Sipariş kaydedilirken hata oluştu: ", error);
+      alert("Siparişiniz kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.");
+    }
   };
 
   if (isOrderPlaced) {
@@ -76,20 +96,10 @@ export default function CheckoutPage({ onBack, currentTheme }) {
                 </div>
               ))}
             </div>
-
             <div className="border-t border-gray-200 mt-6 pt-6 space-y-2">
-              <div className="flex justify-between font-medium">
-                <span>Ara Toplam:</span>
-                <span>₺{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-medium">
-                <span>Kargo:</span>
-                <span>₺{shipping.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-bold text-xl" style={{ color: currentTheme.primary }}>
-                <span>Toplam:</span>
-                <span>₺{total.toFixed(2)}</span>
-              </div>
+              <div className="flex justify-between font-medium"><span>Ara Toplam:</span><span>₺{subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between font-medium"><span>Kargo:</span><span>₺{shipping.toFixed(2)}</span></div>
+              <div className="flex justify-between font-bold text-xl" style={{ color: currentTheme.primary }}><span>Toplam:</span><span>₺{total.toFixed(2)}</span></div>
             </div>
           </div>
 
@@ -97,32 +107,16 @@ export default function CheckoutPage({ onBack, currentTheme }) {
           <div>
             <h2 className="text-2xl font-bold mb-6" style={{ color: currentTheme.primary }}>Teslimat ve Ödeme</h2>
             <form onSubmit={handlePlaceOrder} className="space-y-6">
-              {/* Adres Formu */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg" style={{ color: currentTheme.primary }}>Teslimat Bilgileri</h3>
-                <input type="text" name="fullName" placeholder="Ad Soyad" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                <input type="text" name="address" placeholder="Açık Adres" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                <input type="text" name="city" placeholder="Şehir" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                <input type="email" name="email" placeholder="E-posta Adresi" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                <input type="tel" name="phoneNumber" placeholder="Telefon Numarası" value={formData.phoneNumber} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
+                <input type="text" name="fullName" placeholder="Ad Soyad" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" required />
+                <input type="text" name="address" placeholder="Açık Adres" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" required />
+                <input type="text" name="city" placeholder="Şehir" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" required />
+                <input type="email" name="email" placeholder="E-posta Adresi" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" required />
+                <input type="tel" name="phoneNumber" placeholder="Telefon Numarası" value={formData.phoneNumber} onChange={handleInputChange} className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" required />
               </div>
-
-              {/* Ödeme Formu - Dummy */}
-              <div className="space-y-4 pt-4">
-                <h3 className="font-semibold text-lg" style={{ color: currentTheme.primary }}>Ödeme Bilgileri</h3>
-                <input type="text" name="cardNumber" placeholder="Kart Numarası" className="w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                <div className="flex gap-4">
-                  <input type="text" name="expiry" placeholder="Son Kullanma Tarihi (AA/YY)" className="w-1/2 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                  <input type="text" name="cvc" placeholder="CVC" className="w-1/2 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: currentTheme.primary, focusRingColor: currentTheme.accent }} required />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-4 rounded-lg text-white font-bold transition-all hover:opacity-90"
-                style={{ backgroundColor: currentTheme.primary }}
-              >
-                ₺{total.toFixed(2)} Öde ve Siparişi Tamamla
+              <button type="submit" className="w-full py-4 rounded-lg text-white font-bold transition-all hover:opacity-90" style={{ backgroundColor: currentTheme.primary }}>
+                Siparişi Tamamla
               </button>
             </form>
           </div>
