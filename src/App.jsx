@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 
+// Yeni hook'umuzu import ediyoruz
+import { useCart } from './context/CartContext';
+
 // Veri ve Component'leri import et
 import productsData from './data/products.json';
 import HomePage from './components/HomePage';
@@ -30,20 +33,11 @@ const customStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
     * { font-family: 'Inter', sans-serif; }
     h1, h2, h3 { font-family: 'Playfair Display', serif; }
-    @keyframes wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
-    @keyframes bubble { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-10px) scale(1.05); } }
-    @keyframes grow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-    @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-    .animate-wave { animation: wave 3s ease-in-out infinite; }
-    .animate-bubble { animation: bubble 4s ease-in-out infinite; }
-    .animate-grow { animation: grow 3s ease-in-out infinite; }
-    .animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
-    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    /* ...diğer animasyon stilleri... */
 `;
 
-
 function App() {
-  // State Yönetimi
+  // State Yönetimi (Sadece sepetle ilgili olmayanlar kaldı)
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({ category: '', ageGroup: '', science: '' });
   const [currentTheme, setCurrentTheme] = useState(themes.default);
@@ -51,10 +45,9 @@ function App() {
   const [activeFaq, setActiveFaq] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [likedProducts, setLikedProducts] = useState(new Set());
-  const [cartItems, setCartItems] = useState([]);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
 
-  const navigate = useNavigate(); // Sayfa yönlendirmesi için hook
+  const navigate = useNavigate(); // Yönlendirme hook'u hala burada
 
   // Efektler
   useEffect(() => {
@@ -68,7 +61,7 @@ function App() {
     setCurrentTheme(newTheme);
   }, [activeFilters.science]);
 
-  // Filtrelenmiş ürünler (Hesaplama)
+  // Filtrelenmiş ürünler
   const filteredProducts = useMemo(() => {
     return productsData.filter(product => 
       (product.name.toLowerCase().includes(searchTerm.toLowerCase()) || product.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
@@ -78,38 +71,11 @@ function App() {
     );
   }, [activeFilters, searchTerm]);
 
-  // Fonksiyonlar (Handlers)
+  // Fonksiyonlar (Sadece sepetle ilgili olmayanlar)
   const handleProductClick = (product) => navigate(`/product/${product.id}`);
   const handleBackToHome = () => navigate('/');
   const handleGoToCart = () => navigate('/cart');
   const handleGoToCheckout = () => navigate('/checkout');
-
-  const handleAddToCart = (product) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevItems.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      }
-      return [...prevItems, { ...product, quantity: 1 }];
-    });
-    alert(`${product.name} sepete eklendi!`);
-  };
-
-  const handleBuyNow = (product) => {
-    const existingItem = cartItems.find(item => item.id === product.id);
-    if (!existingItem) {
-        setCartItems(prev => [...prev, { ...product, quantity: 1 }]);
-    }
-    handleGoToCart();
-  };
-  
-  const handleUpdateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return;
-    setCartItems(prevItems => prevItems.map(item => item.id === id ? { ...item, quantity: newQuantity } : item));
-  };
-  
-  const handleRemoveItem = (id) => setCartItems(prevItems => prevItems.filter(item => item.id !== id));
-  const handleClearCart = () => setCartItems([]);
 
   const handleFilterChange = (type, value) => {
     setActiveFilters(prev => ({...prev, [type]: prev[type] === value ? '' : value}));
@@ -134,23 +100,27 @@ function App() {
     setContactForm({ name: '', email: '', message: '' });
   };
 
+ // src/App.jsx içindeki bu bölümü güncelle
+
   // Dinamik ProductDetail Wrapper
   const ProductDetailWrapper = () => {
     const { productId } = useParams();
+    const { addToCart, buyNow } = useCart(); // Context'ten fonksiyonları al
     const product = productsData.find(p => p.id === parseInt(productId));
+    
     if (!product) return <div>Ürün bulunamadı!</div>;
+
     return (
       <ProductDetail 
         product={product} 
         onBack={handleBackToHome} 
-        onAddToCart={handleAddToCart}
-        onBuyNow={handleBuyNow}
+        onAddToCart={addToCart} // Context'ten gelen fonksiyonu prop olarak ver
+        onBuyNow={buyNow}       // Context'ten gelen fonksiyonu prop olarak ver
         onToggleLike={toggleLike}
         isLiked={likedProducts.has(product.id)}
       />
     );
   };
-  
   // Render
   return (
     <div className={`bg-gradient-to-br ${currentTheme.background}`}>
@@ -158,25 +128,21 @@ function App() {
       <Routes>
         <Route path="/" element={
           <HomePage
-            products={productsData}
+            products={filteredProducts} // Filtrelenmiş ürünleri gönderiyoruz
             themes={themes}
             currentTheme={currentTheme}
             isScrolled={isScrolled}
             isMenuOpen={isMenuOpen}
             setIsMenuOpen={setIsMenuOpen}
-            cartItems={cartItems}
             handleGoToCart={handleGoToCart}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             activeFilters={activeFilters}
             handleFilterChange={handleFilterChange}
             clearFilters={clearFilters}
-            filteredProducts={filteredProducts}
             handleProductClick={handleProductClick}
             toggleLike={toggleLike}
             likedProducts={likedProducts}
-            handleAddToCart={handleAddToCart}
-            handleBuyNow={handleBuyNow}
             faqData={faqData}
             activeFaq={activeFaq}
             setActiveFaq={setActiveFaq}
@@ -188,19 +154,14 @@ function App() {
         <Route path="/product/:productId" element={<ProductDetailWrapper />} />
         <Route path="/cart" element={
           <CartPage 
-            cartItems={cartItems} 
             onBack={handleBackToHome}
-            onUpdateQuantity={handleUpdateQuantity}
-            onRemoveItem={handleRemoveItem}
             onGoToCheckout={handleGoToCheckout}
             currentTheme={currentTheme}
           />} 
         />
         <Route path="/checkout" element={
           <CheckoutPage
-            cartItems={cartItems}
-            onBack={handleGoToCart} // Ödemeden sepete geri dönmek daha mantıklı
-            onClearCart={handleClearCart}
+            onBack={handleGoToCart}
             currentTheme={currentTheme}
           />}
         />
@@ -209,7 +170,7 @@ function App() {
   );
 }
 
-// App'i BrowserRouter ile sarmalamak için yeni bir kök bileşen
+// App'i BrowserRouter ile sarmalayan kök bileşen
 export default function Root() {
   return (
     <BrowserRouter>
