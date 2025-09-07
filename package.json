@@ -6,9 +6,10 @@
   "engines": { "node": ">=18" },
    "scripts": {
     "dev": "vite",
-    "build": "node ./node_modules/vite/bin/vite.js build",
-    "preview": "node ./node_modules/vite/bin/vite.js preview"
-  },
+    "build": "npx vite build",
+    "preview": "vite preview",
+    "postinstall": "chmod +x node_modules/.bin/vite"
+},
   "dependencies": {
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
