@@ -1,3 +1,20 @@
+/* Google'dan yeni ve modern font ailemizi çekiyoruz: Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;700&display=swap');
+
+/* Tailwind'in temel stillerini yüklüyoruz */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Sitenin tamamına yeni varsayılanlarımızı atıyoruz */
+body {
+  /* Temel yazı tipimiz artık Poppins. Daha yumuşak, modern ve okunaklı. */
+  font-family: 'Poppins', sans-serif;
+  /* Arkaplan rengini logomuzdaki gibi yumuşak bir kırık beyaz yapıyoruz. */
+  background-color: #F5F5F5;
+}
+
+/* Ana başlıklar için daha estetik, tırnaklı bir font kullanacağız (logodaki gibi) */
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', serif;
+}
