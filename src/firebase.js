@@ -17,8 +17,5 @@ const firebaseConfig = {
 // Firebase'i başlat
 const app = initializeApp(firebaseConfig);
 
-// WebSocket bağlantısını devre dışı bırakır
-initializeFirestore(app, { experimentalForceLongPolling: true });
-
 // db export'u
 export const db = getFirestore(app);

@@ -18,3 +18,43 @@ body {
 h1, h2, h3, h4 {
   font-family: 'Playfair Display', serif;
 }
+
+/* App.jsx'ten Gelen Animasyon Kodları ve Diğer Stiller */
+@layer utilities {
+  .animate-wave { animation: wave 3s ease-in-out infinite; }
+  .animate-bubble { animation: bubble 4s ease-in-out infinite; }
+  .animate-grow { animation: grow 3s ease-in-out infinite; }
+  .animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes bubble {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.05); }
+}
+
+@keyframes grow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Hareketi azalt tercih eden kullanıcılar için animasyonları kapat */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

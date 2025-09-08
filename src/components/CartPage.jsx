@@ -1,161 +1,141 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Trash2, Check, ArrowRight } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Trash2, Check, ArrowRight, XCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export default function CartPage({ onBack, onGoToCheckout, currentTheme }) {
   const { cartItems, updateQuantity, removeItem } = useCart();
-
   const [discountCode, setDiscountCode] = useState('');
-  const [isCodeApplied, setIsCodeApplied] = useState(false);
+  const [discount, setDiscount] = useState(0);
+  const [error, setError] = useState('');
+
+  const subtotal = useMemo(() =>
+    cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
+    [cartItems]
+  );
+
+  const total = useMemo(() => subtotal * (1 - discount), [subtotal, discount]);
 
   const applyDiscount = () => {
-    if (discountCode.toLowerCase() === 'asli10') {
-      setIsCodeApplied(true);
-      alert('ASLI10 kodu başarıyla uygulandı! %10 indirim kazandın!');
+    if (discountCode.toUpperCase() === 'BILIM10') {
+      setDiscount(0.10); // %10 indirim
+      setError('');
     } else {
-      setIsCodeApplied(false);
-      alert('Geçersiz indirim kodu.');
+      setError('Geçersiz indirim kodu.');
+      setDiscount(0);
     }
   };
 
-  const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const discountAmount = isCodeApplied ? subtotal * 0.10 : 0;
-  const total = subtotal - discountAmount;
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 }
+  };
 
   return (
-    <div className={`min-h-screen ${currentTheme.background} transition-all duration-700`}>
-      <header className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-lg`}>
-        <nav className="container mx-auto px-4 py-4">
-          <div className="flex items-center">
-            <button onClick={onBack} className="p-2 mr-4" aria-label="Geri dön">
-              <ChevronLeft className="w-6 h-6" style={{ color: currentTheme.primary }} />
-            </button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen" style={{ backgroundColor: currentTheme.background }}
+    >
+      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <nav className="container mx-auto px-4 py-4 flex items-center gap-4">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={onBack} className="p-2" aria-label="Geri dön">
+                <ChevronLeft className="w-6 h-6" style={{ color: currentTheme.primary }} />
+            </motion.button>
             <h1 className="text-2xl font-bold" style={{ color: currentTheme.primary }}>
-              Sepetim ({cartItems.length})
+                Sepetim
             </h1>
-          </div>
         </nav>
       </header>
 
       <main className="container mx-auto px-4 py-8">
         {cartItems.length === 0 ? (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-bold mb-4" style={{ color: currentTheme.primary }}>Sepetin boş.</h2>
-            <p className="text-gray-600">Hadi, bilim dünyasını keşfe çık ve sepetine ürünler ekle!</p>
-            <button
-              onClick={onBack}
-              className={`mt-6 px-6 py-2 rounded-full text-white font-medium transition-all hover:opacity-90`}
-              style={{ backgroundColor: currentTheme.primary }}
-            >
-              Ürünleri İncele
-            </button>
-          </div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-20">
+            <h2 className="text-3xl font-bold mb-4" style={{ color: currentTheme.primary }}>Sepetin şu an boş.</h2>
+            <p className="text-gray-600 mb-8">Merak listenize ekleyecek harika ürünler sizi bekliyor.</p>
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onBack} className="px-8 py-3 rounded-full text-white font-semibold shadow-lg" style={{ backgroundColor: currentTheme.primary }}>
+              Keşfe Devam Et
+            </motion.button>
+          </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Sepet İçeriği */}
-            <div className="md:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <motion.div
+              className="lg:col-span-2 space-y-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {cartItems.map(item => (
-                <div key={item.id} className="bg-white rounded-xl shadow-lg p-4 flex items-center justify-between">
-                  {/* !!!!! EKSİK OLAN VE DÜZELTİLEN KISIM BURASI !!!!! */}
-                  <div className="flex items-center">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg mr-4"
-                    />
+                <motion.div
+                  key={item.id}
+                  className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between"
+                  variants={itemVariants}
+                  layout
+                >
+                  <div className="flex items-center gap-4">
+                    <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-lg" />
                     <div>
                       <h3 className="text-lg font-semibold" style={{ color: currentTheme.primary }}>{item.name}</h3>
-                      <p className="text-gray-600">₺{item.price.toFixed(2)}</p>
+                      <p className="text-gray-600 font-medium">₺{item.price.toFixed(2)}</p>
                     </div>
                   </div>
-                  {/******************************************************/}
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center border border-gray-300 rounded-lg">
-                      <button 
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="px-2 py-1 text-lg font-bold"
-                        disabled={item.quantity === 1}
-                      >
-                        -
-                      </button>
-                      <span className="px-3">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="px-2 py-1 text-lg font-bold"
-                      >
-                        +
-                      </button>
+                    <div className="flex items-center border border-gray-200 rounded-lg">
+                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-lg font-bold hover:bg-gray-100 rounded-l-lg" disabled={item.quantity === 1}>-</button>
+                      <span className="px-4 font-bold">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 text-lg font-bold hover:bg-gray-100 rounded-r-lg">+</button>
                     </div>
-                    <button onClick={() => removeItem(item.id)} aria-label="Ürünü kaldır">
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => removeItem(item.id)} aria-label="Ürünü kaldır">
                       <Trash2 className="w-5 h-5 text-red-500 hover:text-red-700 transition-colors" />
-                    </button>
+                    </motion.button>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
 
-            {/* Sepet Özeti ve Ödeme Butonu */}
-            <div className="md:col-span-1 space-y-4">
-              <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="lg:col-span-1 space-y-6 sticky top-28">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl shadow-xl p-6">
                 <h3 className="text-xl font-bold mb-4" style={{ color: currentTheme.primary }}>İndirim Kodu</h3>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="İndirim kodunuz"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value)}
-                    className="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none"
-                    style={{ focusRingColor: currentTheme.accent }}
-                  />
-                  <button
-                    onClick={applyDiscount}
-                    className="px-4 py-2 rounded-lg text-white font-medium"
-                    style={{ backgroundColor: currentTheme.primary }}
-                    disabled={isCodeApplied}
-                  >
-                    {isCodeApplied ? <Check className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
-                  </button>
+                  <input type="text" placeholder="BILIM10" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} className="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none" style={{ borderColor: currentTheme.primary+'30', focusRingColor: currentTheme.secondary }} />
+                  <motion.button onClick={applyDiscount} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="p-2.5 rounded-lg text-white" style={{ backgroundColor: discount > 0 ? '#27ae60' : currentTheme.primary }}>
+                    {discount > 0 ? <Check size={20} /> : <ArrowRight size={20} />}
+                  </motion.button>
                 </div>
-                {isCodeApplied && (
-                  <p className="text-sm mt-2 text-green-600 font-semibold">Kod uygulandı!</p>
-                )}
-              </div>
+                <AnimatePresence>
+                {error && <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-sm mt-2 text-red-500 flex items-center gap-1"><XCircle size={14}/> {error}</motion.p>}
+                {discount > 0 && <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-sm mt-2 text-green-600 font-semibold">Kod uygulandı!</motion.p>}
+                </AnimatePresence>
+              </motion.div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6 h-fit sticky top-28">
-                <h3 className="text-xl font-bold mb-4" style={{ color: currentTheme.primary }}>Sepet Özeti</h3>
-                <div className="flex justify-between text-gray-600 mb-2">
-                  <span>Ara Toplam:</span>
-                  <span>₺{subtotal.toFixed(2)}</span>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-xl font-bold mb-4" style={{ color: currentTheme.primary }}>Sipariş Özeti</h3>
+                <div className="space-y-2">
+                    <div className="flex justify-between text-gray-600"><span>Ara Toplam:</span><span>₺{subtotal.toFixed(2)}</span></div>
+                    {discount > 0 && <div className="flex justify-between text-green-600"><span>İndirim (%{discount * 100}):</span><span>-₺{(subtotal * discount).toFixed(2)}</span></div>}
+                    <div className="flex justify-between font-bold text-xl border-t pt-4 mt-2"><span>Genel Toplam:</span><span style={{ color: currentTheme.primary }}>₺{total.toFixed(2)}</span></div>
                 </div>
-                {isCodeApplied && (
-                  <div className="flex justify-between text-gray-600 mb-2">
-                    <span className="text-sm">İndirim:</span>
-                    <span className="text-red-500">-₺{discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg border-t pt-4">
-                  <span>Toplam:</span>
-                  <span style={{ color: currentTheme.primary }}>₺{total.toFixed(2)}</span>
-                </div>
-                <button 
-                  onClick={onGoToCheckout} 
-                  className={`w-full mt-6 py-3 text-white font-bold rounded-lg transition-all hover:opacity-90`}
-                  style={{ backgroundColor: currentTheme.primary }}
-                >
-                  Ödeme Sayfasına Git
-                </button>
-                <button
-                  onClick={onBack}
-                  className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all hover:opacity-90`}
-                  style={{ backgroundColor: currentTheme.secondary }}
-                >
-                  Alışverişe Devam Et
-                </button>
-              </div>
+                <motion.button onClick={onGoToCheckout} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full mt-6 py-3 text-white font-bold rounded-lg shadow-lg" style={{ backgroundColor: currentTheme.primary }}>
+                  Güvenli Ödemeye Geç
+                </motion.button>
+              </motion.div>
             </div>
           </div>
         )}
       </main>
-    </div>
+    </motion.div>
   );
 }
+
