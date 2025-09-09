@@ -1,6 +1,5 @@
 import React from 'react';
 
-// Yeni oluşturduğumuz bileşenleri import ediyoruz
 import Header from './Header';
 import HeroSection from './HeroSection';
 import ProductSection from './ProductSection';
@@ -9,7 +8,6 @@ import FaqSection from './FaqSection';
 import ContactSection from './ContactSection';
 import Footer from './Footer';
 
-// HomePage artık bir "konteyner" bileşeni, yani diğer bileşenleri bir arada tutuyor.
 export default function HomePage({
   products,
   themes,
@@ -31,16 +29,19 @@ export default function HomePage({
   setActiveFaq,
   contactForm,
   setContactForm,
-  handleContactSubmit
+  handleContactSubmit,
+  newsletterEmail,
+  setNewsletterEmail,
+  handleNewsletterSubmit,
+  isLoading // App.jsx'ten gelen yeni prop
 }) {
   return (
-    // React.Fragment (<>) kullanarak birden fazla ana bileşeni döndürüyoruz.
     <>
       <Header 
         isScrolled={isScrolled}
         currentTheme={currentTheme}
         isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
+        setIsMenu-Open={setIsMenuOpen}
         handleGoToCart={handleGoToCart}
       />
 
@@ -59,6 +60,7 @@ export default function HomePage({
           handleProductClick={handleProductClick}
           toggleLike={toggleLike}
           likedProducts={likedProducts}
+          isLoading={isLoading} // isLoading'i ProductSection'a iletiyoruz
         />
 
         <AboutSection currentTheme={currentTheme} />
@@ -78,7 +80,12 @@ export default function HomePage({
         />
       </main>
 
-      <Footer handleFilterChange={handleFilterChange} />
+      <Footer 
+        handleFilterChange={handleFilterChange} 
+        newsletterEmail={newsletterEmail}
+        setNewsletterEmail={setNewsletterEmail}
+        handleNewsletterSubmit={handleNewsletterSubmit}
+      />
     </>
   );
 }

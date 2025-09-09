@@ -1,0 +1,95 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { motion } from 'framer-motion';
+import { UserPlus, Mail, Lock } from 'lucide-react';
+
+export default function RegisterPage({ currentTheme }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const auth = getAuth();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError(''); // Hataları temizle
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      // Kayıt başarılı olursa anasayfaya yönlendir
+      navigate('/'); 
+    } catch (err) {
+      // Firebase'den gelen hata mesajlarını daha anlaşılır hale getiriyoruz
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Bu e-posta adresi zaten kullanılıyor.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Şifre en az 6 karakter olmalıdır.');
+      } else {
+        setError('Kayıt başarısız oldu. Lütfen bilgilerinizi kontrol edin.');
+      }
+      console.error("Kayıt hatası:", err);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.background }}>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg"
+      >
+        <div className="text-center">
+          <h2 className="text-3xl font-bold" style={{ color: currentTheme.primary }}>
+            Hesap Oluştur
+          </h2>
+          <p className="mt-2 text-gray-600">Prizma Science dünyasına katılın!</p>
+        </div>
+        <form className="space-y-6" onSubmit={handleRegister}>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="E-posta Adresi"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none"
+              required
+            />
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Şifre"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none"
+              required
+            />
+          </div>
+          
+          {error && <p className="text-sm text-center text-red-500">{error}</p>}
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            className="w-full py-3 text-white font-bold rounded-lg shadow-lg flex items-center justify-center gap-2"
+            style={{ backgroundColor: currentTheme.primary }}
+          >
+            <UserPlus className="w-5 h-5" />
+            Kayıt Ol
+          </motion.button>
+        </form>
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Zaten bir hesabın var mı?{' '}
+            <a href="/login" className="font-medium underline" style={{ color: currentTheme.primary }}>
+              Giriş Yap
+            </a>
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Info } from 'lucide-react';
 
-export default function Notification({ product, currentTheme, onEnd }) {
+export default function Notification({ notificationData, currentTheme, onEnd }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onEnd();
@@ -11,7 +11,10 @@ export default function Notification({ product, currentTheme, onEnd }) {
     return () => clearTimeout(timer);
   }, [onEnd]);
 
-  if (!product) return null;
+  if (!notificationData) return null;
+
+  // Gelen verinin bir ürün mü yoksa genel bir mesaj mı olduğunu kontrol et
+  const isProduct = notificationData.hasOwnProperty('image');
 
   return (
     <motion.div
@@ -24,10 +27,12 @@ export default function Notification({ product, currentTheme, onEnd }) {
     >
       <CheckCircle className="w-6 h-6 text-green-500" />
       <div className="flex flex-col text-sm">
-        <span className="font-bold">Sepete Eklendi!</span>
-        <span className="text-gray-600">{product.name}</span>
+        <span className="font-bold">{isProduct ? 'Sepete Eklendi!' : notificationData.title}</span>
+        <span className="text-gray-600">{isProduct ? notificationData.name : notificationData.message}</span>
       </div>
-      <img src={product.image} alt={product.name} className="w-10 h-10 rounded-full object-cover ml-2" />
+      {isProduct && (
+        <img src={notificationData.image} alt={notificationData.name} className="w-10 h-10 rounded-full object-cover ml-2" />
+      )}
     </motion.div>
   );
 }
