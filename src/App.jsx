@@ -15,12 +15,15 @@ import LoginPage from './components/LoginPage';
 import OrdersPage from './components/OrdersPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import TermsOfServicePage from './components/TermsOfServicePage';
-// === HATA BURADAYDI, DOSYA ADINA UYGUN OLARAK KÜÇÜK HARFE ÇEVRİLDİ ===
 import Notification from './components/notification'; 
 import fallbackProducts from './data/products.json';
 
-// ... dosyanın geri kalanı aynı ...
-// ... rest of the file is the same ...
+
+// === EKSİK OLAN SABİTLER BURAYA GERİ EKLENDİ ===
+const themes = { default: { primary: '#2c3e50', secondary: '#f39c12' }, fizik: { primary: '#3498db' }, kimya: { primary: '#27ae60' }, biyoloji: { primary: '#8e44ad' }, astronomi: { primary: '#1abc9c' } };
+const faqData = [ { question: "Ürünler çocuklar için güvenli mi?", answer: "Kesinlikle. Satışa sunduğumuz tüm ürünler, uluslararası güvenlik standartlarına (CE) uygun, toksik olmayan materyallerden üretilmiştir ve gerekli testlerden geçmiştir." }, { question: "Siparişim ne zaman kargoya verilir?", answer: "Hafta içi saat 15:00'e kadar verilen siparişler aynı gün, sonrasındaki siparişler ise ertesi iş günü özenle paketlenerek kargoya teslim edilir." }, { question: "Hangi yaş grupları için ürünleriniz var?", answer: "3-6 yaş okul öncesi dönemden başlayarak, 7-12 yaş ilkokul ve 13+ yaş genç ve yetişkin hobi gruplarına kadar geniş bir yelpazede ürünlerimiz bulunmaktadır. Her ürünün sayfasında önerilen yaş grubu belirtilmiştir."}, { question: "Okullar veya kurumlar için toplu alım yapabilir miyiz?", answer: "Evet, eğitim kurumlarına, bilim merkezlerine ve şirketlere özel toplu alım indirimlerimiz ve proje setlerimiz mevcuttur. Lütfen iletişim sayfamızdan bize ulaşın." } ];
+// =================================================
+
 
 export default function App() {
   const [products, setProducts] = useState([]);
@@ -38,7 +41,7 @@ export default function App() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const navigate = useNavigate();
 
-  // useEffect ve diğer fonksiyonlar burada...
+  // useEffect ve diğer fonksiyonlar aynı kalıyor...
   useEffect(() => {
     const fetchProducts = async () => { 
       setIsLoading(true);
