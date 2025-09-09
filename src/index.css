@@ -1,3 +1,11 @@
+html, body {
+  overflow-x: hidden;
+}
+
+
+
+
+
 /* Google'dan yeni ve modern font ailemizi çekiyoruz: Poppins */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;700&display=swap');
 

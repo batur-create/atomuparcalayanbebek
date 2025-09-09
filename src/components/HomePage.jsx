@@ -20,6 +20,7 @@ export default function HomePage({
   setSearchTerm,
   activeFilters,
   handleFilterChange,
+  handleShortcutFilter, // App.jsx'ten gelen yeni prop
   clearFilters,
   handleProductClick,
   toggleLike,
@@ -33,7 +34,7 @@ export default function HomePage({
   newsletterEmail,
   setNewsletterEmail,
   handleNewsletterSubmit,
-  isLoading // App.jsx'ten gelen yeni prop
+  isLoading
 }) {
   return (
     <>
@@ -41,7 +42,7 @@ export default function HomePage({
         isScrolled={isScrolled}
         currentTheme={currentTheme}
         isMenuOpen={isMenuOpen}
-        setIsMenu-Open={setIsMenuOpen}
+        setIsMenuOpen={setIsMenuOpen} // === YAZIM HATASI DÜZELTİLDİ ===
         handleGoToCart={handleGoToCart}
       />
 
@@ -60,7 +61,7 @@ export default function HomePage({
           handleProductClick={handleProductClick}
           toggleLike={toggleLike}
           likedProducts={likedProducts}
-          isLoading={isLoading} // isLoading'i ProductSection'a iletiyoruz
+          isLoading={isLoading}
         />
 
         <AboutSection currentTheme={currentTheme} />
@@ -81,10 +82,10 @@ export default function HomePage({
       </main>
 
       <Footer 
-        handleFilterChange={handleFilterChange} 
+        handleShortcutFilter={handleShortcutFilter} // Yeni fonksiyonu Footer'a iletiyoruz
+        handleNewsletterSubmit={handleNewsletterSubmit}
         newsletterEmail={newsletterEmail}
         setNewsletterEmail={setNewsletterEmail}
-        handleNewsletterSubmit={handleNewsletterSubmit}
       />
     </>
   );

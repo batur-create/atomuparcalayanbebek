@@ -77,34 +77,43 @@ export default function CartPage({ onBack, onGoToCheckout, currentTheme }) {
               initial="hidden"
               animate="visible"
             >
+              {/* === MOBİL UYUMLULUK İÇİN YENİDEN DÜZENLENEN BÖLÜM BAŞLANGICI === */}
               {cartItems.map(item => (
                 <motion.div
                   key={item.id}
-                  className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between"
+                  className="bg-white rounded-2xl shadow-lg p-4 flex gap-4"
                   variants={itemVariants}
                   layout
                 >
-                  <div className="flex items-center gap-4">
-                    <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-lg" />
-                    <div>
-                      <h3 className="text-lg font-semibold" style={{ color: currentTheme.primary }}>{item.name}</h3>
-                      <p className="text-gray-600 font-medium">₺{item.price.toFixed(2)}</p>
+                  {/* Ürün Resmi */}
+                  <img src={item.image} alt={item.name} className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0" />
+                  
+                  {/* Ürün Bilgileri ve Kontroller */}
+                  <div className="flex flex-col flex-grow justify-between">
+                    {/* Üst Kısım: İsim ve Sil Butonu */}
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-md sm:text-lg font-semibold pr-2" style={{ color: currentTheme.primary }}>{item.name}</h3>
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => removeItem(item.id)} aria-label="Ürünü kaldır" className="flex-shrink-0">
+                        <Trash2 className="w-5 h-5 text-red-500 hover:text-red-700 transition-colors" />
+                      </motion.button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center border border-gray-200 rounded-lg">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-lg font-bold hover:bg-gray-100 rounded-l-lg" disabled={item.quantity === 1}>-</button>
-                      <span className="px-4 font-bold">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 text-lg font-bold hover:bg-gray-100 rounded-r-lg">+</button>
+
+                    {/* Alt Kısım: Fiyat ve Adet Seçici */}
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-gray-700 font-semibold text-lg">₺{item.price.toFixed(2)}</p>
+                      <div className="flex items-center border border-gray-200 rounded-lg">
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-lg font-bold hover:bg-gray-100 rounded-l-lg transition-colors" disabled={item.quantity === 1}>-</button>
+                        <span className="px-4 font-bold text-sm">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 text-lg font-bold hover:bg-gray-100 rounded-r-lg transition-colors">+</button>
+                      </div>
                     </div>
-                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => removeItem(item.id)} aria-label="Ürünü kaldır">
-                      <Trash2 className="w-5 h-5 text-red-500 hover:text-red-700 transition-colors" />
-                    </motion.button>
                   </div>
                 </motion.div>
               ))}
+              {/* === YENİDEN DÜZENLENEN BÖLÜM SONU === */}
             </motion.div>
 
+            {/* Sipariş Özeti Bölümü (Aynı kalıyor) */}
             <div className="lg:col-span-1 space-y-6 sticky top-28">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl shadow-xl p-6">
                 <h3 className="text-xl font-bold mb-4" style={{ color: currentTheme.primary }}>İndirim Kodu</h3>
@@ -138,4 +147,3 @@ export default function CartPage({ onBack, onGoToCheckout, currentTheme }) {
     </motion.div>
   );
 }
-
