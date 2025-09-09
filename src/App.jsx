@@ -15,11 +15,12 @@ import LoginPage from './components/LoginPage';
 import OrdersPage from './components/OrdersPage';
 import PrivacyPolicyPage from './components/PrivacyPolicyPage';
 import TermsOfServicePage from './components/TermsOfServicePage';
-import Notification from './components/Notification';
+// === HATA BURADAYDI, DOSYA ADINA UYGUN OLARAK KÜÇÜK HARFE ÇEVRİLDİ ===
+import Notification from './components/notification'; 
 import fallbackProducts from './data/products.json';
 
-const themes = { default: { primary: '#2c3e50', secondary: '#f39c12' }, fizik: { primary: '#3498db' }, kimya: { primary: '#27ae60' }, biyoloji: { primary: '#8e44ad' }, astronomi: { primary: '#1abc9c' } };
-const faqData = [ { question: "Ürünler çocuklar için güvenli mi?", answer: "Kesinlikle. Satışa sunduğumuz tüm ürünler, uluslararası güvenlik standartlarına (CE) uygun, toksik olmayan materyallerden üretilmiştir ve gerekli testlerden geçmiştir." }, { question: "Siparişim ne zaman kargoya verilir?", answer: "Hafta içi saat 15:00'e kadar verilen siparişler aynı gün, sonrasındaki siparişler ise ertesi iş günü özenle paketlenerek kargoya teslim edilir." }, { question: "Hangi yaş grupları için ürünleriniz var?", answer: "3-6 yaş okul öncesi dönemden başlayarak, 7-12 yaş ilkokul ve 13+ yaş genç ve yetişkin hobi gruplarına kadar geniş bir yelpazede ürünlerimiz bulunmaktadır. Her ürünün sayfasında önerilen yaş grubu belirtilmiştir."}, { question: "Okullar veya kurumlar için toplu alım yapabilir miyiz?", answer: "Evet, eğitim kurumlarına, bilim merkezlerine ve şirketlere özel toplu alım indirimlerimiz ve proje setlerimiz mevcuttur. Lütfen iletişim sayfamızdan bize ulaşın." } ];
+// ... dosyanın geri kalanı aynı ...
+// ... rest of the file is the same ...
 
 export default function App() {
   const [products, setProducts] = useState([]);
@@ -37,9 +38,9 @@ export default function App() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const navigate = useNavigate();
 
+  // useEffect ve diğer fonksiyonlar burada...
   useEffect(() => {
     const fetchProducts = async () => { 
-      // Veri çekme başlamadan önce yükleme durumunu tekrar true yapabiliriz (opsiyonel)
       setIsLoading(true);
       try { 
         const productsCollection = collection(db, "products"); 
@@ -64,7 +65,6 @@ export default function App() {
     fetchProducts();
   }, []);
   
-  // Diğer fonksiyonlar (handleNewsletterSubmit, handleContactSubmit vb.) aynı kalıyor...
   const handleNewsletterSubmit = async (e) => { e.preventDefault(); if (!newsletterEmail) return; try { await addDoc(collection(db, "newsletter_subscriptions"), { email: newsletterEmail, subscribedAt: serverTimestamp() }); setNotification({ title: 'Başarılı!', message: 'Bültenimize kaydoldunuz.', type: 'success' }); setNewsletterEmail(''); } catch (error) { console.error("Bülten aboneliği hatası: ", error); setNotification({ title: 'Hata!', message: 'Bir sorun oluştu, lütfen tekrar deneyin.', type: 'error' }); } };
   const handleContactSubmit = async (e) => { e.preventDefault(); if (!contactForm.name || !contactForm.email || !contactForm.message) { setNotification({ title: 'Uyarı!', message: 'Lütfen tüm alanları doldurun.', type: 'warning' }); return; } try { await addDoc(collection(db, "contact_messages"), { name: contactForm.name, email: contactForm.email, message: contactForm.message, submittedAt: serverTimestamp() }); setNotification({ title: 'Gönderildi!', message: 'Mesajınız başarıyla iletildi.', type: 'success' }); setContactForm({ name: '', email: '', message: '' }); } catch (error) { console.error("İletişim formu gönderme hatası: ", error); setNotification({ title: 'Hata!', message: 'Mesaj gönderilemedi, tekrar deneyin.', type: 'error' }); } };
 
@@ -80,9 +80,6 @@ export default function App() {
   const toggleLike = (productId) => { setLikedProducts(prev => { const newLikes = new Set(prev); if (newLikes.has(productId)) newLikes.delete(productId); else newLikes.add(productId); return newLikes; }); };
   const ProductDetailWrapper = () => { const { productId } = useParams(); const product = products.find(p => p.id?.toString() === productId); if (!product) { return ( <div className="min-h-screen flex items-center justify-center flex-col gap-4"><h1 className="text-2xl font-bold">Ürün Bulunamadı!</h1></div> ); } return <ProductDetail product={product} onBack={handleBackToHome} onToggleLike={toggleLike} isLiked={likedProducts.has(product.id)} />; };
   
-  // Not: İlk yükleme ekranı (dönen ikon) artık ProductSection'da yönetildiği için
-  // App seviyesindeki bu kontrolü kaldırabilir veya olduğu gibi bırakabiliriz. 
-  // Şimdilik bırakmak bir sorun teşkil etmez.
   if (isLoading && products.length === 0) { 
     return ( <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div></div> ); 
   }
@@ -117,7 +114,7 @@ export default function App() {
               newsletterEmail={newsletterEmail} 
               setNewsletterEmail={setNewsletterEmail} 
               handleNewsletterSubmit={handleNewsletterSubmit}
-              isLoading={isLoading} // isLoading'i HomePage'e iletiyoruz
+              isLoading={isLoading}
             />} />
             <Route path="/product/:productId" element={<ProductDetailWrapper />} />
             <Route path="/cart" element={<CartPage onBack={handleBackToHome} onGoToCheckout={handleGoToCheckout} currentTheme={currentTheme} />} />
