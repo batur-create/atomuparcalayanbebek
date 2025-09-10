@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Package, Calendar, Hash, Receipt } from 'lucide-react';
+import { Package, Calendar, Hash, Receipt } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -13,21 +13,18 @@ export default function OrdersPage({ currentTheme }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Eğer kullanıcı giriş yapmamışsa, siparişleri getirmeye çalışma
     if (!currentUser) {
-      setLoading(false);
+      navigate('/login');
       return;
     }
 
     const fetchOrders = async () => {
       try {
-        // 'orders' koleksiyonunda, 'userId' alanı mevcut kullanıcının id'si ile eşleşenleri getir
         const q = query(
           collection(db, "orders"),
           where("userId", "==", currentUser.uid),
-          orderBy("createdAt", "desc") // En yeni sipariş en üstte
+          orderBy("createdAt", "desc")
         );
-        
         const querySnapshot = await getDocs(q);
         const userOrders = querySnapshot.docs.map(doc => ({
           id: doc.id,
@@ -42,34 +39,15 @@ export default function OrdersPage({ currentTheme }) {
     };
 
     fetchOrders();
-  }, [currentUser]); // currentUser değiştiğinde (giriş/çıkış) tekrar çalış
+  }, [currentUser, navigate]);
 
   if (loading) {
-    return <div className="min-h-screen flex justify-center items-center"><p>Siparişler yükleniyor...</p></div>;
+    return <div className="flex-grow flex justify-center items-center"><p>Siparişler yükleniyor...</p></div>;
   }
-
-  // Kullanıcı giriş yapmamışsa gösterilecek ekran
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center text-center p-4">
-        <h2 className="text-2xl font-bold mb-4">Siparişlerinizi görmek için lütfen giriş yapın.</h2>
-        <button onClick={() => navigate('/login')} className="px-6 py-2 text-white font-semibold rounded-lg" style={{ backgroundColor: currentTheme.primary }}>
-          Giriş Yap
-        </button>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="min-h-screen" style={{ backgroundColor: currentTheme.background }}>
-      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
-        <nav className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="p-2"><ChevronLeft className="w-6 h-6" /></button>
-          <h1 className="text-2xl font-bold">Siparişlerim</h1>
-        </nav>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Siparişlerim</h1>
         {orders.length === 0 ? (
           <div className="text-center py-20">
             <h2 className="text-2xl font-bold mb-4">Henüz hiç sipariş vermediniz.</h2>
@@ -115,7 +93,6 @@ export default function OrdersPage({ currentTheme }) {
             ))}
           </div>
         )}
-      </main>
     </div>
   );
 }
