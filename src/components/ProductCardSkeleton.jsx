@@ -1,36 +1,67 @@
+// src/components/ProductCardSkeleton.jsx
 import React from 'react';
+import { motion } from 'framer-motion';
 
 export default function ProductCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
-      {/* Resim Alanı */}
-      <div className="h-56 bg-gray-200 animate-pulse"></div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-white rounded-2xl shadow-lg overflow-hidden"
+    >
+      {/* Image skeleton */}
+      <div className="h-56 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse relative">
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          animate={{ x: [-300, 300] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
       
-      <div className="p-5 flex flex-col flex-grow">
-        {/* Başlık Alanı */}
-        <div className="h-6 w-3/4 mb-4 bg-gray-200 rounded animate-pulse"></div>
-        
-        {/* Etiket Alanı */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          <div className="h-5 w-1/4 bg-gray-200 rounded-full animate-pulse"></div>
-          <div className="h-5 w-1/4 bg-gray-200 rounded-full animate-pulse"></div>
-          <div className="h-5 w-1/4 bg-gray-200 rounded-full animate-pulse"></div>
+      {/* Content skeleton */}
+      <div className="p-5 space-y-3">
+        {/* Title skeleton */}
+        <div className="h-6 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+            animate={{ x: [-200, 200] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.1 }}
+          />
         </div>
         
-        {/* Puanlama Alanı */}
-        <div className="h-5 w-1/2 mb-4 bg-gray-200 rounded animate-pulse"></div>
-
-        <div className="mt-auto pt-4">
-          {/* Fiyat Alanı */}
-          <div className="h-8 w-1/3 mb-4 bg-gray-200 rounded animate-pulse"></div>
+        {/* Tags skeleton */}
+        <div className="flex gap-2">
+          <div className="h-6 w-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-full animate-pulse" />
+          <div className="h-6 w-12 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-full animate-pulse" />
+        </div>
+        
+        {/* Rating skeleton */}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+            ))}
+          </div>
+          <div className="h-4 w-8 bg-gray-200 rounded animate-pulse" />
+        </div>
+        
+        {/* Price skeleton */}
+        <div className="pt-4">
+          <div className="h-8 w-24 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse mb-4 relative overflow-hidden">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              animate={{ x: [-100, 100] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.2 }}
+            />
+          </div>
           
-          {/* Buton Alanı */}
+          {/* Buttons skeleton */}
           <div className="flex gap-2">
-            <div className="h-10 flex-1 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="h-10 flex-1 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="flex-1 h-10 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-lg animate-pulse" />
+            <div className="flex-1 h-10 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-lg animate-pulse" />
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,17 +1,28 @@
-import React from 'react';
-import { Menu, X, ShoppingCart, User, LogOut, Package, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, ShoppingCart, User, LogOut, Package, Home, Settings, BarChart3, Users } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { getAuth, signOut } from 'firebase/auth';
 
-export default function Header({ isScrolled, currentTheme, isMenuOpen, setIsMenuOpen, handleGoToCart }) {
+export default function Header({ 
+  isScrolled, 
+  currentTheme, 
+  isMenuOpen, 
+  setIsMenuOpen, 
+  handleGoToCart,
+  searchTerm,
+  setSearchTerm,
+  onSearchFocus
+}) {
   const { cartItems } = useCart();
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   const handleLogout = () => {
     const auth = getAuth();
@@ -20,101 +31,420 @@ export default function Header({ isScrolled, currentTheme, isMenuOpen, setIsMenu
       .catch((error) => { console.error("Çıkış yaparken hata oluştu:", error); });
   };
 
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
-  // Ürünler'e tıklandığında: Home'daysak #products'a kaydır, farklı sayfadaysak Home+#products'a git
+  // Navigate to products section with smooth scroll
   const goHomeProducts = () => {
     if (location.pathname === '/') {
-      const el = document.getElementById('products');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const searchElement = document.getElementById('product-search');
+      if (searchElement) {
+        searchElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => searchElement.focus(), 300);
+      } else {
+        const productsElement = document.getElementById('products');
+        if (productsElement) productsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } else {
-      navigate('/#products');
+      navigate('/');
+      setTimeout(() => {
+        const searchElement = document.getElementById('product-search');
+        if (searchElement) {
+          searchElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => searchElement.focus(), 300);
+        }
+      }, 100);
     }
     if (setIsMenuOpen) setIsMenuOpen(false);
   };
 
+  // Scroll direction detection
+  const [scrollDirection, setScrollDirection] = useState('up');
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const updateScrollDirection = () => {
+      const scrollY = window.scrollY;
+      const direction = scrollY > lastScrollY ? 'down' : 'up';
+      if (direction !== scrollDirection && (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)) {
+        setScrollDirection(direction);
+      }
+      setLastScrollY(scrollY > 0 ? scrollY : 0);
+    };
+    window.addEventListener('scroll', updateScrollDirection);
+    return () => window.removeEventListener('scroll', updateScrollDirection);
+  }, [scrollDirection, lastScrollY]);
+
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
-      <nav className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 sm:gap-3">
-            {location.pathname !== '/' && (
-              <button
-                onClick={handleGoBack}
-                className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full"
-                aria-label="Geri git"
-              >
-                <ChevronLeft size={24} />
-              </button>
-            )}
-
-            <Link to="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen && setIsMenuOpen(false)}>
-              <img src="/logo.png" alt="Prizma Science Logo" className="h-10 w-10" />
-              <span className="text-xl sm:text-2xl font-bold" style={{ color: currentTheme.primary }}>
-                PRIZMA SCIENCE
-              </span>
-            </Link>
-          </div>
-
-          <div className="hidden md:flex items-center gap-6">
-            <button type="button" onClick={goHomeProducts} className="hover:opacity-70 transition-opacity">
-              Ürünler
-            </button>
-
-            {currentUser ? (
-              <>
-                <Link to="/orders" className="hover:opacity-70 transition-opacity flex items-center gap-1">
-                  <Package size={18} /> Siparişlerim
-                </Link>
-                <button onClick={handleLogout} className="hover:opacity-70 transition-opacity flex items-center gap-1">
-                  <LogOut size={18} /> Çıkış Yap
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className="hover:opacity-70 transition-opacity flex items-center gap-1">
-                <User size={18} /> Giriş Yap
+    <>
+      {/* Main Header */}
+      <motion.header 
+        className={`
+          fixed top-0 left-0 right-0 z-50 transition-all duration-500
+          ${isScrolled 
+            ? 'bg-white/95 backdrop-blur-xl shadow-xl border-b border-gray-200/50' 
+            : 'bg-white/90 backdrop-blur-lg'
+          }
+          ${scrollDirection === 'down' && !isMenuOpen && isScrolled ? '-translate-y-full' : 'translate-y-0'}
+        `}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <div className="container mx-auto">
+          <div className="flex items-center justify-between h-20 px-6">
+            
+            {/* Logo Section */}
+            <motion.div 
+              className="flex items-center"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Link to="/" className="flex items-center group">
+                {/* Your Custom Logo */}
+                <div className="relative mr-4">
+                  <motion.div 
+                    className="w-12 h-12 rounded-xl flex items-center justify-center relative overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-300"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <img 
+                      src="/logo.png" 
+                      alt="Prizma Science" 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        // Fallback if logo.png not found
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = '<span class="text-white font-bold text-xl bg-gradient-to-br from-blue-500 to-purple-600 w-full h-full flex items-center justify-center rounded-xl">P</span>';
+                      }}
+                    />
+                  </motion.div>
+                </div>
+                
+                {/* Brand Text */}
+                <div className="flex flex-col">
+                  <motion.span 
+                    className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    PRIZMA SCIENCE
+                  </motion.span>
+                  <span className="text-xs text-gray-500 font-medium tracking-wide">
+                    {isAdminPage ? 'Admin Panel' : 'Bilimi Keşfet'}
+                  </span>
+                </div>
               </Link>
-            )}
+            </motion.div>
 
-            <button className="relative" onClick={handleGoToCart} aria-label="Sepetim">
-              <ShoppingCart className="w-6 h-6" />
-              {totalItemsInCart > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {totalItemsInCart}
-                </span>
-              )}
-            </button>
-          </div>
-
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2" aria-label="Menüyü aç/kapat">
-            {isMenuOpen ? <X /> : <Menu />}
-          </button>
-        </div>
-
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t pt-4">
-            <div className="flex flex-col gap-4">
-              <button onClick={goHomeProducts}>Ürünler</button>
-
-              {currentUser ? (
-                <>
-                  <Link to="/orders" onClick={() => setIsMenuOpen(false)}>Siparişlerim</Link>
-                  <button onClick={() => { handleLogout(); setIsMenuOpen(false); }}>Çıkış Yap</button>
-                </>
+            {/* Center Navigation */}
+            <div className="hidden lg:flex items-center space-x-8">
+              {isAdminPage ? (
+                /* Admin Navigation */
+                <nav className="flex items-center space-x-6">
+                  <Link 
+                    to="/admin" 
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
+                      location.pathname === '/admin' 
+                        ? 'bg-blue-100 text-blue-700 shadow-md' 
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                    }`}
+                  >
+                    <BarChart3 size={18} />
+                    <span>Dashboard</span>
+                  </Link>
+                  
+                  <Link 
+                    to="/admin/products" 
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
+                      location.pathname === '/admin/products' 
+                        ? 'bg-green-100 text-green-700 shadow-md' 
+                        : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+                    }`}
+                  >
+                    <Package size={18} />
+                    <span>Ürünler</span>
+                  </Link>
+                  
+                  <Link 
+                    to="/admin/orders" 
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
+                      location.pathname === '/admin/orders' 
+                        ? 'bg-orange-100 text-orange-700 shadow-md' 
+                        : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                    }`}
+                  >
+                    <ShoppingCart size={18} />
+                    <span>Siparişler</span>
+                  </Link>
+                  
+                  <Link 
+                    to="/admin/users" 
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
+                      location.pathname === '/admin/users' 
+                        ? 'bg-purple-100 text-purple-700 shadow-md' 
+                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    <Users size={18} />
+                    <span>Kullanıcılar</span>
+                  </Link>
+                </nav>
               ) : (
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>Giriş Yap / Kayıt Ol</Link>
+                /* Regular Navigation - Separated Functions */
+                <nav className="flex items-center space-x-8">
+                  {/* Products Link - Goes to Product Section */}
+                  <motion.button 
+                    onClick={goHomeProducts}
+                    className="text-gray-600 hover:text-blue-600 font-medium transition-all duration-300 relative group"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    Ürünler
+                    <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" />
+                  </motion.button>
+                  
+                  {/* About Link */}
+                  <motion.a 
+                    href="#about"
+                    className="text-gray-600 hover:text-purple-600 font-medium transition-all duration-300 relative group"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    Hakkımızda
+                    <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all duration-300" />
+                  </motion.a>
+                  
+                  {/* Contact Link */}
+                  <motion.a 
+                    href="#contact"
+                    className="text-gray-600 hover:text-green-600 font-medium transition-all duration-300 relative group"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    İletişim
+                    <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 group-hover:w-full transition-all duration-300" />
+                  </motion.a>
+                </nav>
+              )}
+            </div>
+
+            {/* Right Section - User & Actions */}
+            <div className="flex items-center space-x-4">
+              {currentUser ? (
+                <div className="flex items-center space-x-4">
+                  {/* Cart (only for regular pages) */}
+                  {!isAdminPage && (
+                    <motion.button 
+                      onClick={handleGoToCart}
+                      className="relative p-3 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-300"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <ShoppingCart size={20} />
+                      {totalItemsInCart > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold"
+                        >
+                          {totalItemsInCart}
+                        </motion.span>
+                      )}
+                    </motion.button>
+                  )}
+
+                  {/* User Actions */}
+                  <div className="flex items-center space-x-2">
+                    {/* Admin Panel Link (only for non-admin pages) */}
+                    {isAdmin && !isAdminPage && (
+                      <Link 
+                        to="/admin"
+                        className="flex items-center space-x-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-xl hover:bg-purple-200 transition-all duration-300 font-medium"
+                      >
+                        <Settings size={16} />
+                        <span className="hidden md:block">Admin</span>
+                      </Link>
+                    )}
+                    
+                    {/* Home Link (only for admin pages) */}
+                    {isAdminPage && (
+                      <Link 
+                        to="/"
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition-all duration-300 font-medium"
+                      >
+                        <Home size={16} />
+                        <span className="hidden md:block">Ana Sayfa</span>
+                      </Link>
+                    )}
+                    
+                    {/* User Email Display */}
+                    <span className="text-sm text-gray-600 hidden lg:block font-medium">
+                      {currentUser.email}
+                    </span>
+                    
+                    {/* Logout */}
+                    <motion.button 
+                      onClick={handleLogout}
+                      className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all duration-300 font-medium"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <LogOut size={16} />
+                      <span className="hidden md:block">Çıkış</span>
+                    </motion.button>
+                  </div>
+                </div>
+              ) : (
+                /* Not Logged In */
+                <div className="flex items-center space-x-4">
+                  <Link 
+                    to="/login"
+                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-300 font-medium"
+                  >
+                    <User size={18} />
+                    <span>Giriş Yap</span>
+                  </Link>
+                </div>
               )}
 
-              <button className="relative text-left" onClick={() => { setIsMenuOpen(false); handleGoToCart(); }}>
-                <ShoppingCart className="w-6 h-6 inline-block" />
-                <span className="ml-2">Sepetim ({totalItemsInCart})</span>
-              </button>
+              {/* Mobile Menu Button */}
+              <motion.button
+                className="lg:hidden p-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-300"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </motion.button>
             </div>
           </div>
-        )}
-      </nav>
-    </header>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200/50"
+            >
+              <div className="container mx-auto px-6 py-6">
+                {isAdminPage ? (
+                  /* Admin Mobile Menu */
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Panel</h3>
+                    
+                    <Link 
+                      to="/admin" 
+                      className="flex items-center space-x-3 p-4 bg-blue-50 text-blue-700 rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <BarChart3 size={20} />
+                      <span className="font-medium">Dashboard</span>
+                    </Link>
+                    
+                    <Link 
+                      to="/admin/products" 
+                      className="flex items-center space-x-3 p-4 hover:bg-green-50 text-gray-700 hover:text-green-700 rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Package size={20} />
+                      <span className="font-medium">Ürünler</span>
+                    </Link>
+                    
+                    <Link 
+                      to="/admin/orders" 
+                      className="flex items-center space-x-3 p-4 hover:bg-orange-50 text-gray-700 hover:text-orange-700 rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <ShoppingCart size={20} />
+                      <span className="font-medium">Siparişler</span>
+                    </Link>
+                    
+                    <Link 
+                      to="/" 
+                      className="flex items-center space-x-3 p-4 bg-blue-50 text-blue-700 rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Home size={20} />
+                      <span className="font-medium">Ana Sayfa</span>
+                    </Link>
+                  </div>
+                ) : (
+                  /* Regular Mobile Menu */
+                  <div className="space-y-4">
+                    <button 
+                      onClick={() => { goHomeProducts(); setIsMenuOpen(false); }}
+                      className="flex items-center space-x-3 p-4 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-xl transition-colors w-full text-left"
+                    >
+                      <Package size={20} />
+                      <span className="font-medium">Ürünler</span>
+                    </button>
+                    
+                    <a 
+                      href="#about"
+                      className="flex items-center space-x-3 p-4 hover:bg-purple-50 text-gray-700 hover:text-purple-700 rounded-xl transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Home size={20} />
+                      <span className="font-medium">Hakkımızda</span>
+                    </a>
+
+                    {currentUser ? (
+                      <>
+                        <Link 
+                          to="/orders" 
+                          className="flex items-center space-x-3 p-4 hover:bg-green-50 text-gray-700 hover:text-green-700 rounded-xl transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <Package size={20} />
+                          <span className="font-medium">Siparişlerim</span>
+                        </Link>
+                        
+                        {isAdmin && (
+                          <Link 
+                            to="/admin" 
+                            className="flex items-center space-x-3 p-4 bg-purple-50 text-purple-700 rounded-xl transition-colors"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <Settings size={20} />
+                            <span className="font-medium">Admin Panel</span>
+                          </Link>
+                        )}
+                        
+                        <button 
+                          onClick={() => { handleGoToCart(); setIsMenuOpen(false); }}
+                          className="flex items-center space-x-3 p-4 hover:bg-gray-50 text-gray-700 rounded-xl transition-colors w-full text-left"
+                        >
+                          <ShoppingCart size={20} />
+                          <span className="font-medium">
+                            Sepetim {totalItemsInCart > 0 && `(${totalItemsInCart})`}
+                          </span>
+                        </button>
+                        
+                        <button 
+                          onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                          className="flex items-center space-x-3 p-4 bg-red-50 text-red-700 rounded-xl transition-colors w-full text-left"
+                        >
+                          <LogOut size={20} />
+                          <span className="font-medium">Çıkış</span>
+                        </button>
+                      </>
+                    ) : (
+                      <Link 
+                        to="/login" 
+                        className="flex items-center space-x-3 p-4 bg-blue-50 text-blue-700 rounded-xl transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User size={20} />
+                        <span className="font-medium">Giriş Yap</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.header>
+
+      {/* Add padding to body to prevent content overlap */}
+      <div className="h-20" />
+    </>
   );
 }
