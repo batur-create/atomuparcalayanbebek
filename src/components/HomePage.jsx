@@ -6,6 +6,7 @@ import ProductSection from './ProductSection';
 import AboutSection from './AboutSection';
 import FaqSection from './FaqSection';
 import ContactSection from './ContactSection';
+import Footer from './Footer';
 
 const HomePage = ({
   products,
@@ -29,7 +30,12 @@ const HomePage = ({
   isLoading,
   toggleLike,
   likedProducts,
-  searchStats
+  searchStats,
+  // Footer props
+  handleShortcutFilter,
+  handleNewsletterSubmit,
+  newsletterEmail,
+  setNewsletterEmail
 }) => {
   
   // Section animation variants
@@ -156,6 +162,16 @@ const HomePage = ({
           />
         </div>
       </motion.section>
+
+      {/* Footer - Now Included in HomePage */}
+      <motion.div variants={sectionVariants}>
+        <Footer 
+          handleShortcutFilter={handleShortcutFilter}
+          handleNewsletterSubmit={handleNewsletterSubmit}
+          newsletterEmail={newsletterEmail}
+          setNewsletterEmail={setNewsletterEmail}
+        />
+      </motion.div>
 
       {/* Clean scroll-to-top button - single global implementation */}
       <motion.button

@@ -30,6 +30,7 @@ const CartPage = lazy(() => import('./components/CartPage'));
 const RegisterPage = lazy(() => import('./components/RegisterPage'));
 const LoginPage = lazy(() => import('./components/LoginPage'));
 const OrdersPage = lazy(() => import('./components/OrdersPage'));
+const ProfilePage = lazy(() => import('./components/ProfilePage'));
 const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'));
 const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'));
 
@@ -43,6 +44,43 @@ const AdminSettings = lazy(() => import('./admin/pages/AdminSettings'));
 
 // Admin access control component
 import { useAuth } from './context/AuthContext';
+
+// Protected route wrapper for authenticated users
+const ProtectedRoute = ({ children }) => {
+  const { currentUser, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner message="Yetki kontrolü yapılıyor..." />;
+  }
+
+  if (!currentUser) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="min-h-screen flex items-center justify-center bg-gray-50"
+      >
+        <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md mx-4">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">🔒</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Giriş Gerekli</h1>
+          <p className="text-gray-600 mb-6">Bu sayfaya erişmek için giriş yapmanız gerekiyor.</p>
+          <motion.button
+            onClick={() => window.location.href = '/login'}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Giriş Yap
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return children;
+};
 
 // Protected admin route wrapper
 const AdminRoute = ({ children }) => {
@@ -61,7 +99,7 @@ const AdminRoute = ({ children }) => {
       >
         <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md mx-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🔒</span>
+            <span className="text-2xl">🔑</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Giriş Gerekli</h1>
           <p className="text-gray-600 mb-6">Admin paneline erişmek için giriş yapmanız gerekiyor.</p>
@@ -166,7 +204,7 @@ const ProductDetailWrapper = React.memo(() => {
       >
         <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md mx-4">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">⌫</span>
+            <span className="text-2xl">❌</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Ürün Bulunamadı!</h1>
           <p className="text-gray-600 mb-6">Aradığınız ürün mevcut değil veya kaldırılmış olabilir.</p>
@@ -330,6 +368,11 @@ export default function App() {
                         toggleLike={toggleLike}
                         likedProducts={likedProducts}
                         searchStats={stats}
+                        // Footer props - NOW INCLUDED
+                        handleShortcutFilter={handleShortcutFilter}
+                        handleNewsletterSubmit={handleNewsletterSubmit}
+                        newsletterEmail={newsletterEmail}
+                        setNewsletterEmail={setNewsletterEmail}
                       />
                     } 
                   />
@@ -345,7 +388,39 @@ export default function App() {
                   />
                   <Route path="/register" element={<RegisterPage currentTheme={currentTheme} />} />
                   <Route path="/login" element={<LoginPage currentTheme={currentTheme} />} />
-                  <Route path="/orders" element={<OrdersPage currentTheme={currentTheme} />} />
+                  
+                  {/* Protected User Routes */}
+                  <Route 
+                    path="/profile/*" 
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/orders" 
+                    element={
+                      <ProtectedRoute>
+                        <OrdersPage currentTheme={currentTheme} />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/favorites" 
+                    element={
+                      <ProtectedRoute>
+                        <div className="min-h-screen bg-gray-50 flex items-center justify-center" style={{ paddingTop: '80px' }}>
+                          <div className="text-center">
+                            <h1 className="text-2xl font-bold text-gray-800 mb-4">Favorilerim</h1>
+                            <p className="text-gray-600">Favori ürünleriniz burada görünecektir.</p>
+                          </div>
+                        </div>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Public Policy Pages */}
                   <Route path="/privacy-policy" element={<PrivacyPolicyPage currentTheme={currentTheme} />} />
                   <Route path="/terms-of-service" element={<TermsOfServicePage currentTheme={currentTheme} />} />
 
@@ -402,7 +477,7 @@ export default function App() {
               </Suspense>
             </main>
             
-            {/* Enhanced Footer */}
+            {/* Global Footer for non-HomePage routes only */}
             <Footer 
               handleShortcutFilter={handleShortcutFilter}
               handleNewsletterSubmit={handleNewsletterSubmit}

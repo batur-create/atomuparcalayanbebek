@@ -11,7 +11,10 @@ import {
   Save,
   X,
   Star,
-  ShoppingCart
+  ShoppingCart,
+  Upload,
+  Image as ImageIcon,
+  Loader
 } from 'lucide-react';
 
 // Firebase imports
@@ -25,9 +28,136 @@ import {
   query,
   orderBy
 } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, uploadMultipleFiles } from '../../firebase';
 
-// Product form component
+// Multi-Photo Upload Component
+const MultiPhotoUpload = ({ images, setImages, isUploading, setIsUploading }) => {
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    
+    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert('Lütfen sadece resim dosyaları seçin.');
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      const uploadedUrls = await uploadMultipleFiles(imageFiles, 'products');
+      setImages(prev => [...prev, ...uploadedUrls]);
+    } catch (error) {
+      console.error('File upload error:', error);
+      alert('Fotoğraflar yüklenirken hata oluştu.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    handleFiles(e.dataTransfer.files);
+  };
+
+  const removeImage = (indexToRemove) => {
+    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Upload Area */}
+      <div
+        className={`relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 ${
+          dragActive 
+            ? 'border-blue-400 bg-blue-50' 
+            : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+        }`}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => handleFiles(e.target.files)}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          disabled={isUploading}
+        />
+        
+        <div className="text-center">
+          {isUploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+              <p className="text-sm text-blue-600">Fotoğraflar yükleniyor...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <Upload className="w-8 h-8 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                Fotoğrafları sürükleyin veya <span className="text-blue-600 font-medium">tıklayın</span>
+              </p>
+              <p className="text-xs text-gray-500">PNG, JPG, WEBP - Maksimum 10MB</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Image Gallery */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {images.map((imageUrl, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="relative group"
+            >
+              <img
+                src={imageUrl}
+                alt={`Upload ${index + 1}`}
+                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/100x100?text=Error';
+                }}
+              />
+              <button
+                onClick={() => removeImage(index)}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+              {index === 0 && (
+                <div className="absolute bottom-1 left-1 px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                  Ana
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Product form component with multi-photo support
 const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -36,17 +166,17 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
     price: '',
     originalPrice: '',
     description: '',
-    image: '',
     tags: '',
     shopierLink: '',
     badge: '',
     rating: 4.5,
     reviews: 0,
     ...(product || {}),
-    // Fix: Convert tags array to string for form
     tags: product?.tags ? (Array.isArray(product.tags) ? product.tags.join(', ') : product.tags) : ''
   });
 
+  const [images, setImages] = useState(product?.images || [product?.image].filter(Boolean) || []);
+  const [isUploading, setIsUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const categories = ['deney', 'eğitici', 'oyuncak', 'dekoratif'];
@@ -55,6 +185,12 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (images.length === 0) {
+      alert('En az bir fotoğraf yüklemelisiniz.');
+      return;
+    }
+    
     setSaving(true);
 
     try {
@@ -64,10 +200,12 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         rating: parseFloat(formData.rating),
         reviews: parseInt(formData.reviews),
-        // Fix: Proper tags handling
         tags: typeof formData.tags === 'string' && formData.tags.trim()
           ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
           : [],
+        // Multi-photo support
+        images: images,
+        image: images[0], // Main image for backward compatibility
         updatedAt: new Date()
       };
 
@@ -95,7 +233,7 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
       >
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -112,6 +250,19 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Multi-Photo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ürün Fotoğrafları *
+            </label>
+            <MultiPhotoUpload 
+              images={images} 
+              setImages={setImages}
+              isUploading={isUploading}
+              setIsUploading={setIsUploading}
+            />
+          </div>
+
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -222,22 +373,8 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
             />
           </div>
 
-          {/* Image & Tags */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Resim URL *
-              </label>
-              <input
-                type="url"
-                required
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://images.unsplash.com/..."
-              />
-            </div>
-
+          {/* Tags & Meta Info */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Etiketler (virgülle ayırın)
@@ -250,10 +387,7 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
                 placeholder="fizik, kimya, deney"
               />
             </div>
-          </div>
 
-          {/* Rating & Reviews */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Rating (1-5)
@@ -297,23 +431,6 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
             />
           </div>
 
-          {/* Image Preview */}
-          {formData.image && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Resim Önizleme
-              </label>
-              <img
-                src={formData.image}
-                alt="Preview"
-                className="w-32 h-32 object-cover rounded-lg border border-gray-300"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-
           {/* Form Actions */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
             <button
@@ -325,8 +442,8 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              disabled={saving || isUploading}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (
                 <>
@@ -347,22 +464,31 @@ const ProductForm = ({ product, onSave, onCancel, isEditing = false }) => {
   );
 };
 
-// Product table row component
+// Product table row component - Enhanced for multi-photo display
 const ProductRow = ({ product, onEdit, onDelete, onView }) => {
   const [showMenu, setShowMenu] = useState(false);
+
+  const images = product.images || [product.image].filter(Boolean);
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-12 h-12 object-cover rounded-lg mr-4"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/48x48?text=No+Image';
-            }}
-          />
+          <div className="relative">
+            <img
+              src={images[0] || product.image}
+              alt={product.name}
+              className="w-12 h-12 object-cover rounded-lg mr-4"
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/48x48?text=No+Image';
+              }}
+            />
+            {images.length > 1 && (
+              <div className="absolute -top-1 -right-3 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+                {images.length}
+              </div>
+            )}
+          </div>
           <div>
             <div className="text-sm font-medium text-gray-900">{product.name}</div>
             <div className="text-sm text-gray-500">ID: {product.id}</div>
@@ -449,7 +575,7 @@ const ProductRow = ({ product, onEdit, onDelete, onView }) => {
   );
 };
 
-// Main AdminProducts component
+// Main AdminProducts component - Same as before but using enhanced ProductForm
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -462,7 +588,6 @@ export default function AdminProducts() {
     byCategory: {}
   });
 
-  // Fetch products from Firebase
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -477,7 +602,6 @@ export default function AdminProducts() {
         const productData = { id: doc.id, ...doc.data() };
         productsData.push(productData);
         
-        // Category stats
         const category = productData.category;
         categoryStats[category] = (categoryStats[category] || 0) + 1;
       });
@@ -495,7 +619,6 @@ export default function AdminProducts() {
     }
   };
 
-  // Add new product
   const handleAddProduct = async (productData) => {
     try {
       await addDoc(collection(db, 'products'), productData);
@@ -508,7 +631,6 @@ export default function AdminProducts() {
     }
   };
 
-  // Update product
   const handleUpdateProduct = async (productData) => {
     try {
       const productRef = doc(db, 'products', editingProduct.id);
@@ -523,7 +645,6 @@ export default function AdminProducts() {
     }
   };
 
-  // Delete product
   const handleDeleteProduct = async (product) => {
     if (window.confirm(`"${product.name}" ürününü silmek istediğinizden emin misiniz?`)) {
       try {
@@ -537,12 +658,10 @@ export default function AdminProducts() {
     }
   };
 
-  // View product (navigate to product page)
   const handleViewProduct = (product) => {
     window.open(`/product/${product.id}`, '_blank');
   };
 
-  // Filter products
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchTerm.toLowerCase());

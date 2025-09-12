@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShoppingCart, User, LogOut, Package, Home, Settings, BarChart3, Users } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, Package, Home, Settings, BarChart3, Users, UserCircle, Heart, ClipboardList } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
@@ -20,14 +20,29 @@ export default function Header({
   const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const totalItemsInCart = cartItems.reduce((total, item) => total + item.quantity, 0);
   const isAdminPage = location.pathname.startsWith('/admin');
 
+  // Get user initial for profile icon
+  const getUserInitial = () => {
+    if (currentUser?.displayName) {
+      return currentUser.displayName.charAt(0).toUpperCase();
+    }
+    if (currentUser?.email) {
+      return currentUser.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
   const handleLogout = () => {
     const auth = getAuth();
     signOut(auth)
-      .then(() => { navigate('/'); })
+      .then(() => { 
+        setProfileDropdownOpen(false);
+        navigate('/'); 
+      })
       .catch((error) => { console.error("Çıkış yaparken hata oluştu:", error); });
   };
 
@@ -71,6 +86,14 @@ export default function Header({
     window.addEventListener('scroll', updateScrollDirection);
     return () => window.removeEventListener('scroll', updateScrollDirection);
   }, [scrollDirection, lastScrollY]);
+
+  // Profile dropdown menu items
+  const profileMenuItems = [
+    { icon: UserCircle, label: 'Profilim', href: '/profile' },
+    { icon: ClipboardList, label: 'Siparişlerim', href: '/orders' },
+    { icon: Heart, label: 'Favorilerim', href: '/favorites' },
+    { icon: Settings, label: 'Hesap Ayarları', href: '/profile/settings' }
+  ];
 
   return (
     <>
@@ -247,7 +270,7 @@ export default function Header({
                     </motion.button>
                   )}
 
-                  {/* User Actions */}
+                  {/* User Profile Section */}
                   <div className="flex items-center space-x-2">
                     {/* Admin Panel Link (only for non-admin pages) */}
                     {isAdmin && !isAdminPage && (
@@ -271,21 +294,77 @@ export default function Header({
                       </Link>
                     )}
                     
-                    {/* User Email Display */}
-                    <span className="text-sm text-gray-600 hidden lg:block font-medium">
-                      {currentUser.email}
-                    </span>
-                    
-                    {/* Logout */}
-                    <motion.button 
-                      onClick={handleLogout}
-                      className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all duration-300 font-medium"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <LogOut size={16} />
-                      <span className="hidden md:block">Çıkış</span>
-                    </motion.button>
+                    {/* Profile Icon with Dropdown */}
+                    <div className="relative">
+                      <motion.button
+                        onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                        className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-xl transition-all duration-300"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {/* Profile Avatar */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                          {getUserInitial()}
+                        </div>
+                        
+                        {/* User Info (hidden on mobile) */}
+                        <div className="hidden lg:flex flex-col items-start">
+                          <span className="text-sm font-medium text-gray-800">
+                            {currentUser.displayName || 'Kullanıcı'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {currentUser.email}
+                          </span>
+                        </div>
+                      </motion.button>
+
+                      {/* Profile Dropdown Menu */}
+                      <AnimatePresence>
+                        {profileDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
+                          >
+                            {/* Profile Header */}
+                            <div className="px-4 py-3 border-b border-gray-100">
+                              <p className="text-sm font-medium text-gray-800">
+                                {currentUser.displayName || 'Kullanıcı'}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {currentUser.email}
+                              </p>
+                            </div>
+
+                            {/* Profile Menu Items */}
+                            <div className="py-2">
+                              {profileMenuItems.map((item) => (
+                                <Link
+                                  key={item.href}
+                                  to={item.href}
+                                  className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  onClick={() => setProfileDropdownOpen(false)}
+                                >
+                                  <item.icon size={16} />
+                                  <span>{item.label}</span>
+                                </Link>
+                              ))}
+                              
+                              {/* Logout */}
+                              <button
+                                onClick={handleLogout}
+                                className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                              >
+                                <LogOut size={16} />
+                                <span>Çıkış Yap</span>
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -387,6 +466,16 @@ export default function Header({
 
                     {currentUser ? (
                       <>
+                        {/* Profile Link for Mobile */}
+                        <Link 
+                          to="/profile" 
+                          className="flex items-center space-x-3 p-4 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 rounded-xl transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <UserCircle size={20} />
+                          <span className="font-medium">Profilim</span>
+                        </Link>
+
                         <Link 
                           to="/orders" 
                           className="flex items-center space-x-3 p-4 hover:bg-green-50 text-gray-700 hover:text-green-700 rounded-xl transition-colors"
@@ -443,8 +532,7 @@ export default function Header({
         </AnimatePresence>
       </motion.header>
 
-      {/* Add padding to body to prevent content overlap */}
-      <div className="h-20" />
+      {/* Header spacing handled by components individually */}
     </>
   );
 }

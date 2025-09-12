@@ -53,9 +53,9 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  // Permission checking functions - SIMPLIFIED
+  // Permission checking functions - FIXED
   const canAccessAdmin = () => {
-  return isAdmin || ADMIN_CONFIG.adminEmails.includes(currentUser?.email);
+    return isAdmin || ADMIN_EMAILS.includes(currentUser?.email);
   };
 
   const canManageProducts = () => {

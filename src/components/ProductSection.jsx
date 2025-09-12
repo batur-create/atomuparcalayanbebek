@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Atom, Microscope, Dna, Rocket, TestTube, Cog, Landmark, Cpu, Eye, Magnet, Leaf, Bug, Wrench, Filter, X, SlidersHorizontal } from 'lucide-react';
 import { useDebounceValue } from '../hooks/useDebounce';
@@ -236,6 +236,27 @@ export default function ProductSection(props) {
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [sortBy, setSortBy] = useState('default');
+
+  // FOOTER SHORTCUT FILTER INTEGRATION - MINIMAL ADDITION
+  useEffect(() => {
+    const handleShortcutFilter = (event) => {
+      const { category } = event.detail;
+      
+      // Clear existing filters first
+      clearOnlyFilters();
+      
+      // Apply category filter with delay
+      setTimeout(() => {
+        handleFilterChange('tags', category);
+      }, 100);
+    };
+
+    window.addEventListener('shortcutFilter', handleShortcutFilter);
+    
+    return () => {
+      window.removeEventListener('shortcutFilter', handleShortcutFilter);
+    };
+  }, [clearOnlyFilters, handleFilterChange]);
 
   // Only sorting - no filtering (filtering done in App.jsx)
   const sortedProducts = useMemo(() => {
