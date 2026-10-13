@@ -14,8 +14,11 @@ import {
   Flame,
   Headphones,
   Heart,
+  KeyRound,
   LayoutGrid,
   LoaderCircle,
+  Lock,
+  LogOut,
   MapPin,
   Menu,
   MessageCircle,
@@ -23,12 +26,16 @@ import {
   MoreHorizontal,
   Play,
   Plus,
+  RefreshCw,
   Send,
   Settings2,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Square,
   Trash2,
+  Trophy,
+  UserMinus,
   Users,
   Volume2,
   VolumeX,
@@ -40,21 +47,51 @@ import {
   AVATARS,
   COLORS,
   COLOR_NAMES,
+  THEMES,
   STATUS,
   FEEDBACK,
   FEEDBACK_STATUS,
   shortTime,
   dateLabel,
   dayInput,
+  dayWord,
+  sinceLabel,
+  minutesLabel,
   DEMO,
 } from "./api.js";
 
 const nav = [
-  { id: "home", label: "Kütüphanem", icon: LayoutGrid },
-  { id: "plans", label: "Planlar", icon: CalendarDays },
-  { id: "focus", label: "Odak odası", icon: Headphones },
-  { id: "board", label: "Bizim pano", icon: MessageCircle },
+  { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
+  { id: "plans", label: "Planlar", short: "Planlar", icon: CalendarDays },
+  { id: "focus", label: "Odak odası", short: "Odak", icon: Headphones },
+  { id: "board", label: "Bizim pano", short: "Pano", icon: MessageCircle },
 ];
+const TABS = ["home", "plans", "focus", "board", "feedback"];
+const storage = {
+  get(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  },
+};
+const isIOS =
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const standalone =
+  window.matchMedia?.("(display-mode: standalone)").matches ||
+  navigator.standalone === true;
+const pushSupported =
+  "Notification" in window &&
+  "PushManager" in window &&
+  "serviceWorker" in navigator;
+const startParams = new URLSearchParams(location.search);
 function Icon({ name: Component, ...props }) {
   return <Component size={19} strokeWidth={1.8} {...props} />;
 }
@@ -242,15 +279,18 @@ export default function App() {
   const [session, setSession] = useState(null),
     [data, setData] = useState(DEMO),
     [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("home"),
+  const [tab, setTab] = useState(
+      TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
+    ),
     [modal, setModal] = useState(null),
     [toast, setToast] = useState(""),
-    [connected, setConnected] = useState(false);
+    [connected, setConnected] = useState(true);
   const [filter, setFilter] = useState("all"),
     [mobileMenu, setMobileMenu] = useState(false),
-    [theme, setTheme] = useState(
-      localStorage.getItem("kutup-theme") || "lilac",
-    );
+    [theme, setTheme] = useState(() => {
+      const saved = storage.get("kutup-theme");
+      return THEMES.includes(saved) ? saved : "lilac";
+    });
   const [invite, setInvite] = useState(
       location.pathname.startsWith("/join/")
         ? location.pathname.split("/")[2]
@@ -264,15 +304,26 @@ export default function App() {
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
   const toastTimer = useRef(),
-    finishInFlight = useRef(false);
+    finishInFlight = useRef(false),
+    revision = useRef(null),
+    lastFocus = useRef(null);
   const notify = (message) => {
     setToast(message);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 4500);
   };
+  const signedOut = (message) => {
+    setSession(null);
+    setData(DEMO);
+    setNotificationOn(false);
+    if (message) notify(message);
+  };
+  useEffect(() => {
+    revision.current = data.group?.rev ?? null;
+  }, [data]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("kutup-theme", theme);
+    storage.set("kutup-theme", theme);
   }, [theme]);
   useEffect(() => {
     if (ownerPage) {
@@ -281,14 +332,24 @@ export default function App() {
     }
     get("/session")
       .then((d) => {
-        setSession({ memberId: d.memberId, pushPublicKey: d.pushPublicKey });
+        setSession({
+          memberId: d.memberId,
+          pushPublicKey: d.pushPublicKey,
+          live: d.live,
+        });
         setData(d);
+        if (startParams.get("action") === "here") setModal("presence");
       })
       .catch((e) => {
         if (e.status !== 401)
           notify("Sunucuya ulaşılamıyor. Şimdilik ön izleme açık.");
+        else if (standalone && !invite) setModal("onboard");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        if (startParams.has("tab") || startParams.has("action"))
+          history.replaceState({}, "", location.pathname);
+      });
     if ("serviceWorker" in navigator)
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     if (invite)
@@ -308,24 +369,44 @@ export default function App() {
       clearTimeout(toastTimer.current);
     };
   }, []);
+  // Live updates: Server-Sent Events on the Node host; on Cloudflare / ChatGPT Sites
+  // a light revision poll (only a number travels when nothing changed).
   useEffect(() => {
     if (!session) return;
-    const source = new EventSource("/api/events");
-    source.addEventListener("state", (event) => {
-      setData(JSON.parse(event.data));
-      setConnected(true);
-    });
-    source.onerror = () => setConnected(false);
-    const refresh = () =>
-      get("/state")
-        .then(setData)
-        .catch(() => setConnected(false));
-    const poll = setInterval(refresh, 30000);
+    let source, timer, ticks = 0;
+    const refresh = async (full) => {
+      try {
+        const known = revision.current;
+        const d = await get(
+          full || known === null ? "/state" : `/state?rev=${known}`,
+        );
+        if (!d.unchanged) setData(d);
+        setConnected(true);
+      } catch (e) {
+        if (e.status === 401)
+          signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
+        else setConnected(false);
+      }
+    };
+    if (session.live === "sse" && "EventSource" in window) {
+      source = new EventSource("/api/events");
+      source.addEventListener("state", (event) => {
+        setData(JSON.parse(event.data));
+        setConnected(true);
+      });
+      source.onerror = () => setConnected(false);
+      timer = setInterval(() => refresh(true), 60000);
+    } else
+      timer = setInterval(() => {
+        if (document.visibilityState !== "visible") return;
+        refresh(++ticks % 12 === 0);
+      }, 5000);
     const visible = () => {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState === "visible") refresh(true);
     };
     document.addEventListener("visibilitychange", visible);
-    if ("serviceWorker" in navigator)
+    window.addEventListener("online", visible);
+    if (pushSupported)
       navigator.serviceWorker.ready
         .then((r) => r.pushManager?.getSubscription())
         .then(async (s) => {
@@ -334,22 +415,18 @@ export default function App() {
         })
         .catch(() => {});
     return () => {
-      source.close();
-      clearInterval(poll);
+      source?.close();
+      clearInterval(timer);
       document.removeEventListener("visibilitychange", visible);
+      window.removeEventListener("online", visible);
     };
   }, [session?.memberId]);
+  // The server credits finished sessions; this only nudges it when our own ends.
   useEffect(() => {
     if (me?.focusEnd && me.focusEnd <= now && !finishInFlight.current) {
       finishInFlight.current = true;
       api("/focus", { action: "finish" })
-        .then(() => {
-          notify(
-            `İşte bu! ${me.focusMinutes} dakika cebinde. Şimdi bir nefes. 🌱`,
-          );
-          return get("/state");
-        })
-        .then(setData)
+        .then((r) => r.state && setData(r.state))
         .catch(() => {})
         .finally(() => {
           setTimeout(() => {
@@ -358,6 +435,24 @@ export default function App() {
         });
     }
   }, [me?.focusEnd, now]);
+  useEffect(() => {
+    if (me?.focusEnd) {
+      lastFocus.current = { end: me.focusEnd, minutes: me.focusMinutes };
+      return;
+    }
+    const done = lastFocus.current;
+    lastFocus.current = null;
+    if (done && done.end <= Date.now() + 2000) {
+      notify(`İşte bu! ${done.minutes} dakika cebinde. Şimdi bir nefes. 🌱`);
+      navigator.vibrate?.([120, 80, 120]);
+    }
+  }, [me?.focusEnd]);
+  const focusLeft = me?.focusEnd > now ? Math.ceil((me.focusEnd - now) / 1000) : 0;
+  useEffect(() => {
+    document.title = focusLeft
+      ? `${String(Math.floor(focusLeft / 60)).padStart(2, "0")}:${String(focusLeft % 60).padStart(2, "0")} · odakta · Kütüp`
+      : "Kütüp — aynı masa, aynı motivasyon.";
+  }, [focusLeft]);
   const requireMember = (action) => {
     if (!session) {
       setModal("onboard");
@@ -367,12 +462,14 @@ export default function App() {
   };
   const mutate = async (path, body, success, method = "POST") => {
     try {
-      await api(path, body, method);
-      setData(await get("/state"));
+      const result = await api(path, body, method);
+      setData(result.state || (await get("/state")));
       if (success) notify(success);
-      return true;
+      return result;
     } catch (e) {
-      notify(e.message);
+      if (e.status === 401)
+        signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
+      else notify(e.message);
       return false;
     }
   };
@@ -381,23 +478,26 @@ export default function App() {
     setMobileMenu(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const joinSuccess = (d) => {
-    setSession({ memberId: d.memberId, pushPublicKey: d.pushPublicKey });
+  const joinSuccess = (d, welcome = "Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨") => {
+    setSession({
+      memberId: d.memberId,
+      pushPublicKey: d.pushPublicKey,
+      live: d.live,
+    });
     setData(d);
+    setConnected(true);
     setModal(null);
     setInvite("");
     setInviteInfo(null);
     history.replaceState({}, "", "/");
-    notify("Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨");
+    notify(welcome);
   };
   async function enableNotifications() {
-    if (
-      !("Notification" in window) ||
-      !("PushManager" in window) ||
-      !("serviceWorker" in navigator)
-    ) {
+    if (!pushSupported) {
       notify(
-        "Bu tarayıcı bildirim desteklemiyor. iPhone’da Safari’den ana ekrana ekleyip açmayı dene.",
+        isIOS && !standalone
+          ? "iPhone’da önce Safari’de Paylaş → Ana Ekrana Ekle, sonra Kütüp’ü ana ekrandan aç."
+          : "Bu tarayıcı bildirim desteklemiyor. Chrome veya Safari ile dene.",
       );
       return;
     }
@@ -499,7 +599,9 @@ export default function App() {
               {item.id === "plans" && data.plans.length > 0 && (
                 <b>{data.plans.length}</b>
               )}
-              {item.id === "focus" && <span className="nav-dot" />}
+              {item.id === "focus" && focusMembers.length > 0 && (
+                <span className="nav-dot" />
+              )}
             </button>
           ))}
         </nav>
@@ -662,6 +764,9 @@ export default function App() {
               </button>
             )}
           </div>
+          {tab === "home" && session && !notificationOn && (
+            <SetupCard enable={enableNotifications} />
+          )}
           {tab === "home" && (
             <div className="dashboard-grid">
               <section className="hero-card">
@@ -871,6 +976,7 @@ export default function App() {
               />
               <div className="focus-side">
                 <AmbientSound />
+                <WeekBoard members={data.members} me={me} />
                 <section className="panel">
                   <div className="section-heading">
                     <h2>Beraber odaktayız</h2>
@@ -943,7 +1049,9 @@ export default function App() {
                     Pano ekibine özel. Bir not bırak, kahveye seslen ya da
                     arkadaşının mesajına kalp at.
                   </p>
-                  <p className="small muted">Son 60 mesaj burada görünür.</p>
+                  <p className="small muted">
+                    Son 50 mesaj ve son 25 hareket burada görünür.
+                  </p>
                 </div>
               </div>
             </div>
@@ -963,23 +1071,25 @@ export default function App() {
           </footer>
         </div>
       </main>
-      <nav className="mobile-bottom">
-        {nav.slice(0, 3).map((item) => (
+      <nav className="mobile-bottom" aria-label="Bölümler">
+        {nav.map((item) => (
           <button
             key={item.id}
             className={tab === item.id ? "active" : ""}
+            aria-current={tab === item.id ? "page" : undefined}
             onClick={() => navigate(item.id)}
           >
             <Icon name={item.icon} />
-            <span>{item.label}</span>
+            <span>{item.short}</span>
           </button>
         ))}
         <button
           className={tab === "feedback" ? "active" : ""}
+          aria-current={tab === "feedback" ? "page" : undefined}
           onClick={() => navigate("feedback")}
         >
           <Send size={19} />
-          <span>Batur’a ilet</span>
+          <span>Batur’a</span>
         </button>
       </nav>
       {modal === "onboard" && (
@@ -998,6 +1108,11 @@ export default function App() {
           setTheme={setTheme}
           close={() => setModal(null)}
           mutate={mutate}
+          notify={notify}
+          onLeft={() => {
+            setModal(null);
+            signedOut("Ekipten ayrıldın. Kapımız hep açık. 🫶");
+          }}
         />
       )}
       {(modal === "presence" || modal === "coming") && me && (
@@ -1026,6 +1141,7 @@ export default function App() {
           member={
             data.members.find((m) => m.id === modal.member.id) || modal.member
           }
+          now={now}
           close={() => setModal(null)}
           mutate={mutate}
         />
@@ -1058,6 +1174,15 @@ function MemberCard({ member: m, mine, now, onClick }) {
       <p className="member-note">
         {m.note || "Bu masada güzel şeyler olacak."}
       </p>
+      {(m.status === "here" || m.status === "break") && (
+        <p className="member-since">
+          {m.since && now - m.since >= 60000
+            ? `${m.status === "here" ? "burada" : "molada"} · ${minutesLabel(Math.floor((now - m.since) / 60000))}`
+            : m.status === "here"
+              ? "şimdi geldi ✨"
+              : "molaya yeni çıktı"}
+        </p>
+      )}
       <div className="member-card-bottom">
         {m.status === "coming" ? (
           <>
@@ -1086,7 +1211,8 @@ function MemberCard({ member: m, mine, now, onClick }) {
 function FocusCard({ me, members, now, requireMember, mutate, compact }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false);
-  const running = !!me?.focusEnd,
+  const finishing = !!me?.focusEnd && me.focusEnd <= now;
+  const running = !!me?.focusEnd && !finishing,
     seconds = running
       ? Math.max(0, Math.ceil((me.focusEnd - now) / 1000))
       : duration * 60;
@@ -1145,12 +1271,13 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           </span>
         </div>
       </div>
-      {!running && (
+      {!running && !finishing && (
         <div className="duration-options">
           {[25, 45, 50].map((n) => (
             <button
               key={n}
               className={duration === n ? "active" : ""}
+              aria-pressed={duration === n}
               onClick={() => setDuration(n)}
             >
               {n} dk
@@ -1159,16 +1286,20 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
         </div>
       )}
       <Busy
-        loading={busy}
+        loading={busy || finishing}
         className="btn focus-start"
         onClick={() => requireMember(control)}
       >
-        {running ? (
+        {finishing ? null : running ? (
           <Square size={14} />
         ) : (
           <Play size={15} fill="currentColor" />
         )}
-        {running ? "Seansı durdur" : "Hadi odaklanalım"}
+        {finishing
+          ? "Dakikalar cebine yazılıyor…"
+          : running
+            ? "Seansı durdur"
+            : "Hadi odaklanalım"}
       </Busy>
       <p className="focus-bottom">
         {members.length ? (
@@ -1221,7 +1352,8 @@ function PlanMini({ plan, members, onClick }) {
       <div>
         <strong>{plan.note || "Kütüpte buluşalım"}</strong>
         <small>
-          {shortTime(plan.starts)} · {plan.attendees.length} kişi geliyor
+          {dayWord(plan.starts)} {shortTime(plan.starts)} ·{" "}
+          {plan.attendees.length} kişi geliyor
         </small>
       </div>
       <ChevronRight size={15} />
@@ -1353,7 +1485,7 @@ function Plans({ data, me, requireMember, mutate, open }) {
                 </div>
                 <div className="plan-content">
                   <span className="eyebrow">
-                    {dateLabel(plan.starts)} · {shortTime(plan.starts)}
+                    {dayWord(plan.starts)} · {shortTime(plan.starts)}
                   </span>
                   <h2>{plan.note || "Kütüpte buluşalım"}</h2>
                   <p>
@@ -1516,7 +1648,9 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
     }),
     [groupName, setGroupName] = useState("Bizim tayfa"),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [mode, setMode] = useState(standalone && !invite ? "code" : "profile"),
+    [code, setCode] = useState("");
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -1535,6 +1669,69 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
       setBusy(false);
     }
   };
+  const claim = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const d = await api("/transfer/claim", { code });
+      onSuccess(d, "Tekrar hoş geldin! Profilin bu cihazda da açık. ✨");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (mode === "code")
+    return (
+      <Modal
+        title="Zaten ekiptesin. 🔑"
+        subtitle="Diğer cihazında Kütüp’ü aç: Benim köşem → Başka cihazda aç. Çıkan kodu buraya yaz."
+        close={close}
+      >
+        <form onSubmit={claim}>
+          <label className="field-label">
+            Giriş kodun
+            <input
+              className="code-input"
+              required
+              autoFocus
+              autoComplete="one-time-code"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={12}
+              placeholder="ABCD-2345"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+            />
+          </label>
+          {standalone && isIOS && (
+            <p className="form-warning">
+              Ana ekrandaki Kütüp, Safari’den ayrı bir oturum tutar. Safari’de
+              katıldıysan kodunu oradan al.
+            </p>
+          )}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <Busy loading={busy} className="btn primary full" type="submit">
+            Profilimi aç <KeyRound size={17} />
+          </Busy>
+          <button
+            type="button"
+            className="text-button centered-link"
+            onClick={() => {
+              setMode("profile");
+              setError("");
+            }}
+          >
+            {invite ? "Ekibe yeni katılıyorum" : "Yeni bir ekip kuracağım"}
+          </button>
+        </form>
+      </Modal>
+    );
   return (
     <Modal
       title={invite ? "Ekibin seni bekliyor. ✨" : "Güzel bir ekip kuralım. ✳"}
@@ -1573,6 +1770,16 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
           {invite ? "Ben de buradayım" : "Ekibimizi kuralım"}{" "}
           <ArrowRight size={17} />
         </Busy>
+        <button
+          type="button"
+          className="text-button centered-link"
+          onClick={() => {
+            setMode("code");
+            setError("");
+          }}
+        >
+          <KeyRound size={15} /> Zaten ekipteyim, giriş kodum var
+        </button>
         <p className="form-footnote">
           <ShieldCheck size={14} /> E-posta yok, şifre yok. Oturumun bu
           tarayıcıda kalır.
@@ -1583,7 +1790,51 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
     </Modal>
   );
 }
-function ProfileModal({ me, theme, setTheme, close, mutate }) {
+function DeviceTransfer({ notify }) {
+  const [code, setCode] = useState(null),
+    [busy, setBusy] = useState(false);
+  const create = async () => {
+    setBusy(true);
+    try {
+      setCode(await api("/transfer", {}));
+    } catch (e) {
+      notify(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="device-transfer">
+      <div>
+        <strong>
+          <Smartphone size={16} /> Başka cihazda da aç
+        </strong>
+        <p>
+          Telefon, tablet ya da iPhone’da ana ekran uygulaması. Kod 15 dakika
+          geçerli, tek kullanımlık.
+        </p>
+      </div>
+      {code ? (
+        <div className="transfer-code" aria-live="polite">
+          <b>{code.code}</b>
+          <small>
+            Diğer cihazda: Yerini al → “Zaten ekipteyim, giriş kodum var”
+          </small>
+        </div>
+      ) : (
+        <Busy
+          type="button"
+          loading={busy}
+          className="btn outline"
+          onClick={create}
+        >
+          <KeyRound size={15} /> Giriş kodu al
+        </Busy>
+      )}
+    </div>
+  );
+}
+function ProfileModal({ me, theme, setTheme, close, mutate, notify, onLeft }) {
   const [value, setValue] = useState({
       name: me.name,
       avatar: me.avatar,
@@ -1591,6 +1842,20 @@ function ProfileModal({ me, theme, setTheme, close, mutate }) {
       note: me.note,
     }),
     [busy, setBusy] = useState(false);
+  const leave = async () => {
+    if (
+      !confirm(
+        "Ekipten ayrılırsan profilin, mesajların ve planların silinir. Emin misin?",
+      )
+    )
+      return;
+    try {
+      await api("/leave", {});
+      onLeft();
+    } catch (e) {
+      notify(e.message);
+    }
+  };
   return (
     <Modal
       title="Tam senlik bir köşe."
@@ -1610,11 +1875,12 @@ function ProfileModal({ me, theme, setTheme, close, mutate }) {
         <div className="theme-section">
           <label className="field-label">Ekranın da senin renginde olsun</label>
           <div className="theme-options">
-            {["lilac", "mint", "peach"].map((c) => (
+            {THEMES.map((c) => (
               <button
                 key={c}
                 type="button"
                 className={`${c} ${theme === c ? "selected" : ""}`}
+                aria-pressed={theme === c}
                 onClick={() => setTheme(c)}
               >
                 {theme === c && <Check size={13} />}
@@ -1628,15 +1894,33 @@ function ProfileModal({ me, theme, setTheme, close, mutate }) {
           Böyle çok daha ben <Sparkles size={16} />
         </Busy>
       </form>
+      <DeviceTransfer notify={notify} />
+      <button type="button" className="text-button leave-button" onClick={leave}>
+        <LogOut size={15} /> Ekipten ayrıl
+      </button>
     </Modal>
   );
 }
+const PLACES = [
+  "Zemin · Genel salon",
+  "1. kat · Sessiz salon",
+  "2. kat · Okuma salonu",
+  "Grup çalışma alanı",
+  "Kafeterya",
+  "Bahçe",
+];
+const OTHER_PLACE = "Başka bir yer…";
 function PresenceModal({ me, coming, close, mutate }) {
+  const known = !me.location || PLACES.includes(me.location);
   const [status, setStatus] = useState(coming ? "coming" : "here"),
-    [location, setLocation] = useState(me.location || "1. kat · Sessiz salon"),
+    [location, setLocation] = useState(
+      known ? me.location || "1. kat · Sessiz salon" : OTHER_PLACE,
+    ),
+    [customPlace, setCustomPlace] = useState(known ? "" : me.location),
     [desk, setDesk] = useState(me.desk || ""),
     [arrival, setArrival] = useState("30 dakika içinde"),
     [busy, setBusy] = useState(false);
+  const place = location === OTHER_PLACE ? customPlace.trim() : location;
   return (
     <Modal
       title={
@@ -1652,7 +1936,7 @@ function PresenceModal({ me, coming, close, mutate }) {
           if (
             await mutate(
               "/presence",
-              { status, location, desk, arrival },
+              { status, location: place, desk, arrival },
               status === "coming"
                 ? "Ekibin geleceğini biliyor. Yolun açık olsun!"
                 : "Ekibine haber verdik. İyi çalışmalar!",
@@ -1683,6 +1967,7 @@ function PresenceModal({ me, coming, close, mutate }) {
               onChange={(e) => setArrival(e.target.value)}
             >
               {[
+                "Şimdi çıkıyorum",
                 "15 dakika içinde",
                 "30 dakika içinde",
                 "1 saat içinde",
@@ -1701,18 +1986,23 @@ function PresenceModal({ me, coming, close, mutate }) {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               >
-                {[
-                  "Zemin · Genel salon",
-                  "1. kat · Sessiz salon",
-                  "2. kat · Okuma salonu",
-                  "Grup çalışma alanı",
-                  "Kafeterya",
-                  "Bahçe",
-                ].map((x) => (
+                {[...PLACES, OTHER_PLACE].map((x) => (
                   <option key={x}>{x}</option>
                 ))}
               </select>
             </label>
+            {location === OTHER_PLACE && (
+              <label className="field-label">
+                Neresi?
+                <input
+                  required
+                  maxLength={40}
+                  value={customPlace}
+                  onChange={(e) => setCustomPlace(e.target.value)}
+                  placeholder="Örn. 3. kat · Süreli yayınlar"
+                />
+              </label>
+            )}
             <label className="field-label">
               Masa / küçük tarif <span>isteğe bağlı</span>
               <input
@@ -1737,6 +2027,7 @@ function PresenceModal({ me, coming, close, mutate }) {
 }
 function InviteModal({ group, close, notify }) {
   const url = `${location.origin}/join/${group.invite}`;
+  const shareText = `Kütüpte kim var diye sormaya son. ${group.name} ekibine gel! ✳`;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -1770,21 +2061,26 @@ function InviteModal({ group, close, notify }) {
       <button className="btn primary full" onClick={copy}>
         <Copy size={17} /> Bağlantıyı kopyala
       </button>
-      {navigator.share && (
+      {navigator.share ? (
         <button
           className="btn outline full"
           onClick={() =>
             navigator
-              .share({
-                title: `${group.name} · Kütüp`,
-                text: "Kütüpte kim var diye sormaya son. Bizim ekibe gel! ✳",
-                url,
-              })
+              .share({ title: `${group.name} · Kütüp`, text: shareText, url })
               .catch(() => {})
           }
         >
           <Send size={16} /> Arkadaşlarına gönder
         </button>
+      ) : (
+        <a
+          className="btn outline full"
+          href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${url}`)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Send size={16} /> WhatsApp’ta paylaş
+        </a>
       )}
       <p className="form-footnote">
         Bu bağlantı ekibin anahtarı. Sadece katılmasını istediğin kişilerle
@@ -1797,7 +2093,13 @@ function PlanModal({ close, mutate }) {
   const [date, setDate] = useState(dayInput(1)),
     [time, setTime] = useState("10:00"),
     [note, setNote] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const days = [
+    ["Bugün", dayInput()],
+    ["Yarın", dayInput(1)],
+    ["Öbür gün", dayInput(2)],
+  ];
   return (
     <Modal
       title="Güzel bir plan var. 🗓️"
@@ -1807,18 +2109,31 @@ function PlanModal({ close, mutate }) {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          const starts = new Date(`${date}T${time}:00+03:00`).getTime();
+          if (!Number.isFinite(starts) || starts < Date.now()) {
+            setError("Bu saat geçti bile. İleri bir saat seç. 🙂");
+            return;
+          }
+          setError("");
           setBusy(true);
-          if (
-            await mutate(
-              "/plans",
-              { starts: new Date(`${date}T${time}:00+03:00`).getTime(), note },
-              "Plan panoda. Ekibin katılabilir!",
-            )
-          )
+          if (await mutate("/plans", { starts, note }, "Plan panoda. Ekibin katılabilir!"))
             close();
           setBusy(false);
         }}
       >
+        <div className="quick-messages day-chips">
+          {days.map(([label, value]) => (
+            <button
+              type="button"
+              key={label}
+              aria-pressed={date === value}
+              className={date === value ? "selected" : ""}
+              onClick={() => setDate(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="form-row">
           <label className="field-label">
             Hangi gün?
@@ -1852,7 +2167,13 @@ function PlanModal({ close, mutate }) {
         </label>
         <p className="form-footnote">
           <MapPin size={14} /> Milli Kütüphane · Saatler Türkiye saatine göre.
+          Bildirimi açık olanlara haber gider.
         </p>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
         <Busy loading={busy} className="btn primary full" type="submit">
           Takvime bırakalım <Plus size={17} />
         </Busy>
@@ -1915,9 +2236,10 @@ function CoffeeModal({ close, mutate }) {
     </Modal>
   );
 }
-function MemberModal({ member, close, mutate }) {
+function MemberModal({ member, now, close, mutate }) {
+  const since = sinceLabel(member.since, now);
   return (
-    <Modal title={`${member.name}’in köşesi`} close={close}>
+    <Modal title={member.name} close={close}>
       <div className="member-detail">
         <Avatar member={member} size="large" />
         <Badge status={member.status} />
@@ -1928,12 +2250,19 @@ function MemberModal({ member, close, mutate }) {
             ? member.arrival
             : member.status === "away"
               ? "Şimdilik kütüpte değil"
-              : `${member.location || "Milli Kütüphane"}${member.desk ? ` · ${member.desk}` : ""}`}
+              : `${member.location || "Milli Kütüphane"}${member.desk ? ` · ${member.desk}` : ""}${since ? ` · ${since}` : ""}`}
         </p>
-        <div className="detail-stat">
-          <Flame size={20} />
-          <strong>{member.focusToday} dk</strong>
-          <span>bugünün odağı</span>
+        <div className="detail-stats">
+          <div className="detail-stat">
+            <Flame size={20} />
+            <strong>{minutesLabel(member.focusToday || 0)}</strong>
+            <span>bugünün odağı</span>
+          </div>
+          <div className="detail-stat">
+            <Trophy size={20} />
+            <strong>{minutesLabel(member.focusWeek || 0)}</strong>
+            <span>bu hafta</span>
+          </div>
         </div>
       </div>
       <button
@@ -2016,6 +2345,88 @@ function AmbientSound() {
       >
         {playing ? <Volume2 size={21} /> : <VolumeX size={21} />}
       </button>
+    </section>
+  );
+}
+// Getting notifications working is the whole point of Kütüp, so the home screen
+// walks people through it until they turn it on (or hide the card).
+function SetupCard({ enable }) {
+  const [hidden, setHidden] = useState(storage.get("kutup-setup-hidden") === "1");
+  if (hidden || (!pushSupported && !isIOS)) return null;
+  const needsHomeScreen = isIOS && !standalone;
+  return (
+    <section className="setup-card">
+      <span className="setup-emoji">{needsHomeScreen ? "📲" : "🔔"}</span>
+      <div>
+        <strong>
+          {needsHomeScreen
+            ? "iPhone’da bildirim için bir adım var."
+            : "Biri kütübe gelince haberin olsun."}
+        </strong>
+        <p>
+          {needsHomeScreen ? (
+            <>
+              Safari’de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>. Sonra Kütüp’ü
+              ana ekrandan aç; “Benim köşem → Başka cihazda aç” kodunla gir ve
+              🔔’a bas.
+            </>
+          ) : (
+            "Arkadaşın gelince, kahveye çağırınca ya da plan yapınca telefonuna düşsün."
+          )}
+        </p>
+      </div>
+      {!needsHomeScreen && (
+        <button className="btn primary" onClick={enable}>
+          <Bell size={16} /> Bildirimleri aç
+        </button>
+      )}
+      <button
+        className="icon-button setup-close"
+        aria-label="Bu kartı gizle"
+        onClick={() => {
+          storage.set("kutup-setup-hidden", "1");
+          setHidden(true);
+        }}
+      >
+        <X size={17} />
+      </button>
+    </section>
+  );
+}
+function WeekBoard({ members, me }) {
+  const ranked = members
+    .filter((m) => m.focusWeek > 0)
+    .sort((a, b) => b.focusWeek - a.focusWeek);
+  const top = ranked[0]?.focusWeek || 1;
+  return (
+    <section className="panel week-board">
+      <div className="section-heading">
+        <h2>Haftanın odak tablosu</h2>
+        <Trophy size={18} />
+      </div>
+      {ranked.length ? (
+        <ol>
+          {ranked.map((m, i) => (
+            <li key={m.id} className={m.id === me?.id ? "mine" : ""}>
+              <span className="week-rank">{["🥇", "🥈", "🥉"][i] || i + 1}</span>
+              <Avatar member={m} size="tiny" />
+              <strong>
+                {m.name}
+                {m.id === me?.id ? " (sen)" : ""}
+              </strong>
+              <span className="week-bar" aria-hidden="true">
+                <i style={{ width: `${Math.max(6, (m.focusWeek / top) * 100)}%` }} />
+              </span>
+              <small>{minutesLabel(m.focusWeek)}</small>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="muted small">
+          Bu hafta henüz biten seans yok. İlk 25 dakika tabloyu açar. 🌱
+        </p>
+      )}
+      <p className="week-note">Pazartesi sıfırlanır · tamamlanan seanslar sayılır</p>
     </section>
   );
 }
@@ -2164,24 +2575,66 @@ function FeedbackPage({ me, requireMember, notify }) {
 }
 function OwnerPage() {
   const [key, setKey] = useState(""),
+    [confirmKey, setConfirmKey] = useState(""),
+    [claimed, setClaimed] = useState(null),
     [items, setItems] = useState(null),
+    [groups, setGroups] = useState([]),
+    [view, setView] = useState("notes"),
     [filter, setFilter] = useState("all"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    get("/owner/status")
+      .then((d) => setClaimed(d.claimed))
+      .catch(() => setClaimed(true));
+  }, []);
+  const owner = (path, body, method = "GET") =>
+    api(path, body, method, { "X-Owner-Key": key });
   const load = async (e) => {
     e?.preventDefault();
     setBusy(true);
     setError("");
     try {
-      setItems(
-        await api("/owner/feedback", undefined, "GET", { "X-Owner-Key": key }),
-      );
+      const [notes, teams] = await Promise.all([
+        owner("/owner/feedback"),
+        owner("/owner/groups"),
+      ]);
+      setItems(notes);
+      setGroups(teams);
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
   };
+  const claim = async (e) => {
+    e.preventDefault();
+    if (key !== confirmKey) {
+      setError("İki anahtar aynı değil.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await api("/owner/claim", { key });
+      setClaimed(true);
+      await load();
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  };
+  const act = async (fn) => {
+    try {
+      await fn();
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  const shown = (items || []).filter(
+    (x) => filter === "all" || x.status === filter,
+  );
   return (
     <main className="owner-page">
       <a className="brand" href="/">
@@ -2190,121 +2643,243 @@ function OwnerPage() {
       <div className="owner-heading">
         <span className="eyebrow">BATUR’A ÖZEL</span>
         <h1>Tayfadan sana. 💌</h1>
-        <p>Fikirler, geri dönüşler, küçük bug’lar. Hepsi bir kutuda.</p>
+        <p>
+          Fikirler, geri dönüşler, küçük bug’lar ve ekipler. Hepsi bir kutuda.
+        </p>
       </div>
       {!items ? (
-        <form className="panel owner-login" onSubmit={load}>
-          <label className="field-label">
-            Yönetici anahtarı
-            <input
-              type="password"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              autoComplete="off"
-              required
-              placeholder="Sadece sende olan anahtar"
-            />
-          </label>
-          {error && <p className="form-error">{error}</p>}
-          <Busy loading={busy} className="btn primary full" type="submit">
-            Kutuyu aç <ArrowRight size={16} />
-          </Busy>
-          <p className="form-footnote">
-            Yayın ayarlarındaki ADMIN_KEY veya sunucunun data/batur-key.txt
-            dosyasındaki anahtar.
-          </p>
-        </form>
+        claimed === false ? (
+          <form className="panel owner-login" onSubmit={claim}>
+            <p className="form-warning">
+              <Lock size={14} /> Kutu henüz kilitlenmedi. Şimdi kendi anahtarını
+              belirle; bundan sonra sadece bu anahtar açar.
+            </p>
+            <label className="field-label">
+              Yeni anahtar <span>en az 12 karakter</span>
+              <input
+                type="password"
+                minLength={12}
+                required
+                autoComplete="new-password"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+              />
+            </label>
+            <label className="field-label">
+              Bir kez daha
+              <input
+                type="password"
+                minLength={12}
+                required
+                autoComplete="new-password"
+                value={confirmKey}
+                onChange={(e) => setConfirmKey(e.target.value)}
+              />
+            </label>
+            {error && <p className="form-error">{error}</p>}
+            <Busy loading={busy} className="btn primary full" type="submit">
+              Kutuyu kilitle ve aç <KeyRound size={16} />
+            </Busy>
+            <p className="form-footnote">
+              Anahtarı bir yere not et. Unutursan yayın ayarlarına ADMIN_KEY
+              ekleyerek yenisini tanımlayabilirsin.
+            </p>
+          </form>
+        ) : (
+          <form className="panel owner-login" onSubmit={load}>
+            <label className="field-label">
+              Yönetici anahtarı
+              <input
+                type="password"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                autoComplete="current-password"
+                required
+                placeholder="Sadece sende olan anahtar"
+              />
+            </label>
+            {error && <p className="form-error">{error}</p>}
+            <Busy loading={busy} className="btn primary full" type="submit">
+              Kutuyu aç <ArrowRight size={16} />
+            </Busy>
+            <p className="form-footnote">
+              Kutuyu ilk açarken belirlediğin anahtar ya da yayın ayarlarındaki
+              ADMIN_KEY. Yerelde: data/batur-key.txt
+            </p>
+          </form>
+        )
       ) : (
         <>
           <div className="owner-toolbar">
             <div className="filter-row">
-              {[
-                ["all", "Hepsi"],
-                ["new", "Yeni"],
-                ["planned", "Listemde"],
-                ["done", "Hallettim"],
-              ].map(([id, name]) => (
-                <button
-                  className={`filter-chip ${filter === id ? "selected" : ""}`}
-                  key={id}
-                  onClick={() => setFilter(id)}
-                >
-                  {name}
-                  <span>
-                    {
-                      items.filter((x) => id === "all" || x.status === id)
-                        .length
-                    }
-                  </span>
-                </button>
-              ))}
+              <button
+                className={`filter-chip ${view === "notes" ? "selected" : ""}`}
+                onClick={() => setView("notes")}
+              >
+                Notlar <span>{items.length}</span>
+              </button>
+              <button
+                className={`filter-chip ${view === "groups" ? "selected" : ""}`}
+                onClick={() => setView("groups")}
+              >
+                Ekipler <span>{groups.length}</span>
+              </button>
             </div>
-            <button className="btn outline" onClick={load}>
-              Yenile
+            <button className="btn outline" onClick={() => load()}>
+              <RefreshCw size={15} /> Yenile
             </button>
             <button
               className="text-button"
               onClick={() => {
                 setItems(null);
                 setKey("");
+                setConfirmKey("");
               }}
             >
-              Kilitle
+              <Lock size={15} /> Kilitle
             </button>
           </div>
           {error && <p className="form-error">{error}</p>}
-          <div className="owner-grid">
-            {items
-              .filter((x) => filter === "all" || x.status === filter)
-              .map((f) => (
-                <article className="panel owner-note" key={f.id}>
-                  <div className="message-meta">
-                    <Avatar member={f} size="small" />
-                    <div>
-                      <strong>{f.name}</strong>
-                      <small>{f.group_name}</small>
-                    </div>
+          {view === "notes" ? (
+            <>
+              <div className="filter-row owner-filters">
+                {[
+                  ["all", "Hepsi"],
+                  ["new", "Yeni"],
+                  ["planned", "Listemde"],
+                  ["done", "Hallettim"],
+                ].map(([id, name]) => (
+                  <button
+                    className={`filter-chip ${filter === id ? "selected" : ""}`}
+                    key={id}
+                    onClick={() => setFilter(id)}
+                  >
+                    {name}
                     <span>
-                      {FEEDBACK[f.kind][0]} {FEEDBACK[f.kind][1]}
+                      {
+                        items.filter((x) => id === "all" || x.status === id)
+                          .length
+                      }
                     </span>
-                  </div>
-                  <p>{f.text}</p>
-                  <div className="owner-note-bottom">
-                    <time>
-                      {dateLabel(f.created)} · {shortTime(f.created)}
-                    </time>
-                    <select
-                      aria-label={`${f.name} mesajının durumu`}
-                      value={f.status}
-                      onChange={async (e) => {
-                        try {
-                          await api(
-                            `/owner/feedback/${f.id}`,
-                            { status: e.target.value },
-                            "POST",
-                            { "X-Owner-Key": key },
+                  </button>
+                ))}
+              </div>
+              <div className="owner-grid">
+                {shown.map((f) => (
+                  <article className="panel owner-note" key={f.id}>
+                    <div className="message-meta">
+                      <Avatar member={f} size="small" />
+                      <div>
+                        <strong>{f.name}</strong>
+                        <small>{f.group_name}</small>
+                      </div>
+                      <span>
+                        {FEEDBACK[f.kind]?.[0]} {FEEDBACK[f.kind]?.[1]}
+                      </span>
+                    </div>
+                    <p>{f.text}</p>
+                    <div className="owner-note-bottom">
+                      <time>
+                        {dateLabel(f.created)} · {shortTime(f.created)}
+                      </time>
+                      <select
+                        aria-label={`${f.name} mesajının durumu`}
+                        value={f.status}
+                        onChange={(e) => {
+                          const status = e.target.value;
+                          act(() =>
+                            owner(`/owner/feedback/${f.id}`, { status }, "POST"),
                           );
-                          await load();
-                        } catch (e) {
-                          setError(e.message);
-                        }
+                        }}
+                      >
+                        {Object.entries(FEEDBACK_STATUS).map(([id, title]) => (
+                          <option key={id} value={id}>
+                            {title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {!shown.length && (
+                <Empty emoji="📭" title="Bu göz şimdilik boş.">
+                  Ekibin yazdıkça notlar burada toplanacak.
+                </Empty>
+              )}
+            </>
+          ) : (
+            <div className="owner-groups">
+              {groups.map((g) => (
+                <article className="panel owner-group" key={g.id}>
+                  <div className="owner-group-head">
+                    <div>
+                      <h2>{g.name}</h2>
+                      <small>
+                        {g.members.length} kişi
+                        {g.created ? ` · ${dateLabel(g.created)} kuruldu` : ""}
+                      </small>
+                    </div>
+                    <button
+                      className="btn outline"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            "Davet bağlantısı yenilensin mi? Eski bağlantı çalışmaz; yenisini ekip içinden paylaşırsınız.",
+                          )
+                        )
+                          act(() =>
+                            owner(`/owner/groups/${g.id}/invite`, {}, "POST"),
+                          );
                       }}
                     >
-                      {Object.entries(FEEDBACK_STATUS).map(([id, title]) => (
-                        <option key={id} value={id}>
-                          {title}
-                        </option>
-                      ))}
-                    </select>
+                      <RefreshCw size={15} /> Daveti yenile
+                    </button>
                   </div>
+                  <ul>
+                    {g.members.map((m) => (
+                      <li key={m.id}>
+                        <Avatar member={m} size="small" />
+                        <div>
+                          <strong>{m.name}</strong>
+                          <small>
+                            {STATUS[m.status]?.[0]} · son görülme{" "}
+                            {m.seen
+                              ? `${dateLabel(m.seen)} ${shortTime(m.seen)}`
+                              : "—"}
+                          </small>
+                        </div>
+                        <button
+                          className="icon-button"
+                          aria-label={`${m.name} kişisini ekipten çıkar`}
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `${m.name} ekipten çıkarılsın mı? Profili, mesajları ve planları silinir.`,
+                              )
+                            )
+                              act(() =>
+                                owner(
+                                  `/owner/members/${m.id}`,
+                                  undefined,
+                                  "DELETE",
+                                ),
+                              );
+                          }}
+                        >
+                          <UserMinus size={17} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </article>
               ))}
-          </div>
-          {!items.filter((x) => filter === "all" || x.status === filter)
-            .length && (
-            <Empty emoji="📭" title="Bu göz şimdilik boş.">
-              Ekibin yazdıkça notlar burada toplanacak.
-            </Empty>
+              {!groups.length && (
+                <Empty emoji="🪑" title="Henüz ekip yok.">
+                  Ana sayfadan ilk ekibi kurduğunda burada görünür.
+                </Empty>
+              )}
+            </div>
           )}
         </>
       )}

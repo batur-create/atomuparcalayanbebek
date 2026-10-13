@@ -1,14 +1,21 @@
 export async function api(path, body, method = "POST", extraHeaders = {}) {
-  const response = await fetch(`/api${path}`, {
-    method,
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Kutup": "1",
-      ...extraHeaders,
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
+  let response;
+  try {
+    response = await fetch(`/api${path}`, {
+      method,
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Kutup": "1",
+        ...extraHeaders,
+      },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    const error = new Error("İnternet bağlantısı yok gibi. Tekrar deneyelim.");
+    error.status = 0;
+    throw error;
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(
@@ -33,6 +40,18 @@ export const AVATARS = [
   "🪼",
   "🍄",
   "🦋",
+  "🐻",
+  "🐼",
+  "🦄",
+  "🌙",
+  "⭐",
+  "🍓",
+  "🌸",
+  "🐸",
+  "🧸",
+  "🍵",
+  "🎨",
+  "🐝",
 ];
 export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
 export const COLOR_NAMES = {
@@ -43,6 +62,7 @@ export const COLOR_NAMES = {
   pink: "Çilek",
   lemon: "Limon",
 };
+export const THEMES = ["lilac", "mint", "peach", "pink", "blue"];
 export const STATUS = {
   here: ["Kütüpte", "here"],
   coming: ["Yolda", "coming"],
@@ -82,9 +102,38 @@ export function dayInput(offset = 0) {
     day: "2-digit",
   }).format(d);
 }
+// "Bugün", "Yarın", "Cumartesi" or "24 Ekim" for plan dates.
+export function dayWord(timestamp) {
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+  }).format(timestamp);
+  if (day === dayInput()) return "Bugün";
+  if (day === dayInput(1)) return "Yarın";
+  if (timestamp - Date.now() < 6 * 86400000)
+    return new Date(timestamp).toLocaleDateString("tr-TR", {
+      weekday: "long",
+      timeZone: "Europe/Istanbul",
+    });
+  return dateLabel(timestamp);
+}
+// "35 dakikadır" / "2 saattir" — how long someone has been in their current status.
+export function sinceLabel(since, now) {
+  if (!since) return "";
+  const minutes = Math.max(0, Math.floor((now - since) / 60000));
+  if (minutes < 1) return "";
+  if (minutes < 60) return `${minutes} dakikadır`;
+  const hours = Math.floor(minutes / 60);
+  return minutes % 60 ? `${hours} saat ${minutes % 60} dakikadır` : `${hours} saattir`;
+}
+export const minutesLabel = (minutes) =>
+  minutes >= 60
+    ? `${Math.floor(minutes / 60)} sa${minutes % 60 ? ` ${minutes % 60} dk` : ""}`
+    : `${minutes} dk`;
+
 const now = Date.now();
+const tomorrowMorning = new Date(`${dayInput(1)}T09:30:00+03:00`).getTime();
 export const DEMO = {
-  group: { name: "Bizim tayfa", invite: "demo" },
+  group: { name: "Bizim tayfa", invite: "demo", rev: 0 },
   members: [
     {
       id: "elif",
@@ -95,7 +144,9 @@ export const DEMO = {
       status: "here",
       location: "1. kat · Sessiz salon",
       desk: "24",
+      since: now - 95 * 60000,
       focusToday: 75,
+      focusWeek: 240,
       focusEnd: 0,
     },
     {
@@ -107,7 +158,9 @@ export const DEMO = {
       status: "here",
       location: "1. kat · Sessiz salon",
       desk: "26",
+      since: now - 40 * 60000,
       focusToday: 50,
+      focusWeek: 175,
       focusEnd: now + 18 * 60000,
       focusMinutes: 25,
     },
@@ -117,10 +170,12 @@ export const DEMO = {
       avatar: "🎧",
       color: "mint",
       note: "lo-fi açıldı, dünya kapandı",
-      status: "here",
-      location: "Zemin · Genel salon",
-      desk: "12",
+      status: "break",
+      location: "Kafeterya",
+      desk: "",
+      since: now - 6 * 60000,
       focusToday: 100,
+      focusWeek: 300,
       focusEnd: 0,
     },
     {
@@ -133,7 +188,9 @@ export const DEMO = {
       arrival: "30 dakika içinde",
       location: "",
       desk: "",
+      since: now - 4 * 60000,
       focusToday: 0,
+      focusWeek: 95,
       focusEnd: 0,
     },
   ],
@@ -159,7 +216,7 @@ export const DEMO = {
     {
       id: "p",
       memberId: "ege",
-      starts: now + 86400000,
+      starts: tomorrowMorning,
       note: "Sabah erkenciler kulübü",
       attendees: ["ege", "elif"],
     },

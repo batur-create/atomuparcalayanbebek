@@ -1,10 +1,13 @@
 {
+  "id": "/",
   "name": "Kütüp — arkadaşlarınla kütüphanede",
   "short_name": "Kütüp",
+  "description": "Kim kütüpte, kim yolda? Arkadaşlarınla aynı masa, aynı motivasyon.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f6f5f0",
-  "theme_color": "#6755d9",
+  "theme_color": "#f6f5f0",
   "lang": "tr",
   "icons": [
     {
@@ -17,7 +20,33 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ben geldim!",
+      "short_name": "Geldim",
+      "url": "/?action=here",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Odak odası",
+      "short_name": "Odak",
+      "url": "/?tab=focus",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bizim pano",
+      "short_name": "Pano",
+      "url": "/?tab=board",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

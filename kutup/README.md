@@ -1,110 +1,126 @@
 # Kütüp ✳
 
-**Aynı masa. Aynı motivasyon.** Milli Kütüphane’ye giden arkadaşlar için gerçek zamanlı, telefona uygun bir buluşma alanı.
+**Aynı masa. Aynı motivasyon.** Milli Kütüphane’ye giden, farklı okullardaki arkadaşlar için gerçek zamanlı, telefona uygun bir buluşma alanı. Kim kütüpte, kim yolda, kim yarın geliyor? Hepsi tek yerde.
 
-Bu klasör bağımsız bir projedir. Üst klasördeki mağaza uygulamasını kullanmaz; Firebase anahtarı veya hesabı gerekmez. `kutup/` içeriğini daha sonra yeni bir Git deposunun köküne taşıyabilirsin.
+**Canlı:** https://kutup.ahmetbaturkaplanoglu.workers.dev (Cloudflare, ücretsiz plan)
 
-## İçindekiler
+Bu klasör bağımsız bir projedir; üst klasördeki mağaza uygulamasını kullanmaz. `kutup/` içeriği istenirse yeni bir deponun köküne taşınabilir.
 
-- Davet bağlantısı ve isimle özel ekibe katılma; 12 avatar, 6 profil rengi, kişisel masa notu ve 3 arayüz teması.
-- **Kütüpte / Yolda / Molada / Dışarıda**, salon ve masa bilgisi. Konum izni veya GPS takibi yok. Durum 8 saat sonra kapanır.
-- Anlık ekip panosu, kalpler, kahve molası davetleri.
-- Önümüzdeki 14 gün için planlar ve “Ben de gelirim” katılımı. Saatler Türkiye saatidir.
-- 25, 45 ve 50 dakikalık odak seansları, arkadaşının seansına katılma, günlük dakika toplamı ve isteğe bağlı ortam sesi. İptal edilen seans puan yazmaz.
-- **Batur’a ilet:** özel fikir/bug/mesaj kutusu. Gönderen, mesajını “Batur’a ulaştı / Batur’un listesinde / Halledildi” olarak takip eder.
-- **`/batur`** adresinde anahtarla korunan yönetici kutusu.
-- Kurulabilir PWA; geliş ve kahve davetleri için isteğe bağlı Web Push.
-- Kalıcı SQLite veritabanı, ekip bazlı yetkilendirme, HttpOnly oturum çerezi, yazma isteklerinde kaynak kontrolü ve istek sınırlama.
+## Neler var
 
-İlk ziyaretçiye açıkça “ön izleme” olarak işaretlenen örnek ekip gösterilir. Gerçek ekip kurulduğunda örnek kayıtlar kullanılmaz.
+- **Davet bağlantısıyla özel ekip.** E-posta yok, şifre yok: isim, 24 avatar, 6 renk, masa notu ve 5 ekran teması.
+- **Kütüpte / Yolda / Molada / Dışarıda.** Salon ve masa bilgisi, “Başka bir yer…” seçeneği, “burada · 1 sa 35 dk” gibi süre bilgisi. Konum izni yok; durum 8 saat sonra kendiliğinden kapanır.
+- **Bildirimler.** Biri kütübe gelince, molaya çıkınca, kahveye çağırınca ya da plan yapınca telefona bildirim gider. Aynı kişi 45 dakika içinde tekrar gelip giderse ikinci bildirim gitmez. Bildirime dokununca ilgili sekme açılır.
+- **Planlar.** Önümüzdeki iki hafta için plan yapılır, “Ben de gelirim” ile katılınır. Plan kartlarında “Bugün / Yarın / Cumartesi” yazar.
+- **Odak odası.** 25, 45 ve 50 dakikalık seanslar, arkadaşının seansına katılma, sekme başlığında geri sayım, **Haftanın odak tablosu** (🥇🥈🥉, pazartesi sıfırlanır). Bitmiş seanslar uygulama kapalıyken de sayılır.
+- **Bizim pano.** Mesajlar, kalpler, kahve davetleri. Gelip gitme hareketleri gerçek mesajları panodan itmez.
+- **Başka cihazda aç.** “Benim köşem → Başka cihazda aç” 15 dakikalık tek kullanımlık kod verir. iPhone’da Safari ile ana ekran uygulamasının oturumları ayrı tutulduğu için bu gerekli.
+- **Batur’a ilet** ve **`/batur`** yönetici kutusu: notlar, ekipler, davet bağlantısını yenileme, birini ekipten çıkarma.
+- **Ekipten ayrıl.** Profil, mesajlar ve planlar silinir.
+- Kurulabilir PWA: ana ekran kısayolları (Ben geldim!, Odak, Pano).
 
-## Çalıştırma
+## Yayınlama
 
-**Node.js 24+** gerekir. Yeni uygulamanın kendi dizininde:
+Aynı kod iki farklı ortamda çalışır:
+
+| Ortam | Veri | Canlı güncelleme | Ne zaman |
+| --- | --- | --- | --- |
+| Cloudflare Worker (`worker/`) | D1 | 5 sn’lik hafif yoklama | **Şu an canlı olan.** ChatGPT Sites da bunu kullanır. |
+| Node (`server/index.js`) | SQLite dosyası | Server-Sent Events (anlık) | Yerel geliştirme, Docker, Render, VPS |
+
+### 1. Cloudflare (ücretsiz, şu an yayında)
+
+Güncellemek için `kutup/` içinde:
 
 ```sh
-cd kutup
 npm ci
-npm run dev
+npm run deploy
 ```
 
-Geliştirme sunucusu 3001 portunda açılır. React/Vite ve API aynı sunucudadır; ikinci bir servis veya ayrı API adresi gerekmez. Başka port için `PORT=3002 npm run dev` kullanabilirsin.
+İlk kez başka bir bilgisayardan yayınlarken önce `npx wrangler login` çalıştır. D1 veritabanı ilk yayında otomatik oluşturuldu (adı `kutup`).
 
-Üretim:
+Ücretsiz plan sınırları 5–10 kişilik ekip için fazlasıyla yeter: günde 100.000 istek, 5 GB D1. Uygulama arka planda sorgu yapmaz; açık ve görünür bir ekran 5 saniyede bir küçük bir istek atar.
+
+### 2. ChatGPT Sites
+
+Proje Sites’a hazır. Sites Cloudflare Worker biçimini ve D1’i kullanır. `.openai/hosting.json` dosyası D1 bağlantı adını (`DB`) bildirir, `wrangler.jsonc` ise Worker girişini ve statik dosyaları.
+
+1. Codex uygulamasında **`kutup` klasörünü** aç (deponun kökünü değil).
+2. `@Sites bu projeyi yayınla. D1 bağlantısının adı DB, build komutu npm run build, statik dosyalar dist/.` yaz.
+3. Sitenin **Settings** bölümünde `ADMIN_KEY` adında uzun, rastgele bir gizli değer ekle. Eklemezsen `/batur` ilk açılışta kendi anahtarını belirlemeni ister; bunu yayından hemen sonra yap.
+4. Erişimi **herkese açık** yap. Arkadaşların ChatGPT hesabı olmadan girebilmeli.
+
+Sites’ta site adresi değişeceği için Cloudflare’deki ekip ve mesajlar oraya taşınmaz. İkisinden birini seçip arkadaşlarına onun linkini at.
+
+### 3. Node: Docker, Render, VPS
 
 ```sh
-npm run build
+npm ci --include=dev && npm run build
 npm start
 ```
 
-Kontroller:
+`PORT` sağlayıcıdan okunur. `DATA_DIR` kalıcı bir diske bağlanmalı. Render için depo kökündeki `render.yaml` hazır: Starter plan + 1 GB disk, ücretli. Render’ın ücretsiz planında disk olmadığı için veriler her yeniden başlatmada silinir; ücretsiz yayın için Cloudflare’i kullan.
+
+Docker: `docker build -t kutup . && docker run -d -p 3001:3001 -v kutup-data:/app/data kutup`. Nginx gibi bir ters vekil kullanıyorsan `/api/events` için `proxy_buffering off` ayarla.
+
+## Batur’un kutusu (`/batur`)
+
+- **Canlı site:** anahtar Cloudflare’de `ADMIN_KEY` gizli değeri olarak tanımlı. Bu bilgisayarda `kutup/data/batur-key-canli.txt` dosyasında duruyor; Git’e girmez. Değiştirmek için: `npx wrangler secret put ADMIN_KEY`.
+- **Yerel (Node):** `ADMIN_KEY` verilmezse `data/batur-key.txt` oluşturulur.
+- **ADMIN_KEY tanımlı değilse:** `/batur` ilk açılışta kendi anahtarını belirlemeni ister; bir kez belirlendikten sonra değiştirilemez (ADMIN_KEY tanımlayarak geçersiz kılınabilir).
+
+Anahtar tarayıcıya kaydedilmez; sayfayı yenileyince tekrar istenir.
+
+## Bildirimler ve telefona ekleme
+
+- Bildirimler otomatik istenmez. Ana sayfadaki kart ya da üstteki 🔔 ile açılır; aynı düğme o cihazda kapatır.
+- **Android / masaüstü:** Chrome, Edge, Firefox, Samsung Internet doğrudan çalışır.
+- **iPhone / iPad (iOS 16.4+):** Safari’de *Paylaş → Ana Ekrana Ekle*, sonra Kütüp’ü ana ekrandan aç. Ana ekran uygulaması Safari’den ayrı oturum tuttuğu için Safari’de *Benim köşem → Başka cihazda aç* ile kod al ve ana ekran uygulamasında *Zaten ekipteyim* diyerek gir. Ardından 🔔.
+- Bildirim teslimi tarayıcının ve işletim sisteminin elindedir; şifreleme ve imza testlerde referans çözücüyle doğrulanır, ama gerçek bir telefona teslim burada denenmedi.
+
+## Geliştirme
+
+**Node 22.13+** (önerilen 24).
 
 ```sh
-npm test
+npm ci
+npm run dev          # http://localhost:3001 — Vite + API + SSE
+npm run worker:dev   # Cloudflare ortamı, yerel D1 ile
 ```
 
-Testler geçici, izole bir veritabanı kullanır. Davetle giriş, ekipler arası izolasyon, canlı olay akışı, pano/kalpler, plan katılımı, odak doğrulaması, Batur kutusunun gizliliği ve sunucu yeniden başlayınca verilerin korunması test edilir.
+Telefonla aynı Wi-Fi’dan denemek için: `HOST=0.0.0.0 npm run dev`.
 
-## Arkadaşlara açmak: Render
-
-Depo kökündeki `render.yaml`, bu projeyi `kutup/` altından tek bir Node web servisi olarak yayınlayacak şekilde hazırdır.
-
-1. Değişiklikleri kendi GitHub depona gönder.
-2. Render’da **New → Blueprint** ile depoyu seç; kökteki `render.yaml` dosyasını kullan.
-3. Yapılandırmanın **Starter servis + 1 GB kalıcı disk** kullandığını ve bunun ücretli olduğunu kontrol edip yayını başlat.
-4. Verilen HTTPS adresini aç, ekibinizi oluştur, **Arkadaşını çağır** bağlantısını gruba gönder.
-5. Render’ın Environment bölümündeki otomatik üretilen `ADMIN_KEY` değerini güvenli şekilde al. Sitenin **`/batur`** adresindeki kutuyu bu anahtarla aç. Anahtarı arkadaşlarınla paylaşma.
-
-Henüz bu çalışma kapsamında internete yayın yapılmadı. Dosyalar ve yerel üretim akışı hazırlandı.
-
-Yeni, ayrı bir depoya taşırken `kutup/` içeriğini yeni deponun köküne koy. `render.yaml` dosyasını da yeni köke taşı ve içindeki `rootDir: kutup` satırını kaldır.
-
-### Diğer barındırmalar
-
-Node 24 ve kalıcı disk sağlayan Railway/Fly/VPS gibi servislerde `npm ci --include=dev && npm run build` ve `npm start` yeterlidir. `PORT` sağlayıcıdan okunur. `DATA_DIR` değerini kalıcı diske bağla. HTTPS kullan.
-
-Docker alternatifi, `kutup/` içinde:
+### Testler
 
 ```sh
-docker build -t kutup .
-docker run -d --name kutup --restart unless-stopped -p 3001:3001 -v kutup-data:/app/data kutup
+npm test             # çekirdek + bildirim şifreleme + Node uçtan uca (21 test)
+npm run test:worker  # aynı senaryolar yerel Cloudflare/D1 üzerinde (14 test)
+npm run test:all
 ```
 
-Docker dosyası hazırlandı; bu ortamda Docker imajı ayrıca çalıştırılmadı. VPS’de HTTPS için ters vekil kullan. Nginx gibi bir vekilde `/api/events` için tamponlamayı kapat (`proxy_buffering off`) ve uzun bağlantıya izin ver.
-
-**Sadece statik dosya barındıran GitHub Pages veya standart statik Vercel/Netlify dağıtımı yeterli değildir:** gerçek zamanlı sunucu ve SQLite diski de çalışmalıdır. Bu sürüm tek sunucu örneği için tasarlanmıştır.
-
-## Batur’un özel kutusu
-
-Üretimde uzun, rastgele `ADMIN_KEY` ortam değişkenini barındırma panelinde tut. Yerel geliştirmede verilmezse uygulama `data/batur-key.txt` dosyasına bir anahtar üretir. Bu dosya, veritabanı ve `.env` Git’e dahil edilmez. Anahtar tarayıcıdaki localStorage’a yazılmaz; paneli yenileyince tekrar gerekir.
-
-Arkadaşların gönderirken mesajın yalnızca Batur’a gittiğini görür. Mesajlar ekip panosunda paylaşılmaz. Yönetici **Yeni / Listemde / Hallettim** olarak ayırır; gönderen Batur sayfasına tekrar geldiğinde durumunu görür. Panelde **Yenile** yeni iletileri getirir.
-
-## Bildirim ve telefona ekleme
-
-- Bildirimler otomatik istenmez. Girişten sonra üstteki zile basarak izin verilir; aynı düğme o cihazda bildirimleri kapatır.
-- HTTPS üzerinde desteklenen Android/masaüstü tarayıcılarda Web Push çalışacak şekilde uygulanmıştır. iPhone/iPad’de iOS 16.4+ Safari’den **Paylaş → Ana Ekrana Ekle** yaptıktan sonra uygulamayı ana ekrandan açıp izin vermek gerekir.
-- Web Push anahtarları ilk açılışta üretilir ve veritabanında saklanır. Dışarıya HTTPS bağlantısı açık olmalıdır; tarayıcıya göre `fcm.googleapis.com`, `*.push.services.mozilla.com`, `*.push.apple.com` kullanılır.
-- Gerçek cihazlara arka plan bildirimi teslimi bu yerel kurulumda doğrulanmadı. Tarayıcı, işletim sistemi, internet ve izinler teslimi etkiler. Canlı pano, uygulama açıkken ayrıca SSE üzerinden çalışır.
-- Odak süresi sekme yenilense de sunucudaki bitiş zamanından devam eder. Tamamlanan süre uygulama yeniden açıldığında da kaydedilir.
-
-## Veriler ve sınırlar
-
-`DATA_DIR` varsayılan olarak `kutup/data` dizinidir. SQLite veritabanı, bildirim anahtarları ve yerel yönetici anahtarı burada bulunur. Dağıtımlarda bu dizin kalıcı olmalı; düzenli yedek alınmalı. Dosya kopyasıyla yedeklerken sunucuyu durdur ve WAL/SHM dahil dizinin tamamını al veya SQLite’ın çevrimiçi backup özelliğini kullan.
-
-Davet bağlantısı ekipteki bilgileri görebilmenin anahtarıdır. İsimle giriş bilerek hızlı tutuldu; tarayıcı verisi silinirse veya başka cihaza geçilirse eski profil için hesap kurtarma yoktur. Yeni bir takma adla katılınabilir. Eski profil tekrar sahiplenilmez. Bir tarayıcıda aynı anda bir ekip oturumu tutulur. Ekipler 80 kişiyle sınırlandırılır.
-
-Bu sürümde e-posta/Google girişi, özel kişiler arası mesaj, otomatik GPS, resmi kütüphane doluluk verisi, rezervasyon veya resmi kurum bağlantısı bulunmaz. Görülen durumlar arkadaşların kendi bildirimidir.
+Testler geçici, izole veritabanları kullanır: davet ve isim çakışması, ekipler arası izolasyon, yoklama ve SSE, pano limitleri, odak doğrulaması ve çevrimdışı kredilendirme, şifreli ve imzalı Web Push’un sahte bir push servisine teslimi ve bekleme süresi, cihaz kodu, Batur kutusu, davet yenileme, üye çıkarma, ekipten ayrılma, yeniden başlatmada kalıcılık ve ilk sürümün veritabanından otomatik geçiş.
 
 ## Yapı
 
 ```text
-src/App.jsx       Arayüz ve etkileşimler
-src/styles.css    Duyarlı tasarım, temalar ve bileşenler
-src/api.js        İstemci API’si ve açıkça etiketlenmiş ön izleme verisi
-server/index.js   Node/Express, SQLite, SSE, Web Push ve yönetici API’si
-public/sw.js      Bildirim service worker’ı
-tests/api.test.js İzole sunucu entegrasyon testleri
+server/app.js       API: rotalar, doğrulama, durum anlık görüntüsü (Node ve Worker ortak)
+server/schema.js    Sürümlü veritabanı şeması ve geçişler
+server/push.js      Web Push (RFC 8291 şifreleme + VAPID), yalnızca Web Crypto
+server/sqlite.js    node:sqlite bağdaştırıcısı
+server/index.js     Node sunucusu: SSE, statik dosyalar, Vite geliştirme modu
+worker/index.js     Cloudflare Worker girişi: D1 bağdaştırıcısı, ASSETS
+src/App.jsx         Arayüz
+src/api.js          İstemci API’si, yardımcılar ve ön izleme verisi
+src/styles.css      Tasarım, temalar, mobil düzen
+public/sw.js        Bildirim service worker’ı
+tests/              Uçtan uca (Node + Worker), çekirdek ve şifreleme testleri
+wrangler.jsonc      Cloudflare yapılandırması
+.openai/hosting.json  ChatGPT Sites bağlantı bilgisi
 ```
 
-Yazı tipleri uygulamayla birlikte servis edilir; Google Fonts bağlantısına ihtiyaç yoktur.
+## Veriler ve sınırlar
+
+- Davet bağlantısı ekibin anahtarıdır; yalnızca güvendiğin kişilerle paylaş. Sızarsa `/batur` → Ekipler → Daveti yenile.
+- Ekipler en fazla 80 kişidir. 120 günden eski mesajlar ve 30 günden eski planlar kendiliğinden temizlenir.
+- E-posta/Google girişi, özel mesaj, GPS, resmi kütüphane doluluk verisi veya rezervasyon yoktur. Görülen durumlar arkadaşların kendi bildirimidir.
+- Yazı tipleri uygulamayla birlikte gelir; Google Fonts bağlantısı gerekmez.

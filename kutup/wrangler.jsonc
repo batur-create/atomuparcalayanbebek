@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "kutup",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // No database_id: `wrangler deploy` creates the D1 database on first deploy
+  // and `wrangler dev` creates a local one automatically.
+  "d1_databases": [{ "binding": "DB", "database_name": "kutup" }],
+  "observability": { "enabled": true }
+}

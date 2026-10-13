@@ -186,7 +186,7 @@ button:active {
   white-space: nowrap;
 }
 .group-switch small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   display: block;
   margin-top: 4px;
@@ -197,7 +197,7 @@ button:active {
   flex-shrink: 0;
 }
 .nav-caption {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.7px;
   font-weight: 700;
   color: #a2a197;
@@ -227,7 +227,7 @@ button:active {
   font-weight: 700;
 }
 .nav-item b {
-  font-size: 10px;
+  font-size: 11.5px;
   background: #eae8e0;
   padding: 2px 6px;
   border-radius: 5px;
@@ -275,13 +275,13 @@ button:active {
 }
 .library-note strong {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 .library-note div > span {
   display: block;
   line-height: 1.6;
-  font-size: 9px;
+  font-size: 11px;
   color: #9c9b91;
   max-width: 108px;
   margin-top: 4px;
@@ -307,14 +307,14 @@ button:active {
 }
 .sidebar-profile strong {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   max-width: 115px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .sidebar-profile small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: #9d9c92;
   margin-top: 4px;
 }
@@ -340,7 +340,7 @@ button:active {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 11px;
+  font-size: 12px;
   color: #9b9a90;
 }
 .breadcrumb strong {
@@ -356,7 +356,7 @@ button:active {
   gap: 18px;
 }
 .today-label {
-  font-size: 10px;
+  font-size: 11.5px;
   color: #939389;
 }
 .icon-button {
@@ -411,7 +411,7 @@ button:active {
   border: 1px solid #dddcd2;
   box-shadow: 0 2px 2px #38322403;
   padding: 10px 14px;
-  font-size: 10px;
+  font-size: 11.5px;
   min-height: 36px;
 }
 .invite-btn:hover {
@@ -451,7 +451,7 @@ button:active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 550;
   padding: 0;
   background: none;
@@ -464,7 +464,7 @@ button:active {
   color: var(--accent);
 }
 .small-btn {
-  font-size: 10px;
+  font-size: 11.5px;
   padding: 8px 10px;
   background: var(--accent-soft);
   color: var(--accent-deep);
@@ -479,7 +479,7 @@ button:active {
   gap: 8px;
   min-height: 31px;
   padding: 5px 20px;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 .demo-banner > svg {
   color: #988564;
@@ -490,7 +490,7 @@ button:active {
   gap: 3px;
   background: none;
   color: #6b6250;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
   margin-left: 7px;
 }
@@ -516,7 +516,7 @@ button:active {
   gap: 20px;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.6px;
   color: #939083;
@@ -535,7 +535,7 @@ button:active {
   margin-left: 4px;
 }
 .page-heading p {
-  font-size: 11px;
+  font-size: 12px;
   color: #959387;
   margin-top: 8px;
 }
@@ -544,7 +544,7 @@ button:active {
   align-items: center;
   gap: 7px;
   color: #939387;
-  font-size: 10px;
+  font-size: 11.5px;
   margin-top: 19px;
 }
 .live-dot,
@@ -580,7 +580,7 @@ button:active {
   z-index: 2;
 }
 .hero-location {
-  font-size: 8px;
+  font-size: 10.5px;
   letter-spacing: 1.05px;
   color: #898397;
   display: flex;
@@ -599,7 +599,7 @@ button:active {
   color: #8c78c6;
 }
 .hero-card p {
-  font-size: 11px;
+  font-size: 12px;
   color: #89808f;
   line-height: 1.7;
 }
@@ -610,7 +610,7 @@ button:active {
   margin-top: 21px;
 }
 .hero-buttons .btn {
-  font-size: 11px;
+  font-size: 12px;
   padding: 12px 15px;
   gap: 7px;
 }
@@ -620,7 +620,7 @@ button:active {
   gap: 7px;
   background: none;
   padding: 7px 0;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 650;
   color: #6f667f;
 }
@@ -629,7 +629,7 @@ button:active {
   align-items: center;
   gap: 10px;
   margin-top: 20px;
-  font-size: 9px;
+  font-size: 11px;
   color: #91869b;
 }
 .hero-company strong {
@@ -685,7 +685,7 @@ button:active {
   color: #74794a;
   padding: 8px 13px;
   text-align: center;
-  font-size: 10px;
+  font-size: 11.5px;
   line-height: 1.5;
   border-radius: 3px;
   z-index: 3;
@@ -711,7 +711,7 @@ button:active {
   color: #ced4be;
 }
 .focus-card-header > span:first-child {
-  font-size: 8px;
+  font-size: 10.5px;
   font-weight: 550;
   letter-spacing: 1.6px;
   display: flex;
@@ -760,7 +760,7 @@ button:active {
 }
 .timer-digits > span {
   display: block;
-  font-size: 8px;
+  font-size: 10.5px;
   letter-spacing: 0.4px;
   color: #a3ad96;
   margin-top: 4px;
@@ -774,7 +774,7 @@ button:active {
 }
 .duration-options button {
   padding: 4px 10px;
-  font-size: 8px;
+  font-size: 10.5px;
   border-radius: 5px;
   background: none;
   color: #a8ad9b;
@@ -788,14 +788,14 @@ button:active {
   color: #3c472c;
   width: 100%;
   min-height: 35px;
-  font-size: 10px;
+  font-size: 11.5px;
   padding: 10px 10px;
 }
 .focus-start:hover {
   background: #e7f4be;
 }
 .focus-bottom {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #9da792;
   margin-top: 12px;
   line-height: 1.5;
@@ -828,7 +828,7 @@ button:active {
   gap: 8px;
 }
 .section-heading h2 > span:not(.scribble) {
-  font-size: 9px;
+  font-size: 11px;
   color: #939486;
   background: #e8e9df;
   padding: 3px 6px;
@@ -854,7 +854,7 @@ button:active {
   border: 1px solid transparent;
   background: none;
   border-radius: 7px;
-  font-size: 9px;
+  font-size: 11px;
   color: #95958b;
   white-space: nowrap;
 }
@@ -866,7 +866,7 @@ button:active {
   font-weight: 650;
 }
 .filter-chip > span {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #92928a;
   background: #efeee6;
   border-radius: 4px;
@@ -886,7 +886,7 @@ button:active {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 8px;
+  font-size: 10.5px;
   letter-spacing: 0.2px;
   color: #acaa9c;
 }
@@ -991,7 +991,7 @@ button:active {
   white-space: nowrap;
 }
 .member-name > span {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #a19b8b;
   background: #f1efe6;
   padding: 2px 4px;
@@ -1002,7 +1002,7 @@ button:active {
   margin-left: auto;
 }
 .member-note {
-  font-size: 9px;
+  font-size: 11px;
   color: #999487;
   margin-top: 6px;
   white-space: nowrap;
@@ -1014,7 +1014,7 @@ button:active {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 8px;
+  font-size: 10.5px;
   font-weight: 500;
   color: #75916c;
   background: #edf1e7;
@@ -1048,7 +1048,7 @@ button:active {
   border-top: 1px solid #f0eee7;
   margin-top: 15px;
   padding: 11px 0;
-  font-size: 8px;
+  font-size: 10.5px;
   color: #99958a;
 }
 .member-card-bottom > span:nth-child(2) {
@@ -1080,7 +1080,7 @@ button:active {
   min-height: 181px;
 }
 .coffee-card .eyebrow {
-  font-size: 7px;
+  font-size: 10px;
   letter-spacing: 1.1px;
   color: #b3a27e;
 }
@@ -1093,7 +1093,7 @@ button:active {
 }
 .coffee-card p {
   color: #a89b7e;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.7;
   max-width: 136px;
 }
@@ -1122,7 +1122,7 @@ button:active {
   background: none;
   border-top: 1px solid #e2d6bf;
   color: #8c7a55;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 650;
 }
 .panel {
@@ -1156,7 +1156,7 @@ button:active {
   flex-shrink: 0;
 }
 .date-square span {
-  font-size: 7px;
+  font-size: 10px;
   color: #a09a8b;
   text-transform: uppercase;
 }
@@ -1171,7 +1171,7 @@ button:active {
   overflow: hidden;
 }
 .plan-mini strong {
-  font-size: 9px;
+  font-size: 11px;
   display: block;
   font-weight: 600;
   overflow: hidden;
@@ -1179,7 +1179,7 @@ button:active {
   white-space: nowrap;
 }
 .plan-mini small {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #a4a090;
   display: block;
   margin-top: 5px;
@@ -1189,14 +1189,14 @@ button:active {
   flex-shrink: 0;
 }
 .small-plans .text-button {
-  font-size: 9px;
+  font-size: 11px;
   padding-top: 4px;
 }
 .muted {
   color: #979489;
 }
 .small {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
 }
 .small-plans p {
@@ -1204,7 +1204,7 @@ button:active {
 }
 .private-label {
   color: #aaa496;
-  font-size: 8px;
+  font-size: 10.5px;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1243,20 +1243,20 @@ button:active {
   gap: 9px;
 }
 .message-meta strong {
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 650;
 }
 .message-meta time {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #b1a99a;
 }
 .message-meta > span {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #b48c65;
   margin-left: auto;
 }
 .message p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   margin: 6px 0 7px;
   color: #827b6f;
@@ -1271,7 +1271,7 @@ button:active {
   border: 1px solid #ece7dc;
   border-radius: 5px;
   padding: 3px 6px;
-  font-size: 8px;
+  font-size: 10.5px;
   color: #a69782;
 }
 .reaction.reacted {
@@ -1294,7 +1294,7 @@ button:active {
   box-shadow: none !important;
   background: none;
   min-width: 0;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 .message-form input::placeholder {
   color: #aba394;
@@ -1330,20 +1330,20 @@ button:active {
   font-weight: 700;
 }
 .tiny-love p {
-  font-size: 10px;
+  font-size: 11.5px;
   line-height: 1.85;
   margin: 8px 0 15px;
   max-width: 206px;
 }
 .tiny-love .text-button {
   color: #948768;
-  font-size: 10px;
+  font-size: 11.5px;
 }
 .page-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 8px;
+  font-size: 10.5px;
   color: #afa896;
   border-top: 1px solid #e6e2d7;
   margin-top: 35px;
@@ -1404,14 +1404,14 @@ button:active {
 }
 .field-label {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: #726c5f;
   font-weight: 600;
   margin: 18px 0 8px;
 }
 .field-label > span {
   color: #aaa18e;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
   margin-left: 5px;
 }
@@ -1439,7 +1439,7 @@ button:active {
   overflow-wrap: anywhere;
 }
 .profile-preview p {
-  font-size: 10px;
+  font-size: 11.5px;
   margin-top: 5px;
   color: #96917f;
   overflow-wrap: anywhere;
@@ -1485,7 +1485,7 @@ button:active {
   box-shadow: 0 0 0 3px #f4f0e8;
 }
 .form-footnote {
-  font-size: 9px;
+  font-size: 11px;
   color: #a09a8a;
   text-align: center;
   line-height: 1.8;
@@ -1497,7 +1497,7 @@ button:active {
 }
 .form-error,
 .form-warning {
-  font-size: 11px;
+  font-size: 12px;
   padding: 10px 12px;
   background: #fbe7e4;
   color: #a35c57;
@@ -1516,7 +1516,7 @@ button:active {
   margin: 24px 0;
 }
 .status-options button {
-  font-size: 11px;
+  font-size: 12px;
   padding: 12px 4px;
   border-radius: 10px;
   background: #f4f1e9;
@@ -1543,7 +1543,7 @@ button:active {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 11.5px;
   background: #f7f5ef;
 }
 .theme-options .selected {
@@ -1552,7 +1552,7 @@ button:active {
 }
 .theme-section small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: #a49c8a;
   margin-top: 8px;
 }
@@ -1610,7 +1610,7 @@ button:active {
   background: #f0eee3;
   border: 1px solid #e6e1d2;
   border-radius: 6px;
-  font-size: 9px;
+  font-size: 11px;
   padding: 6px 8px;
   color: #8f836c;
 }
@@ -1650,7 +1650,7 @@ button:active {
   font-size: 18px;
 }
 .detail-stat span {
-  font-size: 11px;
+  font-size: 12px;
   color: #aa9c80;
 }
 .toast {
@@ -1699,7 +1699,7 @@ button:active {
   color: #7d7562;
 }
 .empty p {
-  font-size: 11px;
+  font-size: 12px;
   color: #aba28c;
   margin-top: 8px;
   line-height: 1.8;
@@ -1748,7 +1748,7 @@ button:active {
   color: var(--accent-deep);
 }
 .plan-date span {
-  font-size: 10px;
+  font-size: 11.5px;
   color: var(--accent);
 }
 .plan-content {
@@ -1756,7 +1756,7 @@ button:active {
   flex: 1;
 }
 .plan-content .eyebrow {
-  font-size: 8px;
+  font-size: 10.5px;
   letter-spacing: 0.7px;
 }
 .plan-content h2 {
@@ -1769,7 +1769,7 @@ button:active {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 11.5px;
   color: #968b75;
   flex-wrap: wrap;
 }
@@ -1782,13 +1782,13 @@ button:active {
   gap: 9px;
   margin-top: 18px;
   color: #a29579;
-  font-size: 9px;
+  font-size: 11px;
 }
 .plan-actions {
   align-self: center;
 }
 .plan-actions .btn {
-  font-size: 10px;
+  font-size: 11.5px;
   padding: 10px;
   min-height: 35px;
 }
@@ -1820,7 +1820,7 @@ button:active {
   margin-top: 20px;
 }
 .plans-note small {
-  font-size: 9px;
+  font-size: 11px;
   display: block;
   color: #a4a78f;
   margin-top: 25px;
@@ -1854,7 +1854,7 @@ button:active {
   font-size: 62px;
 }
 .focus-page .timer-digits > span {
-  font-size: 10px;
+  font-size: 11.5px;
   margin-top: 9px;
 }
 .focus-page .duration-options {
@@ -1862,7 +1862,7 @@ button:active {
   margin: 20px 0 24px;
 }
 .focus-page .duration-options button {
-  font-size: 11px;
+  font-size: 12px;
   padding: 7px 13px;
 }
 .focus-page .focus-start {
@@ -1870,7 +1870,7 @@ button:active {
   min-height: 44px;
 }
 .focus-page .focus-bottom {
-  font-size: 10px;
+  font-size: 11.5px;
   margin-top: 20px;
 }
 .focus-side {
@@ -1896,7 +1896,7 @@ button:active {
   color: #6a7085;
 }
 .ambient-card p {
-  font-size: 11px;
+  font-size: 12px;
   color: #989caf;
   margin-top: 6px;
 }
@@ -1929,12 +1929,12 @@ button:active {
 }
 .focus-friend small {
   display: block;
-  font-size: 10px;
+  font-size: 11.5px;
   color: #a59c87;
   margin-top: 4px;
 }
 .count-tag {
-  font-size: 10px;
+  font-size: 11.5px;
   padding: 4px 6px;
   border-radius: 6px;
   background: #eeeade;
@@ -1977,7 +1977,7 @@ button:active {
   display: flex;
   gap: 8px;
   color: #b4ad99;
-  font-size: 9px;
+  font-size: 11px;
   padding: 13px 0 20px;
   align-items: center;
 }
@@ -1988,7 +1988,7 @@ button:active {
   font-weight: 500;
 }
 .system-message time {
-  font-size: 8px;
+  font-size: 10.5px;
   white-space: nowrap;
   margin-left: auto;
 }
@@ -2007,7 +2007,7 @@ button:active {
   color: #83785e;
 }
 .board-guideline p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.9;
   color: #a2977f;
 }
@@ -2040,12 +2040,12 @@ button:active {
   margin-top: 14px;
 }
 .feedback-intro p {
-  font-size: 11px;
+  font-size: 12px;
   color: #9d8fa3;
   margin-top: 14px;
 }
 .feedback-intro .eyebrow {
-  font-size: 8px;
+  font-size: 10.5px;
   color: #a28faa;
 }
 .feedback-stamp {
@@ -2058,11 +2058,11 @@ button:active {
   color: #9885a3;
   line-height: 1.7;
   text-align: center;
-  font-size: 9px;
+  font-size: 11px;
 }
 .feedback-stamp b {
   font-weight: 400;
-  font-size: 8px;
+  font-size: 10.5px;
 }
 .envelope-art {
   position: absolute;
@@ -2088,7 +2088,7 @@ button:active {
   border: 1px solid #e7e2d6;
   border-radius: 9px;
   background: #f8f6ee;
-  font-size: 10px;
+  font-size: 11.5px;
   color: #9a8d73;
   flex: 1;
   justify-content: center;
@@ -2114,7 +2114,7 @@ button:active {
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
-  font-size: 9px;
+  font-size: 11px;
   color: #aca28d;
 }
 .feedback-form-meta > span:first-child {
@@ -2141,7 +2141,7 @@ button:active {
 }
 .batur-avatar > span {
   position: absolute;
-  font-size: 8px;
+  font-size: 10.5px;
   background: #f5edcf;
   color: #9d8a50;
   padding: 5px 8px;
@@ -2182,7 +2182,7 @@ button:active {
   color: #b29b87;
 }
 .feedback-promise p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.8;
   color: #a7957e;
 }
@@ -2235,7 +2235,7 @@ button:active {
 }
 .my-feedback article small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: #b1a387;
   margin-top: 8px;
 }
@@ -2287,7 +2287,7 @@ button:active {
   flex: 1;
 }
 .owner-note .message-meta small {
-  font-size: 9px;
+  font-size: 11px;
   color: #ab9e83;
   display: block;
   margin-top: 4px;
@@ -2309,12 +2309,12 @@ button:active {
   gap: 10px;
 }
 .owner-note-bottom time {
-  font-size: 9px;
+  font-size: 11px;
   color: #b0a082;
 }
 .owner-note-bottom select {
   width: auto;
-  font-size: 10px;
+  font-size: 11.5px;
   padding: 8px;
   max-width: 170px;
 }
@@ -2390,36 +2390,36 @@ button:active {
 
 /* Keep secondary copy readable on compact cards. */
 .member-grid .member-note {
-  font-size: 11px;
+  font-size: 12px;
   color: #888171;
 }
 .member-grid .member-card-bottom {
-  font-size: 9px;
+  font-size: 11px;
   color: #8c8575;
 }
 .member-grid .status {
-  font-size: 9px;
+  font-size: 11px;
 }
 .page-heading p {
   font-size: 12px;
   color: #8c8677;
 }
 .coffee-card p {
-  font-size: 11px;
+  font-size: 12px;
   color: #96886b;
 }
 .small-plans .plan-mini strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 .small-plans .plan-mini small {
-  font-size: 9px;
+  font-size: 11px;
 }
 .board .message p {
   font-size: 12px;
   color: #7d7567;
 }
 .filter-row .filter-chip {
-  font-size: 10px;
+  font-size: 11.5px;
 }
 
 @media (min-width: 1550px) {
@@ -2474,20 +2474,20 @@ button:active {
     padding: 21px 22px 0;
   }
   .member-note {
-    font-size: 11px;
+    font-size: 12px;
   }
   .member-name h3 {
     font-size: 16px;
   }
   .member-card-bottom {
-    font-size: 10px;
+    font-size: 11.5px;
     padding: 13px 0;
   }
   .status {
-    font-size: 9px;
+    font-size: 11px;
   }
   .hero-location {
-    font-size: 9px;
+    font-size: 11px;
   }
   .member-grid {
     gap: 16px;
@@ -2503,22 +2503,22 @@ button:active {
     min-height: 192px;
   }
   .coffee-card p {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .small-plans .section-heading h2 {
     font-size: 14px;
   }
   .plan-mini strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .plan-mini small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .plan-mini {
     margin: 20px 0;
   }
   .today-label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .nav-item {
     font-size: 13px;
@@ -2562,32 +2562,32 @@ button:active {
     letter-spacing: -1.4px;
   }
   .hero-card p {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-sticker {
-    font-size: 8px;
+    font-size: 10.5px;
     right: 12px;
     top: 22px;
     padding: 6px 9px;
   }
   .hero-sticker b {
-    font-size: 11px;
+    font-size: 12px;
   }
   .hero-buttons {
     gap: 11px;
   }
   .hero-secondary {
-    font-size: 9px;
+    font-size: 11px;
   }
   .hero-buttons .btn {
-    font-size: 10px;
+    font-size: 11.5px;
     padding: 11px;
   }
   .hero-company {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .hero-location {
-    font-size: 7px;
+    font-size: 10px;
   }
   .focus-card {
     padding: 20px 18px;
@@ -2608,10 +2608,10 @@ button:active {
     padding: 14px 13px 0;
   }
   .member-note {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .member-card-bottom {
-    font-size: 7px;
+    font-size: 10px;
   }
   .member-grid {
     gap: 10px;
@@ -2623,11 +2623,11 @@ button:active {
     border-radius: 11px;
   }
   .status {
-    font-size: 7px;
+    font-size: 10px;
     padding: 5px 6px;
   }
   .filter-chip {
-    font-size: 8px;
+    font-size: 10.5px;
     padding: 7px 8px;
   }
   .coffee-card {
@@ -2639,13 +2639,13 @@ button:active {
   }
   .coffee-card p {
     max-width: 120px;
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .panel {
     padding: 19px;
   }
   .private-label {
-    font-size: 7px;
+    font-size: 10px;
   }
   .today-label {
     display: none;
@@ -2661,7 +2661,7 @@ button:active {
     padding: 10px 27px 27px;
   }
   .feedback-types button {
-    font-size: 9px;
+    font-size: 11px;
     padding: 9px;
   }
   .feedback-types button > span {
@@ -2671,7 +2671,7 @@ button:active {
     font-size: 28px;
   }
   .feedback-stamp {
-    font-size: 8px;
+    font-size: 10.5px;
     right: 18px;
     top: 18px;
   }
@@ -2705,7 +2705,7 @@ button:active {
     grid-template-columns: 1fr 248px;
   }
   .group-switch small {
-    font-size: 8px;
+    font-size: 10.5px;
   }
 }
 @media (max-width: 1000px) {
@@ -2717,7 +2717,7 @@ button:active {
     margin-left: 185px;
   }
   .nav-item {
-    font-size: 11px;
+    font-size: 12px;
     padding: 12px 10px;
     gap: 8px;
   }
@@ -2725,10 +2725,10 @@ button:active {
     gap: 7px;
   }
   .group-switch strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .group-switch small {
-    font-size: 7px;
+    font-size: 10px;
   }
   .group-symbol {
     width: 31px;
@@ -2738,10 +2738,10 @@ button:active {
     width: 12px;
   }
   .sidebar-profile small {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .sidebar-profile strong {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .sidebar-profile {
     gap: 7px;
@@ -2751,13 +2751,13 @@ button:active {
     gap: 6px;
   }
   .library-note strong {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .library-note > svg {
     width: 20px;
   }
   .library-note div > span {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .topbar {
     padding: 0 20px;
@@ -2784,29 +2784,29 @@ button:active {
   }
   .hero-sticker {
     top: 21px;
-    font-size: 7px;
+    font-size: 10px;
     padding: 4px 7px;
   }
   .hero-sticker b {
-    font-size: 9px;
+    font-size: 11px;
   }
   .hero-location {
     letter-spacing: 0.5px;
-    font-size: 6px;
+    font-size: 9.5px;
   }
   .hero-copy p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .hero-company {
     gap: 6px;
-    font-size: 7px;
+    font-size: 10px;
     margin-top: 17px;
   }
   .hero-buttons {
     gap: 12px;
   }
   .hero-buttons .btn {
-    font-size: 9px;
+    font-size: 11px;
     padding: 10px 11px;
     gap: 5px;
   }
@@ -2817,10 +2817,10 @@ button:active {
     width: 15px;
   }
   .hero-secondary {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .art-note {
-    font-size: 9px;
+    font-size: 11px;
     left: 30px;
   }
   .compact.focus-card {
@@ -2830,10 +2830,10 @@ button:active {
     padding: 18px 16px 15px;
   }
   .focus-card h2 {
-    font-size: 11px;
+    font-size: 12px;
   }
   .focus-card-header > span:first-child {
-    font-size: 7px;
+    font-size: 10px;
   }
   .timer-wrap {
     height: 112px;
@@ -2849,16 +2849,16 @@ button:active {
     top: 33px;
   }
   .timer-digits > span {
-    font-size: 7px;
+    font-size: 10px;
   }
   .duration-options {
     margin: 5px 0 10px;
   }
   .focus-bottom {
-    font-size: 7px;
+    font-size: 10px;
   }
   .focus-start {
-    font-size: 9px;
+    font-size: 11px;
   }
   .member-grid {
     grid-template-columns: 1fr;
@@ -2890,7 +2890,7 @@ button:active {
     grid-column: 1/3;
     margin-top: 12px;
     padding-bottom: 0;
-    font-size: 9px;
+    font-size: 11px;
   }
   .member-card-top .avatar {
     height: 36px;
@@ -2901,7 +2901,7 @@ button:active {
     position: absolute;
     left: 52px;
     top: 18px;
-    font-size: 6px;
+    font-size: 9.5px;
     padding: 4px 5px;
   }
   .member-card-top {
@@ -2912,7 +2912,7 @@ button:active {
     width: 13px;
   }
   .member-note {
-    font-size: 7px;
+    font-size: 10px;
   }
   .coffee-card {
     padding: 18px 16px;
@@ -2922,7 +2922,7 @@ button:active {
     font-size: 21px;
   }
   .coffee-card .eyebrow {
-    font-size: 6px;
+    font-size: 9.5px;
   }
   .coffee-doodle {
     font-size: 28px;
@@ -2931,10 +2931,10 @@ button:active {
   }
   .coffee-card p {
     max-width: 125px;
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .coffee-button {
-    font-size: 9px;
+    font-size: 11px;
   }
   .panel {
     padding: 17px;
@@ -2943,16 +2943,16 @@ button:active {
     font-size: 13px;
   }
   .small-plans .section-heading h2 {
-    font-size: 11px;
+    font-size: 12px;
   }
   .plan-mini {
     gap: 8px;
   }
   .plan-mini strong {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .plan-mini small {
-    font-size: 7px;
+    font-size: 10px;
   }
   .date-square {
     width: 30px;
@@ -2962,26 +2962,26 @@ button:active {
     padding: 15px;
   }
   .tiny-love p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .board .section-heading {
     flex-wrap: wrap;
     gap: 7px;
   }
   .message p {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .message-meta strong {
-    font-size: 9px;
+    font-size: 11px;
   }
   .page-heading h1 {
     font-size: 25px;
   }
   .page-heading .eyebrow {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .live-chip {
-    font-size: 8px;
+    font-size: 10.5px;
     gap: 6px;
   }
   .feedback-layout {
@@ -3022,7 +3022,7 @@ button:active {
     max-width: calc(100vw - 220px);
   }
   .page-footer {
-    font-size: 7px;
+    font-size: 10px;
   }
 }
 @media (max-width: 760px) {
@@ -3049,7 +3049,7 @@ button:active {
     gap: 11px;
   }
   .sidebar .nav-caption {
-    font-size: 9px;
+    font-size: 11px;
   }
   .group-switch {
     gap: 10px;
@@ -3058,7 +3058,7 @@ button:active {
     font-size: 13px;
   }
   .group-switch small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .group-symbol {
     width: 36px;
@@ -3071,7 +3071,7 @@ button:active {
     font-size: 12px;
   }
   .sidebar-profile small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .sidebar-profile {
     gap: 10px;
@@ -3080,7 +3080,7 @@ button:active {
     font-size: 12px;
   }
   .library-note div > span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .main-shell {
     margin-left: 0;
@@ -3101,7 +3101,7 @@ button:active {
   }
   .breadcrumb {
     gap: 5px;
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .breadcrumb > svg {
     width: 11px;
@@ -3114,7 +3114,7 @@ button:active {
     width: 32px;
   }
   .invite-btn {
-    font-size: 10px;
+    font-size: 11.5px;
     padding: 9px 11px;
     gap: 5px;
     min-height: 32px;
@@ -3123,7 +3123,7 @@ button:active {
     width: 13px;
   }
   .demo-banner {
-    font-size: 8px;
+    font-size: 10.5px;
     min-height: 33px;
     padding: 7px 14px;
     gap: 5px;
@@ -3138,7 +3138,7 @@ button:active {
     flex-shrink: 0;
   }
   .demo-banner button {
-    font-size: 8px;
+    font-size: 10.5px;
     gap: 2px;
     white-space: nowrap;
     margin-left: 2px;
@@ -3157,11 +3157,11 @@ button:active {
     font-size: 27px;
   }
   .page-heading .eyebrow {
-    font-size: 7px;
+    font-size: 10px;
     letter-spacing: 1.3px;
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: 11.5px;
     line-height: 1.6;
     margin-top: 6px;
   }
@@ -3189,26 +3189,26 @@ button:active {
     right: -12px;
   }
   .hero-copy p {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-company {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .hero-location {
-    font-size: 7px;
+    font-size: 10px;
   }
   .hero-sticker {
     padding: 5px 7px;
   }
   .hero-sticker b {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-buttons .btn {
-    font-size: 10px;
+    font-size: 11.5px;
     padding: 10px;
   }
   .hero-secondary {
-    font-size: 9px;
+    font-size: 11px;
   }
   .compact.focus-card {
     min-height: 301px;
@@ -3224,7 +3224,7 @@ button:active {
   .member-card-top .status {
     position: static;
     margin-left: 0;
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .member-card-top {
     align-items: center;
@@ -3240,12 +3240,12 @@ button:active {
   }
   .member-note {
     text-align: left;
-    font-size: 10px;
+    font-size: 11.5px;
     margin-top: 6px;
   }
   .member-card-bottom {
     padding-bottom: 11px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .member-grid {
     grid-template-columns: 1fr;
@@ -3255,10 +3255,10 @@ button:active {
     font-size: 15px;
   }
   .filter-chip {
-    font-size: 9px;
+    font-size: 11px;
   }
   .filter-live {
-    font-size: 7px;
+    font-size: 10px;
   }
   .coffee-card {
     padding: 22px;
@@ -3268,30 +3268,30 @@ button:active {
     font-size: 24px;
   }
   .coffee-card .eyebrow {
-    font-size: 7px;
+    font-size: 10px;
   }
   .coffee-card p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .coffee-doodle {
     font-size: 34px;
     right: 20px;
   }
   .coffee-button {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .panel {
     padding: 21px;
   }
   .message p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .message-meta strong {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .page-footer {
     padding-bottom: 94px;
-    font-size: 8px;
+    font-size: 10.5px;
     margin-top: 30px;
     flex-wrap: wrap;
   }
@@ -3325,7 +3325,7 @@ button:active {
     padding: 7px 8px;
   }
   .mobile-bottom button span {
-    font-size: 9px;
+    font-size: 11px;
     white-space: nowrap;
   }
   .mobile-bottom button.active {
@@ -3340,7 +3340,7 @@ button:active {
     left: 50%;
     bottom: 83px;
     max-width: calc(100vw - 28px);
-    font-size: 11px;
+    font-size: 12px;
     padding: 13px 15px;
     animation: none;
   }
@@ -3356,10 +3356,10 @@ button:active {
     font-size: 23px;
   }
   .modal-subtitle {
-    font-size: 11px;
+    font-size: 12px;
   }
   .field-label {
-    font-size: 11px;
+    font-size: 12px;
   }
   .field-label input,
   .field-label select,
@@ -3376,13 +3376,13 @@ button:active {
     padding: 14px;
   }
   .theme-options button {
-    font-size: 11px;
+    font-size: 12px;
   }
   .message-form input {
     font-size: 16px;
   }
   .message-form input::placeholder {
-    font-size: 11px;
+    font-size: 12px;
   }
   .board-page {
     min-height: 65vh;
@@ -3397,7 +3397,7 @@ button:active {
     font-size: 13px;
   }
   .page-heading > .btn {
-    font-size: 10px;
+    font-size: 11.5px;
     padding: 10px;
     gap: 5px;
   }
@@ -3420,10 +3420,10 @@ button:active {
   .feedback-stamp {
     top: 23px;
     right: 23px;
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .feedback-stamp b {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .envelope-art {
     font-size: 80px;
@@ -3433,7 +3433,7 @@ button:active {
     padding: 10px 30px 30px;
   }
   .feedback-types button {
-    font-size: 11px;
+    font-size: 12px;
   }
   .feedback-types button > span {
     font-size: 18px;
@@ -3457,7 +3457,7 @@ button:active {
     font-size: 12px;
   }
   .owner-note .message-meta > span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .owner-login input {
     font-size: 16px;
@@ -3489,21 +3489,21 @@ button:active {
     opacity: 1;
   }
   .hero-card p {
-    font-size: 11px;
+    font-size: 12px;
     max-width: 62%;
   }
   .hero-location {
-    font-size: 7px;
+    font-size: 10px;
     letter-spacing: 0.6px;
   }
   .hero-sticker {
     right: 19px;
     top: 28px;
-    font-size: 8px;
+    font-size: 10.5px;
     padding: 6px 8px;
   }
   .hero-sticker b {
-    font-size: 11px;
+    font-size: 12px;
   }
   .hero-buttons {
     margin-top: 20px;
@@ -3511,20 +3511,20 @@ button:active {
   }
   .hero-buttons .btn {
     padding: 12px 13px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .hero-buttons .btn > svg {
     width: 15px;
   }
   .hero-secondary {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-company {
-    font-size: 9px;
+    font-size: 11px;
     margin-top: 20px;
   }
   .art-note {
-    font-size: 9px;
+    font-size: 11px;
     bottom: -4px;
     left: 55px;
   }
@@ -3544,7 +3544,7 @@ button:active {
     font-size: 23px;
   }
   .member-card-top .status {
-    font-size: 7px;
+    font-size: 10px;
     padding: 4px 6px;
     gap: 3px;
   }
@@ -3563,12 +3563,12 @@ button:active {
     width: 13px;
   }
   .member-note {
-    font-size: 8px;
+    font-size: 10.5px;
     line-height: 1.6;
     margin-top: 5px;
   }
   .member-card-bottom {
-    font-size: 7px;
+    font-size: 10px;
     margin-top: 13px;
     padding: 10px 0;
     gap: 4px;
@@ -3580,20 +3580,20 @@ button:active {
     display: none;
   }
   .member-name > span {
-    font-size: 7px;
+    font-size: 10px;
   }
   .filter-row {
     margin-bottom: 15px;
   }
   .filter-chip {
-    font-size: 10px;
+    font-size: 11.5px;
     padding: 8px 10px;
   }
   .filter-chip > span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .filter-live {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .section-heading {
     margin-bottom: 16px;
@@ -3602,7 +3602,7 @@ button:active {
     font-size: 17px;
   }
   .section-heading .text-button {
-    font-size: 9px;
+    font-size: 11px;
   }
   .compact.focus-card {
     grid-row: 3;
@@ -3620,7 +3620,7 @@ button:active {
     align-self: start;
   }
   .compact .focus-card-header > span:first-child {
-    font-size: 8px;
+    font-size: 10.5px;
     letter-spacing: 1.2px;
   }
   .compact .focus-card-header > span:last-child {
@@ -3656,7 +3656,7 @@ button:active {
     text-align: center;
   }
   .compact .timer-digits > span {
-    font-size: 7px;
+    font-size: 10px;
     letter-spacing: 0;
   }
   .compact .duration-options {
@@ -3666,12 +3666,12 @@ button:active {
     margin: 0 0 13px;
   }
   .compact .duration-options button {
-    font-size: 8px;
+    font-size: 10.5px;
     padding: 5px 8px;
   }
   .compact .focus-start {
     grid-column: 1;
-    font-size: 10px;
+    font-size: 11.5px;
     min-height: 37px;
     padding: 10px 9px;
     gap: 6px;
@@ -3679,7 +3679,7 @@ button:active {
   }
   .compact .focus-bottom {
     grid-column: 1/3;
-    font-size: 8px;
+    font-size: 10.5px;
     margin-top: 16px;
     max-width: 100%;
     text-align: center;
@@ -3696,7 +3696,7 @@ button:active {
     padding: 18px 16px;
   }
   .coffee-card .eyebrow {
-    font-size: 6px;
+    font-size: 9.5px;
     letter-spacing: 1px;
   }
   .coffee-card h3 {
@@ -3704,7 +3704,7 @@ button:active {
     margin: 9px 0 7px;
   }
   .coffee-card p {
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1.7;
     max-width: 125px;
   }
@@ -3721,7 +3721,7 @@ button:active {
     top: -7px;
   }
   .coffee-button {
-    font-size: 9px;
+    font-size: 11px;
     padding-top: 12px;
     margin-top: 19px;
   }
@@ -3735,7 +3735,7 @@ button:active {
     margin-bottom: 10px;
   }
   .small-plans .section-heading h2 {
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: -0.3px;
   }
   .small-plans .section-heading > svg {
@@ -3746,12 +3746,12 @@ button:active {
     margin: 18px 0 22px;
   }
   .plan-mini strong {
-    font-size: 9px;
+    font-size: 11px;
     white-space: normal;
     line-height: 1.5;
   }
   .plan-mini small {
-    font-size: 7px;
+    font-size: 10px;
     line-height: 1.6;
   }
   .plan-mini > svg {
@@ -3762,7 +3762,7 @@ button:active {
     height: 40px;
   }
   .small-plans .text-button {
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1.5;
     text-align: left;
   }
@@ -3771,7 +3771,7 @@ button:active {
     flex-shrink: 0;
   }
   .small-plans p {
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1.9;
   }
   .board {
@@ -3796,12 +3796,12 @@ button:active {
     font-size: 18px;
   }
   .tiny-love p {
-    font-size: 11px;
+    font-size: 12px;
     max-width: 240px;
     margin: 8px 0 16px;
   }
   .tiny-love .text-button {
-    font-size: 11px;
+    font-size: 12px;
   }
   .board .section-heading {
     flex-wrap: nowrap;
@@ -3810,7 +3810,7 @@ button:active {
     font-size: 16px;
   }
   .private-label {
-    font-size: 7px;
+    font-size: 10px;
   }
   .message {
     gap: 10px;
@@ -3821,13 +3821,13 @@ button:active {
     font-size: 12px;
   }
   .message-meta strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .message-meta time {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .reaction {
-    font-size: 9px;
+    font-size: 11px;
     padding: 4px 7px;
   }
   .panel.board {
@@ -3845,7 +3845,7 @@ button:active {
   }
   .page-footer {
     margin-top: 28px;
-    font-size: 7px;
+    font-size: 10px;
     justify-content: center;
     gap: 8px;
   }
@@ -3856,11 +3856,11 @@ button:active {
     font-size: 26px;
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: 11.5px;
     max-width: 290px;
   }
   .topbar .breadcrumb {
-    font-size: 9px;
+    font-size: 11px;
   }
   .topbar .breadcrumb > strong {
     max-width: 87px;
@@ -3872,7 +3872,7 @@ button:active {
     gap: 8px;
   }
   .invite-btn {
-    font-size: 9px;
+    font-size: 11px;
     padding: 9px 10px;
   }
   .topbar {
@@ -3895,17 +3895,17 @@ button:active {
     font-size: 27px;
   }
   .plan-date span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .plan-content h2 {
     font-size: 17px;
     margin-top: 9px;
   }
   .plan-content .eyebrow {
-    font-size: 7px;
+    font-size: 10px;
   }
   .plan-content > p {
-    font-size: 9px;
+    font-size: 11px;
     gap: 5px;
   }
   .plan-content > p > span:last-child {
@@ -3913,14 +3913,14 @@ button:active {
   }
   .plan-attendees {
     margin-top: 15px;
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .plan-actions {
     grid-column: 2;
     justify-self: end;
   }
   .plan-actions .btn {
-    font-size: 11px;
+    font-size: 12px;
     padding: 10px 13px;
   }
   .plans-page .panel {
@@ -3932,7 +3932,7 @@ button:active {
   .page-heading > .btn {
     min-height: 34px;
     padding: 8px 10px;
-    font-size: 9px;
+    font-size: 11px;
     align-self: flex-end;
     margin-bottom: 4px;
   }
@@ -3952,10 +3952,10 @@ button:active {
     font-size: 65px;
   }
   .focus-page .timer-digits > span {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .focus-page .focus-card-header > span:first-child {
-    font-size: 9px;
+    font-size: 11px;
   }
   .focus-page .focus-start {
     min-height: 44px;
@@ -3971,13 +3971,13 @@ button:active {
     font-size: 13px;
   }
   .ambient-card p {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .focus-tip {
     padding: 12px;
   }
   .focus-tip p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .feedback-intro {
     padding: 27px 24px 30px;
@@ -3988,20 +3988,20 @@ button:active {
     letter-spacing: -1.3px;
   }
   .feedback-intro p {
-    font-size: 10px;
+    font-size: 11.5px;
     margin-top: 14px;
   }
   .feedback-intro .eyebrow {
-    font-size: 7px;
+    font-size: 10px;
   }
   .feedback-stamp {
-    font-size: 8px;
+    font-size: 10.5px;
     right: 19px;
     top: 22px;
     padding: 6px 8px;
   }
   .feedback-stamp b {
-    font-size: 7px;
+    font-size: 10px;
   }
   .envelope-art {
     font-size: 67px;
@@ -4016,7 +4016,7 @@ button:active {
   }
   .feedback-types button {
     flex-direction: column;
-    font-size: 9px;
+    font-size: 11px;
     gap: 7px;
     padding: 11px 7px;
     position: relative;
@@ -4033,11 +4033,11 @@ button:active {
     width: 10px;
   }
   .feedback-form-meta {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .feedback-form label {
     margin-top: 20px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .feedback-layout .field-label:first-child {
     margin-top: 18px;
@@ -4046,10 +4046,10 @@ button:active {
     padding: 20px;
   }
   .my-feedback article p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .my-feedback article small {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .my-feedback article > span {
     font-size: 19px;
@@ -4061,7 +4061,7 @@ button:active {
     font-size: 20px;
   }
   .feedback-success p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .owner-page {
     padding: 30px 18px;
@@ -4080,7 +4080,7 @@ button:active {
     flex-basis: 100%;
   }
   .owner-toolbar > .btn {
-    font-size: 11px;
+    font-size: 12px;
     padding: 10px 12px;
     margin-left: auto;
   }
@@ -4092,14 +4092,14 @@ button:active {
     flex-wrap: wrap;
   }
   .owner-note .message-meta > span {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .owner-note-bottom {
     flex-wrap: wrap;
     gap: 12px;
   }
   .owner-note-bottom select {
-    font-size: 11px;
+    font-size: 12px;
     padding: 8px;
     max-width: none;
     flex: 1;
@@ -4111,11 +4111,11 @@ button:active {
     font-size: 12px;
   }
   .demo-banner {
-    font-size: 7px;
+    font-size: 10px;
     line-height: 1.5;
   }
   .demo-banner button {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .hero-company .avatar {
     height: 24px;
@@ -4131,14 +4131,14 @@ button:active {
     padding: 0 13px;
   }
   .breadcrumb {
-    font-size: 8px !important;
+    font-size: 10.5px !important;
   }
   .topbar-actions {
     gap: 6px;
   }
   .invite-btn {
     padding: 8px;
-    font-size: 8px;
+    font-size: 10.5px;
     gap: 3px;
   }
   .notification-button {
@@ -4158,27 +4158,27 @@ button:active {
   }
   .hero-sticker {
     right: 15px;
-    font-size: 7px;
+    font-size: 10px;
     top: 23px;
     padding: 5px 7px;
   }
   .hero-sticker b {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-location {
-    font-size: 6px;
+    font-size: 9.5px;
   }
   .hero-copy p {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-buttons {
     gap: 12px;
   }
   .hero-buttons .btn {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .hero-company {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .member-card {
     padding: 13px 10px 0;
@@ -4189,14 +4189,14 @@ button:active {
     font-size: 21px;
   }
   .member-card-top .status {
-    font-size: 6px;
+    font-size: 9.5px;
     padding: 4px;
   }
   .member-note {
-    font-size: 7px;
+    font-size: 10px;
   }
   .member-card-bottom {
-    font-size: 6px;
+    font-size: 9.5px;
   }
   .compact.focus-card {
     padding: 22px 19px;
@@ -4216,7 +4216,7 @@ button:active {
     top: 44px;
   }
   .compact .focus-start {
-    font-size: 9px;
+    font-size: 11px;
     padding: 10px 7px;
   }
   .compact .duration-options {
@@ -4239,16 +4239,16 @@ button:active {
     font-size: 20px;
   }
   .small-plans .section-heading h2 {
-    font-size: 10px;
+    font-size: 11.5px;
   }
   .small-plans .section-heading svg {
     width: 12px;
   }
   .small-plans .text-button {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .plan-mini strong {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .feedback-intro h2 {
     font-size: 26px;
@@ -4258,13 +4258,13 @@ button:active {
   }
   .feedback-stamp {
     right: 14px;
-    font-size: 7px;
+    font-size: 10px;
   }
   .feedback-form {
     padding: 7px 16px 23px;
   }
   .feedback-types button {
-    font-size: 8px;
+    font-size: 10.5px;
   }
   .modal {
     padding: 28px 20px;
@@ -4294,7 +4294,7 @@ button:active {
     padding: 7px;
   }
   .mobile-bottom button span {
-    font-size: 8px;
+    font-size: 10.5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4302,5 +4302,297 @@ button:active {
     animation-duration: 0.01ms !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Kütüp v2 ---------- */
+:root[data-theme="pink"] {
+  --accent: #c4577a;
+  --accent-deep: #a8405f;
+  --accent-soft: #fbe9ef;
+  --hero: #f6dfe7;
+}
+:root[data-theme="blue"] {
+  --accent: #4a76b0;
+  --accent-deep: #345d93;
+  --accent-soft: #e4edf8;
+  --hero: #dbe7f4;
+}
+.theme-options {
+  flex-wrap: wrap;
+}
+a.btn {
+  text-decoration: none;
+}
+.setup-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: -6px 0 24px;
+  padding: 16px 52px 16px 18px;
+  border-radius: 15px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+}
+.setup-card > div {
+  flex: 1;
+  min-width: 0;
+}
+.setup-emoji {
+  font-size: 26px;
+}
+.setup-card strong {
+  display: block;
+  font-family: "Manrope", sans-serif;
+  font-size: 15px;
+}
+.setup-card p {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #6f6c63;
+}
+.setup-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #8e8a7d;
+}
+.member-since {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.week-board ol {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.week-board li {
+  display: grid;
+  grid-template-columns: 24px 30px minmax(60px, 1fr) minmax(50px, 1.3fr) auto;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+}
+.week-board li strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.week-board li.mine strong {
+  color: var(--accent-deep);
+}
+.week-rank {
+  text-align: center;
+  font-weight: 700;
+  color: #a49c8a;
+}
+.week-bar {
+  height: 8px;
+  border-radius: 99px;
+  background: #f0ede4;
+  overflow: hidden;
+}
+.week-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+.week-board small {
+  font-size: 12px;
+  color: #8a8577;
+  white-space: nowrap;
+}
+.week-note {
+  margin-top: 14px;
+  font-size: 11px;
+  color: #a49c8a;
+}
+.device-transfer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f7f5ef;
+  border: 1px solid var(--border);
+}
+.device-transfer > div:first-child {
+  flex: 1 1 220px;
+}
+.device-transfer strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.device-transfer p {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #8e8a7d;
+}
+.transfer-code {
+  text-align: center;
+}
+.transfer-code b {
+  display: block;
+  padding: 8px 14px;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  background: var(--paper);
+  font-family: "Manrope", sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--accent-deep);
+}
+.transfer-code small {
+  display: block;
+  max-width: 230px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8e8a7d;
+}
+input.code-input {
+  font-family: "Manrope", sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.leave-button {
+  display: flex;
+  margin: 18px auto 0;
+  color: #b0645d;
+}
+.centered-link {
+  display: flex;
+  justify-content: center;
+  margin: 15px auto 0;
+  font-size: 12px;
+  color: var(--accent-deep);
+}
+.day-chips {
+  margin: 0 0 14px;
+}
+.quick-messages button.selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+.detail-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 24px 0;
+}
+.detail-stats .detail-stat {
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 14px;
+}
+.detail-stats .detail-stat span {
+  font-size: 11px;
+}
+.owner-filters {
+  margin-bottom: 18px;
+}
+.owner-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.owner-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.owner-group-head h2 {
+  font-size: 18px;
+}
+.owner-group-head small,
+.owner-group li small {
+  font-size: 11.5px;
+  color: #8e8a7d;
+}
+.owner-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.owner-group li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.owner-group li > div {
+  flex: 1;
+  min-width: 0;
+}
+.owner-group li strong {
+  display: block;
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .owner-groups {
+    grid-template-columns: 1fr;
+  }
+  .mobile-bottom {
+    gap: 2px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .mobile-bottom button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 7px 2px;
+    color: #847c6b;
+  }
+  .mobile-bottom button span {
+    font-size: 10.5px;
+  }
+}
+@media (max-width: 580px) {
+  .setup-card {
+    flex-wrap: wrap;
+    padding-right: 44px;
+  }
+  .setup-card .btn {
+    width: 100%;
+  }
+  .owner-page {
+    padding: 28px 16px;
+  }
+}
+.duration-options button {
+  white-space: nowrap;
+}
+.avatar-options {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.avatar-options button {
+  padding: 0;
+  min-width: 0;
+}
+@media (max-width: 400px) {
+  .avatar-options button {
+    font-size: 22px;
   }
 }

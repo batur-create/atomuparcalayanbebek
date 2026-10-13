@@ -6,3 +6,7 @@ data
 tests
 test-results
 .git
+.wrangler
+.openai
+worker
+wrangler.jsonc
