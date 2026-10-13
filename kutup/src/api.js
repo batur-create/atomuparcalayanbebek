@@ -1,0 +1,167 @@
+export async function api(path, body, method = "POST", extraHeaders = {}) {
+  const response = await fetch(`/api${path}`, {
+    method,
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Kutup": "1",
+      ...extraHeaders,
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(
+      data.error || "Bağlantı kurulamadı. Tekrar deneyelim.",
+    );
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+export const get = (path) => api(path, undefined, "GET");
+export const AVATARS = [
+  "🪐",
+  "🌱",
+  "🐈",
+  "🌻",
+  "🧋",
+  "🍒",
+  "🎧",
+  "📚",
+  "🦊",
+  "🪼",
+  "🍄",
+  "🦋",
+];
+export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
+export const COLOR_NAMES = {
+  lilac: "Lavanta",
+  mint: "Matcha",
+  peach: "Şeftali",
+  blue: "Gökyüzü",
+  pink: "Çilek",
+  lemon: "Limon",
+};
+export const STATUS = {
+  here: ["Kütüpte", "here"],
+  coming: ["Yolda", "coming"],
+  break: ["Molada", "break"],
+  away: ["Dışarıda", "away"],
+};
+export const FEEDBACK = {
+  idea: ["💡", "Bir fikrim var", "Şöyle bir özellik olsa…"],
+  bug: ["🐛", "Bir şey bozuldu", "Neye bastın, ne olmasını bekledin?"],
+  hello: ["💬", "İki çift laf", "İçinden ne geçiyorsa. Batur okuyor."],
+};
+export const FEEDBACK_STATUS = {
+  new: "Batur’a ulaştı",
+  planned: "Batur’un listesinde",
+  done: "Halledildi ✨",
+};
+export function shortTime(timestamp) {
+  return new Date(timestamp).toLocaleTimeString("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Istanbul",
+  });
+}
+export function dateLabel(timestamp) {
+  return new Date(timestamp).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Istanbul",
+  });
+}
+export function dayInput(offset = 0) {
+  const d = new Date(Date.now() + offset * 86400000);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+const now = Date.now();
+export const DEMO = {
+  group: { name: "Bizim tayfa", invite: "demo" },
+  members: [
+    {
+      id: "elif",
+      name: "Elif",
+      avatar: "🍒",
+      color: "pink",
+      note: "bir kahve, üç makale",
+      status: "here",
+      location: "1. kat · Sessiz salon",
+      desk: "24",
+      focusToday: 75,
+      focusEnd: 0,
+    },
+    {
+      id: "deniz",
+      name: "Deniz",
+      avatar: "🪐",
+      color: "lilac",
+      note: "final boss: finaller",
+      status: "here",
+      location: "1. kat · Sessiz salon",
+      desk: "26",
+      focusToday: 50,
+      focusEnd: now + 18 * 60000,
+      focusMinutes: 25,
+    },
+    {
+      id: "ege",
+      name: "Ege",
+      avatar: "🎧",
+      color: "mint",
+      note: "lo-fi açıldı, dünya kapandı",
+      status: "here",
+      location: "Zemin · Genel salon",
+      desk: "12",
+      focusToday: 100,
+      focusEnd: 0,
+    },
+    {
+      id: "zeynep",
+      name: "Zeynep",
+      avatar: "🌻",
+      color: "peach",
+      note: "gelirken kahve alırım ☕",
+      status: "coming",
+      arrival: "30 dakika içinde",
+      location: "",
+      desk: "",
+      focusToday: 0,
+      focusEnd: 0,
+    },
+  ],
+  messages: [
+    {
+      id: "a",
+      memberId: "elif",
+      text: "Pencere kenarında iki yer var, gelen kapsın 🌞",
+      kind: "message",
+      created: now - 12 * 60000,
+      reactions: ["deniz", "ege"],
+    },
+    {
+      id: "b",
+      memberId: "zeynep",
+      text: "Yoldayım! Kahve isteyen var mı?",
+      kind: "message",
+      created: now - 3 * 60000,
+      reactions: ["elif"],
+    },
+  ],
+  plans: [
+    {
+      id: "p",
+      memberId: "ege",
+      starts: now + 86400000,
+      note: "Sabah erkenciler kulübü",
+      attendees: ["ege", "elif"],
+    },
+  ],
+};

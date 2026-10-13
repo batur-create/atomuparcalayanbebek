@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: kutup
+    runtime: node
+    plan: starter
+    rootDir: kutup
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    numInstances: 1
+    disk:
+      name: kutup-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: ADMIN_KEY
+        generateValue: true
