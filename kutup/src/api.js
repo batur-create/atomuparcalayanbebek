@@ -74,11 +74,6 @@ export const FEEDBACK = {
   bug: ["🐛", "Bir şey bozuldu", "Neye bastın, ne olmasını bekledin?"],
   hello: ["💬", "İki çift laf", "İçinden ne geçiyorsa. Batur okuyor."],
 };
-export const FEEDBACK_STATUS = {
-  new: "Batur’a ulaştı",
-  planned: "Batur’un listesinde",
-  done: "Halledildi ✨",
-};
 export function shortTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString("tr-TR", {
     hour: "2-digit",

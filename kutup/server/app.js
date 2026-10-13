@@ -3,6 +3,7 @@
 // Node build (node:sqlite + SSE) and the Cloudflare Worker / ChatGPT Sites build (D1).
 import { migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
+import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -145,21 +146,23 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }
 
   // ---------- session ----------
-  function cookieToken(request) {
-    const cookie = request.headers.get("cookie") || "";
-    for (const part of cookie.split(";")) {
+  function readCookie(request, wanted) {
+    const header = request.headers.get("cookie") || "";
+    for (const part of header.split(";")) {
       const [name, ...rest] = part.trim().split("=");
-      if (name === "kutup_session") return rest.join("=");
+      if (name === wanted) return rest.join("=");
     }
     return "";
   }
-  function sessionCookie(request, token, maxAge = 365 * 24 * 3600) {
+  function cookie(request, name, value, maxAge, path = "/", sameSite = "Lax") {
     const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
-    return `kutup_session=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
+    return `${name}=${value}; Path=${path}; Max-Age=${maxAge}; HttpOnly; SameSite=${sameSite}${secure}`;
   }
+  const sessionCookie = (request, token, maxAge = 365 * 24 * 3600) =>
+    cookie(request, "kutup_session", token, maxAge);
   async function authenticate(request) {
     await ensureReady();
-    const token = cookieToken(request);
+    const token = readCookie(request, "kutup_session");
     if (!token || token.length > 128) return null;
     return db.get(
       `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen
@@ -300,14 +303,46 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       PUSH_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`))
     );
   }
+  // Everyone in the group except the sender.
   async function notify(ctx, groupId, senderId, message) {
     const subs = await db.all(
       "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN members m ON m.id = s.member_id WHERE m.group_id = ? AND m.id <> ?",
       [groupId, senderId],
     );
+    deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message });
+  }
+  // One person, on all of their devices.
+  async function notifyMember(ctx, memberId, message) {
+    const subs = await db.all(
+      "SELECT endpoint, subscription FROM subscriptions WHERE member_id = ?",
+      [memberId],
+    );
+    deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message });
+  }
+  // Batur’s own devices, for new requests.
+  async function notifyOwner(ctx, message) {
+    const subs = await db.all("SELECT endpoint, subscription FROM owner_subscriptions");
+    deliver(ctx, subs, { tag: `owner-${Date.now()}`, ...message }, "owner_subscriptions");
+  }
+  function validSubscription(sub) {
+    if (
+      !sub ||
+      typeof sub.endpoint !== "string" ||
+      !sub.keys ||
+      typeof sub.keys.p256dh !== "string" ||
+      typeof sub.keys.auth !== "string" ||
+      sub.endpoint.length > 2000 ||
+      sub.keys.p256dh.length > 256 ||
+      sub.keys.auth.length > 128
+    )
+      fail("Bildirim aboneliği geçerli değil.");
+    if (!pushAllowed(sub.endpoint)) fail("Bu bildirim sağlayıcısı desteklenmiyor.");
+    return { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } };
+  }
+  function deliver(ctx, subs, message, table = "subscriptions") {
     if (!subs.length) return;
     const subject = config.vapidSubject || ctx.origin;
-    const payload = JSON.stringify({ tag: `${senderId}-${Date.now()}`, ...message });
+    const payload = JSON.stringify(message);
     ctx.waitUntil(
       Promise.allSettled(
         subs.map(async (sub) => {
@@ -316,7 +351,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             if (!pushAllowed(subscription.endpoint)) return;
             const status = await sendPush(subscription, payload, { keys: vapid, subject });
             if (status === 404 || status === 410)
-              await db.run("DELETE FROM subscriptions WHERE endpoint = ?", [sub.endpoint]);
+              await db.run(`DELETE FROM ${table} WHERE endpoint = ?`, [sub.endpoint]);
           } catch {
             // A dead push service must never break the request.
           }
@@ -326,17 +361,41 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }
 
   // ---------- owner ----------
-  async function ownerAuthorized(request, ip) {
-    limit(`${ip}:owner`, 30);
-    const key = request.headers.get("x-owner-key") || "";
-    if (!key) return false;
-    if (config.adminKey) return sameSecret(key, config.adminKey);
-    const stored = await db.get("SELECT value FROM settings WHERE key = 'owner-hash'");
-    return !!stored && (await sameSecret(await sha(key), stored.value));
+  // Batur signs in once with the key; the device then keeps an HttpOnly owner
+  // cookie for 30 days. Sessions remember which key opened them, so changing
+  // ADMIN_KEY signs every device out.
+  async function ownerHash() {
+    if (config.adminKey) return sha(config.adminKey);
+    return (await db.get("SELECT value FROM settings WHERE key = 'owner-hash'"))?.value || null;
+  }
+  async function keyMatches(key, ip) {
+    limit(`${ip}:owner`, 20);
+    const hash = await ownerHash();
+    return !!hash && !!key && sameSecret(await sha(key), hash);
+  }
+  async function ownerSignedIn(request) {
+    const token = readCookie(request, "kutup_owner");
+    if (!token || token.length > 128) return false;
+    const [session, hash] = await Promise.all([
+      db.get("SELECT key_hash FROM owner_sessions WHERE token = ?", [await sha(token)]),
+      ownerHash(),
+    ]);
+    return !!session && !!hash && session.key_hash === hash;
   }
   async function requireOwner(request, ip) {
-    if (!(await ownerAuthorized(request, ip)))
+    if (await ownerSignedIn(request)) return;
+    const key = request.headers.get("x-owner-key") || "";
+    if (!key || !(await keyMatches(key, ip)))
       fail("Bu anahtar Batur’un kutusunu açmıyor.", 401);
+  }
+  async function ownerSessionCookie(request) {
+    const token = randomHex(32);
+    await db.run("INSERT INTO owner_sessions (token, key_hash, created) VALUES (?, ?, ?)", [
+      await sha(token),
+      await ownerHash(),
+      Date.now(),
+    ]);
+    return cookie(request, "kutup_owner", token, 30 * 24 * 3600, "/api/owner", "Strict");
   }
   function deleteMember(member) {
     const id = member.id;
@@ -347,6 +406,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM messages WHERE member_id = ?", [id]],
       ["DELETE FROM focus_log WHERE member_id = ?", [id]],
       ["DELETE FROM subscriptions WHERE member_id = ?", [id]],
+      ["DELETE FROM feedback_events WHERE feedback_id IN (SELECT id FROM feedback WHERE member_id = ?)", [id]],
       ["DELETE FROM feedback WHERE member_id = ?", [id]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
@@ -729,22 +789,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   });
 
   route("POST", "/push", async ({ member, body }) => {
-    const sub = body.subscription;
-    if (
-      !sub ||
-      typeof sub.endpoint !== "string" ||
-      !sub.keys ||
-      typeof sub.keys.p256dh !== "string" ||
-      typeof sub.keys.auth !== "string"
-    )
-      fail("Bildirim aboneliği geçerli değil.");
-    if (sub.endpoint.length > 2000 || sub.keys.p256dh.length > 256 || sub.keys.auth.length > 128)
-      fail("Bildirim aboneliği geçerli değil.");
-    if (!pushAllowed(sub.endpoint)) fail("Bu bildirim sağlayıcısı desteklenmiyor.");
-    const clean = { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } };
+    const clean = validSubscription(body.subscription);
     await db.run(
       "INSERT INTO subscriptions (endpoint, member_id, subscription) VALUES (?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET member_id = excluded.member_id, subscription = excluded.subscription",
-      [sub.endpoint, member.id, JSON.stringify(clean)],
+      [clean.endpoint, member.id, JSON.stringify(clean)],
     );
     return json({ ok: true });
   });
@@ -763,41 +811,124 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true }, 200, { "Set-Cookie": sessionCookie(request, "", 0) });
   });
 
-  route("POST", "/feedback", async ({ member, body }) => {
+  // ---------- "Batur’a ilet": requests with a tracked status ----------
+  // Items carry their full history so the sender sees a cargo-style tracker.
+  async function requests(where, params, { sender = false, limit: max = 30 } = {}) {
+    const from = `FROM feedback f JOIN members m ON m.id = f.member_id JOIN groups g ON g.id = m.group_id WHERE ${where}`;
+    const [items, events] = await db.read([
+      [
+        `SELECT f.id, f.kind, f.text, f.status, f.reply, f.created, f.updated${
+          sender
+            ? ", f.member_id AS memberId, m.name, m.avatar, m.color, m.joined, g.name AS groupName"
+            : ""
+        } ${from} ORDER BY f.created DESC LIMIT ${max}`,
+        params,
+      ],
+      [
+        `SELECT e.feedback_id AS id, e.status, e.created FROM feedback_events e WHERE e.feedback_id IN (SELECT f.id ${from} ORDER BY f.created DESC LIMIT ${max}) ORDER BY e.created`,
+        params,
+      ],
+    ]);
+    return items.map((item) => ({
+      ...item,
+      events: events.filter((e) => e.id === item.id).map(({ status, created }) => ({ status, created })),
+    }));
+  }
+  const ownerRequest = async (id) =>
+    (await requests("f.id = ?", [id], { sender: true, limit: 1 }))[0] || null;
+
+  async function updateRequest(ctx, id, { status, reply }, { onlyIfNew = false } = {}) {
+    const item = await db.get("SELECT id, kind, text, status, reply, member_id FROM feedback WHERE id = ?", [id]);
+    if (!item) fail("İstek bulunamadı.", 404);
+    if (onlyIfNew && item.status !== "new") return ownerRequest(id);
+    const nextStatus = status ?? item.status;
+    if (!allowedStatuses(item.kind).includes(nextStatus)) fail("Bu istek için geçersiz bir aşama.");
+    const nextReply =
+      reply === undefined ? item.reply : text(reply || "", 600, "Not") || null;
+    const statusChanged = nextStatus !== item.status;
+    const replyChanged = (nextReply || "") !== (item.reply || "");
+    if (!statusChanged && !replyChanged) return ownerRequest(id);
+    const now = Date.now();
+    await db.batch([
+      ["UPDATE feedback SET status = ?, reply = ?, updated = ? WHERE id = ?", [nextStatus, nextReply, now, id]],
+      ...(statusChanged
+        ? [[
+            "INSERT INTO feedback_events (id, feedback_id, status, created) VALUES (?, ?, ?, ?)",
+            [crypto.randomUUID(), id, nextStatus, now],
+          ]]
+        : []),
+    ]);
+    const preview = item.text.length > 70 ? `${item.text.slice(0, 70)}…` : item.text;
+    await notifyMember(ctx, item.member_id, {
+      title: statusChanged ? statusPush(item.kind, nextStatus) : "Batur sana bir not yazdı 💬",
+      body: replyChanged && nextReply ? `Batur: ${nextReply}` : `“${preview}”`,
+      url: "/?tab=feedback",
+    });
+    return ownerRequest(id);
+  }
+
+  route("POST", "/feedback", async ({ member, body, ctx }) => {
     const kind = body.kind;
-    if (!["idea", "bug", "hello"].includes(kind)) fail("Bir mesaj türü seç.");
+    if (!REQUEST_KINDS.includes(kind)) fail("Bir mesaj türü seç.");
     const value = text(body.text, 1200, "Mesaj", 5),
-      id = crypto.randomUUID();
+      id = crypto.randomUUID(),
+      now = Date.now();
     const recent = await db.get(
       "SELECT count(*) AS n FROM feedback WHERE member_id = ? AND created > ?",
-      [member.id, Date.now() - HOUR],
+      [member.id, now - HOUR],
     );
     if (recent.n >= 8) fail("Mesajların ulaştı! Yeni bir not için biraz bekle.", 429);
-    await db.run(
-      "INSERT INTO feedback (id, member_id, kind, text, status, created) VALUES (?, ?, ?, ?, 'new', ?)",
-      [id, member.id, kind, value, Date.now()],
-    );
-    return json({ id }, 201);
+    await db.batch([
+      [
+        "INSERT INTO feedback (id, member_id, kind, text, status, created, updated) VALUES (?, ?, ?, ?, 'new', ?, ?)",
+        [id, member.id, kind, value, now, now],
+      ],
+      [
+        "INSERT INTO feedback_events (id, feedback_id, status, created) VALUES (?, ?, 'new', ?)",
+        [crypto.randomUUID(), id, now],
+      ],
+    ]);
+    const what = { idea: "bir fikir yolladı 💡", bug: "bir hata bildirdi 🐛", hello: "sana iki çift laf etti 💬" };
+    await notifyOwner(ctx, {
+      title: `${member.name} ${what[kind]}`,
+      body: value.length > 90 ? `${value.slice(0, 90)}…` : value,
+      url: "/batur",
+    });
+    return json({ id, item: (await requests("f.id = ?", [id], { limit: 1 }))[0] }, 201);
   });
 
   route("GET", "/feedback", async ({ member }) =>
-    json(
-      await db.all(
-        "SELECT id, kind, text, status, created FROM feedback WHERE member_id = ? ORDER BY created DESC LIMIT 30",
-        [member.id],
-      ),
-    ),
+    json(await requests("f.member_id = ?", [member.id])),
   );
 
   // Batur's box. Protected by ADMIN_KEY, or — when the host has no secret set —
   // by a key Batur chooses on the first visit to /batur.
-  route("GET", "/owner/status", async () => {
-    if (config.adminKey) return json({ claimed: true });
-    return json({ claimed: !!(await db.get("SELECT 1 AS hit FROM settings WHERE key = 'owner-hash'")) });
+  route("GET", "/owner/status", async ({ request }) =>
+    json({
+      claimed: !!(await ownerHash()),
+      signedIn: await ownerSignedIn(request),
+      pushPublicKey: vapid.publicKey,
+    }),
+  false);
+
+  route("POST", "/owner/push", async ({ request, ip, body }) => {
+    await requireOwner(request, ip);
+    const clean = validSubscription(body.subscription);
+    await db.run(
+      "INSERT INTO owner_subscriptions (endpoint, subscription) VALUES (?, ?) ON CONFLICT(endpoint) DO UPDATE SET subscription = excluded.subscription",
+      [clean.endpoint, JSON.stringify(clean)],
+    );
+    return json({ ok: true });
   }, false);
 
-  route("POST", "/owner/claim", async ({ body, ip }) => {
-    limit(`${ip}:owner`, 30);
+  route("DELETE", "/owner/push", async ({ request, ip, body }) => {
+    await requireOwner(request, ip);
+    await db.run("DELETE FROM owner_subscriptions WHERE endpoint = ?", [String(body.endpoint || "")]);
+    return json({ ok: true });
+  }, false);
+
+  route("POST", "/owner/claim", async ({ request, body, ip }) => {
+    limit(`${ip}:owner`, 20);
     if (config.adminKey) fail("Bu kutunun anahtarı yayın ayarlarında tanımlı.", 409);
     const key = text(body.key, 200, "Anahtar", 12);
     const result = await db.run(
@@ -805,22 +936,45 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       [await sha(key)],
     );
     if (!result.changes) fail("Bu kutunun zaten bir sahibi var.", 409);
-    return json({ ok: true }, 201);
+    return json({ ok: true }, 201, { "Set-Cookie": await ownerSessionCookie(request) });
+  }, false);
+
+  route("POST", "/owner/login", async ({ request, body, ip }) => {
+    if (!(await keyMatches(typeof body.key === "string" ? body.key : "", ip)))
+      fail("Bu anahtar Batur’un kutusunu açmıyor.", 401);
+    return json({ ok: true }, 200, { "Set-Cookie": await ownerSessionCookie(request) });
+  }, false);
+
+  route("POST", "/owner/logout", async ({ request }) => {
+    const token = readCookie(request, "kutup_owner");
+    if (token) await db.run("DELETE FROM owner_sessions WHERE token = ?", [await sha(token)]);
+    return json({ ok: true }, 200, {
+      "Set-Cookie": cookie(request, "kutup_owner", "", 0, "/api/owner", "Strict"),
+    });
   }, false);
 
   route("GET", "/owner/feedback", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    return json(
-      await db.all(
-        "SELECT f.id, f.kind, f.text, f.status, f.created, m.name, m.avatar, m.color, g.name AS group_name FROM feedback f JOIN members m ON m.id = f.member_id JOIN groups g ON g.id = m.group_id ORDER BY f.created DESC LIMIT 500",
-      ),
-    );
+    return json(await requests("1 = 1", [], { sender: true, limit: 500 }));
   }, false);
 
-  route("POST", "/owner/feedback/:id", async ({ request, ip, params, body }) => {
+  route("POST", "/owner/feedback/:id", async ({ request, ip, params, body, ctx }) => {
     await requireOwner(request, ip);
-    if (!["new", "planned", "done"].includes(body.status)) fail("Geçersiz durum.");
-    await db.run("UPDATE feedback SET status = ? WHERE id = ?", [body.status, params.id]);
+    return json({ item: await updateRequest(ctx, params.id, body) });
+  }, false);
+
+  // Opening a request in the panel counts as "Batur inceledi".
+  route("POST", "/owner/feedback/:id/seen", async ({ request, ip, params, ctx }) => {
+    await requireOwner(request, ip);
+    return json({ item: await updateRequest(ctx, params.id, { status: "seen" }, { onlyIfNew: true }) });
+  }, false);
+
+  route("DELETE", "/owner/feedback/:id", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    await db.batch([
+      ["DELETE FROM feedback_events WHERE feedback_id = ?", [params.id]],
+      ["DELETE FROM feedback WHERE id = ?", [params.id]],
+    ]);
     return json({ ok: true });
   }, false);
 

@@ -49,16 +49,24 @@ import {
   COLOR_NAMES,
   THEMES,
   STATUS,
-  FEEDBACK,
-  FEEDBACK_STATUS,
   shortTime,
-  dateLabel,
   dayInput,
   dayWord,
   sinceLabel,
   minutesLabel,
   DEMO,
 } from "./api.js";
+import {
+  Avatar,
+  Busy,
+  Empty,
+  pushKey,
+  pushSupported,
+  reducedMotion,
+  storage,
+} from "./ui.jsx";
+import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
+import { OwnerPage } from "./Owner.jsx";
 
 const nav = [
   { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
@@ -67,51 +75,16 @@ const nav = [
   { id: "board", label: "Bizim pano", short: "Pano", icon: MessageCircle },
 ];
 const TABS = ["home", "plans", "focus", "board", "feedback"];
-const storage = {
-  get(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  set(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch {}
-  },
-};
 const isIOS =
   /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const standalone =
   window.matchMedia?.("(display-mode: standalone)").matches ||
   navigator.standalone === true;
-const pushSupported =
-  "Notification" in window &&
-  "PushManager" in window &&
-  "serviceWorker" in navigator;
 const startParams = new URLSearchParams(location.search);
+let introPlayed = false;
 function Icon({ name: Component, ...props }) {
   return <Component size={19} strokeWidth={1.8} {...props} />;
-}
-function Avatar({ member, size = "", className = "" }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`avatar ${member?.color || "lilac"} ${size} ${className}`}
-    >
-      {member?.avatar || "🪐"}
-    </span>
-  );
-}
-function Busy({ children, loading, ...props }) {
-  return (
-    <button disabled={loading} {...props}>
-      {loading ? <LoaderCircle size={17} className="spin" /> : null}
-      {children}
-    </button>
-  );
 }
 function Badge({ status }) {
   return (
@@ -119,15 +92,6 @@ function Badge({ status }) {
       <i />
       {STATUS[status]?.[0] || status}
     </span>
-  );
-}
-function Empty({ emoji, title, children }) {
-  return (
-    <div className="empty">
-      <span>{emoji}</span>
-      <h3>{title}</h3>
-      <p>{children}</p>
-    </div>
   );
 }
 function Modal({ title, subtitle, children, close, wide = false }) {
@@ -206,38 +170,46 @@ function HeroArt() {
           fill="#c9c3ed"
           opacity=".5"
         />
-        <g transform="rotate(-9 146 170)">
-          <rect x="66" y="165" width="155" height="31" rx="5" fill="#6d5bd3" />
-          <path d="M75 170h139v19H75z" fill="#fffbed" />
-          <path d="M85 175h125M85 181h125" stroke="#ddd6bf" strokeWidth="2" />
-          <path d="M72 166v29" stroke="#483b91" strokeWidth="6" />
+        <g className="art-book-a">
+          <g transform="rotate(-9 146 170)">
+            <rect x="66" y="165" width="155" height="31" rx="5" fill="#6d5bd3" />
+            <path d="M75 170h139v19H75z" fill="#fffbed" />
+            <path d="M85 175h125M85 181h125" stroke="#ddd6bf" strokeWidth="2" />
+            <path d="M72 166v29" stroke="#483b91" strokeWidth="6" />
+          </g>
         </g>
-        <g transform="rotate(6 150 152)">
-          <rect x="80" y="135" width="160" height="27" rx="4" fill="#f48259" />
-          <path d="M88 141h146v14H88z" fill="#fff9e9" />
-          <path d="M100 147h127" stroke="#e3ddc4" strokeWidth="2" />
-          <path d="M87 136v24" stroke="#d46743" strokeWidth="5" />
+        <g className="art-book-b">
+          <g transform="rotate(6 150 152)">
+            <rect x="80" y="135" width="160" height="27" rx="4" fill="#f48259" />
+            <path d="M88 141h146v14H88z" fill="#fff9e9" />
+            <path d="M100 147h127" stroke="#e3ddc4" strokeWidth="2" />
+            <path d="M87 136v24" stroke="#d46743" strokeWidth="5" />
+          </g>
         </g>
-        <path
-          d="M90 63q37-10 71 10v76q-39-18-71-9z"
-          fill="#fffdf4"
-          stroke="#b7afd7"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M161 73q33-20 70-11v77q-37-7-70 10z"
-          fill="#f9f6e9"
-          stroke="#b7afd7"
-          strokeWidth="1.5"
-        />
-        <path d="M161 74v74" stroke="#ded8c7" strokeWidth="3" />
-        <path
-          d="M103 78q19-3 43 7m-43 6q19-3 43 7m-43 6q19-3 32 3m43-20q20-9 39-9m-39 23q20-9 39-9m-39 23q20-9 29-9"
-          stroke="#bcb6cf"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path d="M189 64v39l8-7 8 4V60" fill="#a3be73" />
+        <g className="art-open">
+          <path
+            d="M90 63q37-10 71 10v76q-39-18-71-9z"
+            fill="#fffdf4"
+            stroke="#b7afd7"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M161 73q33-20 70-11v77q-37-7-70 10z"
+            fill="#f9f6e9"
+            stroke="#b7afd7"
+            strokeWidth="1.5"
+          />
+          <path d="M161 74v74" stroke="#ded8c7" strokeWidth="3" />
+          <path
+            className="art-lines"
+            d="M103 78q19-3 43 7m-43 6q19-3 43 7m-43 6q19-3 32 3m43-20q20-9 39-9m-39 23q20-9 39-9m-39 23q20-9 29-9"
+            stroke="#bcb6cf"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          <path d="M189 64v39l8-7 8 4V60" fill="#a3be73" />
+        </g>
+        <g className="art-cup">
         <g transform="rotate(-13 67 123)">
           <path d="M36 109h45l-5 55q-17 12-34 0z" fill="#d4e996" />
           <ellipse cx="58" cy="109" rx="26" ry="6" fill="#9db75c" />
@@ -257,9 +229,10 @@ function HeroArt() {
             fill="none"
           />
         </g>
+        </g>
         <g fill="#6854c8">
-          <path d="m238 41 3 10 10 3-10 4-3 10-4-10-10-4 10-3z" />
-          <path d="m47 50 2 7 7 2-7 2-2 7-2-7-7-2 7-2z" />
+          <path className="art-spark" d="m238 41 3 10 10 3-10 4-3 10-4-10-10-4 10-3z" />
+          <path className="art-spark late" d="m47 50 2 7 7 2-7 2-2 7-2-7-7-2 7-2z" />
         </g>
         <path
           d="m252 111 6-10m4 21 10-2M110 34l-3-12m-5 17-10-7"
@@ -300,6 +273,39 @@ export default function App() {
   const [notificationOn, setNotificationOn] = useState(false),
     [now, setNow] = useState(Date.now());
   const ownerPage = location.pathname === "/batur";
+  const requestUpdates = useRequestUpdates(session, tab);
+  // The opening sequence plays once per visit, never when switching tabs.
+  const [intro, setIntro] = useState(() => {
+    const play = !introPlayed && !reducedMotion();
+    introPlayed = true;
+    return play;
+  });
+  useEffect(() => {
+    if (!intro) return;
+    const timer = setTimeout(() => setIntro(false), 2600);
+    return () => clearTimeout(timer);
+  }, []);
+  // Friends who just switched to "Kütüpte" get a short glow on their card.
+  const [arrived, setArrived] = useState([]);
+  const lastStatus = useRef(null);
+  useEffect(() => {
+    if (!session) {
+      lastStatus.current = null;
+      return;
+    }
+    const previous = lastStatus.current;
+    lastStatus.current = new Map(data.members.map((m) => [m.id, m.status]));
+    if (!previous) return;
+    const fresh = data.members
+      .filter((m) => m.status === "here" && previous.get(m.id) !== "here")
+      .map((m) => m.id);
+    if (!fresh.length) return;
+    setArrived((list) => [...list, ...fresh]);
+    setTimeout(
+      () => setArrived((list) => list.filter((id) => !fresh.includes(id))),
+      4200,
+    );
+  }, [data, session]);
   const me = data.members.find((m) => m.id === session?.memberId);
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
@@ -521,18 +527,11 @@ export default function App() {
         return;
       }
       const registration = await navigator.serviceWorker.ready;
-      const base64 = session.pushPublicKey
-        .replace(/-/g, "+")
-        .replace(/_/g, "/");
-      const applicationServerKey = Uint8Array.from(
-        atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")),
-        (c) => c.charCodeAt(0),
-      );
       const sub =
         (await registration.pushManager.getSubscription()) ||
         (await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey,
+          applicationServerKey: pushKey(session.pushPublicKey),
         }));
       await api("/push", { subscription: sub.toJSON() });
       setNotificationOn(true);
@@ -562,7 +561,7 @@ export default function App() {
         : m.status === filter),
   );
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${intro ? "intro" : ""}`}>
       {mobileMenu && (
         <div className="sidebar-scrim" onClick={() => setMobileMenu(false)} />
       )}
@@ -612,7 +611,13 @@ export default function App() {
         >
           <Send size={19} />
           <span>Batur’a ilet</span>
-          <span className="tiny-star">✧</span>
+          {requestUpdates.count ? (
+            <b aria-label={`${requestUpdates.count} yeni gelişme`}>
+              {requestUpdates.count}
+            </b>
+          ) : (
+            <span className="tiny-star">✧</span>
+          )}
         </button>
         <button
           className="nav-item"
@@ -720,6 +725,7 @@ export default function App() {
           </div>
         )}
         <div className="page-content">
+          <div className="tab-stage" key={tab}>
           <div className="page-heading">
             <div>
               <div className="eyebrow">
@@ -782,10 +788,15 @@ export default function App() {
                   <span className="hero-location">
                     <MapPin size={13} /> MİLLİ KÜTÜPHANE, ANKARA
                   </span>
-                  <h2>
-                    Aynı masa.
-                    <br />
-                    Aynı motivasyon<span>.</span>
+                  <h2 className="kinetic" aria-label="Aynı masa. Aynı motivasyon.">
+                    <span className="line" aria-hidden="true">
+                      <span>Aynı masa.</span>
+                    </span>
+                    <span className="line" aria-hidden="true">
+                      <span>
+                        Aynı motivasyon<b className="dot">.</b>
+                      </span>
+                    </span>
                   </h2>
                   <p>
                     Kütüphane daha iyi bir yer.
@@ -891,9 +902,11 @@ export default function App() {
                   </span>
                 </div>
                 <div className="member-grid">
-                  {visibleMembers.map((m) => (
+                  {visibleMembers.map((m, i) => (
                     <MemberCard
                       key={m.id}
+                      index={i}
+                      arrived={arrived.includes(m.id)}
                       member={m}
                       mine={m.id === me?.id}
                       now={now}
@@ -1069,8 +1082,10 @@ export default function App() {
               me={me}
               requireMember={requireMember}
               notify={notify}
+              onSeen={requestUpdates.clear}
             />
           )}
+          </div>
           <footer className="page-footer">
             <span>
               Biraz çalışma, biraz muhabbet. <span>kütüp ✳</span>
@@ -1098,6 +1113,7 @@ export default function App() {
         >
           <Send size={19} />
           <span>Batur’a</span>
+          {requestUpdates.count > 0 && <i className="nav-badge" aria-hidden="true" />}
         </button>
       </nav>
       {modal === "onboard" && (
@@ -1167,9 +1183,25 @@ export default function App() {
   );
 }
 
-function MemberCard({ member: m, mine, now, onClick }) {
+// Each digit is its own element keyed by value, so only the digit that changed
+// re-mounts and rolls in.
+function Roll({ value }) {
+  return String(value)
+    .padStart(2, "0")
+    .split("")
+    .map((digit, i) => (
+      <span className="roll" key={`${i}-${digit}`}>
+        {digit}
+      </span>
+    ));
+}
+function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false }) {
   return (
-    <button className={`member-card ${m.color}`} onClick={onClick}>
+    <button
+      className={`member-card ${m.color} ${arrived ? "arrived" : ""}`}
+      style={{ "--i": index }}
+      onClick={onClick}
+    >
       <div className="member-card-top">
         <Avatar member={m} />
         <Badge status={m.status} />
@@ -1239,7 +1271,9 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
     setBusy(false);
   };
   return (
-    <section className={`focus-card ${compact ? "compact" : ""}`}>
+    <section
+      className={`focus-card ${compact ? "compact" : ""} ${running ? "running" : ""}`}
+    >
       <div className="focus-card-header">
         <span>
           <Headphones size={18} /> ODAK MODU
@@ -1271,9 +1305,9 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           />
         </svg>
         <div className="timer-digits">
-          {String(Math.floor(seconds / 60)).padStart(2, "0")}
+          <Roll value={Math.floor(seconds / 60)} />
           <i>:</i>
-          {String(seconds % 60).padStart(2, "0")}
+          <Roll value={seconds % 60} />
           <span>
             {running ? "sen, işin ve biraz sessizlik" : "dakika sadece kendine"}
           </span>
@@ -2443,460 +2477,4 @@ function WeekBoard({ members, me }) {
       <p className="week-note">Pazartesi sıfırlanır · tamamlanan seanslar sayılır</p>
     </section>
   );
-}
-function FeedbackPage({ me, requireMember, notify }) {
-  const [kind, setKind] = useState("idea"),
-    [text, setText] = useState(""),
-    [busy, setBusy] = useState(false),
-    [sent, setSent] = useState(false),
-    [mine, setMine] = useState([]);
-  useEffect(() => {
-    if (me)
-      get("/feedback")
-        .then(setMine)
-        .catch(() => {});
-  }, [me?.id, sent]);
-  const send = (e) => {
-    e.preventDefault();
-    requireMember(async () => {
-      setBusy(true);
-      try {
-        await api("/feedback", { kind, text });
-        setText("");
-        setSent(true);
-        notify("Notun Batur’un kutusunda. İyi ki yazdın. 💌");
-      } catch (e) {
-        notify(e.message);
-      } finally {
-        setBusy(false);
-      }
-    });
-  };
-  return (
-    <div className="feedback-layout">
-      <div>
-        <section className="feedback-card">
-          <div className="feedback-intro">
-            <span className="feedback-stamp">
-              Batur’a
-              <br />
-              <b>özel posta ↗</b>
-            </span>
-            <span className="envelope-art">💌</span>
-            <span className="eyebrow">OKUNDUĞUN BİR YER</span>
-            <h2>
-              “Aga, aklıma
-              <br />
-              bir şey geldi…”
-            </h2>
-            <p>Tam olarak bunun için buradayız.</p>
-          </div>
-          {sent ? (
-            <div className="feedback-success">
-              <span>✳</span>
-              <h3>Mesajın yerini buldu.</h3>
-              <p>
-                Batur’un özel kutusunda. Aşağıdan durumunu takip edebilirsin.
-              </p>
-              <button className="btn outline" onClick={() => setSent(false)}>
-                Bir not daha bırak <Plus size={15} />
-              </button>
-            </div>
-          ) : (
-            <form className="feedback-form" onSubmit={send}>
-              <label className="field-label">Hangi kafadayız?</label>
-              <div className="feedback-types">
-                {Object.entries(FEEDBACK).map(([id, [emoji, title]]) => (
-                  <button
-                    type="button"
-                    key={id}
-                    onClick={() => setKind(id)}
-                    className={kind === id ? "selected" : ""}
-                  >
-                    <span>{emoji}</span>
-                    {title}
-                    {kind === id && <Check size={14} />}
-                  </button>
-                ))}
-              </div>
-              <label className="field-label" htmlFor="feedback-text">
-                Anlat bakalım
-              </label>
-              <textarea
-                id="feedback-text"
-                required
-                minLength={5}
-                maxLength={1200}
-                rows={6}
-                placeholder={FEEDBACK[kind][2]}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-              <div className="feedback-form-meta">
-                <span>
-                  <ShieldCheck size={14} /> Sadece Batur görür.
-                </span>
-                <span>{text.length}/1200</span>
-              </div>
-              <Busy loading={busy} className="btn dark full" type="submit">
-                Batur’a uçur <Send size={17} />
-              </Busy>
-            </form>
-          )}
-        </section>
-        {mine.length > 0 && (
-          <section className="panel my-feedback">
-            <h3>Uçurduğun notlar</h3>
-            {mine.map((f) => (
-              <article key={f.id}>
-                <span>{FEEDBACK[f.kind][0]}</span>
-                <div>
-                  <p>{f.text}</p>
-                  <small>
-                    {dateLabel(f.created)} · <b>{FEEDBACK_STATUS[f.status]}</b>
-                  </small>
-                </div>
-              </article>
-            ))}
-          </section>
-        )}
-      </div>
-      <aside className="feedback-aside">
-        <div className="batur-avatar">
-          👨‍💻<span>burayı yapan eleman</span>
-        </div>
-        <h3>Selam, ben Batur.</h3>
-        <p>
-          Burası hepimizin biraz daha severek kullanacağı bir yer olsun
-          istiyorum.
-        </p>
-        <p>
-          Bir şeye takıldın mı, “şu olsa efsane olur” mu dedin? Yaz. Cidden
-          okuyorum.
-        </p>
-        <span className="handwritten">beraber güzelleştirelim ↙</span>
-        <div className="feedback-promise">
-          <Heart size={18} />
-          <p>
-            Kötü fikir yok.
-            <br />
-            Söylenmemiş fikir var.
-          </p>
-        </div>
-      </aside>
-    </div>
-  );
-}
-function OwnerPage() {
-  const [key, setKey] = useState(""),
-    [confirmKey, setConfirmKey] = useState(""),
-    [claimed, setClaimed] = useState(null),
-    [items, setItems] = useState(null),
-    [groups, setGroups] = useState([]),
-    [view, setView] = useState("notes"),
-    [filter, setFilter] = useState("all"),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  useEffect(() => {
-    get("/owner/status")
-      .then((d) => setClaimed(d.claimed))
-      .catch(() => setClaimed(true));
-  }, []);
-  const owner = (path, body, method = "GET") =>
-    api(path, body, method, { "X-Owner-Key": key });
-  const load = async (e) => {
-    e?.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const [notes, teams] = await Promise.all([
-        owner("/owner/feedback"),
-        owner("/owner/groups"),
-      ]);
-      setItems(notes);
-      setGroups(teams);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const claim = async (e) => {
-    e.preventDefault();
-    if (key !== confirmKey) {
-      setError("İki anahtar aynı değil.");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      await api("/owner/claim", { key });
-      setClaimed(true);
-      await load();
-    } catch (e) {
-      setError(e.message);
-      setBusy(false);
-    }
-  };
-  const act = async (fn) => {
-    try {
-      await fn();
-      await load();
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-  const shown = (items || []).filter(
-    (x) => filter === "all" || x.status === filter,
-  );
-  return (
-    <main className="owner-page">
-      <a className="brand" href="/">
-        kütüp<span>✳</span>
-      </a>
-      <div className="owner-heading">
-        <span className="eyebrow">BATUR’A ÖZEL</span>
-        <h1>Tayfadan sana. 💌</h1>
-        <p>
-          Fikirler, geri dönüşler, küçük bug’lar ve ekipler. Hepsi bir kutuda.
-        </p>
-      </div>
-      {!items ? (
-        claimed === false ? (
-          <form className="panel owner-login" onSubmit={claim}>
-            <p className="form-warning">
-              <Lock size={14} /> Kutu henüz kilitlenmedi. Şimdi kendi anahtarını
-              belirle; bundan sonra sadece bu anahtar açar.
-            </p>
-            <label className="field-label">
-              Yeni anahtar <span>en az 12 karakter</span>
-              <input
-                type="password"
-                minLength={12}
-                required
-                autoComplete="new-password"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-              />
-            </label>
-            <label className="field-label">
-              Bir kez daha
-              <input
-                type="password"
-                minLength={12}
-                required
-                autoComplete="new-password"
-                value={confirmKey}
-                onChange={(e) => setConfirmKey(e.target.value)}
-              />
-            </label>
-            {error && <p className="form-error">{error}</p>}
-            <Busy loading={busy} className="btn primary full" type="submit">
-              Kutuyu kilitle ve aç <KeyRound size={16} />
-            </Busy>
-            <p className="form-footnote">
-              Anahtarı bir yere not et. Unutursan yayın ayarlarına ADMIN_KEY
-              ekleyerek yenisini tanımlayabilirsin.
-            </p>
-          </form>
-        ) : (
-          <form className="panel owner-login" onSubmit={load}>
-            <label className="field-label">
-              Yönetici anahtarı
-              <input
-                type="password"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                autoComplete="current-password"
-                required
-                placeholder="Sadece sende olan anahtar"
-              />
-            </label>
-            {error && <p className="form-error">{error}</p>}
-            <Busy loading={busy} className="btn primary full" type="submit">
-              Kutuyu aç <ArrowRight size={16} />
-            </Busy>
-            <p className="form-footnote">
-              Kutuyu ilk açarken belirlediğin anahtar ya da yayın ayarlarındaki
-              ADMIN_KEY. Yerelde: data/batur-key.txt
-            </p>
-          </form>
-        )
-      ) : (
-        <>
-          <div className="owner-toolbar">
-            <div className="filter-row">
-              <button
-                className={`filter-chip ${view === "notes" ? "selected" : ""}`}
-                onClick={() => setView("notes")}
-              >
-                Notlar <span>{items.length}</span>
-              </button>
-              <button
-                className={`filter-chip ${view === "groups" ? "selected" : ""}`}
-                onClick={() => setView("groups")}
-              >
-                Ekipler <span>{groups.length}</span>
-              </button>
-            </div>
-            <button className="btn outline" onClick={() => load()}>
-              <RefreshCw size={15} /> Yenile
-            </button>
-            <button
-              className="text-button"
-              onClick={() => {
-                setItems(null);
-                setKey("");
-                setConfirmKey("");
-              }}
-            >
-              <Lock size={15} /> Kilitle
-            </button>
-          </div>
-          {error && <p className="form-error">{error}</p>}
-          {view === "notes" ? (
-            <>
-              <div className="filter-row owner-filters">
-                {[
-                  ["all", "Hepsi"],
-                  ["new", "Yeni"],
-                  ["planned", "Listemde"],
-                  ["done", "Hallettim"],
-                ].map(([id, name]) => (
-                  <button
-                    className={`filter-chip ${filter === id ? "selected" : ""}`}
-                    key={id}
-                    onClick={() => setFilter(id)}
-                  >
-                    {name}
-                    <span>
-                      {
-                        items.filter((x) => id === "all" || x.status === id)
-                          .length
-                      }
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="owner-grid">
-                {shown.map((f) => (
-                  <article className="panel owner-note" key={f.id}>
-                    <div className="message-meta">
-                      <Avatar member={f} size="small" />
-                      <div>
-                        <strong>{f.name}</strong>
-                        <small>{f.group_name}</small>
-                      </div>
-                      <span>
-                        {FEEDBACK[f.kind]?.[0]} {FEEDBACK[f.kind]?.[1]}
-                      </span>
-                    </div>
-                    <p>{f.text}</p>
-                    <div className="owner-note-bottom">
-                      <time>
-                        {dateLabel(f.created)} · {shortTime(f.created)}
-                      </time>
-                      <select
-                        aria-label={`${f.name} mesajının durumu`}
-                        value={f.status}
-                        onChange={(e) => {
-                          const status = e.target.value;
-                          act(() =>
-                            owner(`/owner/feedback/${f.id}`, { status }, "POST"),
-                          );
-                        }}
-                      >
-                        {Object.entries(FEEDBACK_STATUS).map(([id, title]) => (
-                          <option key={id} value={id}>
-                            {title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </article>
-                ))}
-              </div>
-              {!shown.length && (
-                <Empty emoji="📭" title="Bu göz şimdilik boş.">
-                  Ekibin yazdıkça notlar burada toplanacak.
-                </Empty>
-              )}
-            </>
-          ) : (
-            <div className="owner-groups">
-              {groups.map((g) => (
-                <article className="panel owner-group" key={g.id}>
-                  <div className="owner-group-head">
-                    <div>
-                      <h2>{g.name}</h2>
-                      <small>
-                        {g.members.length} kişi
-                        {g.created ? ` · ${dateLabel(g.created)} kuruldu` : ""}
-                      </small>
-                    </div>
-                    <button
-                      className="btn outline"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            "Davet bağlantısı yenilensin mi? Eski bağlantı çalışmaz; yenisini ekip içinden paylaşırsınız.",
-                          )
-                        )
-                          act(() =>
-                            owner(`/owner/groups/${g.id}/invite`, {}, "POST"),
-                          );
-                      }}
-                    >
-                      <RefreshCw size={15} /> Daveti yenile
-                    </button>
-                  </div>
-                  <ul>
-                    {g.members.map((m) => (
-                      <li key={m.id}>
-                        <Avatar member={m} size="small" />
-                        <div>
-                          <strong>{m.name}</strong>
-                          <small>
-                            {STATUS[m.status]?.[0]} · son görülme{" "}
-                            {m.seen
-                              ? `${dateLabel(m.seen)} ${shortTime(m.seen)}`
-                              : "—"}
-                          </small>
-                        </div>
-                        <button
-                          className="icon-button"
-                          aria-label={`${m.name} kişisini ekipten çıkar`}
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `${m.name} ekipten çıkarılsın mı? Profili, mesajları ve planları silinir.`,
-                              )
-                            )
-                              act(() =>
-                                owner(
-                                  `/owner/members/${m.id}`,
-                                  undefined,
-                                  "DELETE",
-                                ),
-                              );
-                          }}
-                        >
-                          <UserMinus size={17} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
-              {!groups.length && (
-                <Empty emoji="🪑" title="Henüz ekip yok.">
-                  Ana sayfadan ilk ekibi kurduğunda burada görünür.
-                </Empty>
-              )}
-            </div>
-          )}
-        </>
-      )}
-    </main>
-  );
-}
+}

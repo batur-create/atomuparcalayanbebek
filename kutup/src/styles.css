@@ -82,7 +82,7 @@ h1,
 h2,
 h3,
 .brand {
-  font-family: "Manrope", sans-serif;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
 }
 input,
 textarea,
@@ -1742,7 +1742,7 @@ button:active {
   flex-shrink: 0;
 }
 .plan-date b {
-  font-family: Manrope, sans-serif;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
   font-size: 31px;
   letter-spacing: -1px;
   color: var(--accent-deep);
@@ -4344,7 +4344,7 @@ a.btn {
 }
 .setup-card strong {
   display: block;
-  font-family: "Manrope", sans-serif;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
   font-size: 15px;
 }
 .setup-card p {
@@ -4453,7 +4453,7 @@ a.btn {
   border: 1px dashed var(--accent);
   border-radius: 10px;
   background: var(--paper);
-  font-family: "Manrope", sans-serif;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
   font-size: 26px;
   letter-spacing: 3px;
   color: var(--accent-deep);
@@ -4466,7 +4466,7 @@ a.btn {
   color: #8e8a7d;
 }
 input.code-input {
-  font-family: "Manrope", sans-serif;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
   font-size: 22px;
   letter-spacing: 4px;
   text-align: center;

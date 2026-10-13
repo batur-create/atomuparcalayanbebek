@@ -15,7 +15,9 @@ Bu klasör bağımsız bir projedir; üst klasördeki mağaza uygulamasını kul
 - **Odak odası.** 25, 45 ve 50 dakikalık seanslar, arkadaşının seansına katılma, sekme başlığında geri sayım, **Haftanın odak tablosu** (🥇🥈🥉, pazartesi sıfırlanır). Bitmiş seanslar uygulama kapalıyken de sayılır.
 - **Bizim pano.** Mesajlar, kalpler, kahve davetleri. Gelip gitme hareketleri gerçek mesajları panodan itmez.
 - **Başka cihazda aç.** “Benim köşem → Başka cihazda aç” 15 dakikalık tek kullanımlık kod verir. iPhone’da Safari ile ana ekran uygulamasının oturumları ayrı tutulduğu için bu gerekli.
-- **Batur’a ilet** ve **`/batur`** yönetici kutusu: notlar, ekipler, davet bağlantısını yenileme, birini ekipten çıkarma.
+- **Batur’a ilet: kargo takibi gibi istek sistemi.** Fikir, hata ya da iki çift laf; farklı alanlardan tıklayınca dolan ilham örnekleri. Gönderince zarf uçar, “Kutuya düştü ✓” damgası iner. Her istek *Gönderildi → İncelendi → Kabul edildi → Yapılıyor → Yayında* (ya da *Bu sefer olmadı*) çizgisinde ilerler. Batur açtığı an “İncelendi” olur, sonraki aşamaları panelden tek tuşla seçer, isterse not yazar. Gönderene her adımda bildirim gider, menüde “yeni gelişme” rozeti çıkar, kabul ve yayın anında küçük bir kutlama patlar.
+- **`/batur` paneli:** istekler (aşama filtreleri, gönderen ve ekip bilgisi, geçmiş, arkadaşın gördüğü takip çizgisinin önizlemesi), yeni istek bildirimleri, ekipler, davet bağlantısını yenileme, birini ekipten çıkarma.
+- **Hareket ve tipografi:** başlıklar Bricolage Grotesque. Açılışta tek bir koreografi var: başlık satır satır maskeden kayar, kitaplar yerine oturur, kartlar masaya dağılır. Geri kalan hareketler bir eyleme cevap verir: sekme geçişi, gelen arkadaşın kartında parlama, odak sayacında rakam kayması. “Hareketi azalt” ayarı açık cihazlarda animasyonlar kapanır.
 - **Ekipten ayrıl.** Profil, mesajlar ve planlar silinir.
 - Kurulabilir PWA: ana ekran kısayolları (Ben geldim!, Odak, Pano).
 
@@ -69,7 +71,7 @@ Docker: `docker build -t kutup . && docker run -d -p 3001:3001 -v kutup-data:/ap
 - **Yerel (Node):** `ADMIN_KEY` verilmezse `data/batur-key.txt` oluşturulur.
 - **ADMIN_KEY tanımlı değilse:** `/batur` ilk açılışta kendi anahtarını belirlemeni ister; bir kez belirlendikten sonra değiştirilemez (ADMIN_KEY tanımlayarak geçersiz kılınabilir).
 
-Anahtar tarayıcıya kaydedilmez; sayfayı yenileyince tekrar istenir.
+Anahtarı bir kez girersin; o cihaz seni 30 gün hatırlar (HttpOnly çerez, sadece `/api/owner` için). “Bu cihazdan çık” çerezi siler. `ADMIN_KEY` değişirse bütün cihazlardaki Batur oturumları kapanır. Panelde “Yeni istekleri bana bildir” açıkken biri istek yolladığında telefonuna bildirim düşer.
 
 ## Bildirimler ve telefona ekleme
 
@@ -93,8 +95,8 @@ Telefonla aynı Wi-Fi’dan denemek için: `HOST=0.0.0.0 npm run dev`.
 ### Testler
 
 ```sh
-npm test             # çekirdek + bildirim şifreleme + Node uçtan uca (21 test)
-npm run test:worker  # aynı senaryolar yerel Cloudflare/D1 üzerinde (14 test)
+npm test             # çekirdek + bildirim şifreleme + Node uçtan uca (23 test)
+npm run test:worker  # aynı senaryolar yerel Cloudflare/D1 üzerinde (15 test)
 npm run test:all
 ```
 
@@ -109,9 +111,14 @@ server/push.js      Web Push (RFC 8291 şifreleme + VAPID), yalnızca Web Crypto
 server/sqlite.js    node:sqlite bağdaştırıcısı
 server/index.js     Node sunucusu: SSE, statik dosyalar, Vite geliştirme modu
 worker/index.js     Cloudflare Worker girişi: D1 bağdaştırıcısı, ASSETS
+shared/requests.js  İstek aşamaları ve metinleri (sunucu ve arayüz ortak)
 src/App.jsx         Arayüz
+src/Requests.jsx    Batur’a ilet: ilham örnekleri, gönderme animasyonu, takip çizgisi
+src/Owner.jsx       /batur paneli
+src/ui.jsx          Ortak küçük bileşenler
 src/api.js          İstemci API’si, yardımcılar ve ön izleme verisi
 src/styles.css      Tasarım, temalar, mobil düzen
+src/motion.css      Açılış koreografisi, hareketler, takip çizgisi ve panel stilleri
 public/sw.js        Bildirim service worker’ı
 tests/              Uçtan uca (Node + Worker), çekirdek ve şifreleme testleri
 wrangler.jsonc      Cloudflare yapılandırması

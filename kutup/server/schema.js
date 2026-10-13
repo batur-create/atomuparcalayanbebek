@@ -40,6 +40,21 @@ const migrations = [
     "CREATE INDEX IF NOT EXISTS feedback_member ON feedback(member_id, created)",
     "CREATE INDEX IF NOT EXISTS members_transfer ON members(transfer_hash)",
   ],
+  // 3 — request tracking for "Batur’a ilet" (stages, Batur’s note, history) and
+  // remembered owner sign-ins.
+  [
+    "ALTER TABLE feedback ADD COLUMN reply TEXT",
+    "ALTER TABLE feedback ADD COLUMN updated INTEGER NOT NULL DEFAULT 0",
+    "UPDATE feedback SET status = 'accepted' WHERE status = 'planned'",
+    "UPDATE feedback SET updated = created WHERE updated = 0",
+    "CREATE TABLE IF NOT EXISTS feedback_events (id TEXT PRIMARY KEY, feedback_id TEXT NOT NULL REFERENCES feedback(id) ON DELETE CASCADE, status TEXT NOT NULL, created INTEGER NOT NULL)",
+    "INSERT INTO feedback_events (id, feedback_id, status, created) SELECT lower(hex(randomblob(16))), id, 'new', created FROM feedback",
+    "INSERT INTO feedback_events (id, feedback_id, status, created) SELECT lower(hex(randomblob(16))), id, status, created + 1 FROM feedback WHERE status <> 'new'",
+    "CREATE INDEX IF NOT EXISTS feedback_events_item ON feedback_events(feedback_id, created)",
+    "CREATE INDEX IF NOT EXISTS feedback_created ON feedback(created)",
+    "CREATE TABLE IF NOT EXISTS owner_sessions (token TEXT PRIMARY KEY, key_hash TEXT NOT NULL, created INTEGER NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS owner_subscriptions (endpoint TEXT PRIMARY KEY, subscription TEXT NOT NULL)",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

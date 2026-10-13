@@ -360,12 +360,84 @@ export function defineSuite(target) {
     assert.equal(inbox.data.length, 1);
     assert.equal(inbox.data[0].name, "Aylin");
     assert.equal(
-      (await request(`/owner/feedback/${feedbackId}`, { owner: adminKey, body: { status: "planned" } })).status,
+      (await request(`/owner/feedback/${feedbackId}`, { owner: adminKey, body: { status: "accepted" } })).status,
       200,
     );
-    assert.equal((await request("/feedback", { cookie: people.alice })).data[0].status, "planned");
+    assert.equal((await request("/feedback", { cookie: people.alice })).data[0].status, "accepted");
     assert.equal((await state("alice")).messages.some((x) => x.text.includes("Ortak okuma")), false);
     assert.equal((await request("/owner/status")).data.claimed, true);
+  });
+
+  test(`[${target}] requests move through stages Batur picks, and the sender is told`, async () => {
+    // Batur signs in once; the panel then works on its cookie alone.
+    assert.equal((await request("/owner/login", { body: { key: "nope" } })).status, 401);
+    const login = await request("/owner/login", { body: { key: adminKey } });
+    assert.equal(login.status, 200);
+    assert.match(login.setCookie, /Path=\/api\/owner/);
+    assert.match(login.setCookie, /SameSite=Strict/);
+    const owner = login.cookie;
+    assert.equal((await request("/owner/status", { cookie: owner })).data.signedIn, true);
+    // Batur's phone hears about new requests.
+    const baturPhone = pushReceiver();
+    assert.equal(
+      (await request("/owner/push", { body: { subscription: baturPhone.subscription(push.url("/push/batur")) } })).status,
+      401,
+    );
+    assert.equal(
+      (await request("/owner/push", {
+        cookie: owner,
+        body: { subscription: baturPhone.subscription(push.url("/push/batur")) },
+      })).status,
+      200,
+    );
+    const sent = await request("/feedback", {
+      cookie: people.bob,
+      body: { kind: "idea", text: "Haftanın en erken geleni için taç rozeti 👑" },
+    });
+    assert.equal(sent.data.item.status, "new");
+    assert.deepEqual(sent.data.item.events.map((e) => e.status), ["new"]);
+    const ownerPush = await waitFor(
+      () => push.received.find((p) => p.path === "/push/batur"),
+      8000,
+      "owner push",
+    );
+    assert.equal(JSON.parse(baturPhone.decrypt(ownerPush.body)).title, "Deniz bir fikir yolladı 💡");
+    const id = sent.data.id;
+    const pushes = () => push.received.filter((p) => p.path === "/push/deniz").length;
+    const before = pushes();
+    // Opening it in the panel marks it as reviewed, once.
+    const seen = await request(`/owner/feedback/${id}/seen`, { cookie: owner, body: {} });
+    assert.equal(seen.data.item.status, "seen");
+    assert.equal(seen.data.item.name, "Deniz");
+    assert.equal(seen.data.item.groupName, "Test tayfa");
+    await waitFor(() => pushes() > before, 8000, "seen push");
+    await request(`/owner/feedback/${id}/seen`, { cookie: owner, body: {} });
+    const accepted = await request(`/owner/feedback/${id}`, {
+      cookie: owner,
+      body: { status: "accepted", reply: "Süper fikir, cumaya hazır!" },
+    });
+    assert.equal(accepted.data.item.status, "accepted");
+    await request(`/owner/feedback/${id}`, { cookie: owner, body: { status: "building" } });
+    const mine = (await request("/feedback", { cookie: people.bob })).data.find((x) => x.id === id);
+    assert.deepEqual(mine.events.map((e) => e.status), ["new", "seen", "accepted", "building"]);
+    assert.equal(mine.reply, "Süper fikir, cumaya hazır!");
+    assert.equal(mine.name, undefined, "senders do not get the owner view");
+    assert.equal(
+      (await request(`/owner/feedback/${id}`, { cookie: owner, body: { status: "planned" } })).status,
+      400,
+    );
+    const hello = await request("/feedback", { cookie: people.bob, body: { kind: "hello", text: "Eline sağlık aga 🫶" } });
+    assert.equal(
+      (await request(`/owner/feedback/${hello.data.id}`, { cookie: owner, body: { status: "building" } })).status,
+      400,
+      "small talk has no build stage",
+    );
+    assert.equal((await request(`/owner/feedback/${hello.data.id}`, { cookie: owner, method: "DELETE" })).status, 200);
+    assert.equal((await request(`/owner/feedback/${id}`, { cookie: people.bob, body: { status: "done" } })).status, 401);
+    await waitFor(() => pushes() >= before + 3, 8000, "stage pushes");
+    // Signing out ends the cookie session.
+    await request("/owner/logout", { cookie: owner, body: {} });
+    assert.equal((await request("/owner/feedback", { cookie: owner })).status, 401);
   });
 
   test(`[${target}] Batur can rotate an invite and remove someone`, async () => {

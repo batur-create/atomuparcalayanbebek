@@ -9,13 +9,9 @@ import "@fontsource/dm-sans/latin-600.css";
 import "@fontsource/dm-sans/latin-ext-600.css";
 import "@fontsource/dm-sans/latin-700.css";
 import "@fontsource/dm-sans/latin-ext-700.css";
-import "@fontsource/manrope/latin-600.css";
-import "@fontsource/manrope/latin-ext-600.css";
-import "@fontsource/manrope/latin-700.css";
-import "@fontsource/manrope/latin-ext-700.css";
-import "@fontsource/manrope/latin-800.css";
-import "@fontsource/manrope/latin-ext-800.css";
+import "@fontsource-variable/bricolage-grotesque/opsz.css";
 import "./styles.css";
+import "./motion.css";
 
 class ErrorBoundary extends React.Component {
   state = { failed: false };

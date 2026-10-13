@@ -17,6 +17,7 @@
     "deploy": "vite build && wrangler deploy"
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/manrope": "^5.2.8",
     "lucide-react": "0.468.0",
