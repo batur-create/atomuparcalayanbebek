@@ -690,7 +690,13 @@ export default function App() {
               }
             >
               <Plus size={16} />
-              <span>{session ? "Arkadaşını çağır" : "Ekibini kur"}</span>
+              <span>
+                {session
+                  ? "Arkadaşını çağır"
+                  : invite
+                    ? "Ekibe katıl"
+                    : "Ekibini kur"}
+              </span>
             </button>
           </div>
         </header>
@@ -698,10 +704,12 @@ export default function App() {
           <div className="demo-banner">
             <Sparkles size={15} />
             <span>
-              Bir küçük ön izleme. Gerçek hikâye senin ekibinle başlasın.
+              {invite
+                ? `Bunlar örnek kişiler. ${inviteInfo?.name || "Ekibin"} seni bekliyor; katılınca gerçek ekibini görürsün.`
+                : "Bir küçük ön izleme. Gerçek hikâye senin ekibinle başlasın."}
             </span>
             <button onClick={() => setModal("onboard")}>
-              Yerini al <ArrowUpRight size={14} />
+              {invite ? "Ekibe katıl" : "Yerini al"} <ArrowUpRight size={14} />
             </button>
           </div>
         )}
@@ -1743,6 +1751,12 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
       close={close}
     >
       <form onSubmit={submit}>
+        {!invite && (
+          <p className="form-warning">
+            Arkadaşın seni davet ettiyse buradan ekip kurma; onun attığı davet
+            linkini aç. Burası yepyeni bir ekip kurar.
+          </p>
+        )}
         {!invite && (
           <label className="field-label">
             Ekibinizin adı
