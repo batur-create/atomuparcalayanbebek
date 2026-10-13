@@ -183,6 +183,10 @@ h3,
 .member-card.arrived .avatar {
   animation: hop 0.8s var(--ease-spring) 2;
 }
+.timer-digits .clock {
+  font-weight: inherit;
+  white-space: nowrap;
+}
 .timer-digits .roll {
   display: inline-block;
   width: 0.62em;
@@ -204,6 +208,59 @@ h3,
 .spark:active,
 .stage-button:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+/* ---------- Fidan modu ---------- */
+.fidan-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin: 14px 0 6px;
+  padding: 11px 13px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ece9dd;
+  text-align: left;
+}
+.fidan-toggle > span:first-child {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.fidan-toggle b {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.fidan-toggle small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #b9bca9;
+}
+.fidan-toggle.on {
+  border-style: solid;
+  border-color: #d6ef9e;
+  background: rgba(214, 239, 158, 0.1);
+}
+@keyframes plant-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.4);
+  }
+}
+.focus-plant {
+  display: inline-block;
+  font-size: 22px;
+  animation: plant-pop 0.7s var(--ease-spring) backwards;
+}
+.member-plant {
+  font-size: 14px;
+}
+.week-trees {
+  white-space: nowrap;
 }
 
 /* ---------- Request tracker ---------- */

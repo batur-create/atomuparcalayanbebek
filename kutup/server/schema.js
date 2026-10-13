@@ -55,6 +55,12 @@ const migrations = [
     "CREATE TABLE IF NOT EXISTS owner_sessions (token TEXT PRIMARY KEY, key_hash TEXT NOT NULL, created INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS owner_subscriptions (endpoint TEXT PRIMARY KEY, subscription TEXT NOT NULL)",
   ],
+  // 4 — "Fidan modu": strict focus sessions that wither if you leave the app.
+  [
+    "ALTER TABLE members ADD COLUMN focus_strict INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_beat INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE focus_log ADD COLUMN strict INTEGER NOT NULL DEFAULT 0",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

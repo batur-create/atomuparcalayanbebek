@@ -290,6 +290,37 @@ export function defineSuite(target) {
     assert.ok(after.messages.filter((m) => m.kind === "system").length >= Math.min(count + 1, 25));
   });
 
+  test(`[${target}] Fidan modu grows a tree only if the app stayed open`, async () => {
+    // Kept the app open to the end: a tree, minutes and a board message.
+    await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 25, strict: true } });
+    assert.equal(member(await state("bob"), "Deniz").focusStrict, 1);
+    assert.deepEqual((await request("/focus", { cookie: people.bob, body: { action: "beat" } })).data, { ok: true });
+    await request("/__test/expire", { body: { name: "Deniz" } });
+    const grown = await request("/focus", { cookie: people.bob, body: { action: "finish" } });
+    assert.equal(grown.data.credited, 25);
+    assert.equal(grown.data.withered, false);
+    const deniz = member(grown.data.state, "Deniz");
+    assert.equal(deniz.treesWeek, 1);
+    assert.equal(deniz.focusWeek, 25);
+    assert.ok(grown.data.state.messages.some((m) => m.text.startsWith("bir ağaç yetiştirdi 🌳 25")));
+    // Closed the app mid-session: no minutes, a withered plant.
+    await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 50, strict: true } });
+    await request("/__test/expire", { body: { name: "Deniz", away: true } });
+    const later = await state("alice"); // anyone's read settles it
+    assert.equal(member(later, "Deniz").focusWeek, 25);
+    assert.equal(member(later, "Deniz").treesWeek, 1);
+    assert.ok(later.messages.some((m) => m.text.startsWith("fidanını kuruttu 🥀")));
+    // Leaving the app (reported by the client) withers it right away.
+    await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 45, strict: true } });
+    const left = await request("/focus", { cookie: people.bob, body: { action: "wither" } });
+    assert.equal(left.data.withered, true);
+    assert.equal(member(left.data.state, "Deniz").focusEnd, 0);
+    // A plain session never withers.
+    await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 25 } });
+    await request("/__test/expire", { body: { name: "Deniz", away: true } });
+    assert.equal(member(await state("bob"), "Deniz").focusWeek, 50);
+  });
+
   test(`[${target}] web push reaches friends, encrypted and signed, with an arrival cooldown`, async () => {
     const receiver = pushReceiver();
     const endpoint = push.url("/push/deniz");

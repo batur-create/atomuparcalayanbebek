@@ -21,6 +21,23 @@ export const pushSupported =
   "Notification" in window &&
   "PushManager" in window &&
   "serviceWorker" in navigator;
+// Fidan modu keeps the screen awake so the phone does not lock itself mid-session.
+let wakeSentinel = null;
+export async function keepScreenOn() {
+  try {
+    if (!wakeSentinel || wakeSentinel.released)
+      wakeSentinel = await navigator.wakeLock?.request("screen");
+  } catch {
+    // Not supported or refused (battery saver): the session still works.
+  }
+}
+export function releaseScreen() {
+  wakeSentinel?.release().catch(() => {});
+  wakeSentinel = null;
+}
+// Growth stage for a Fidan modu session, from 0 to 1.
+export const plantFor = (progress) =>
+  progress < 0.25 ? "🌱" : progress < 0.5 ? "🌿" : progress < 0.8 ? "🪴" : "🌳";
 // VAPID public key (base64url) → the byte array PushManager.subscribe wants.
 export function pushKey(base64url) {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");

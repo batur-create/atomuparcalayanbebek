@@ -142,6 +142,7 @@ export const DEMO = {
       since: now - 95 * 60000,
       focusToday: 75,
       focusWeek: 240,
+      treesWeek: 2,
       focusEnd: 0,
     },
     {
@@ -158,6 +159,7 @@ export const DEMO = {
       focusWeek: 175,
       focusEnd: now + 18 * 60000,
       focusMinutes: 25,
+      focusStrict: 1,
     },
     {
       id: "ege",
@@ -171,6 +173,7 @@ export const DEMO = {
       since: now - 6 * 60000,
       focusToday: 100,
       focusWeek: 300,
+      treesWeek: 1,
       focusEnd: 0,
     },
     {

@@ -24,6 +24,8 @@ const MESSAGE_LIMIT = 50;
 const ACTIVITY_LIMIT = 25;
 const PUSH_COOLDOWN = 45 * 60000;
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const BEAT_GRACE = 90000; // a Fidan modu session must have been seen in its last 90 seconds
+const WITHERED = "fidanını kuruttu 🥀 Telefon bu sefer kazandı.";
 
 class HttpError extends Error {
   constructor(message, status = 400) {
@@ -191,14 +193,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, updated";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, updated";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees] =
       await db.read([
         ["SELECT id, name, invite, rev FROM groups WHERE id = ?", [groupId]],
         [`SELECT ${memberColumns} FROM members WHERE group_id = ? ORDER BY joined`, [groupId]],
         [
-          `SELECT f.member_id AS id, SUM(CASE WHEN f.created >= ? THEN f.minutes ELSE 0 END) AS today, SUM(f.minutes) AS week
+          `SELECT f.member_id AS id, SUM(CASE WHEN f.created >= ? THEN f.minutes ELSE 0 END) AS today, SUM(f.minutes) AS week, SUM(f.strict) AS trees
            FROM focus_log f JOIN members m ON m.id = f.member_id
            WHERE m.group_id = ? AND f.created >= ? GROUP BY f.member_id`,
           [dayStart(now), groupId, weekStart(now)],
@@ -247,6 +249,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           since: expired ? 0 : m.since,
           focusToday: totals.get(m.id)?.today || 0,
           focusWeek: totals.get(m.id)?.week || 0,
+          treesWeek: totals.get(m.id)?.trees || 0,
         };
       }),
       messages: messages
@@ -258,20 +261,31 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // Completed focus sessions are credited by whoever reads the state next, so
   // minutes count even if the owner closed the tab. The conditional SQL makes it
   // safe to run concurrently: only one transaction can move a session to the log.
+  // A "Fidan modu" session only grows a tree if the app was open near the end:
+  // the client beats every 20 seconds while visible.
   const finalizeFocus = (groupId, now, memberId) => {
-    const scope = memberId ? "id = ?" : "group_id = ?";
-    const key = memberId || groupId;
+    const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ?`;
+    const args = [memberId || groupId, now];
+    const present = `focus_beat >= focus_end - ${BEAT_GRACE}`;
+    const event = (text, condition) => [
+      `INSERT INTO messages (id, group_id, member_id, text, kind, created)
+       SELECT lower(hex(randomblob(16))), group_id, id, ${text}, 'system', focus_end FROM members
+       WHERE ${due} AND ${condition}`,
+      args,
+    ];
     return [
       [
-        `INSERT INTO focus_log (id, member_id, minutes, created)
-         SELECT lower(hex(randomblob(16))), id, focus_minutes, focus_end FROM members
-         WHERE ${scope} AND focus_end > 0 AND focus_end <= ? AND focus_minutes > 0`,
-        [key, now],
+        `INSERT INTO focus_log (id, member_id, minutes, created, strict)
+         SELECT lower(hex(randomblob(16))), id, focus_minutes, focus_end, focus_strict FROM members
+         WHERE ${due} AND focus_minutes > 0 AND (focus_strict = 0 OR ${present})`,
+        args,
       ],
-      [
-        `UPDATE members SET focus_end = 0, focus_minutes = 0 WHERE ${scope} AND focus_end > 0 AND focus_end <= ?`,
-        [key, now],
-      ],
+      event(
+        "'bir ağaç yetiştirdi 🌳 ' || focus_minutes || ' dakika telefona dokunmadan!'",
+        `focus_strict = 1 AND focus_minutes > 0 AND ${present}`,
+      ),
+      event(`'${WITHERED}'`, `focus_strict = 1 AND NOT (${present})`),
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE ${due}`, args],
       bump(groupId),
     ];
   };
@@ -752,16 +766,31 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const action = body.action,
       now = Date.now();
     if (action === "finish") {
-      const before = await db.get("SELECT focus_minutes AS minutes FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?", [m.id, now]);
+      const before = await db.get(
+        "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
+        [m.id, now],
+      );
       if (before) await db.batch(finalizeFocus(m.group_id, now, m.id));
-      return changed(m, { credited: before?.minutes || 0 });
+      const withered = !!before?.strict && before.beat < before.ends - BEAT_GRACE;
+      return changed(m, { credited: withered ? 0 : before?.minutes || 0, withered });
     }
-    if (action === "cancel") {
+    // Fidan modu: the app reports it is still on screen.
+    if (action === "beat") {
+      await db.run(
+        "UPDATE members SET focus_beat = ? WHERE id = ? AND focus_strict = 1 AND focus_end > ?",
+        [now, m.id, now],
+      );
+      return json({ ok: true });
+    }
+    // Giving up, or leaving the app in Fidan modu, ends the session without minutes.
+    if (action === "cancel" || action === "wither") {
+      const strictRunning = m.focus_strict === 1 && m.focus_end > now;
       await db.batch([
-        ["UPDATE members SET focus_end = 0, focus_minutes = 0 WHERE id = ?", [m.id]],
+        ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE id = ?", [m.id]],
+        ...(strictRunning ? [systemMessage(m.group_id, m.id, WITHERED)] : []),
         bump(m.group_id),
       ]);
-      return changed(m);
+      return changed(m, { withered: strictRunning });
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
     if (m.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
@@ -783,7 +812,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     await db.batch([
       // An expired, uncredited session is credited before the new one starts.
       ...finalizeFocus(m.group_id, now, m.id),
-      ["UPDATE members SET focus_end = ?, focus_minutes = ? WHERE id = ?", [end, minutes, m.id]],
+      [
+        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ? WHERE id = ?",
+        [end, minutes, body.strict === true ? 1 : 0, now, m.id],
+      ],
     ]);
     return changed(m);
   });
@@ -1021,9 +1053,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   if (config.testHooks)
     route("POST", "/__test/expire", async ({ body }) => {
+      // Ends the named person's focus session now; `away` pretends their app was
+      // closed long before the end (no recent Fidan modu heartbeat).
       await db.run(
-        "UPDATE members SET focus_end = CASE WHEN focus_end > 0 THEN ? ELSE 0 END, status_until = 0 WHERE name = ?",
-        [Date.now() - 1000, body.name],
+        "UPDATE members SET focus_end = CASE WHEN focus_end > 0 THEN ? ELSE 0 END, focus_beat = CASE WHEN ? THEN 0 ELSE ? END, status_until = 0 WHERE name = ?",
+        [Date.now() - 1000, body.away ? 1 : 0, Date.now() - 1000, body.name],
       );
       return json({ ok: true });
     }, false);
