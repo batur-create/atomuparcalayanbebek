@@ -25,7 +25,9 @@ const ACTIVITY_LIMIT = 25;
 const PUSH_COOLDOWN = 45 * 60000;
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a Fidan modu session must have been seen in its last 90 seconds
-const WITHERED = "fidanını kuruttu 🥀 Telefon bu sefer kazandı.";
+const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
+// Session length decides the building: 25 → kulübe, 50 → iki katlı ev, 75 → kule.
+const KIND_SQL = "CASE WHEN focus_minutes >= 70 THEN 'tower' WHEN focus_minutes >= 40 THEN 'house' ELSE 'cottage' END";
 
 class HttpError extends Error {
   constructor(message, status = 400) {
@@ -193,14 +195,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, updated";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, updated";
   async function readSnapshot(groupId, now) {
-    const [groups, members, focus, messages, reactions, plans, attendees] =
+    const [groups, members, focus, messages, reactions, plans, attendees, villages] =
       await db.read([
         ["SELECT id, name, invite, rev FROM groups WHERE id = ?", [groupId]],
         [`SELECT ${memberColumns} FROM members WHERE group_id = ? ORDER BY joined`, [groupId]],
         [
-          `SELECT f.member_id AS id, SUM(CASE WHEN f.created >= ? THEN f.minutes ELSE 0 END) AS today, SUM(f.minutes) AS week, SUM(f.strict) AS trees
+          `SELECT f.member_id AS id, SUM(CASE WHEN f.created >= ? THEN f.minutes ELSE 0 END) AS today, SUM(f.minutes) AS week, SUM(f.strict) AS builds
            FROM focus_log f JOIN members m ON m.id = f.member_id
            WHERE m.group_id = ? AND f.created >= ? GROUP BY f.member_id`,
           [dayStart(now), groupId, weekStart(now)],
@@ -224,10 +226,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           "SELECT a.plan_id AS planId, a.member_id AS memberId FROM attendees a JOIN plans p ON p.id = a.plan_id WHERE p.group_id = ? AND p.starts > ?",
           [groupId, now - 2 * HOUR],
         ],
+        [
+          "SELECT member_id AS id, count(*) AS n FROM buildings WHERE group_id = ? GROUP BY member_id",
+          [groupId],
+        ],
       ]);
     const group = groups[0];
     if (!group) return null;
     const totals = new Map(focus.map((f) => [f.id, f]));
+    const built = new Map(villages.map((v) => [v.id, v.n]));
     const hearts = new Map();
     for (const r of reactions) {
       if (!hearts.has(r.messageId)) hearts.set(r.messageId, []);
@@ -249,7 +256,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           since: expired ? 0 : m.since,
           focusToday: totals.get(m.id)?.today || 0,
           focusWeek: totals.get(m.id)?.week || 0,
-          treesWeek: totals.get(m.id)?.trees || 0,
+          buildsWeek: totals.get(m.id)?.builds || 0,
+          buildings: built.get(m.id) || 0,
         };
       }),
       messages: messages
@@ -261,7 +269,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // Completed focus sessions are credited by whoever reads the state next, so
   // minutes count even if the owner closed the tab. The conditional SQL makes it
   // safe to run concurrently: only one transaction can move a session to the log.
-  // A "Fidan modu" session only grows a tree if the app was open near the end:
+  // A build-mode session only leaves a building if the app was open near the end:
   // the client beats every 20 seconds while visible.
   const finalizeFocus = (groupId, now, memberId) => {
     const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ?`;
@@ -280,8 +288,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
          WHERE ${due} AND focus_minutes > 0 AND (focus_strict = 0 OR ${present})`,
         args,
       ],
+      [
+        `INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created)
+         SELECT lower(hex(randomblob(16))), id, group_id, ${KIND_SQL}, focus_minutes, focus_seed, focus_end FROM members
+         WHERE ${due} AND focus_strict = 1 AND focus_minutes > 0 AND ${present}`,
+        args,
+      ],
       event(
-        "'bir ağaç yetiştirdi 🌳 ' || focus_minutes || ' dakika telefona dokunmadan!'",
+        "CASE WHEN focus_minutes >= 70 THEN 'kulesini bitirdi 🏰' WHEN focus_minutes >= 40 THEN 'iki katlı evini bitirdi 🏠' ELSE 'kulübesini bitirdi 🏡' END || ' ' || focus_minutes || ' dakika telefona dokunmadan!'",
         `focus_strict = 1 AND focus_minutes > 0 AND ${present}`,
       ),
       event(`'${WITHERED}'`, `focus_strict = 1 AND NOT (${present})`),
@@ -419,6 +433,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM plans WHERE member_id = ?", [id]],
       ["DELETE FROM messages WHERE member_id = ?", [id]],
       ["DELETE FROM focus_log WHERE member_id = ?", [id]],
+      ["DELETE FROM buildings WHERE member_id = ?", [id]],
       ["DELETE FROM subscriptions WHERE member_id = ?", [id]],
       ["DELETE FROM feedback_events WHERE feedback_id IN (SELECT id FROM feedback WHERE member_id = ?)", [id]],
       ["DELETE FROM feedback WHERE member_id = ?", [id]],
@@ -806,15 +821,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       end = other.focus_end;
       minutes = Math.floor((end - now) / 60000);
     } else {
-      if (![25, 45, 50].includes(minutes)) fail("25, 45 veya 50 dakika seç.");
+      if (![25, 50, 75].includes(minutes)) fail("25, 50 veya 75 dakika seç.");
       end = now + minutes * 60000;
     }
     await db.batch([
       // An expired, uncredited session is credited before the new one starts.
       ...finalizeFocus(m.group_id, now, m.id),
       [
-        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ? WHERE id = ?",
-        [end, minutes, body.strict === true ? 1 : 0, now, m.id],
+        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ? WHERE id = ?",
+        [end, minutes, body.strict === true ? 1 : 0, now, crypto.getRandomValues(new Uint32Array(1))[0] % 1000000, m.id],
       ],
     ]);
     return changed(m);
@@ -928,6 +943,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     });
     return json({ id, item: (await requests("f.id = ?", [id], { limit: 1 }))[0] }, 201);
   });
+
+  // Everyone's village in the group, oldest building first.
+  route("GET", "/village", async ({ member }) =>
+    json(
+      await db.all(
+        "SELECT id, member_id AS memberId, kind, minutes, seed, created FROM buildings WHERE group_id = ? ORDER BY created LIMIT 600",
+        [member.group_id],
+      ),
+    ),
+  );
 
   route("GET", "/feedback", async ({ member }) =>
     json(await requests("f.member_id = ?", [member.id])),

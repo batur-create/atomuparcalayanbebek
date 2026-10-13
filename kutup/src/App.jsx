@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   ArrowRight,
@@ -62,7 +62,6 @@ import {
   Empty,
   pushKey,
   keepScreenOn,
-  plantFor,
   pushSupported,
   reducedMotion,
   releaseScreen,
@@ -70,6 +69,7 @@ import {
 } from "./ui.jsx";
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
+import { KINDS, VillagePanel, kindFor } from "./Village.jsx";
 
 const nav = [
   { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
@@ -288,6 +288,8 @@ export default function App() {
     const timer = setTimeout(() => setIntro(false), 2600);
     return () => clearTimeout(timer);
   }, []);
+  // The last build-mode session's ending, replayed on the construction site.
+  const [buildOutcome, setBuildOutcome] = useState(null);
   // Friends who just switched to "Kütüpte" get a short glow on their card.
   const [arrived, setArrived] = useState([]);
   const lastStatus = useRef(null);
@@ -450,24 +452,43 @@ export default function App() {
         end: me.focusEnd,
         minutes: me.focusMinutes,
         strict: !!me.focusStrict,
+        kind: kindFor(me.focusMinutes),
+        seed: me.focusSeed,
         week: me.focusWeek || 0,
       };
       return;
     }
     const done = lastFocus.current;
     lastFocus.current = null;
-    if (!done || done.end > Date.now() + 2000) return; // stopped early
+    if (!done) return;
+    const outcome = (type) =>
+      setBuildOutcome({ type, kind: done.kind, seed: done.seed, at: Date.now() });
+    if (done.end > Date.now() + 2000) {
+      if (done.strict) outcome("collapsed"); // gave up or left the app
+      return;
+    }
     if ((me?.focusWeek || 0) > done.week) {
+      if (done.strict) outcome("built");
       notify(
         done.strict
-          ? `Ağacın büyüdü! 🌳 ${done.minutes} dakika telefona dokunmadın.`
+          ? `${KINDS[done.kind].label} bitti! ${KINDS[done.kind].emoji} Köyüne eklendi.`
           : `İşte bu! ${done.minutes} dakika cebinde. Şimdi bir nefes. 🌱`,
       );
       navigator.vibrate?.([120, 80, 120]);
-    } else if (done.strict) notify("Fidanın kurudu 🥀 Bu sefer telefon kazandı.");
+    } else if (done.strict) {
+      outcome("collapsed");
+      notify("İnşaat çöktü 🧱 Bu sefer telefon kazandı.");
+    }
   }, [me?.focusEnd]);
-  // Fidan modu: keep the screen on, report presence, and let the plant wither if
-  // the app is left for more than a few seconds (switching apps, closing the tab).
+  const buildRun = useMemo(
+    () =>
+      me?.focusStrict && me.focusEnd > Date.now()
+        ? { endsAt: me.focusEnd, minutes: me.focusMinutes, kind: kindFor(me.focusMinutes), seed: me.focusSeed }
+        : null,
+    [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed],
+  );
+  // Build mode: keep the screen on, report presence, and let the building collapse
+  // if the app is left for more than a few seconds (switching apps, closing the tab).
   const strictEnd = me?.focusStrict && me.focusEnd > Date.now() ? me.focusEnd : 0;
   useEffect(() => {
     if (!strictEnd) return releaseScreen();
@@ -485,7 +506,7 @@ export default function App() {
         const r = await api("/focus", { action: "wither" });
         if (r.state) setData(r.state);
       } catch {}
-      notify("Fidanın kurudu 🥀 Uygulamadan çıkınca kurur. Bir dahakine!");
+      notify("İnşaatın çöktü 🧱 Uygulamadan çıkınca yıkılır. Bir dahakine!");
       navigator.vibrate?.(300);
     };
     const beat = () => {
@@ -505,6 +526,11 @@ export default function App() {
     const pulse = setInterval(() => {
       if (document.visibilityState === "visible") beat();
     }, 20000);
+    // A local "still here" mark every few seconds, so a page reload is not
+    // mistaken for leaving the app.
+    const mark = setInterval(() => {
+      if (document.visibilityState === "visible") remember();
+    }, 3000);
     const visibility = () => {
       if (document.visibilityState === "hidden") {
         hiddenAt = Date.now();
@@ -514,13 +540,14 @@ export default function App() {
       const away = hiddenAt ? Date.now() - hiddenAt : 0;
       hiddenAt = null;
       if (away > GRACE) return wither();
-      if (away > 1500) notify("Az kalsın! Fidanın seni bekledi 🌱");
+      if (away > 1500) notify("Az kalsın! Şantiye seni bekledi 🏗️");
       keepScreenOn();
       beat();
     };
     document.addEventListener("visibilitychange", visibility);
     return () => {
       clearInterval(pulse);
+      clearInterval(mark);
       document.removeEventListener("visibilitychange", visibility);
       releaseScreen();
     };
@@ -1068,6 +1095,14 @@ export default function App() {
                 mutate={mutate}
               />
               <div className="focus-side">
+                <VillagePanel
+                  me={me}
+                  members={data.members}
+                  rev={data.members.reduce((n, m) => n + (m.buildings || 0), 0)}
+                  run={buildRun}
+                  outcome={buildOutcome}
+                  demo={session ? null : DEMO.buildings}
+                />
                 <AmbientSound />
                 <WeekBoard members={data.members} me={me} />
                 <section className="panel">
@@ -1083,7 +1118,7 @@ export default function App() {
                           <strong>
                             {m.name}
                             {m.id === me?.id ? " (sen)" : ""}
-                            {m.focusStrict ? " 🌱" : ""}
+                            {m.focusStrict ? " 🏗️" : ""}
                           </strong>
                           <small>
                             {Math.ceil((m.focusEnd - now) / 60000)} dakika kaldı
@@ -1288,8 +1323,8 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
         {mine && <span>sen</span>}
         {m.focusEnd > now &&
           (m.focusStrict ? (
-            <span className="member-plant" title="Fidan modunda odakta">
-              🌱
+            <span className="member-plant" title="İnşaat modunda odakta">
+              🏗️
             </span>
           ) : (
             <Headphones size={16} />
@@ -1345,11 +1380,11 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
     ? 1 - seconds / ((me.focusMinutes || duration) * 60)
     : 0;
   const growing = running && !!me?.focusStrict;
-  const plant = plantFor(progress);
+  const building = KINDS[kindFor(running ? me.focusMinutes : duration)];
   const control = async () => {
     if (
       growing &&
-      !confirm("Pes edersen fidanın kurur ve bu seansın dakikaları yazılmaz. Emin misin?")
+      !confirm("Pes edersen bina yıkılır ve bu seansın dakikaları yazılmaz. Emin misin?")
     )
       return;
     if (!running && fidan) keepScreenOn(); // needs the tap itself on some phones
@@ -1359,10 +1394,10 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
       { action: running ? "cancel" : "start", minutes: duration, strict: fidan },
       running
         ? growing
-          ? "Fidan kurudu 🥀 Bir dahakine sonuna kadar!"
+          ? "İnşaat çöktü 🧱 Bir dahakine sonuna kadar!"
           : "Seans durdu. Hazır olunca yeniden başla."
         : fidan
-          ? "Fidanı diktin 🌱 Uygulamada kal, ekran açık kalacak."
+          ? `Temel atıldı 🏗️ ${building.label} yükseliyor. Uygulamada kal, ekran açık kalacak.`
           : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧",
     );
     setBusy(false);
@@ -1376,8 +1411,8 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           <Headphones size={18} /> ODAK MODU
         </span>
         {growing ? (
-          <span className="focus-plant" key={plant} aria-label="Fidanın büyüyor">
-            {plant}
+          <span className="focus-plant" aria-label={`${building.label} inşa ediliyor`}>
+            {building.emoji}
           </span>
         ) : (
           <span className="focus-spark">✧</span>
@@ -1385,7 +1420,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
       </div>
       <h2>
         {growing
-          ? "Fidanın büyüyor."
+          ? `${building.label} yükseliyor.`
           : running
             ? "Şu an kendin için."
             : "Bir küçük odak arası."}
@@ -1421,7 +1456,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           </b>
           <span>
             {growing
-              ? `${plant} uygulamadan çıkma, kurur`
+              ? "🏗️ uygulamadan çıkma, yıkılır"
               : running
                 ? "sen, işin ve biraz sessizlik"
                 : "dakika sadece kendine"}
@@ -1430,7 +1465,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
       </div>
       {!running && !finishing && (
         <div className="duration-options">
-          {[25, 45, 50].map((n) => (
+          {[25, 50, 75].map((n) => (
             <button
               key={n}
               className={duration === n ? "active" : ""}
@@ -1452,13 +1487,13 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
             storage.set("kutup-fidan-on", fidan ? "0" : "1");
           }}
         >
-          <span aria-hidden="true">{fidan ? "🌱" : "🌰"}</span>
+          <span aria-hidden="true">{fidan ? building.emoji : "🏗️"}</span>
           <span>
-            <b>Fidan modu {fidan ? "açık" : "kapalı"}</b>
+            <b>İnşaat modu {fidan ? "açık" : "kapalı"}</b>
             <small>
               {fidan
-                ? "Ekran açık kalır. Uygulamadan 10 saniyeden uzun çıkarsan fidan kurur, dakikalar yazılmaz."
-                : "Telefonu bırakamayanlara: seans boyunca uygulamada kal, sonunda ağacın büyüsün."}
+                ? `${duration} dk sonunda köyüne bir ${building.label.toLocaleLowerCase("tr")} eklenir. Ekran açık kalır; 10 saniyeden uzun çıkarsan yıkılır.`
+                : "Odaklandıkça bir bina yükselir: 25 dk kulübe, 50 dk iki katlı ev, 75 dk kule. Bitenler köyüne kalır."}
             </small>
           </span>
         </button>
@@ -1477,10 +1512,10 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           ? "Dakikalar cebine yazılıyor…"
           : running
             ? growing
-              ? "Pes et (fidan kurur)"
+              ? "Pes et (bina yıkılır)"
               : "Seansı durdur"
             : fidan
-              ? "Fidanı dik 🌱"
+              ? `Temeli at ${building.emoji}`
               : "Hadi odaklanalım"}
       </Busy>
       <p className="focus-bottom">
@@ -2451,6 +2486,11 @@ function MemberModal({ member, now, close, mutate }) {
             <strong>{minutesLabel(member.focusWeek || 0)}</strong>
             <span>bu hafta</span>
           </div>
+          <div className="detail-stat">
+            <span aria-hidden="true">🏘️</span>
+            <strong>{member.buildings || 0} bina</strong>
+            <span>köyünde</span>
+          </div>
         </div>
       </div>
       <button
@@ -2607,10 +2647,10 @@ function WeekBoard({ members, me }) {
               </span>
               <small>
                 {minutesLabel(m.focusWeek)}
-                {m.treesWeek > 0 && (
-                  <span className="week-trees" title={`${m.treesWeek} ağaç`}>
+                {m.buildsWeek > 0 && (
+                  <span className="week-trees" title={`Bu hafta ${m.buildsWeek} bina`}>
                     {" "}
-                    🌳{m.treesWeek > 1 ? `×${m.treesWeek}` : ""}
+                    🏠{m.buildsWeek > 1 ? `×${m.buildsWeek}` : ""}
                   </span>
                 )}
               </small>

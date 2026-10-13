@@ -891,6 +891,51 @@ h3,
     font-size: 10px;
   }
 }
+/* ---------- Kütüp köyü ---------- */
+.village-panel {
+  padding-bottom: 16px;
+}
+.village-scene,
+.village-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.village-scene {
+  margin: -6px 0 0;
+  border-radius: 14px;
+  background: #eef4e6;
+}
+.village-map {
+  margin-top: 4px;
+}
+.village-people {
+  margin: 0 0 10px;
+  flex-wrap: wrap;
+}
+.village-caption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6f6c63;
+}
+@keyframes village-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-36px) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+  }
+}
+.village-new {
+  animation: village-pop 0.9s 0.2s var(--ease-spring) backwards;
+}
+.build-hint {
+  margin: -4px 0 10px;
+  font-size: 11.5px;
+  color: #b9bca9;
+}
 @media (prefers-reduced-motion: reduce) {
   .tracker.waiting .tracker-runner,
   .tracker-steps li.current .tracker-dot,

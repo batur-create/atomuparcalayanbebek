@@ -127,6 +127,7 @@ export const minutesLabel = (minutes) =>
 
 const now = Date.now();
 const tomorrowMorning = new Date(`${dayInput(1)}T09:30:00+03:00`).getTime();
+const ago = (days) => now - days * 86400000;
 export const DEMO = {
   group: { name: "Bizim tayfa", invite: "demo", rev: 0 },
   members: [
@@ -142,7 +143,8 @@ export const DEMO = {
       since: now - 95 * 60000,
       focusToday: 75,
       focusWeek: 240,
-      treesWeek: 2,
+      buildsWeek: 2,
+      buildings: 5,
       focusEnd: 0,
     },
     {
@@ -160,6 +162,8 @@ export const DEMO = {
       focusEnd: now + 18 * 60000,
       focusMinutes: 25,
       focusStrict: 1,
+      focusSeed: 4242,
+      buildings: 3,
     },
     {
       id: "ege",
@@ -173,7 +177,8 @@ export const DEMO = {
       since: now - 6 * 60000,
       focusToday: 100,
       focusWeek: 300,
-      treesWeek: 1,
+      buildsWeek: 1,
+      buildings: 2,
       focusEnd: 0,
     },
     {
@@ -210,6 +215,25 @@ export const DEMO = {
       reactions: ["elif"],
     },
   ],
+  buildings: [
+    ["elif", "cottage", 101, 9],
+    ["elif", "house", 202, 7],
+    ["elif", "cottage", 303, 5],
+    ["elif", "tower", 404, 3],
+    ["elif", "house", 505, 1],
+    ["deniz", "house", 606, 6],
+    ["deniz", "cottage", 707, 4],
+    ["deniz", "tower", 808, 2],
+    ["ege", "tower", 909, 5],
+    ["ege", "cottage", 111, 2],
+  ].map(([memberId, kind, seed, days], i) => ({
+    id: `b${i}`,
+    memberId,
+    kind,
+    seed,
+    minutes: kind === "tower" ? 75 : kind === "house" ? 50 : 25,
+    created: ago(days),
+  })),
   plans: [
     {
       id: "p",

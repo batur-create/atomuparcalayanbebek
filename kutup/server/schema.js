@@ -61,6 +61,17 @@ const migrations = [
     "ALTER TABLE members ADD COLUMN focus_beat INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE focus_log ADD COLUMN strict INTEGER NOT NULL DEFAULT 0",
   ],
+  // 5 — the village: every completed build-mode session leaves a building.
+  [
+    "ALTER TABLE members ADD COLUMN focus_seed INTEGER NOT NULL DEFAULT 0",
+    "CREATE TABLE IF NOT EXISTS buildings (id TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES members(id), group_id TEXT NOT NULL, kind TEXT NOT NULL, minutes INTEGER NOT NULL, seed INTEGER NOT NULL, created INTEGER NOT NULL)",
+    "CREATE INDEX IF NOT EXISTS buildings_group ON buildings(group_id, created)",
+    `INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created)
+     SELECT f.id, f.member_id, m.group_id,
+       CASE WHEN f.minutes >= 70 THEN 'tower' WHEN f.minutes >= 40 THEN 'house' ELSE 'cottage' END,
+       f.minutes, abs(random()) % 1000000, f.created
+     FROM focus_log f JOIN members m ON m.id = f.member_id WHERE f.strict = 1`,
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;
