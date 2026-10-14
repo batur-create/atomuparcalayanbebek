@@ -8,12 +8,12 @@ Bu klasör bağımsız bir projedir; üst klasördeki mağaza uygulamasını kul
 
 ## Neler var
 
-- **Davet bağlantısıyla özel ekip.** E-posta yok, şifre yok: isim, 24 avatar, 6 renk, masa notu ve 5 ekran teması.
+- **Davet bağlantısıyla özel ekip.** E-posta gerekmez; katılırken kullanıcı adı ve şifre belirlenir. İsim, 24 avatar, 6 renk, masa notu ve 5 ekran teması.
 - **Kütüpte / Yolda / Molada / Dışarıda.** Salon ve masa bilgisi, “Başka bir yer…” seçeneği, “burada · 1 sa 35 dk” gibi süre bilgisi. Konum izni yok; durum 8 saat sonra kendiliğinden kapanır.
 - **Bildirimler.** Biri kütübe gelince, molaya çıkınca, kahveye çağırınca ya da plan yapınca telefona bildirim gider. Aynı kişi 45 dakika içinde tekrar gelip giderse ikinci bildirim gitmez. Bildirime dokununca ilgili sekme açılır.
 - **Planlar.** Önümüzdeki iki hafta için plan yapılır, “Ben de gelirim” ile katılınır. Plan kartlarında “Bugün / Yarın / Cumartesi” yazar.
 - **Odak odası.** 25, 50 ve 75 dakikalık seanslar, arkadaşının seansına katılma, sekme başlığında geri sayım, **Haftanın odak tablosu** (🥇🥈🥉, pazartesi sıfırlanır). Bitmiş seanslar uygulama kapalıyken de sayılır.
-- **İnşaat modu ve Kütüp köyü (Forest tarzı).** Odak sayfasında açılır. Süre binayı belirler: 25 dk kulübe, 50 dk iki katlı ev, 75 dk kule. Seans boyunca canlı bir şantiye görünür: kazıklar, temel, direkler, yükselen duvarlar, yerine oturan çatı, pencereler ve bahçe; vinç sıradaki malzemeyi indirir. Ekran açık kalır (Wake Lock). Uygulamadan 10 saniyeden uzun çıkarsan, sekmeyi kapatırsan ya da pes edersen bina çöker, dakikalar yazılmaz ve panoya “inşaatı çöktü 🧱” düşer. Sonuna kadar kalırsan bina köyüne kalıcı olarak eklenir; rengi ve malzemesi her zaman aynı kalır. Herkesin ayrı köyü var, arkadaşlarının köyüne Odak sayfasından bakılır. Sunucu, uygulamanın 20 saniyede bir gönderdiği sinyale bakar. Web sitesi telefon kilidini uygulamadan çıkmaktan ayıramaz, bu yüzden İnşaat modunda ekranı kilitleme.
+- **İnşaat modu ve Kütüp köyü (Forest tarzı).** Odak sayfasında açılır. Süre binayı belirler: 25 dk kulübe, 50 dk iki katlı ev, 75 dk kule. Seans boyunca canlı bir şantiye görünür: kazıklar, temel, direkler, yükselen duvarlar, yerine oturan çatı, pencereler ve bahçe; vinç sıradaki malzemeyi indirir. Ekran açık kalır (Wake Lock). Uygulamadan 10 saniyeden uzun çıkarsan, sekmeyi kapatırsan ya da pes edersen bina çöker, dakikalar yazılmaz ve panoya “inşaatı çöktü 🧱” düşer. Sonuna kadar kalırsan bina köyüne kalıcı olarak eklenir; rengi ve malzemesi her zaman aynı kalır. Tek ortak köyde herkesin kendi mahallesi var; Köy sekmesinden gezilir. Sunucu, uygulamanın 20 saniyede bir gönderdiği sinyale bakar. Web sitesi telefon kilidini uygulamadan çıkmaktan ayıramaz, bu yüzden İnşaat modunda ekranı kilitleme.
 - **Bizim pano.** Mesajlar, kalpler, kahve davetleri. Gelip gitme hareketleri gerçek mesajları panodan itmez.
 - **Başka cihazda aç.** “Benim köşem → Başka cihazda aç” 15 dakikalık tek kullanımlık kod verir. iPhone’da Safari ile ana ekran uygulamasının oturumları ayrı tutulduğu için bu gerekli.
 - **Batur’a ilet: kargo takibi gibi istek sistemi.** Fikir, hata ya da iki çift laf; farklı alanlardan tıklayınca dolan ilham örnekleri. Gönderince zarf uçar, “Kutuya düştü ✓” damgası iner. Her istek *Gönderildi → İncelendi → Kabul edildi → Yapılıyor → Yayında* (ya da *Bu sefer olmadı*) çizgisinde ilerler. Batur açtığı an “İncelendi” olur, sonraki aşamaları panelden tek tuşla seçer, isterse not yazar. Gönderene her adımda bildirim gider, menüde “yeni gelişme” rozeti çıkar, kabul ve yayın anında küçük bir kutlama patlar.
@@ -96,9 +96,10 @@ Telefonla aynı Wi-Fi’dan denemek için: `HOST=0.0.0.0 npm run dev`.
 ### Testler
 
 ```sh
-npm test             # çekirdek + bildirim şifreleme + Node uçtan uca (25 test)
-npm run test:worker  # aynı senaryolar yerel Cloudflare/D1 üzerinde (16 test)
-npm run test:all
+npm test             # çekirdek + istemci mantığı + şifreleme + Node
+npm run test:worker  # aynı senaryolar yerel Cloudflare/D1 üzerinde
+npm run test:all      # build + 63 test (Node ve Worker dahil)
+npm run test:browser  # isteğe bağlı: Python playwright + Chromium gerekir
 ```
 
 Testler geçici, izole veritabanları kullanır: davet ve isim çakışması, ekipler arası izolasyon, yoklama ve SSE, pano limitleri, odak doğrulaması ve çevrimdışı kredilendirme, şifreli ve imzalı Web Push’un sahte bir push servisine teslimi ve bekleme süresi, cihaz kodu, Batur kutusu, davet yenileme, üye çıkarma, ekipten ayrılma, yeniden başlatmada kalıcılık ve ilk sürümün veritabanından otomatik geçiş.
@@ -113,11 +114,14 @@ server/sqlite.js    node:sqlite bağdaştırıcısı
 server/index.js     Node sunucusu: SSE, statik dosyalar, Vite geliştirme modu
 worker/index.js     Cloudflare Worker girişi: D1 bağdaştırıcısı, ASSETS
 shared/requests.js  İstek aşamaları ve metinleri (sunucu ve arayüz ortak)
-src/App.jsx         Arayüz
+src/App.jsx         Ana ekran, durum ve odak akışları
+src/Account.jsx     Giriş, kurtarma, profil ve cihaz aktarımı
+src/Modal.jsx       Ortak klavye odağı ve erişilebilir pencere
+src/sync.js         Geç gelen yanıtları reddeden durum birleştirme
 src/Requests.jsx    Batur’a ilet: ilham örnekleri, gönderme animasyonu, takip çizgisi
 src/Owner.jsx       /batur paneli
 src/ui.jsx          Ortak küçük bileşenler
-src/api.js          İstemci API’si, yardımcılar ve ön izleme verisi
+src/api.js          İstemci API’si ve yardımcılar
 src/styles.css      Tasarım, temalar, mobil düzen
 src/motion.css      Açılış koreografisi, hareketler, takip çizgisi ve panel stilleri
 public/sw.js        Bildirim service worker’ı
@@ -132,3 +136,15 @@ wrangler.jsonc      Cloudflare yapılandırması
 - Ekipler en fazla 80 kişidir. 120 günden eski mesajlar ve 30 günden eski planlar kendiliğinden temizlenir.
 - E-posta/Google girişi, özel mesaj, GPS, resmi kütüphane doluluk verisi veya rezervasyon yoktur. Görülen durumlar arkadaşların kendi bildirimidir.
 - Yazı tipleri uygulamayla birlikte gelir; Google Fonts bağlantısı gerekmez.
+
+## Denetim ve kurtarma
+
+14 Ekim 2026 denetimi: [ASTRA_RAPOR.md](ASTRA_RAPOR.md). Claude için güncel durum: [HANDOFF.md](HANDOFF.md#6b-durum-son-güncelleme-14-ekim-2026). Yedek türleri, güvenli kurtarma provası ve D1 Time Travel sınırları: [RECOVERY.md](RECOVERY.md).
+
+Gerçek tarayıcı kontrolleri kendi geçici sunucusunu başlatır; canlı veriye bağlanmaz:
+
+```sh
+python tests/browser_smoke.py --chromium /usr/bin/chromium --artifacts /tmp/kutup-audit-artifacts
+```
+
+Python `playwright` ve Chromium ayrı geliştirme araçlarıdır; `npm ci` bunları kurmaz. API testlerinde sahte push servisi kullanılır. Cihazdan çıkış, şifre kurtarma ve süresi dolmuş oturumlar o cihaza bağlı bildirimleri de durdurur. Eski abonelikler oturum açıkken bir sonraki ziyarette yeniden bağlanır.

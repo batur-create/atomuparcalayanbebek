@@ -14,12 +14,12 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 
 ## 2. Mevcut özellikler (bozma)
 
-- Davet linkiyle özel ekip (`/join/<davet>`): isim, 24 avatar, 6 renk, masa notu, 5 tema. E-posta ya da şifre yok; oturum HttpOnly çerez (`kutup_session`, 1 yıl).
+- Davet linkiyle özel ekip (`/join/<davet>`): isim, 24 avatar, 6 renk, masa notu, 5 tema. E-posta yok; yeni katılışta kullanıcı adı ve şifre zorunlu. Oturum HttpOnly çerez (`kutup_session`, 1 yıl; sunucu da süreyi denetler). Eski hesapsız üyeler korunur.
 - Başka cihaz: Profil → "Başka cihazda aç" 15 dakikalık tek kullanımlık kod verir; giriş ekranında "Zaten ekipteyim" ile kullanılır. iPhone'da ana ekran uygulaması Safari'den ayrı çerez tuttuğu için şart.
 - Durum (Kütüpte / Yolda / Molada / Dışarıda), salon ve masa, "burada · 1 sa 35 dk"; durum 8 saat sonra kapanır.
 - Web Push (kendi yazdığımız Web Crypto RFC 8291 + VAPID), 45 dakikalık geliş bildirimi soğuması, bildirime dokununca ilgili sekme (`/?tab=…`).
 - Planlar (iki hafta ileri, "Ben de gelirim"), pano (mesaj, kalp, kahve daveti), haftalık odak tablosu.
-- **İnşaat modu ve köy (Forest tarzı):** Odak seansları 25/50/75 dk. İnşaat modu açıkken seans süresi binayı belirler: 25 → kulübe, 50 → iki katlı ev, 75 → kule (eşikler 40 ve 70 dk). Seans boyunca canlı izometrik şantiye çizilir. Uygulamadan 10 saniyeden uzun çıkılırsa (sekme kapatma dahil) bina çöker; tamamlanınca köye kalıcı olarak eklenir. Ekran Wake Lock ile açık tutulur. Şu an her kişinin köyü ayrı çiziliyor; bu değişecek (bkz. Paket 1).
+- **İnşaat modu ve köy (Forest tarzı):** Odak seansları 25/50/75 dk. İnşaat modu açıkken seans süresi binayı belirler: 25 → kulübe, 50 → iki katlı ev, 75 → kule (eşikler 40 ve 70 dk). Seans boyunca canlı izometrik şantiye çizilir. Uygulamadan 10 saniyeden uzun çıkılırsa (sekme kapatma dahil) bina çöker; tamamlanınca köye kalıcı olarak eklenir. Ekran Wake Lock ile açık tutulur. Tek ortak köyde herkesin kendi mahallesi var; Paket 1 tamamlandı.
 - **"Batur'a ilet":** fikir, hata ya da sohbet. Kargo takibi gibi aşamaları var: new → seen → accepted → building → done, ya da declined. Kendine ait ilham örnekleri, gönderme animasyonu, "yeni gelişme" rozeti ve her aşamada gönderene push.
 - **`/batur` yönetici paneli:** istekler (açınca "İncelendi" olur, tek tuşla aşama, not, geçmiş, arkadaşın gördüğü takip çizgisinin önizlemesi, silme), yeni istek push'u, ekipler, davet yenileme, üye çıkarma. Giriş: `ADMIN_KEY` ya da ilk ziyarette belirlenen anahtar; sonra 30 günlük `kutup_owner` çerezi (yolu `/api/owner`, SameSite=Strict). Yönetici şu an hiçbir üyeye bağlı değil.
 - Hareket katmanı: başlıklar Bricolage Grotesque, gövde DM Sans. Ziyaret başına bir kez oynayan açılış koreografisi. Diğer hareketler sadece bir eyleme cevap verir. `prefers-reduced-motion` destekleniyor.
@@ -62,13 +62,13 @@ kutup/
 ```
 npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
-npm test             # çekirdek + push + Node uçtan uca (25 test)
-npm run test:worker  # aynı senaryolar yerel workerd + D1 (16 test)
-npm run test:all     # hepsi (41 test) — her teslimden önce yeşil olmalı
+npm test             # çekirdek + istemci + push + Node uçtan uca
+npm run test:worker  # aynı senaryolar yerel workerd + D1
+npm run test:all     # hepsi (63 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
 ```
 
-- **Wrangler** Batur'un Cloudflare hesabına OAuth ile bağlı. Token süresi dolarsa `npx wrangler login --device --browser=false` çalıştır. Çıkan kodu tarayıcı panelinde `https://dash.cloudflare.com/oauth2/device/verify` adresinde kutuya yaz, Batur'a "Continue ve Allow'a bas" de. Kodun ömrü 5 dakika.
+- **Wrangler (Batur’un Windows çalışma ortamı):** Cloudflare hesabına OAuth ile bağlı. Bu bağlantı Codex bulut ortamına taşınmış sayılmaz; 14 Ekim denetiminde burada yayın kimliği yoktu ve Cloudflare ağı 403 verdi. Token süresi dolarsa `npx wrangler login --device --browser=false` çalıştır. Çıkan kodu tarayıcı panelinde `https://dash.cloudflare.com/oauth2/device/verify` adresinde kutuya yaz, Batur'a "Continue ve Allow'a bas" de. Kodun ömrü 5 dakika.
 - **Canlı `ADMIN_KEY`** Cloudflare'de secret olarak tanımlı. Yerel kopyası `kutup/data/batur-key-canli.txt`. Asla ekrana basma ya da sohbete yazma.
 - **Canlı duman testi:** API ile geçici bir ekip kur, dene, sonunda `POST /api/leave` ile sil. Yayından hemen sonra kenar önbellek birkaç saniye eski HTML verebilir.
 - **Yerelde `/batur` testi:** Anahtarı yazmak yerine Node ile yerel veritabanına `owner_sessions` satırı ekle (`token = sha256(rastgele)`, `key_hash = sha256(anahtar)`). Sonra sayfada `document.cookie = "kutup_owner=<rastgele>; path=/api/owner"` yap.
@@ -97,6 +97,21 @@ npm run deploy       # vite build + wrangler deploy (canlı)
 
 ## 6b. Durum (son güncelleme 14 Ekim 2026)
 
+### Astra denetimi (14 Ekim 2026)
+
+**Yerelde tamamlandı; yayın bekliyor.** Ayrıntılar ve commit listesi [ASTRA_RAPOR.md](ASTRA_RAPOR.md), kurtarma prosedürü [RECOVERY.md](RECOVERY.md). `npm run test:all`: **63/63**, gerçek Chromium: **18/18**, `npm audit`: **0** bildirilen açık. `audit/2026-10-14/` sentetik verili ekran görüntülerini ve ölçümü içerir. Canlı arkadaş grubuna ve `data/` dosyalarına dokunulmadı.
+
+- **Göç 8:** ortak `auth_limits`; normal/owner push abonelikleri oturumla bağlı; owner aboneliğinde `key_hash`; oturum süre indeksleri. Eski abonelikler ilk doğrulanmış ziyarette tekrar bağlanır; sunucu anonim eski kayıtlara bildirim göndermez. Parola kurtarma eski cihazları kapatır; normal cihaz aktarımı ilk cihazı açık tutar. Yönetici tüm cihazlardan çıkış, push ve verilmiş kodları da iptal eder. Node SSE her gönderimde oturumu doğrular.
+- **Göç 9:** `write_guard` ve `snapshot_changed` CHECK koşulu; okuma/planlama sırasında değişen ekip veya istek olduğunda batch tamamen geri alınır ve güncel veriyle denenir. Bunu kaldırma; aynı boş arsayı kapma, aynı adlı katılma/profil, paralel odak başlatma ve gecikmiş “görüldü” yarışları için gereklidir. Göç 1–7 değişmedi.
+- **Göç 10:** geliş ve mola için ayrı kalıcı bildirim zamanları; `here → break → here` döngüsü 45 dakika sınırını aşamaz. Eşzamanlı durum değişikliği revision korumasına alındı; çift bildirim/pano hareketi üretmez. Eski son bildirim zamanı korunur.
+- **Senkron:** geç tamamlanan binanın `created` değeri bitiş zamanı, `touched` değeri eklenme zamanı. İstemci düşük revision’lı yanıtı kabul etmez; köy ağ hatasını yeniden dener. Süresi dolan durum grup revision’ını değiştirir. Enkaz istemcide zamanı gelince kaldırılır.
+- **Arayüz:** hesap/profil akışları `src/Account.jsx`, ortak pencereler `src/Modal.jsx` içinde. Modal arka planı `inert`, odağı hapseder/geri verir; giriş sekmeleri ok tuşlarıyla çalışır. Batur kodu prompt yerine kopyalanabilir pencere. Haritada sayfalı bina seçimi ve Enter desteği var. Küçük yazıların ana muted rengi koyulaştırıldı.
+- **Çizim:** görünen karolar 40’lık önbelleğe sığacak ölçek seçer; son çizilen karo ekrana aktarılır. Hareket azaltmada çökme anında enkaz görünür. 1.000 bina/122 mahalle Chromium’da doğrulandı; uzakta tek kişi adı, yakında mahalle tabelaları korunur. Saklı koordinatlar değişmedi.
+- **Araçlar:** `npm run test:browser` Python Playwright + Chromium ister; tüm verisi geçicidir. Vite HMR artık Node HTTP portunu paylaşır. Bulut `start_skill` taslağı güncellendi; bu site yayını değildir.
+- **Claude’un ilk işi:** yetkili ortamda yedek al, güncel dalı çek, testleri çalıştır, göç 8/9/10’u inceleyip yayınla; eski bir üye ve owner cihazında push yeniden bağlanmasını, ikinci cihazla kod/giriş ve revocation’ı doğrula. Canlı `ADMIN_KEY` ve davetleri değiştirme; gerçek üyeler için deneme silmesi yapma. Paket 2–9 eklenmedi, önce denetim yayını.
+
+### Önceki paketlerin durumu
+
 - **Paket 1 ✅ yayında.** Ortak köy: `shared/village.js` (hex kafes mahalleler, kıvrımlı yollar, Poisson yerleşim, `createPlanner`), göç 6 (`districts`, `buildings.pos_x/pos_y/facing/district_id/likes/touched`, `building_likes`, `members.ruin_*`, `groups.village_rev`), açılışta `layoutVillages()` eski binalara kalıcı konum verir. `/api/village?rev=&after=` artımlı (sadece değişen satırlar), `POST /api/buildings/:id/like`. Çizim: `src/iso.js` (SVG/Canvas ortak primitifler), `src/villageWorld.js` (dünya + gün/gece tonu), `src/villageView.js` (256px karo önbelleği, LOD, pinch/pan, canlı katman), `src/VillageMap.jsx` (`useVillage`, `VillagePanel`, ana sayfa `VillageNow`). Mahalle kapasitesi en fazla 9, pratikte 7–9.
 - **Ölçek:** 5 kişi sıkı bir dönemde ~300–1.900 bina. Sıcak yollar sayaçlarla (`districts.buildings`, `buildings.likes`) çalışır, tüm binaları taramaz (D1 ücretsiz 5M satır/gün sınırı).
 - **Paket 1.5 sunucu tarafı ✅ yayında (göç 7):** `members.username/pass_hash/reset_hash/reset_until`; `POST /api/account` (oturum açık cihazdan kullanıcı adı + şifre belirle/değiştir), `POST /api/login`, `POST /api/reset` (Batur kodu + yeni şifre, kullanıcı adı yoksa onu da belirler), `/join` ve `/groups` gövdede `username/password` kabul eder, oturum yanıtlarında `username`. `POST /api/owner/members/:id/reset` 24 saatlik kod üretir; bu kod `/transfer/claim`'de ("Zaten ekipteyim" ekranı) de tek seferlik giriş olarak çalışır. `/batur` panelinde üye satırında 🔑 düğmesi ve `@kullanıcıadı` görünür. Kullanıcı adı ı/i farkına duyarsız.
@@ -107,7 +122,7 @@ npm run deploy       # vite build + wrangler deploy (canlı)
 - **Sıradaki: Paket 2 — Mürekkep.**
 - **Paket 1.5 plan notu (tamamlandı):**
   1. ✅ Demo kaldırıldı; oturumsuz → `Welcome` ekranı (Giriş yap / Yeni ekip kur; davet linkinde "Ekibe katıl"). Kalan: girişte "Şifremi unuttum" için `/reset` formu (kod + kullanıcı adı + yeni şifre). Şimdilik Batur kodu "Kodla" sekmesinde giriş yaptırıyor, sonra Benim köşem → Hesap'tan yeni şifre belirleniyor.
-  2. Katılma/kurma formunda kullanıcı adı + şifre zorunlu (sunucu isteğe bağlı tutuyor, eski testler yüzünden).
+  2. Katılma/kurma formunda kullanıcı adı + şifre zorunlu (Astra denetiminde sunucu da zorunlu hale getirildi; eski hesaplar korunur).
   3. "Benim köşem"e "Hesap" bölümü (`/api/account`); hesabı olmayanlara ana sayfada nazik hatırlatma kartı.
   4. Veri güvenliği: `/batur`'a "Tüm veriyi yedekle (JSON indir)" uç noktası + düğmesi; "Ekipten ayrıl" yanlışlıkla basılmasın diye ad yazarak onay (ya da 30 gün geri alınabilir yumuşak silme); panelde üye ayrıntısı (cihaz/oturum sayısı, odak toplamı, bina sayısı, tüm oturumları kapat). D1 Time Travel ücretsiz planda 7 gün geri dönüş sağlar (`npx wrangler d1 time-travel restore kutup --timestamp=…`).
   5. Çoklu cihaz: tüm veri sunucuda, istemcide kalıcı veri yok; her yazma `state` döndürür, yoklama `rev` ile. 10 cihaz aynı anda sorun çıkarmaz; bunu bozmamaya dikkat.
