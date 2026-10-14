@@ -421,3 +421,31 @@ test("a JSON backup restores into an empty database with sign-in and stored spot
   replay.exec(sql);
   assert.equal(replay.prepare("SELECT count(*) AS n FROM members").get().n, 1, "the D1 file replays on an empty database");
 });
+
+test("Batur's dev badge is one per team, visible in state, and the black hole badge is awarded once", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "badge-test-owner-key" } });
+  const owner = { "X-Owner-Key": "badge-test-owner-key" };
+  const batur = await call(app, "/groups", { method: "POST", body: { name: "Batur", username: "batur_dev", password: "badge-123" } });
+  const invite = batur.data.group.invite;
+  const friend = await call(app, "/join", { method: "POST", body: { invite, name: "Sıla", username: "sila_x", password: "badge-123" } });
+  const state = async () => (await call(app, "/state", { headers: { Cookie: friend.cookie } })).data;
+  const badgeOf = (s, id) => s.members.find((m) => m.id === id).badge;
+  assert.equal((await call(app, `/owner/members/${batur.data.memberId}/badge`, { method: "POST", headers: owner, body: { dev: true } })).status, 200);
+  assert.equal(badgeOf(await state(), batur.data.memberId), "dev", "everyone sees the badge");
+  await call(app, `/owner/members/${friend.data.memberId}/badge`, { method: "POST", headers: owner, body: { dev: true } });
+  let s = await state();
+  assert.equal(badgeOf(s, friend.data.memberId), "dev");
+  assert.equal(badgeOf(s, batur.data.memberId), null, "only one dev profile per team");
+  await call(app, `/owner/members/${friend.data.memberId}/badge`, { method: "POST", headers: owner, body: { dev: false } });
+  assert.equal(badgeOf(await state(), friend.data.memberId), null);
+  assert.equal((await call(app, `/owner/members/${friend.data.memberId}/badge`, { method: "POST", body: { dev: true } })).status, 401, "needs the owner");
+
+  const earn = (key) => call(app, "/achievements", { method: "POST", headers: { Cookie: friend.cookie }, body: { key } });
+  assert.equal((await earn("black-hole")).data.new, true);
+  assert.equal((await earn("black-hole")).data.new, false, "awarded once");
+  assert.equal((await earn("made-up")).status, 400);
+  assert.equal((await call(app, "/leave", { method: "POST", headers: { Cookie: friend.cookie }, body: {} })).status, 200);
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM achievements").get().n, 0, "leaving removes badges too");
+});

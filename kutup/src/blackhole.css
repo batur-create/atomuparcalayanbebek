@@ -1,0 +1,357 @@
+/* Batur's black hole: art, the secret gate, the owner panel's hole, the dev badge. */
+
+.bh {
+  position: relative;
+  width: var(--bh-size);
+  height: var(--bh-size);
+  flex-shrink: 0;
+}
+.bh > * {
+  position: absolute;
+}
+.bh-glow {
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 170, 90, 0.38) 0%, rgba(140, 70, 255, 0.16) 46%, transparent 70%);
+  filter: blur(10px);
+}
+/* The disk lies in a tilted plane; the front copy is clipped to its near half
+   so it passes in front of the horizon while the back half stays behind. */
+.bh-disk-tilt {
+  inset: 0;
+  transform: perspective(900px) rotateX(70deg);
+}
+.bh-front {
+  clip-path: inset(50% 0 0 0);
+}
+.bh-disk {
+  position: absolute;
+  inset: 3%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #ffd890, #ff9a45, #d9531e, #7c2d12, #ff8a3d, #ffe6b3, #ffb05a, #ff7a2f, #ffd890
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 30%, #000 33%, #000 60%, transparent 70%);
+  mask: radial-gradient(circle, transparent 0 30%, #000 33%, #000 60%, transparent 70%);
+  animation: bh-spin 6s linear infinite;
+}
+/* Light from the far side of the disk, bent over the top of the horizon. */
+.bh-lens {
+  inset: 27%;
+  border-radius: 50%;
+  background: conic-gradient(from 90deg, rgba(255, 216, 150, 0.95), rgba(255, 140, 60, 0.15), rgba(255, 216, 150, 0.95));
+  -webkit-mask: radial-gradient(circle, transparent 0 61%, #000 65%, #000 71%, transparent 76%);
+  mask: radial-gradient(circle, transparent 0 61%, #000 65%, #000 71%, transparent 76%);
+  animation: bh-spin 9s linear infinite reverse;
+}
+.bh-horizon {
+  inset: 33%;
+  border-radius: 50%;
+  background: #000;
+  box-shadow:
+    0 0 0 2px rgba(255, 238, 205, 0.9),
+    0 0 18px 4px rgba(255, 180, 100, 0.6),
+    inset 0 0 14px #000;
+}
+.bh-infall {
+  inset: 0;
+  pointer-events: none;
+}
+@keyframes bh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- the gate ---------- */
+.bh-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  color: #f6efe4;
+  background: radial-gradient(circle at 50% 42%, rgba(24, 12, 34, 0.55), rgba(5, 3, 10, 0.96) 62%);
+  animation: bh-dim 0.5s ease backwards;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.bh-gate .bh {
+  animation: bh-open 1.1s cubic-bezier(0.2, 0.9, 0.2, 1) backwards;
+}
+.bh-gate.leaving {
+  animation: bh-undim 0.6s ease forwards;
+}
+.bh-gate.leaving .bh {
+  animation: bh-close 0.6s ease-in forwards;
+}
+@keyframes bh-dim {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes bh-undim {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes bh-open {
+  from {
+    transform: scale(0.05) rotate(-120deg);
+    opacity: 0;
+  }
+}
+@keyframes bh-close {
+  to {
+    transform: scale(0.05) rotate(120deg);
+    opacity: 0;
+  }
+}
+.bh-card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 220, 180, 0.18);
+  backdrop-filter: blur(6px);
+  animation: bh-rise 0.5s 0.1s ease backwards;
+}
+.bh-card h2 {
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  margin: 0 0 6px;
+}
+.bh-card p {
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 12px;
+  color: rgba(246, 239, 228, 0.75);
+}
+.bh-card label {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  font-size: 12px;
+  color: rgba(246, 239, 228, 0.7);
+}
+.bh-card input {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 220, 180, 0.25);
+  color: #fff;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 15px;
+}
+.bh-card input::placeholder {
+  color: rgba(246, 239, 228, 0.4);
+}
+.bh-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.bh-actions button {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bh-back {
+  background: transparent;
+  color: #f6efe4;
+  border: 1px solid rgba(255, 220, 180, 0.3);
+}
+.bh-open {
+  background: #ffb05a;
+  color: #1a0e05;
+  border: 0;
+}
+.bh-open:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bh-badge {
+  color: #ffd27a !important;
+  font-weight: 600;
+  animation: bh-rise 0.5s 0.4s ease backwards;
+}
+.bh-error {
+  color: #ff9b8a !important;
+  font-size: 12px !important;
+  margin: 8px 0 0 !important;
+}
+.bh-whisper {
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: rgba(246, 239, 228, 0.7);
+}
+@keyframes bh-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* The page is pulled in: stretched, spun and blurred into the hole. */
+body.bh-pulling,
+body.bh-calm {
+  overflow: hidden;
+}
+body.bh-pulling #root {
+  transform-origin: 50% calc(var(--bh-scroll, 0px) + 42vh);
+  animation: bh-spaghetti 1.3s cubic-bezier(0.55, 0, 0.85, 0.35) forwards;
+  pointer-events: none;
+}
+body.bh-releasing #root {
+  transform-origin: 50% calc(var(--bh-scroll, 0px) + 42vh);
+  animation: bh-return 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes bh-spaghetti {
+  40% {
+    transform: scale(0.86) rotate(6deg) skewX(-6deg);
+    filter: blur(1px);
+  }
+  to {
+    transform: scale(0.04, 0.02) rotate(160deg) skewX(40deg);
+    filter: blur(8px);
+    opacity: 0;
+  }
+}
+@keyframes bh-return {
+  from {
+    transform: scale(0.04, 0.02) rotate(160deg) skewX(40deg);
+    filter: blur(8px);
+    opacity: 0;
+  }
+}
+
+/* ---------- /batur: the hole requests are thrown into ---------- */
+.owner-hole {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 50;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 8px 6px;
+  border-radius: 20px;
+  background: #120a1a;
+  color: #f6efe4;
+  font-size: 11px;
+  box-shadow: 0 10px 30px rgba(18, 10, 26, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.owner-hole.hungry {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 3px #ffb05a, 0 12px 34px rgba(255, 140, 60, 0.4);
+}
+.owner-hole.fed .bh {
+  animation: bh-gulp 0.6s ease;
+}
+@keyframes bh-gulp {
+  40% {
+    transform: scale(1.18);
+  }
+}
+.owner-request.falling {
+  pointer-events: none;
+  animation: bh-swallow 0.9s cubic-bezier(0.6, 0, 0.9, 0.4) forwards;
+}
+@keyframes bh-swallow {
+  to {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.02) rotate(220deg);
+    filter: blur(4px);
+    opacity: 0;
+  }
+}
+.text-button.void {
+  color: #8a4a1c;
+}
+
+/* ---------- Batur's dev badge, visible to the whole team ---------- */
+.avatar.dev {
+  position: relative;
+  box-shadow: 0 0 0 2px var(--paper, #fff), 0 0 0 3.5px rgba(255, 160, 80, 0.6);
+}
+.avatar .dev-orbit {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: bh-spin 7s linear infinite;
+}
+.avatar .dev-orbit::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #050308 0 36%, #ffcf7a 46%, rgba(255, 140, 60, 0.55) 62%, transparent 72%);
+  box-shadow: 0 0 5px rgba(255, 170, 80, 0.75);
+}
+.avatar.small .dev-orbit {
+  inset: -4px;
+}
+.avatar.small .dev-orbit::before {
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+}
+.dev-tag {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #a4501b;
+  background: rgba(255, 176, 90, 0.18);
+  padding: 2px 8px;
+  border-radius: 9px;
+}
+.dev-mark {
+  color: #d9772b;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bh-disk,
+  .bh-lens,
+  .avatar .dev-orbit,
+  .bh-gate .bh,
+  .bh-gate.leaving .bh,
+  .owner-hole.fed .bh {
+    animation: none;
+  }
+}
+
+.owner-requests {
+  padding-bottom: 92px; /* room above the hole in the corner */
+}
+.icon-button.dev-pick {
+  font-size: 16px;
+  color: #b9a98b;
+}
+.icon-button.dev-pick.on {
+  color: #d9772b;
+  background: rgba(255, 176, 90, 0.18);
+}

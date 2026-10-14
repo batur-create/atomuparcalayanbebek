@@ -135,6 +135,12 @@ export const migrations = [
   [
     "UPDATE subscriptions SET session_token = (SELECT s.token FROM sessions s WHERE s.member_id = subscriptions.member_id ORDER BY s.seen DESC, s.created DESC LIMIT 1) WHERE session_token IS NULL",
   ],
+  // 12 — Batur's "dev" badge on his own profile in a team, and hidden badges
+  // (the first one: finding the black hole; Paket 4 adds the rest).
+  [
+    "ALTER TABLE members ADD COLUMN badge TEXT",
+    "CREATE TABLE IF NOT EXISTS achievements (member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, key TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(member_id, key))",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

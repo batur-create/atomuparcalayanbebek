@@ -47,13 +47,16 @@ export function pushKey(base64url) {
   );
 }
 
+// Batur's own profile (badge "dev") carries a tiny black hole in orbit, everywhere.
 export function Avatar({ member, size = "", className = "" }) {
+  const dev = member?.badge === "dev";
   return (
     <span
       aria-hidden="true"
-      className={`avatar ${member?.color || "lilac"} ${size} ${className}`}
+      className={`avatar ${member?.color || "lilac"} ${size} ${className} ${dev ? "dev" : ""}`}
     >
       {member?.avatar || "🪐"}
+      {dev && <i className="dev-orbit" />}
     </span>
   );
 }

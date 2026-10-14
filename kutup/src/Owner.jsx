@@ -1,5 +1,5 @@
 // Batur’s panel at /batur: requests with one-tap stages, teams and members.
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,12 +11,12 @@ import {
   Lock,
   LogOut,
   RefreshCw,
-  Trash2,
   UserMinus,
 } from "lucide-react";
 import { api, get, FEEDBACK, STATUS, dateLabel, shortTime } from "./api.js";
 import { allowedStatuses, statusLabel } from "../shared/requests.js";
-import { Avatar, Busy, Empty, pushKey, pushSupported, storage } from "./ui.jsx";
+import { Avatar, Busy, Empty, pushKey, pushSupported, reducedMotion, storage } from "./ui.jsx";
+import { BlackHoleArt } from "./BlackHole.jsx";
 import { RequestTracker, ago } from "./Requests.jsx";
 import { Modal } from "./Modal.jsx";
 
@@ -32,7 +32,7 @@ const STAGE_FILTERS = [
 const inFilter = (item, filter) =>
   filter === "all" || (filter === "open" ? item.status === "new" : item.status === filter);
 
-function RequestRow({ item, open, toggle, update, remove }) {
+function RequestRow({ item, open, toggle, update, throwAway, falling }) {
   const [reply, setReply] = useState(item.reply || ""),
     [busy, setBusy] = useState(""),
     [sentNote, setSentNote] = useState("");
@@ -46,7 +46,16 @@ function RequestRow({ item, open, toggle, update, remove }) {
     if (ok) setSentNote(done);
   };
   return (
-    <article className={`panel owner-request ${open ? "open" : ""} ${item.status === "new" ? "unread" : ""}`}>
+    <article
+      data-request={item.id}
+      className={`panel owner-request ${open ? "open" : ""} ${item.status === "new" ? "unread" : ""} ${falling ? "falling" : ""}`}
+      style={falling ? { "--dx": `${falling.dx}px`, "--dy": `${falling.dy}px` } : undefined}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/kutup-request", item.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+    >
       <button
         className="owner-request-head"
         aria-expanded={open}
@@ -123,12 +132,12 @@ function RequestRow({ item, open, toggle, update, remove }) {
               <Bell size={15} /> Notu gönder
             </Busy>
             <button
-              className="text-button danger"
+              className="text-button void"
               onClick={() => {
-                if (confirm("Bu istek kalıcı olarak silinsin mi?")) remove(item.id);
+                if (confirm("Bu istek kara deliğe atılsın mı? Oradan hiçbir şey geri dönmez.")) throwAway(item.id);
               }}
             >
-              <Trash2 size={15} /> Sil
+              🕳️ Kara deliğe at
             </button>
           </div>
           {sentNote && <p className="owner-sent">{sentNote}</p>}
@@ -297,6 +306,28 @@ export function OwnerPage() {
       setError(e.message);
     }
   };
+  // A request thrown away flies into the hole in the corner, then is deleted.
+  const hole = useRef(),
+    [falling, setFalling] = useState(null),
+    [hungry, setHungry] = useState(false),
+    [fed, setFed] = useState(false);
+  const throwAway = (id) => {
+    if (falling) return;
+    const target = hole.current?.getBoundingClientRect(),
+      box = document.querySelector(`[data-request="${id}"]`)?.getBoundingClientRect();
+    setFalling({
+      id,
+      dx: target && box ? target.left + target.width / 2 - (box.left + box.width / 2) : 0,
+      dy: target && box ? target.top + target.height / 2 - (box.top + box.height / 2) : 0,
+    });
+    setTimeout(async () => {
+      setFed(true);
+      setTimeout(() => setFed(false), 650);
+      navigator.vibrate?.(30);
+      await remove(id);
+      setFalling(null);
+    }, reducedMotion() ? 0 : 900);
+  };
   const act = async (fn) => {
     try {
       await fn();
@@ -430,7 +461,8 @@ export function OwnerPage() {
                     open={openId === item.id}
                     toggle={() => toggle(item)}
                     update={update}
-                    remove={remove}
+                    throwAway={throwAway}
+                    falling={falling?.id === item.id ? falling : null}
                   />
                 ))}
               </div>
@@ -443,6 +475,26 @@ export function OwnerPage() {
                   {pushOn ? " Telefonuna da haber gelir." : " Bildirimi açarsan telefonuna da düşer."}
                 </Empty>
               )}
+              <div
+                ref={hole}
+                className={`owner-hole ${hungry ? "hungry" : ""} ${fed ? "fed" : ""}`}
+                title="Bir isteği buraya sürükle ya da isteğin içinde “Kara deliğe at”a bas"
+                onDragOver={(e) => {
+                  if (!e.dataTransfer.types.includes("text/kutup-request")) return;
+                  e.preventDefault();
+                  setHungry(true);
+                }}
+                onDragLeave={() => setHungry(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setHungry(false);
+                  const id = e.dataTransfer.getData("text/kutup-request");
+                  if (id) throwAway(id);
+                }}
+              >
+                <BlackHoleArt size={58} sparks={false} />
+                <span>Kara delik</span>
+              </div>
             </>
           ) : (
             <div className="owner-groups">
@@ -500,8 +552,18 @@ export function OwnerPage() {
                           </small>
                           <small>
                             {m.devices} cihaz · {Math.round((m.minutes || 0) / 60)} sa odak · {m.builds} bina
+                            {m.badge === "dev" && " · ✦ bu ekipteki profilin"}
                           </small>
                         </div>
+                        <button
+                          className={`icon-button dev-pick ${m.badge === "dev" ? "on" : ""}`}
+                          aria-pressed={m.badge === "dev"}
+                          aria-label={m.badge === "dev" ? `${m.name}: geliştirici rozetini kaldır` : `${m.name} benim: geliştirici rozetini tak`}
+                          title="Bu ekipteki profilim (yörüngede kara delik, herkes görür)"
+                          onClick={() => act(() => api(`/owner/members/${m.id}/badge`, { dev: m.badge !== "dev" }))}
+                        >
+                          ✦
+                        </button>
                         <button
                           className="icon-button"
                           aria-label={`${m.name} için giriş kodu üret`}

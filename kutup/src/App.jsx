@@ -62,6 +62,7 @@ import {
 } from "./ui.jsx";
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
+import { openBlackHole } from "./BlackHole.jsx";
 import { KINDS, kindFor } from "./Village.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
@@ -234,8 +235,8 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
   // Batur's door: seven quick taps on a ✳ with the last one held, or typing
-  // "batur" anywhere outside a text field, opens /batur. It only shows the
-  // door; the panel still asks for the key (or the remembered owner cookie).
+  // "batur" anywhere outside a text field, opens a black hole. It only shows
+  // the door; the panel still asks for the key (or the remembered owner cookie).
   useEffect(() => {
     let taps = [],
       hold = 0,
@@ -243,7 +244,7 @@ export default function App() {
       typed = "";
     const open = () => {
       navigator.vibrate?.(40);
-      location.href = "/batur";
+      openBlackHole();
     };
     const down = (e) => {
       // A long press on the footer's signature reveals Batur's hidden note.
@@ -1502,6 +1503,9 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
             <Headphones size={16} />
           ))}
       </div>
+      {m.badge === "dev" && (
+        <p className="dev-tag" title="Kütüp’ü yapan kişi">✦ Kurucu · Olay ufku bekçisi</p>
+      )}
       <p className="member-note">
         {m.note || "Bu masada güzel şeyler olacak."}
       </p>
@@ -1794,6 +1798,7 @@ function Board({ data, me, requireMember, mutate, compact }) {
               <div>
                 <div className="message-meta">
                   <strong>{m?.name}</strong>
+                  {m?.badge === "dev" && <span className="dev-mark" title="Geliştirici">✦</span>}
                   <time>{shortTime(msg.created)}</time>
                   {msg.kind === "coffee" && <span>mola daveti ☕</span>}
                 </div>

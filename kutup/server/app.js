@@ -29,6 +29,7 @@ const PUSH_COOLDOWN = 45 * 60000;
 // A real arrival (from away or on the way) always notifies; this only stops
 // someone from pinging everyone by flipping away/here in a loop.
 const ARRIVAL_REPEAT = 5 * 60000;
+const ACHIEVEMENTS = ["black-hole"];
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
@@ -276,7 +277,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, updated";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages] =
       await db.read([
@@ -667,6 +668,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM subscriptions WHERE member_id = ?", [id]],
       ["DELETE FROM feedback_events WHERE feedback_id IN (SELECT id FROM feedback WHERE member_id = ?)", [id]],
       ["DELETE FROM feedback WHERE member_id = ?", [id]],
+      ["DELETE FROM achievements WHERE member_id = ?", [id]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
@@ -1224,6 +1226,17 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, test });
   });
 
+  // Hidden badges, from an allowlist. "black-hole": found Batur's door.
+  route("POST", "/achievements", async ({ member, body }) => {
+    if (!ACHIEVEMENTS.includes(body.key)) fail("Böyle bir rozet yok.");
+    limit(`${member.id}:achievement`, 20);
+    const result = await db.run(
+      "INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)",
+      [member.id, body.key, Date.now()],
+    );
+    return json({ ok: true, new: result.changes === 1 });
+  });
+
   route("DELETE", "/push", async ({ member, body }) => {
     await db.run("DELETE FROM subscriptions WHERE member_id = ? AND endpoint = ?", [
       member.id,
@@ -1486,7 +1499,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [groups, members] = await db.read([
       ["SELECT id, name, invite, created FROM groups ORDER BY created DESC", []],
       [
-        `SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username,
+        `SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username, m.badge,
            MAX(s.seen) AS seen, count(s.token) AS devices,
            (SELECT COALESCE(SUM(minutes), 0) FROM focus_log f WHERE f.member_id = m.id) AS minutes,
            (SELECT count(*) FROM buildings b WHERE b.member_id = m.id) AS builds
@@ -1546,11 +1559,26 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, closed: count });
   }, false);
 
+  // "This is me in this team": Batur's own profile wears the dev badge (the
+  // orbiting black hole) for everyone. One per team; choosing again moves it.
+  route("POST", "/owner/members/:id/badge", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const member = await db.get("SELECT id, group_id FROM members WHERE id = ?", [params.id]);
+    if (!member) fail("Kişi bulunamadı.", 404);
+    await db.batch([
+      ["UPDATE members SET badge = NULL WHERE group_id = ? AND badge = 'dev'", [member.group_id]],
+      ...(body.dev === true ? [["UPDATE members SET badge = 'dev' WHERE id = ?", [member.id]]] : []),
+      bump(member.group_id),
+    ]);
+    onChange(member.group_id);
+    return json({ ok: true, dev: body.dev === true });
+  }, false);
+
   // Everything, as JSON: a copy Batur can keep. Secrets that open accounts or
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {

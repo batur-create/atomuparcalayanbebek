@@ -4585,9 +4585,29 @@ input.code-input {
   display: block;
   font-size: 13px;
 }
+.owner-group li small {
+  display: block;
+}
 @media (max-width: 760px) {
   .owner-groups {
     grid-template-columns: 1fr;
+  }
+  /* Phone: the team's buttons and each member's tools drop below the text. */
+  .owner-group-head {
+    flex-wrap: wrap;
+  }
+  .owner-group-head > div {
+    flex-basis: 100%;
+  }
+  .owner-group li {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .owner-group li > div {
+    flex-basis: calc(100% - 54px);
+  }
+  .owner-group li > button:first-of-type {
+    margin-left: auto;
   }
   .mobile-bottom {
     gap: 2px;

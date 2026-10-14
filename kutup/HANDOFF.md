@@ -29,7 +29,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 ```
 kutup/
   server/app.js     Tüm API: Fetch Request/Response + async DB adaptörü (all/get/run/read/batch). Node ve Worker'da aynı kod.
-  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 11). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
+  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 12). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
                     D1 yüzünden her eleman TEK SQL ifadesi olmalı.
   server/push.js    Web Push (Web Crypto)
   server/sqlite.js  node:sqlite adaptörü
@@ -64,7 +64,7 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (67 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (68 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
 npm run test:browser # gerçek tarayıcı, 18 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
@@ -149,9 +149,18 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
 - **Paket 1.5 sunucu tarafı ✅ yayında (göç 7):** `members.username/pass_hash/reset_hash/reset_until`; `POST /api/account` (oturum açık cihazdan kullanıcı adı + şifre belirle/değiştir), `POST /api/login`, `POST /api/reset` (Batur kodu + yeni şifre, kullanıcı adı yoksa onu da belirler), `/join` ve `/groups` gövdede `username/password` kabul eder, oturum yanıtlarında `username`. `POST /api/owner/members/:id/reset` 24 saatlik kod üretir; bu kod `/transfer/claim`'de ("Zaten ekipteyim" ekranı) de tek seferlik giriş olarak çalışır. `/batur` panelinde üye satırında 🔑 düğmesi ve `@kullanıcıadı` görünür. Kullanıcı adı ı/i farkına duyarsız.
 - **Paket 1.5 arayüzün ilk parçası ✅ yayında:** "Zaten hesabım var, giriş yap" penceresinde "Kullanıcı adıyla / Kodla" sekmeleri (`/login`, `/transfer/claim`); Benim köşem → `AccountBox` (kullanıcı adı + şifre belirle/değiştir). Batru (Batur) hesabı için 14 Ekim'de panelden kod üretildi.
 - **Paket 1.5 ✅ tamamlandı (14 Ekim):** giriş penceresinde "Giriş / Şifremi unuttum / Kodla" sekmeleri (`/login`, `/reset`, `/transfer/claim`); katılma/kurma formunda kullanıcı adı + şifre zorunlu; hesabı olmayana ana sayfada "Hesabını koru" kartı; "Ekipten ayrıl" adı yazarak onay ister; `/batur` panelinde üye başına cihaz sayısı, odak saati, bina sayısı, 🔑 giriş kodu, ⎋ tüm cihazlarda çıkış (`POST /api/owner/members/:id/signout`) ve "Tüm veriyi yedekle" (`GET /api/owner/backup`, oturum açan sırlar hariç JSON). Aşağıdaki liste geçmiş plan notudur.
-- **Paket 3 ön sürümü ✅:** gizli kapı kısayolu (App.jsx, data-door işaretli ✳ öğelerine 7 hızlı dokunuş + sonuncusunda basılı tutma, ya da metin alanı dışında "batur" yazmak) doğrudan /batur açar. Kara delik animasyonu, sahibi olmayan için "Burası Batur'un kara deliği" ekranı ve gizli rozet hâlâ Paket 3'te.
+- **Paket 3 ✅ yayında (14 Ekim akşamı; köydeki gözlemevi hariç):**
+  - **Kapı:** ✳ kombinasyonu (7 dokunuş + basılı tutma ya da "batur" yazmak) `openBlackHole()`'u açar (`src/BlackHole.jsx`, `src/blackhole.css`). Kendi React kökünde çalışır. Kara deliğin ufku, foton halkası, eğik ve dönen toplanma diski (önden geçen yarısı `clip-path` ile), bükülen ışık halkası ve canvas'ta Kepler sarmalıyla düşen kıvılcımları var.
+  - **Spagettileşme:** sayfa (`#root`) gerdirilip döndürülerek ve bulanıklaşarak deliğe çekilir.
+  - **Kapı mantığı:** `/api/owner/status` `signedIn` ise `/batur`'a geçer. Değilse "Burası Batur'un kara deliği 🕳️" kartı, anahtar alanı (`/owner/login`) ve "Geri dön" (sayfa geri açılır) çıkar. Hareket azaltmada yalnızca solma var.
+  - **Gizli rozet:** göç 12 `achievements(member_id, key, created)` tablosunu ekler; `POST /api/achievements` izin listesiyle çalışır (şimdilik yalnızca `black-hole`) ve kapıyı ilk bulana "Kara delik kâşifi" yazar. Ayrılınca silinir, yedeğe ve geri yüklemeye dahildir. Paket 4 bu altyapıya rozet ekleyecek.
+  - **Geliştirici eşyası:** göç 12 `members.badge` ekler. `/batur` → Ekipler → üye satırındaki ✦ düğmesi = "bu ekipteki profilim" (`POST /api/owner/members/:id/badge {dev}`, ekip başına bir tane). `badge` durumla herkese gider. `Avatar` bunu her yerde yörüngede dönen mini kara delik ve turuncu çerçeveyle gösterir. Üye kartında "✦ Kurucu · Olay ufku bekçisi" etiketi var, panoda Batur'un mesajlarının yanında ✦.
+  - **Panel kara deliği:** sağ altta kara delik durur. İstek içinde "🕳️ Kara deliğe at" (onay ister) ya da bilgisayarda isteği sürükleyip bırakmak: istek deliğe uçar, yutulur, silinir.
+  - **Yan düzeltmeler:** `/batur` Ekipler 375px'te taşıyordu (437px); dar ekranda düğmeler alt satıra iner. Üye satırındaki iki bilgi satırı ayrıldı.
+  - **Kalan:** köyde Batur'un mahallesinde "Olay Ufku Gözlemevi" (kubbe, üstünde dönen mini kara delik, gece kubbeden ışık). `badge = 'dev'` olan üyenin mahallesine, binalarla çakışmayan sabit bir noktaya çizilecek (`villageWorld.js` / `iso.js`). Bunun dışında Paket 3 bitti.
+  - **Batur'un yapması gereken:** `/batur` → Ekipler → kendi satırında ✦'e bas.
 - **Paket 4 ön sürümü ✅ (yalnız istemci, rozet yok):** Gizli not (alt bilgideki imzaya uzun bas), Şşşt (tamamı büyük harf pano mesajı), Çay (panoda tam "çay" → 60 sn tüm avatarlarda 🍵, .tea-time), Gece kuşu (03–05 arası açılış, gecede bir uyarı). Kalan: achievements tablosu, n/12 profil, 🦉 avatar kilidi, Mürekkep kutlaması.
-- **Sıradaki: Paket 2 — Mürekkep.**
+- **Sıradaki:** Paket 3'ün gözlemevi (küçük), sonra Paket 2 — Mürekkep.
 - **Paket 1.5 plan notu (tamamlandı):**
   1. ✅ Demo kaldırıldı; oturumsuz → `Welcome` ekranı (Giriş yap / Yeni ekip kur; davet linkinde "Ekibe katıl"). Kalan: girişte "Şifremi unuttum" için `/reset` formu (kod + kullanıcı adı + yeni şifre). Şimdilik Batur kodu "Kodla" sekmesinde giriş yaptırıyor, sonra Benim köşem → Hesap'tan yeni şifre belirleniyor.
   2. Katılma/kurma formunda kullanıcı adı + şifre zorunlu (Astra denetiminde sunucu da zorunlu hale getirildi; eski hesaplar korunur).
