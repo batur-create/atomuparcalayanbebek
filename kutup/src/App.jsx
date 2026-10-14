@@ -1972,27 +1972,20 @@ function Plans({ data, me, requireMember, mutate, open }) {
     </div>
   );
 }
-// Milli Kütüphane's own room names (from its user-services regulation); kept
-// under the server's 40-character limit. Old free-text places still work.
-const READING_ROOMS = [
-  "Adnan Ötüken Okuma Salonu",
-  "Dr. Müjgan Cunbur Okuma Salonu",
-  "Süreli Yayınlar Salonu",
-  "Danışma Kaynakları Salonu",
-  "İbn-i Sina Nadir Eserler Salonu",
-  "Mikrofilm Salonu",
-  "İnteraktif Salon",
-  "Müzik Dinleme Salonu",
-  "Çok Amaçlı Çalışma Salonu",
+// The tayfa's two reading rooms at Milli Kütüphane (Adnan is home), plus break
+// spots. Old free-text places still work through "Başka bir yer…".
+const PLACES = [
+  ["Adnan Ötüken Okuma Salonu", "📚 Adnan"],
+  ["Dr. Müjgan Cunbur Okuma Salonu", "📖 Müjgan"],
+  ["Kafeterya", "☕ Kafeterya"],
+  ["Bahçe", "🌳 Bahçe"],
 ];
-const BREAK_PLACES = ["Kafeterya", "Bahçe"];
-const PLACES = [...READING_ROOMS, ...BREAK_PLACES];
 const OTHER_PLACE = "Başka bir yer…";
 function PresenceModal({ me, coming, close, mutate }) {
-  const known = !me.location || PLACES.includes(me.location);
+  const known = !me.location || PLACES.some(([name]) => name === me.location);
   const [status, setStatus] = useState(coming ? "coming" : "here"),
     [location, setLocation] = useState(
-      known ? me.location || READING_ROOMS[0] : OTHER_PLACE,
+      known ? me.location || PLACES[0][0] : OTHER_PLACE,
     ),
     [customPlace, setCustomPlace] = useState(known ? "" : me.location),
     [desk, setDesk] = useState(me.desk || ""),
@@ -2058,25 +2051,22 @@ function PresenceModal({ me, coming, close, mutate }) {
           </label>
         ) : (
           <>
-            <label className="field-label">
-              Nerede çalışıyorsun?
-              <select
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              >
-                <optgroup label="Okuma salonları">
-                  {READING_ROOMS.map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Mola yerleri">
-                  {BREAK_PLACES.map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </optgroup>
-                <option>{OTHER_PLACE}</option>
-              </select>
-            </label>
+            <span className="plan-step">
+              Nerede çalışıyorsun? <small>genelde Adnan’dayız aga</small>
+            </span>
+            <div className="quick-messages place-chips" role="group" aria-label="Salon">
+              {[...PLACES, [OTHER_PLACE, "Başka…"]].map(([name, label]) => (
+                <button
+                  type="button"
+                  key={name}
+                  aria-pressed={location === name}
+                  className={location === name ? "selected" : ""}
+                  onClick={() => setLocation(name)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             {location === OTHER_PLACE && (
               <label className="field-label">
                 Neresi?

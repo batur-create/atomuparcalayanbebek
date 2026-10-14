@@ -164,7 +164,7 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
   - Zeynep'in planı sunucuya hiç ulaşmamıştı (kaydı da pano mesajı da yok).
   - Form artık saat değerini her biçimde okuyor ("10:00:00" dahil), "okunamadı" ile "geçti" mesajlarını ayırıyor ve sunucu hatasını formun içinde gösteriyor.
   - Yeni akış: 7 günlük gün çipleri, geçmişi kapalı saat çipleri, "Başka saat", hazır plan adları, canlı özet.
-  - Durum penceresinde Milli Kütüphane'nin yönetmelikteki gerçek salon adları var (Adnan Ötüken, Dr. Müjgan Cunbur, Süreli Yayınlar, Danışma Kaynakları, İbn-i Sina Nadir Eserler, Mikrofilm, İnteraktif, Müzik Dinleme, Çok Amaçlı Çalışma), ayrıca Kafeterya ve Bahçe. Kat bilgisi resmî kaynakta olmadığı için yazılmadı.
+  - Durum penceresinde salon seçimi artık düğmelerle yapılıyor ve yalnızca tayfanın kullandığı salonlar var: 📚 Adnan (Adnan Ötüken Okuma Salonu, varsayılan; “genelde Adnan’dayız aga”), 📖 Müjgan (Dr. Müjgan Cunbur Okuma Salonu), ☕ Kafeterya, 🌳 Bahçe ve Başka…. Batur diğer salonları istemedi.
 - **Sıradaki (Batur'a seçtiğim):** önce Paket 3'ün gözlemevi (küçük), sonra **Paket 2 — Mürekkep**. Uygulamanın yüzü; Paket 4'ün kutlaması ve Paket 5'in şantiye şefi ona bağlı.
   - Plan: `src/Mascot.jsx` (parçalı SVG; kafa, gözler, kulaklar, kuyruk, pati, gözlük, atkı `var(--accent)`; 9 poz; bekleme hareketleri; `say` balonu) ve `src/mascotLines.js` (olay başına 8–15 cümle, tekrar etmeyen seçici).
   - Ardından tanıtım: 3 kart, cihaz başına bir kez. Sonra "İlk gün görevleri" kartı (sunucudan türet: profil süslendi mi, ilk `here`, abonelik var mı, ilk bina; ödül Kurucu tabelası). Sonra sekme ipuçları. En sonda boş durumlara ve şantiyeye yerleştirme.

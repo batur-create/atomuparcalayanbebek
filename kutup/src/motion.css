@@ -1490,3 +1490,23 @@ h3,
   background: #fbe6df;
   color: #a64528;
 }
+
+/* ---------- presence: where in the library ---------- */
+.plan-step small {
+  font-weight: 500;
+  color: #b1a387;
+  margin-left: 4px;
+}
+.place-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 12px;
+}
+.place-chips button {
+  min-height: 44px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.place-chips button:last-child {
+  grid-column: 1 / -1;
+}
