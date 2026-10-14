@@ -1,7 +1,7 @@
 // Kütüp API as a Fetch handler. It only uses Web-standard APIs (Request, Response,
 // crypto.subtle) and an async database adapter, so the exact same code serves the
 // Node build (node:sqlite + SSE) and the Cloudflare Worker / ChatGPT Sites build (D1).
-import { migrate } from "./schema.js";
+import { SCHEMA_VERSION, migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
@@ -1331,7 +1331,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [groups, members] = await db.read([
       ["SELECT id, name, invite, created FROM groups ORDER BY created DESC", []],
       [
-        "SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username, MAX(s.seen) AS seen FROM members m LEFT JOIN sessions s ON s.member_id = m.id GROUP BY m.id ORDER BY m.joined",
+        `SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username,
+           MAX(s.seen) AS seen, count(s.token) AS devices,
+           (SELECT COALESCE(SUM(minutes), 0) FROM focus_log f WHERE f.member_id = m.id) AS minutes,
+           (SELECT count(*) FROM buildings b WHERE b.member_id = m.id) AS builds
+         FROM members m LEFT JOIN sessions s ON s.member_id = m.id GROUP BY m.id ORDER BY m.joined`,
         [],
       ],
     ]);
@@ -1370,6 +1374,28 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!result.changes) fail("Kişi bulunamadı.", 404);
     const { username } = await db.get("SELECT username FROM members WHERE id = ?", [params.id]);
     return json({ code: `${code.slice(0, 4)}-${code.slice(4)}`, username });
+  }, false);
+
+  // Signs a member out on every device (a lost phone, a shared computer).
+  route("POST", "/owner/members/:id/signout", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    const result = await db.run("DELETE FROM sessions WHERE member_id = ?", [params.id]);
+    return json({ ok: true, closed: result.changes });
+  }, false);
+
+  // Everything, as JSON: a copy Batur can keep. Secrets that open accounts or
+  // sessions directly (cookie hashes, one-time codes, push keys) stay out.
+  route("GET", "/owner/backup", async ({ request, ip }) => {
+    await requireOwner(request, ip);
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events"];
+    const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
+    const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
+    tables.forEach((t, i) => {
+      backup.tables[t] = t === "members"
+        ? rows[i].map(({ token, transfer_hash, reset_hash, ...m }) => m)
+        : rows[i];
+    });
+    return json(backup, 200, { "Content-Disposition": `attachment; filename="kutup-yedek-${new Date().toISOString().slice(0, 10)}.json"` });
   }, false);
 
   route("DELETE", "/owner/members/:id", async ({ request, ip, params }) => {

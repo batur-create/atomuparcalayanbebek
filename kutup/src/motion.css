@@ -1346,3 +1346,54 @@ h3,
     animation: none;
   }
 }
+.account-fields {
+  margin: 18px 0 4px;
+  padding: 14px 14px 4px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+.account-fields legend {
+  padding: 0 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--accent-deep);
+}
+.account-fields input,
+.segmented ~ form input {
+  font-size: 16px;
+}
+.account-nudge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  text-align: left;
+}
+.account-nudge span {
+  flex: 1;
+}
+.account-nudge strong {
+  display: block;
+  font-size: 13.5px;
+}
+.account-nudge small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #6b6679;
+}
+.segmented {
+  grid-template-columns: repeat(3, 1fr);
+}
+.segmented button {
+  font-size: 12.5px;
+  padding: 0 4px;
+}

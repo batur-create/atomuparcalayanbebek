@@ -557,6 +557,18 @@ export function defineSuite(target) {
     const groups = (await request("/owner/groups", { owner: adminKey })).data;
     const mine = groups.find((g) => g.id === group.id);
     assert.deepEqual(mine.members.map((m) => m.name), ["Aylin", "Deniz", "Ece"]);
+    assert.ok(mine.members.every((m) => Number.isInteger(m.devices) && Number.isInteger(m.builds)));
+    // A full JSON copy for safekeeping, without anything that opens a session.
+    assert.equal((await request("/owner/backup")).status, 401);
+    const backup = (await request("/owner/backup", { owner: adminKey })).data;
+    assert.ok(backup.tables.members.some((m) => m.name === "Aylin" && m.username === "aylin.k"));
+    assert.equal(backup.tables.members.some((m) => "token" in m || "reset_hash" in m), false);
+    assert.ok(backup.tables.buildings.length >= 1 && backup.tables.messages.length >= 1);
+    // Signing someone out everywhere keeps their data.
+    const ece = mine.members.find((m) => m.name === "Ece");
+    assert.equal((await request(`/owner/members/${ece.id}/signout`, { owner: adminKey, body: {} })).status, 200);
+    assert.equal((await request("/session", { cookie: people.ece })).status, 401);
+    assert.ok((await request("/owner/groups", { owner: adminKey })).data.find((g) => g.id === group.id).members.some((m) => m.name === "Ece"));
     assert.equal((await request(`/owner/groups/${group.id}/invite`, { body: {} })).status, 401);
     const rotated = await request(`/owner/groups/${group.id}/invite`, { owner: adminKey, body: {} });
     assert.equal((await request(`/invites/${group.invite}`)).status, 404);

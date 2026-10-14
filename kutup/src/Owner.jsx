@@ -4,8 +4,10 @@ import {
   ArrowRight,
   Bell,
   ChevronDown,
+  Download,
   KeyRound,
   Lock,
+  LogOut,
   RefreshCw,
   Trash2,
   UserMinus,
@@ -444,6 +446,24 @@ export function OwnerPage() {
                     >
                       <RefreshCw size={15} /> Daveti yenile
                     </button>
+                    <button
+                      className="text-button"
+                      onClick={async () => {
+                        try {
+                          const data = await get("/owner/backup");
+                          const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `kutup-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+                          a.click();
+                          setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        } catch (e) {
+                          alert(e.message);
+                        }
+                      }}
+                    >
+                      <Download size={15} /> Tüm veriyi yedekle
+                    </button>
                   </div>
                   <ul>
                     {g.members.map((m) => (
@@ -454,6 +474,9 @@ export function OwnerPage() {
                           <small>
                             {m.username ? `@${m.username}` : "kullanıcı adı yok"} · {STATUS[m.status]?.[0]} · son görülme{" "}
                             {m.seen ? `${dateLabel(m.seen)} ${shortTime(m.seen)}` : "—"}
+                          </small>
+                          <small>
+                            {m.devices} cihaz · {Math.round((m.minutes || 0) / 60)} sa odak · {m.builds} bina
                           </small>
                         </div>
                         <button
@@ -473,6 +496,17 @@ export function OwnerPage() {
                           }}
                         >
                           <KeyRound size={17} />
+                        </button>
+                        <button
+                          className="icon-button"
+                          aria-label={`${m.name} için tüm cihazlarda oturumu kapat`}
+                          title="Tüm cihazlarda oturumu kapat"
+                          onClick={() => {
+                            if (confirm(`${m.name} tüm cihazlarda çıkış yapsın mı? Verileri silinmez; kullanıcı adı ya da kodla yeniden girer.`))
+                              act(() => api(`/owner/members/${m.id}/signout`, {}));
+                          }}
+                        >
+                          <LogOut size={17} />
                         </button>
                         <button
                           className="icon-button"

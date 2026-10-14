@@ -911,6 +911,16 @@ export default function App() {
           {tab === "home" && session && !notificationOn && (
             <SetupCard enable={enableNotifications} />
           )}
+          {tab === "home" && session && !session.username && (
+            <button className="account-nudge" onClick={() => setModal("profile")}>
+              <KeyRound size={18} />
+              <span>
+                <strong>Hesabını koru</strong>
+                <small>Kullanıcı adı ve şifre belirle; başka bir telefondan ya da tarayıcıdan girince profilin seni beklesin.</small>
+              </span>
+              <ArrowRight size={16} />
+            </button>
+          )}
           {tab === "home" && (
             <div className="dashboard-grid">
               <section className="hero-card">
@@ -1942,6 +1952,7 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
       note: "",
     }),
     [groupName, setGroupName] = useState("Bizim tayfa"),
+    [account, setAccount] = useState({ username: "", password: "", code: "" }),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [mode, setMode] = useState(start || (standalone && !invite ? "code" : "profile")),
@@ -1958,6 +1969,8 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
           ...value,
           groupName,
           invite,
+          username: account.username,
+          password: account.password,
         }),
       );
     } catch (e) {
@@ -1971,7 +1984,12 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
     setBusy(true);
     setError("");
     try {
-      const d = via === "login" ? await api("/login", login) : await api("/transfer/claim", { code });
+      const d =
+        via === "login"
+          ? await api("/login", login)
+          : via === "reset"
+            ? await api("/reset", account)
+            : await api("/transfer/claim", { code });
       onSuccess(d, "Tekrar hoş geldin! Profilin bu cihazda da açık. ✨");
     } catch (e) {
       setError(e.message);
@@ -1985,14 +2003,17 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
         title="Zaten ekiptesin. 🔑"
         subtitle={
           via === "login"
-            ? "Kullanıcı adın ve şifrenle gir. Şifreni unuttuysan Batur’dan giriş kodu iste."
-            : "Diğer cihazındaki “Başka cihazda aç” kodunu ya da Batur’un verdiği giriş kodunu yaz."
+            ? "Kullanıcı adın ve şifrenle gir. Şifreni unuttuysan “Şifremi unuttum”a bas."
+            : via === "reset"
+              ? "Batur’a yaz, panelinden sana bir kod versin. Kodla yeni şifreni belirle; kullanıcı adın yoksa onu da şimdi seç."
+              : "Diğer cihazındaki “Başka cihazda aç” kodunu ya da Batur’un verdiği giriş kodunu yaz."
         }
         close={close}
       >
         <div className="segmented" role="tablist">
           {[
-            ["login", "Kullanıcı adıyla"],
+            ["login", "Giriş"],
+            ["reset", "Şifremi unuttum"],
             ["code", "Kodla"],
           ].map(([id, label]) => (
             <button
@@ -2011,7 +2032,51 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
           ))}
         </div>
         <form onSubmit={claim}>
-          {via === "login" ? (
+          {via === "reset" ? (
+            <>
+            <label className="field-label">
+              Batur’un kodu
+              <input
+                required
+                autoFocus
+                className="code-input"
+                autoComplete="one-time-code"
+                autoCapitalize="characters"
+                spellCheck={false}
+                maxLength={12}
+                placeholder="ABCD-2345"
+                value={account.code}
+                onChange={(e) => setAccount({ ...account, code: e.target.value.toUpperCase() })}
+              />
+            </label>
+            <label className="field-label">
+              Kullanıcı adı
+              <input
+                required
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={24}
+                value={account.username}
+                onChange={(e) => setAccount({ ...account, username: e.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              Yeni şifre
+              <input
+                required
+                type="password"
+                autoComplete="new-password"
+                autoCapitalize="none"
+                spellCheck={false}
+                minLength={6}
+                maxLength={128}
+                value={account.password}
+                onChange={(e) => setAccount({ ...account, password: e.target.value })}
+              />
+            </label>
+            </>
+          ) : via === "login" ? (
             <>
               <label className="field-label">
                 Kullanıcı adı
@@ -2112,6 +2177,37 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
           </label>
         )}
         <ProfileFields value={value} setValue={setValue} />
+        <fieldset className="account-fields">
+          <legend>Hesabın · her cihazdan bununla girersin</legend>
+            <label className="field-label">
+              Kullanıcı adı
+              <input
+                required
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={24}
+                placeholder="ör. batur"
+                value={account.username}
+                onChange={(e) => setAccount({ ...account, username: e.target.value })}
+              />
+            </label>
+            <label className="field-label">
+              Şifre
+              <input
+                required
+                type="password"
+                autoComplete="new-password"
+                autoCapitalize="none"
+                spellCheck={false}
+                minLength={6}
+                maxLength={128}
+                placeholder="en az 6 karakter"
+                value={account.password}
+                onChange={(e) => setAccount({ ...account, password: e.target.value })}
+              />
+            </label>
+        </fieldset>
         {existing && (
           <p className="form-warning">
             Yeni ekibe katılınca bu tarayıcıdaki mevcut oturumun değişir.
@@ -2266,12 +2362,14 @@ function ProfileModal({ me, username, onAccount, theme, setTheme, close, mutate,
     }),
     [busy, setBusy] = useState(false);
   const leave = async () => {
-    if (
-      !confirm(
-        "Ekipten ayrılırsan profilin, mesajların ve planların silinir. Emin misin?",
-      )
-    )
+    const typed = prompt(
+      `Ekipten ayrılırsan profilin, köydeki binaların, mesajların ve planların kalıcı olarak silinir. Emin misin? Onaylamak için adını yaz: ${me.name}`,
+    );
+    if (typed === null) return;
+    if (typed.trim().toLocaleLowerCase("tr") !== me.name.toLocaleLowerCase("tr")) {
+      notify("Ad eşleşmedi, ayrılmadın. Profilin yerinde. 🫶");
       return;
+    }
     try {
       await api("/leave", {});
       onLeft();
