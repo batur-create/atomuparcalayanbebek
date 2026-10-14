@@ -63,7 +63,13 @@ export function defineSuite(target) {
         ],
         {
           cwd: root,
-          env: { ...process.env, WRANGLER_SEND_METRICS: "false", CI: "1" },
+          env: {
+            ...process.env,
+            XDG_CONFIG_HOME: resolve(directory, "config"),
+            WRANGLER_LOG_PATH: resolve(directory, "wrangler.log"),
+            WRANGLER_SEND_METRICS: "false",
+            CI: "1",
+          },
           stdio: ["ignore", "pipe", "pipe"],
         },
       );
@@ -73,12 +79,15 @@ export function defineSuite(target) {
       base = `http://127.0.0.1:${port}`;
       try {
         await waitFor(
-          () => fetch(`${base}/api/health`).then((r) => r.ok).catch(() => false),
+          () => {
+            if (child.exitCode !== null) throw new Error(`Wrangler exited ${child.exitCode}`);
+            return fetch(`${base}/api/health`).then((r) => r.ok).catch(() => false);
+          },
           90000,
           "wrangler dev",
         );
       } catch (error) {
-        console.error(output);
+        console.error(output.replaceAll(adminKey, "[test owner key]"));
         throw error;
       }
     }
