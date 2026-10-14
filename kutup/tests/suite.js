@@ -307,11 +307,31 @@ export function defineSuite(target) {
     assert.equal(deniz.focusWeek, 25);
     assert.ok(built.data.state.messages.some((m) => m.text.startsWith("kulübesini bitirdi 🏡 25")));
     const village = (await request("/village", { cookie: people.alice })).data;
-    assert.equal(village.length, 1);
-    assert.equal(village[0].kind, "cottage");
-    assert.equal(village[0].memberId, deniz.id);
-    assert.equal(village[0].seed, building.focusSeed, "the finished building keeps the look it was built with");
-    assert.equal((await request("/village", { cookie: people.charlie })).data.length, 0, "villages stay in their group");
+    assert.equal(village.buildings.length, 1);
+    const [buildingId, owner, kind, seed, x, y, facing] = village.buildings[0];
+    assert.equal(kind, "cottage");
+    assert.equal(owner, deniz.id);
+    assert.equal(seed, building.focusSeed, "the finished building keeps the look it was built with");
+    assert.ok(Number.isFinite(x) && Number.isFinite(y), "the server stores where it stands");
+    assert.ok(facing === 0 || facing === 1);
+    const aylinId = member(await state("alice"), "Aylin").id;
+    const districtOf = (v, id) => v.districts.find((d) => d[1] === id);
+    assert.ok(districtOf(village, deniz.id) && districtOf(village, aylinId), "everyone gets a district");
+    assert.notDeepEqual(districtOf(village, deniz.id).slice(2, 4), districtOf(village, aylinId).slice(2, 4));
+    assert.deepEqual((await request(`/village?rev=${village.rev}`, { cookie: people.alice })).data, { unchanged: true, rev: village.rev });
+    const charlieVillage = (await request("/village", { cookie: people.charlie })).data;
+    assert.equal(charlieVillage.buildings.length, 0, "villages stay in their group");
+    assert.equal(charlieVillage.districts.length, 1);
+    // Friends heart a building; nobody hearts their own.
+    const liked = await request(`/buildings/${buildingId}/like`, { cookie: people.alice, body: {} });
+    assert.deepEqual([liked.data.liked, liked.data.likes], [true, 1]);
+    assert.equal((await request(`/buildings/${buildingId}/like`, { cookie: people.bob, body: {} })).status, 400);
+    assert.equal((await request(`/buildings/${buildingId}/like`, { cookie: people.charlie, body: {} })).status, 404);
+    const seen = (await request("/village", { cookie: people.alice })).data;
+    assert.deepEqual(seen.buildings[0].slice(9), [1, 1]);
+    assert.deepEqual((await request("/village", { cookie: people.bob })).data.buildings[0].slice(9), [1, 0]);
+    // A client that already has the village only gets what changed since then.
+    assert.equal((await request(`/village?after=${seen.until + 6000}`, { cookie: people.alice })).data.buildings.length, 0);
     // Closed the app mid-session: no minutes, no building, a collapse on the board.
     await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 50, strict: true } });
     await request("/__test/expire", { body: { name: "Deniz", away: true } });
@@ -319,6 +339,9 @@ export function defineSuite(target) {
     assert.equal(member(later, "Deniz").focusWeek, 25);
     assert.equal(member(later, "Deniz").buildings, 1);
     assert.ok(later.messages.some((m) => m.text.startsWith("inşaatı çöktü 🧱")));
+    const ruin = (await request("/village", { cookie: people.alice })).data.ruins.find((r) => r[0] === deniz.id);
+    assert.equal(ruin[1], "house", "the collapsed site stays as rubble for a day");
+    assert.ok(ruin[4] > Date.now() + 23 * 3600000);
     // Leaving the app (reported by the client) collapses it right away.
     await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 75, strict: true } });
     const left = await request("/focus", { cookie: people.bob, body: { action: "wither" } });
@@ -330,6 +353,17 @@ export function defineSuite(target) {
     const plain = member(await state("bob"), "Deniz");
     assert.equal(plain.focusWeek, 50);
     assert.equal(plain.buildings, 1);
+    // The next building clears the rubble and never moves the first one.
+    await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 25, strict: true } });
+    await request("/focus", { cookie: people.bob, body: { action: "beat" } });
+    await request("/__test/expire", { body: { name: "Deniz" } });
+    await request("/focus", { cookie: people.bob, body: { action: "finish" } });
+    const grown = (await request("/village", { cookie: people.alice })).data;
+    assert.equal(grown.buildings.length, 2);
+    assert.deepEqual(grown.buildings.find((b) => b[0] === buildingId).slice(4, 7), [x, y, facing]);
+    assert.equal(grown.ruins.some((r) => r[0] === deniz.id), false);
+    const [, , , , x2, y2] = grown.buildings.find((b) => b[0] !== buildingId);
+    assert.ok(Math.hypot(x2 - x, y2 - y) > 4, "buildings keep their distance");
   });
 
   test(`[${target}] web push reaches friends, encrypted and signed, with an arrival cooldown`, async () => {
@@ -517,6 +551,9 @@ export function defineSuite(target) {
     assert.equal(member(s, "Deniz"), undefined);
     assert.equal(s.messages.some((m) => m.memberId && !s.members.some((x) => x.id === m.memberId)), false);
     assert.equal(s.messages.find((m) => m.id === messageId).reactions.length, 0);
+    const village = (await request("/village", { cookie: people.alice })).data;
+    assert.equal(village.buildings.length, 0, "their buildings go with them");
+    assert.ok(village.districts.some((d) => d[1] === null), "their district stays as an empty plot");
   });
 
   test(`[${target}] data survives a restart`, async () => {

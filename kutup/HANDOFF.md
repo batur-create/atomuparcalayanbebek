@@ -95,6 +95,16 @@ npm run deploy       # vite build + wrangler deploy (canlı)
 4. **Mini oyunlar** sadece molada açılır (durum "Molada" ya da seans yeni bitmiş). İnşaat sırasında kapalıdır.
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. Paket 5 ve 6).
 
+## 6b. Durum (son güncelleme 14 Ekim 2026)
+
+- **Paket 1 ✅ yayında.** Ortak köy: `shared/village.js` (hex kafes mahalleler, kıvrımlı yollar, Poisson yerleşim, `createPlanner`), göç 6 (`districts`, `buildings.pos_x/pos_y/facing/district_id/likes/touched`, `building_likes`, `members.ruin_*`, `groups.village_rev`), açılışta `layoutVillages()` eski binalara kalıcı konum verir. `/api/village?rev=&after=` artımlı (sadece değişen satırlar), `POST /api/buildings/:id/like`. Çizim: `src/iso.js` (SVG/Canvas ortak primitifler), `src/villageWorld.js` (dünya + gün/gece tonu), `src/villageView.js` (256px karo önbelleği, LOD, pinch/pan, canlı katman), `src/VillageMap.jsx` (`useVillage`, `VillagePanel`, ana sayfa `VillageNow`). Mahalle kapasitesi en fazla 9, pratikte 7–9.
+- **Ölçek:** 5 kişi sıkı bir dönemde ~300–1.900 bina. Sıcak yollar sayaçlarla (`districts.buildings`, `buildings.likes`) çalışır, tüm binaları taramaz (D1 ücretsiz 5M satır/gün sınırı).
+- **Sıradaki: Paket 1.5 — Hesaplar ve demo'nun kaldırılması** (Batur istedi, Paket 2'den önce):
+  - Girişsiz açılışta demo kişiler (Elif, Zeynep…) yok. Karşılama ekranı: "Giriş yap", "Davet linkiyle katıl", "Kendi ekibini kur" (tek başına da). `/join/<davet>` doğrudan katılma formunu açar.
+  - Kullanıcı adı + şifre (PBKDF2, Workers CPU sınırı yüzünden makul iterasyon, hız sınırı). Mevcut üyeler "Benim köşem"den bir kez belirler; uygulama hatırlatır. Her tarayıcıdan "Giriş yap".
+  - Şifre sıfırlama: e-posta yok (alan adı yok). Batur `/batur` panelinde üye için 24 saatlik sıfırlama kodu üretir; kişi kullanıcı adı + kod + yeni şifre ile girer. Açık bir cihazdan şifre değiştirilebilir; "Başka cihazda aç" kodu yedek olarak kalır.
+- **Paket 7'ye eklendi — Büyük proje modu:** Çok seanslık büyük yapılar (ör. ~10 saatlik okul/apartman), tek başına ya da beraber. Bozulan seans projeyi değil yalnızca o seansın katını yıkar; seans bitince bırakmak serbest. 7 gün dokunulmazsa branda ("beklemede"), asla silinmez. Bitince mahallede büyük simge yapı (planlayıcıya daha geniş FOOTPRINT türü eklenir). Seans başı ev ana döngü olarak kalır.
+
 ## 7. İş paketleri (sırayla; her paketin sonunda test + yayın + commit)
 
 Her paket kendi içinde teslim edilebilir. Her paket sunucu tarafında test (`tests/suite.js`, iki çalışma ortamı), göç (`schema.js`'e yeni eleman, gerekirse `core.test.js`) ve 375px'te görsel kontrol ile biter. Paket bitince Batur'a 3–5 satırlık Türkçe özet yaz: ne geldi, nasıl denenir.

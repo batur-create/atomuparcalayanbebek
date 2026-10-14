@@ -14,6 +14,7 @@ import {
   Flame,
   Headphones,
   Heart,
+  House,
   KeyRound,
   LayoutGrid,
   LoaderCircle,
@@ -69,12 +70,13 @@ import {
 } from "./ui.jsx";
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
-import { KINDS, VillagePanel, kindFor } from "./Village.jsx";
+import { KINDS, kindFor } from "./Village.jsx";
+import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 
 const nav = [
   { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
   { id: "plans", label: "Planlar", short: "Planlar", icon: CalendarDays },
-  { id: "focus", label: "Odak odası", short: "Odak", icon: Headphones },
+  { id: "focus", label: "Kütüp köyü", short: "Köy", icon: House },
   { id: "board", label: "Bizim pano", short: "Pano", icon: MessageCircle },
 ];
 const TABS = ["home", "plans", "focus", "board", "feedback"];
@@ -312,6 +314,7 @@ export default function App() {
     );
   }, [data, session]);
   const me = data.members.find((m) => m.id === session?.memberId);
+  const { village, like } = useVillage(session, data.group.villageRev);
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
   const toastTimer = useRef(),
@@ -843,7 +846,7 @@ export default function App() {
                 ) : tab === "plans" ? (
                   "Birlikte planlayalım."
                 ) : tab === "focus" ? (
-                  "Az laf, bol odak."
+                  "Odaklan, köy büyüsün."
                 ) : tab === "board" ? (
                   "Bizim küçük köşe."
                 ) : (
@@ -856,7 +859,7 @@ export default function App() {
                   : tab === "plans"
                     ? "“Yarın geliyor musun?” mesajının yerini burası alsın."
                     : tab === "focus"
-                      ? "Kulaklıkları tak. Büyük işleri küçük seanslara böl."
+                      ? "Her seans köye bir bina. Kulaklıkları tak, telefonu bırak."
                       : tab === "board"
                         ? "Yer tutmalar, küçük notlar, büyük motivasyonlar."
                         : "Fikirler, takılan şeyler, güzel iki kelime. Hepsi Batur’a."}
@@ -948,6 +951,13 @@ export default function App() {
                   <b>hayat ✷</b>
                 </span>
               </section>
+              <VillageNow
+                me={me}
+                members={data.members}
+                groupId={data.group.id}
+                village={village}
+                onOpen={() => navigate("focus")}
+              />
               <FocusCard
                 me={me}
                 members={focusMembers}
@@ -1098,10 +1108,13 @@ export default function App() {
                 <VillagePanel
                   me={me}
                   members={data.members}
-                  rev={data.members.reduce((n, m) => n + (m.buildings || 0), 0)}
+                  groupId={data.group.id}
+                  village={village}
+                  like={like}
                   run={buildRun}
                   outcome={buildOutcome}
-                  demo={session ? null : DEMO.buildings}
+                  notify={notify}
+                  session={session}
                 />
                 <AmbientSound />
                 <WeekBoard members={data.members} me={me} />
@@ -1134,7 +1147,7 @@ export default function App() {
                                   {
                                     action: "start",
                                     joinMember: m.id,
-                                    strict: storage.get("kutup-fidan-on") === "1",
+                                    strict: storage.get("kutup-fidan-on") !== "0",
                                   },
                                   "Aynı ritimdesiniz. İyi çalışmalar!",
                                 ),
@@ -1370,7 +1383,7 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
 function FocusCard({ me, members, now, requireMember, mutate, compact }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
-    [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") === "1");
+    [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0");
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing,
     seconds = running

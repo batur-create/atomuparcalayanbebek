@@ -895,19 +895,13 @@ h3,
 .village-panel {
   padding-bottom: 16px;
 }
-.village-scene,
-.village-map {
+.village-scene {
   display: block;
   width: 100%;
   height: auto;
-}
-.village-scene {
   margin: -6px 0 0;
   border-radius: 14px;
   background: #eef4e6;
-}
-.village-map {
-  margin-top: 4px;
 }
 .village-people {
   margin: 0 0 10px;
@@ -919,22 +913,311 @@ h3,
   line-height: 1.5;
   color: #6f6c63;
 }
-@keyframes village-pop {
-  0% {
-    opacity: 0;
-    transform: translateY(-36px) scale(0.4);
-  }
-  60% {
-    opacity: 1;
-  }
-}
-.village-new {
-  animation: village-pop 0.9s 0.2s var(--ease-spring) backwards;
-}
 @media (prefers-reduced-motion: reduce) {
   .tracker.waiting .tracker-runner,
   .tracker-steps li.current .tracker-dot,
   .waiting-dots i {
+    animation: none;
+  }
+}
+
+/* ---------- Kütüp köyü: the shared canvas village ---------- */
+.village-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.village-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.village-canvas canvas.interactive {
+  touch-action: none;
+  cursor: grab;
+}
+.village-canvas canvas.interactive:active {
+  cursor: grabbing;
+}
+.village-canvas canvas:not(.interactive) {
+  pointer-events: none;
+}
+.village-map-wrap {
+  position: relative;
+  height: 440px;
+  margin-top: 4px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #a4d078;
+  box-shadow: inset 0 0 0 1px rgba(70, 90, 40, 0.12);
+}
+.village-map-wrap .village-canvas {
+  border-radius: inherit;
+}
+.village-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.village-controls .icon-button {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 253, 247, 0.95);
+  border: 1px solid rgba(80, 70, 110, 0.12);
+  box-shadow: 0 2px 8px rgba(40, 30, 70, 0.12);
+  color: #4b4560;
+}
+.village-controls .icon-button:active {
+  transform: scale(0.94);
+}
+.village-full {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+}
+.village-full .village-controls {
+  top: max(12px, env(safe-area-inset-top));
+}
+.village-full-title {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  padding: 8px 13px;
+  border-radius: 12px;
+  background: rgba(255, 253, 247, 0.95);
+  font: 700 13px "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  color: #4b4560;
+  box-shadow: 0 2px 8px rgba(40, 30, 70, 0.12);
+}
+@keyframes building-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+.building-card {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: min(300px, calc(100% - 20px));
+  padding: 14px 15px 13px;
+  border-radius: 15px;
+  background: var(--paper);
+  box-shadow: 0 10px 30px rgba(40, 30, 70, 0.22);
+  animation: building-card-in 0.35s var(--ease-spring) backwards;
+}
+.village-full .building-card {
+  bottom: max(14px, env(safe-area-inset-bottom));
+}
+.building-card-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  color: #8a8597;
+}
+.building-card-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-right: 26px;
+}
+.building-card-emoji {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-size: 21px;
+}
+.building-card-head strong {
+  display: block;
+  font: 700 15px "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  color: var(--ink);
+}
+.building-card-head small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.building-card-who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 11px 0 12px;
+  font-size: 12.5px;
+  color: #5f5b69;
+}
+.building-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #f0c9d4;
+  background: #fff5f8;
+  color: #c4577a;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.building-like.liked {
+  background: #c4577a;
+  border-color: #c4577a;
+  color: #fff;
+}
+.building-like.liked svg {
+  animation: heart-pop 0.4s var(--ease-spring) backwards;
+}
+@keyframes heart-pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+.building-like:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.building-like:disabled:not(.liked) {
+  border-color: #ece6ea;
+  background: #faf8f9;
+  color: #a7a1ab;
+}
+/* Home screen: the village right now */
+.village-now {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 19px;
+  background: #eef4e3;
+  border: 1px solid #d6e2c2;
+  cursor: pointer;
+  transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
+}
+.village-now:hover {
+  box-shadow: 0 8px 24px rgba(70, 90, 40, 0.12);
+}
+.village-now:active {
+  transform: scale(0.99);
+}
+.village-now-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px 12px;
+}
+.village-now-eyebrow {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 1.05px;
+  color: #7b8866;
+}
+.village-now h2 {
+  margin: 4px 0 3px;
+  font-size: 19px;
+  letter-spacing: -0.4px;
+  color: #33402a;
+}
+.village-now p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6c7360;
+}
+.village-now-go {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fffdf7;
+  color: #55613f;
+}
+.village-now .village-canvas {
+  height: 200px;
+}
+@media (min-width: 581px) {
+  .dashboard-grid > .hero-card {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .dashboard-grid > .village-now {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .dashboard-grid > .compact.focus-card {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .dashboard-grid > .members-section {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .dashboard-grid > .right-stack {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .dashboard-grid > .board {
+    grid-column: 1;
+    grid-row: 4;
+  }
+  .dashboard-grid > .tiny-love {
+    grid-column: 2;
+    grid-row: 4;
+  }
+}
+@media (max-width: 580px) {
+  .dashboard-grid > .village-now {
+    grid-row: 2;
+  }
+  .dashboard-grid > .members-section {
+    grid-row: 3;
+  }
+  .dashboard-grid > .compact.focus-card {
+    grid-row: 4;
+  }
+  .dashboard-grid > .right-stack {
+    grid-row: 5;
+  }
+  .dashboard-grid > .board {
+    grid-row: 6;
+  }
+  .dashboard-grid > .tiny-love {
+    grid-row: 7;
+  }
+  .village-now .village-canvas {
+    height: 172px;
+  }
+  .village-now-head {
+    padding: 15px 16px 10px;
+  }
+  .village-map-wrap {
+    height: 350px;
+    margin: 4px -21px 0;
+    border-radius: 0;
+  }
+  .village-map-wrap.village-full {
+    margin: 0;
+  }
+}
+.intro .dashboard-grid > .village-now {
+  animation: rise-in 0.9s 0.45s var(--ease-out) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .building-card,
+  .building-like.liked svg,
+  .intro .dashboard-grid > .village-now {
     animation: none;
   }
 }

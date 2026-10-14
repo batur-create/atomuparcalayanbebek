@@ -4,6 +4,7 @@
 import { migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
+import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -26,8 +27,7 @@ const PUSH_COOLDOWN = 45 * 60000;
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
-// Session length decides the building: 25 → kulübe, 50 → iki katlı ev, 75 → kule.
-const KIND_SQL = "CASE WHEN focus_minutes >= 70 THEN 'tower' WHEN focus_minutes >= 40 THEN 'house' ELSE 'cottage' END";
+const RUIN_TIME = 24 * 3600000; // a collapsed site stays as rubble for a day
 
 class HttpError extends Error {
   constructor(message, status = 400) {
@@ -112,6 +112,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   async function init() {
     await migrate(db);
+    await layoutVillages().catch((error) => console.error("Kütüp village layout:", error));
     const stored = await db.get("SELECT value FROM settings WHERE key = 'vapid'");
     if (stored) vapid = JSON.parse(stored.value);
     else {
@@ -188,6 +189,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     };
   }
   const bump = (groupId) => ["UPDATE groups SET rev = rev + 1 WHERE id = ?", [groupId]];
+  // The village has its own revision so the map is only refetched when it changed.
+  const bumpVillage = (groupId) => ["UPDATE groups SET village_rev = village_rev + 1 WHERE id = ?", [groupId]];
   const systemMessage = (groupId, memberId, value) => [
     "INSERT INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, 'system', ?)",
     [crypto.randomUUID(), groupId, memberId, value, Date.now()],
@@ -199,7 +202,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages] =
       await db.read([
-        ["SELECT id, name, invite, rev FROM groups WHERE id = ?", [groupId]],
+        ["SELECT id, name, invite, rev, village_rev AS villageRev FROM groups WHERE id = ?", [groupId]],
         [`SELECT ${memberColumns} FROM members WHERE group_id = ? ORDER BY joined`, [groupId]],
         [
           `SELECT f.member_id AS id, SUM(CASE WHEN f.created >= ? THEN f.minutes ELSE 0 END) AS today, SUM(f.minutes) AS week, SUM(f.strict) AS builds
@@ -227,7 +230,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [groupId, now - 2 * HOUR],
         ],
         [
-          "SELECT member_id AS id, count(*) AS n FROM buildings WHERE group_id = ? GROUP BY member_id",
+          "SELECT member_id AS id, SUM(buildings) AS n FROM districts WHERE group_id = ? AND member_id IS NOT NULL GROUP BY member_id",
           [groupId],
         ],
       ]);
@@ -266,12 +269,58 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       plans: plans.map((p) => ({ ...p, attendees: going.get(p.id) || [] })),
     };
   }
+  // ---------- village ----------
+  // Spots are chosen by shared/village.js and stored for good, so nothing ever
+  // moves. Only districts that still have room are loaded.
+  async function loadPlanner(groupId) {
+    const [districts, buildings] = await db.read([
+      ["SELECT id, member_id AS memberId, dx AS q, dy AS r, buildings AS n FROM districts WHERE group_id = ? ORDER BY created, id", [groupId]],
+      [
+        `SELECT b.district_id AS districtId, b.kind, b.pos_x AS x, b.pos_y AS y FROM districts d JOIN buildings b ON b.district_id = d.id
+         WHERE d.group_id = ? AND d.buildings < ${CAPACITY} AND b.pos_x IS NOT NULL`,
+        [groupId],
+      ],
+    ]);
+    const full = districts.filter((d) => d.n >= CAPACITY).map((d) => d.id);
+    return createPlanner(groupId, districts, buildings, full);
+  }
+  // New or reclaimed districts, optionally only while `guard` (SQL + args) holds.
+  function districtChanges(groupId, changes = [], guard = null) {
+    const where = guard ? ` AND ${guard[0]}` : "";
+    const extra = guard ? guard[1] : [];
+    return changes
+      .filter((c) => c?.change)
+      .map(({ district: d, change }) =>
+        change === "insert"
+          ? [
+              `INSERT INTO districts (id, group_id, member_id, dx, dy, seed, created) SELECT ?, ?, ?, ?, ?, ?, ? WHERE 1 = 1${where}`,
+              [d.id, groupId, d.memberId, d.q, d.r, d.seed, Date.now(), ...extra],
+            ]
+          : [
+              `UPDATE districts SET member_id = ?, created = ? WHERE id = ? AND member_id IS NULL${where}`,
+              [d.memberId, Date.now(), d.id, ...extra],
+            ],
+      );
+  }
+  const newDistrictId = () => crypto.randomUUID();
+  // Writes racing for the same lattice cell fail on UNIQUE(group_id, dx, dy);
+  // planning again from a fresh read settles it.
+  async function retrying(build) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await db.batch(await build());
+      } catch (error) {
+        if (attempt >= 2) throw error;
+      }
+    }
+  }
+
   // Completed focus sessions are credited by whoever reads the state next, so
   // minutes count even if the owner closed the tab. The conditional SQL makes it
   // safe to run concurrently: only one transaction can move a session to the log.
-  // A build-mode session only leaves a building if the app was open near the end:
-  // the client beats every 20 seconds while visible.
-  const finalizeFocus = (groupId, now, memberId) => {
+  // A build-mode session only leaves a building if the app was open near the end
+  // (the client beats every 20 seconds while visible); otherwise it leaves rubble.
+  async function settleFocus(groupId, now, memberId) {
     const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ?`;
     const args = [memberId || groupId, now];
     const present = `focus_beat >= focus_end - ${BEAT_GRACE}`;
@@ -281,19 +330,49 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
        WHERE ${due} AND ${condition}`,
       args,
     ];
-    return [
+    const statements = [
       [
         `INSERT INTO focus_log (id, member_id, minutes, created, strict)
          SELECT lower(hex(randomblob(16))), id, focus_minutes, focus_end, focus_strict FROM members
          WHERE ${due} AND focus_minutes > 0 AND (focus_strict = 0 OR ${present})`,
         args,
       ],
-      [
-        `INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created)
-         SELECT lower(hex(randomblob(16))), id, group_id, ${KIND_SQL}, focus_minutes, focus_seed, focus_end FROM members
-         WHERE ${due} AND focus_strict = 1 AND focus_minutes > 0 AND ${present}`,
-        args,
-      ],
+    ];
+    const builders = await db.all(
+      `SELECT id, focus_minutes AS minutes, focus_beat AS beat, focus_end AS ends FROM members WHERE ${due} AND focus_strict = 1 AND focus_minutes > 0`,
+      args,
+    );
+    if (builders.length) {
+      const planner = await loadPlanner(groupId);
+      for (const b of builders) {
+        const kind = kindFor(b.minutes);
+        const built = b.beat >= b.ends - BEAT_GRACE;
+        const guard = [
+          `EXISTS (SELECT 1 FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ? AND focus_strict = 1 AND focus_minutes > 0 AND ${built ? "" : "NOT "}(${present}))`,
+          [b.id, now],
+        ];
+        const spot = planner.place(b.id, kind, newDistrictId, { allocate: built });
+        if (built)
+          statements.push(
+            ...districtChanges(groupId, spot?.changes, guard),
+            [
+              `INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created, touched, pos_x, pos_y, facing, district_id)
+               SELECT ?, id, group_id, ?, focus_minutes, focus_seed, focus_end, focus_end, ?, ?, ?, ? FROM members WHERE id = ? AND ${guard[0]}`,
+              [randomHex(16), kind, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, b.id, ...guard[1]],
+            ],
+            [`UPDATE districts SET buildings = buildings + 1 WHERE id = ? AND ${guard[0]}`, [spot?.district.id ?? null, ...guard[1]]],
+            // A finished building clears the last collapse's rubble.
+            [`UPDATE members SET ruin_until = 0 WHERE id = ? AND ${guard[0]}`, [b.id, ...guard[1]]],
+          );
+        else
+          statements.push([
+            `UPDATE members SET ruin_until = focus_end + ${RUIN_TIME}, ruin_kind = ?, ruin_x = ?, ruin_y = ? WHERE id = ? AND ${guard[0]}`,
+            [kind, spot?.x ?? null, spot?.y ?? null, b.id, ...guard[1]],
+          ]);
+      }
+      statements.push(bumpVillage(groupId));
+    }
+    statements.push(
       event(
         "CASE WHEN focus_minutes >= 70 THEN 'kulesini bitirdi 🏰' WHEN focus_minutes >= 40 THEN 'iki katlı evini bitirdi 🏠' ELSE 'kulübesini bitirdi 🏡' END || ' ' || focus_minutes || ' dakika telefona dokunmadan!'",
         `focus_strict = 1 AND focus_minutes > 0 AND ${present}`,
@@ -301,13 +380,58 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       event(`'${WITHERED}'`, `focus_strict = 1 AND NOT (${present})`),
       [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE ${due}`, args],
       bump(groupId),
+    );
+    return statements;
+  }
+  // Rubble for a session that was given up or abandoned half-way.
+  async function ruinStatement(member, now) {
+    const kind = kindFor(member.focus_minutes);
+    const spot = (await loadPlanner(member.group_id)).place(member.id, kind, newDistrictId, { allocate: false });
+    return [
+      "UPDATE members SET ruin_until = ?, ruin_kind = ?, ruin_x = ?, ruin_y = ? WHERE id = ?",
+      [now + RUIN_TIME, kind, spot?.x ?? null, spot?.y ?? null, member.id],
     ];
-  };
+  }
+  // Start-up: every member gets a district and every older building a spot, in
+  // the order they joined / were built. Idempotent; cheap when there is nothing to do.
+  async function layoutVillages() {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const [members, buildings] = await db.read([
+        ["SELECT m.id, m.group_id AS groupId FROM members m WHERE NOT EXISTS (SELECT 1 FROM districts d WHERE d.member_id = m.id) ORDER BY m.joined", []],
+        ["SELECT id, member_id AS memberId, group_id AS groupId, kind FROM buildings WHERE pos_x IS NULL ORDER BY created", []],
+      ]);
+      if (!members.length && !buildings.length) return;
+      try {
+        for (const groupId of new Set([...members, ...buildings].map((x) => x.groupId))) {
+          const planner = await loadPlanner(groupId);
+          const statements = [];
+          for (const m of members.filter((x) => x.groupId === groupId))
+            statements.push(...districtChanges(groupId, [planner.ensure(m.id, newDistrictId)]));
+          for (const b of buildings.filter((x) => x.groupId === groupId)) {
+            const spot = planner.place(b.memberId, b.kind, newDistrictId);
+            if (!spot) continue;
+            statements.push(...districtChanges(groupId, spot.changes), [
+              "UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ? WHERE id = ? AND pos_x IS NULL",
+              [spot.x, spot.y, spot.facing, spot.district.id, b.id],
+            ]);
+          }
+          await db.batch([
+            ...statements,
+            ["UPDATE districts SET buildings = (SELECT count(*) FROM buildings b WHERE b.district_id = districts.id) WHERE group_id = ?", [groupId]],
+            bumpVillage(groupId),
+          ]);
+        }
+        return;
+      } catch (error) {
+        if (attempt === 2) throw error;
+      }
+    }
+  }
   async function snapshot(groupId) {
     const now = Date.now();
     let state = await readSnapshot(groupId, now);
     if (state?.expiredFocus) {
-      await db.batch(finalizeFocus(groupId, now));
+      await retrying(() => settleFocus(groupId, now));
       state = await readSnapshot(groupId, now);
     }
     if (!state) return null;
@@ -433,17 +557,28 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM plans WHERE member_id = ?", [id]],
       ["DELETE FROM messages WHERE member_id = ?", [id]],
       ["DELETE FROM focus_log WHERE member_id = ?", [id]],
+      [
+        "UPDATE buildings SET likes = likes - 1, touched = ? WHERE id IN (SELECT building_id FROM building_likes WHERE member_id = ?)",
+        [Date.now(), id],
+      ],
+      ["DELETE FROM building_likes WHERE member_id = ? OR building_id IN (SELECT id FROM buildings WHERE member_id = ?)", [id, id]],
       ["DELETE FROM buildings WHERE member_id = ?", [id]],
+      ["UPDATE districts SET member_id = NULL, buildings = 0 WHERE member_id = ?", [id]],
       ["DELETE FROM subscriptions WHERE member_id = ?", [id]],
       ["DELETE FROM feedback_events WHERE feedback_id IN (SELECT id FROM feedback WHERE member_id = ?)", [id]],
       ["DELETE FROM feedback WHERE member_id = ?", [id]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
+        "DELETE FROM districts WHERE group_id = ? AND NOT EXISTS (SELECT 1 FROM members WHERE group_id = ?)",
+        [member.group_id, member.group_id],
+      ],
+      [
         "DELETE FROM groups WHERE id = ? AND NOT EXISTS (SELECT 1 FROM members WHERE group_id = ?)",
         [member.group_id, member.group_id],
       ],
       bump(member.group_id),
+      bumpVillage(member.group_id),
     ];
   }
 
@@ -500,15 +635,18 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const id = crypto.randomUUID(),
       now = Date.now(),
       session = await newSession(id);
-    await db.batch([
+    await retrying(async () => [
       ...extraStatements,
       [
         "INSERT INTO members (id, group_id, token, name, avatar, color, note, joined, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [id, group.id, session.hash, p.name, p.avatar, p.color, p.note, now, now],
       ],
       session.statement,
+      // A district of their own in the shared village, nearest free one to the square.
+      ...districtChanges(group.id, [(await loadPlanner(group.id)).ensure(id, newDistrictId)]),
       systemMessage(group.id, id, "ekibe katıldı. Hoş geldin! ✨"),
       bump(group.id),
+      bumpVillage(group.id),
     ]);
     onChange(group.id);
     return json(
@@ -785,7 +923,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
         [m.id, now],
       );
-      if (before) await db.batch(finalizeFocus(m.group_id, now, m.id));
+      if (before) await retrying(() => settleFocus(m.group_id, now, m.id));
       const withered = !!before?.strict && before.beat < before.ends - BEAT_GRACE;
       return changed(m, { credited: withered ? 0 : before?.minutes || 0, withered });
     }
@@ -801,8 +939,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (action === "cancel" || action === "wither") {
       const strictRunning = m.focus_strict === 1 && m.focus_end > now;
       await db.batch([
+        ...(strictRunning
+          ? [await ruinStatement(m, now), systemMessage(m.group_id, m.id, WITHERED), bumpVillage(m.group_id)]
+          : []),
         ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE id = ?", [m.id]],
-        ...(strictRunning ? [systemMessage(m.group_id, m.id, WITHERED)] : []),
         bump(m.group_id),
       ]);
       return changed(m, { withered: strictRunning });
@@ -824,12 +964,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (![25, 50, 75].includes(minutes)) fail("25, 50 veya 75 dakika seç.");
       end = now + minutes * 60000;
     }
-    await db.batch([
-      // An expired, uncredited session is credited before the new one starts.
-      ...finalizeFocus(m.group_id, now, m.id),
+    const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
+    await retrying(async () => [
+      // An expired, uncredited session is settled before the new one starts.
+      ...(await settleFocus(m.group_id, now, m.id)),
       [
         "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ? WHERE id = ?",
-        [end, minutes, body.strict === true ? 1 : 0, now, crypto.getRandomValues(new Uint32Array(1))[0] % 1000000, m.id],
+        [end, minutes, body.strict === true ? 1 : 0, now, seed, m.id],
       ],
     ]);
     return changed(m);
@@ -944,15 +1085,73 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ id, item: (await requests("f.id = ?", [id], { limit: 1 }))[0] }, 201);
   });
 
-  // Everyone's village in the group, oldest building first.
-  route("GET", "/village", async ({ member }) =>
-    json(
-      await db.all(
-        "SELECT id, member_id AS memberId, kind, minutes, seed, created FROM buildings WHERE group_id = ? ORDER BY created LIMIT 600",
-        [member.group_id],
-      ),
-    ),
-  );
+  // The shared village in compact rows. Unchanged since `rev` → only the number
+  // travels. `bbox=x0,y0,x1,y1` limits buildings to an area for very big villages.
+  route("GET", "/village", async ({ member, url }) => {
+    const gid = member.group_id,
+      now = Date.now();
+    const { rev } = await db.get("SELECT village_rev AS rev FROM groups WHERE id = ?", [gid]);
+    const known = url.searchParams.get("rev");
+    if (known !== null && Number(known) === rev) return json({ unchanged: true, rev });
+    // Buildings never change after they are built except for likes, so a client
+    // that already has the village only asks for rows touched since `after`
+    // (with a little overlap for clock drift between hosts).
+    const after = Math.max(0, Number(url.searchParams.get("after")) || 0);
+    const since = after ? after - 5000 : -1;
+    const box = (url.searchParams.get("bbox") || "").split(",").map(Number);
+    const area = box.length === 4 && box.every(Number.isFinite);
+    const range = area ? " AND pos_x BETWEEN ? AND ? AND pos_y BETWEEN ? AND ?" : "";
+    const rangeArgs = area ? [box[0], box[2], box[1], box[3]] : [];
+    const [districts, buildings, liked, ruins] = await db.read([
+      ["SELECT id, member_id AS memberId, dx, dy, seed FROM districts WHERE group_id = ? ORDER BY created, id", [gid]],
+      [
+        `SELECT id, member_id AS memberId, kind, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched
+         FROM buildings WHERE group_id = ? AND touched > ? AND pos_x IS NOT NULL${range} ORDER BY touched`,
+        [gid, since, ...rangeArgs],
+      ],
+      [
+        "SELECT building_id AS id FROM building_likes WHERE member_id = ? AND building_id IN (SELECT id FROM buildings WHERE group_id = ? AND touched > ?)",
+        [member.id, gid, since],
+      ],
+      ["SELECT id, ruin_kind AS kind, ruin_x AS x, ruin_y AS y, ruin_until AS until FROM members WHERE group_id = ? AND ruin_until > ?", [gid, now]],
+    ]);
+    const mine = new Set(liked.map((l) => l.id));
+    return json({
+      rev,
+      partial: !!after,
+      until: buildings.reduce((t, b) => Math.max(t, b.touched), after),
+      districts: districts.map((d) => [d.id, d.memberId, d.dx, d.dy, d.seed]),
+      buildings: buildings.map((b) => [b.id, b.memberId, b.kind, b.seed, b.x, b.y, b.facing, b.minutes, b.created, b.likes, mine.has(b.id) ? 1 : 0]),
+      ruins: ruins.map((r) => [r.id, r.kind, r.x, r.y, r.until]),
+    });
+  });
+
+  route("POST", "/buildings/:id/like", async ({ member: m, params }) => {
+    const building = await db.get("SELECT id, member_id FROM buildings WHERE id = ? AND group_id = ?", [
+      params.id,
+      m.group_id,
+    ]);
+    if (!building) fail("Bina bulunamadı.", 404);
+    if (building.member_id === m.id) fail("Kendi binana kalp atamazsın. Arkadaşların atsın! 🙂");
+    const old = await db.get("SELECT 1 AS hit FROM building_likes WHERE building_id = ? AND member_id = ?", [
+      building.id,
+      m.id,
+    ]);
+    await db.batch([
+      old
+        ? ["DELETE FROM building_likes WHERE building_id = ? AND member_id = ?", [building.id, m.id]]
+        : ["INSERT OR IGNORE INTO building_likes (building_id, member_id, created) VALUES (?, ?, ?)", [building.id, m.id, Date.now()]],
+      [
+        "UPDATE buildings SET likes = (SELECT count(*) FROM building_likes WHERE building_id = ?), touched = ? WHERE id = ?",
+        [building.id, Date.now(), building.id],
+      ],
+      bumpVillage(m.group_id),
+      bump(m.group_id),
+    ]);
+    const { likes } = await db.get("SELECT likes FROM buildings WHERE id = ?", [building.id]);
+    onChange(m.group_id);
+    return json({ ok: true, liked: !old, likes });
+  });
 
   route("GET", "/feedback", async ({ member }) =>
     json(await requests("f.member_id = ?", [member.id])),

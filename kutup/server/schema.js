@@ -72,6 +72,30 @@ export const migrations = [
        f.minutes, abs(random()) % 1000000, f.created
      FROM focus_log f JOIN members m ON m.id = f.member_id WHERE f.strict = 1`,
   ],
+  // 6 — one shared village: districts on a lattice, a stored spot for every
+  // building (filled in by layoutVillages() at start-up), likes, 24-hour ruins.
+  // Counters (districts.buildings, buildings.likes) and buildings.touched keep the
+  // hot paths from scanning thousands of buildings once the village is big.
+  [
+    "CREATE TABLE IF NOT EXISTS districts (id TEXT PRIMARY KEY, group_id TEXT NOT NULL, member_id TEXT, dx INTEGER NOT NULL, dy INTEGER NOT NULL, seed INTEGER NOT NULL, created INTEGER NOT NULL, buildings INTEGER NOT NULL DEFAULT 0, UNIQUE(group_id, dx, dy))",
+    "CREATE INDEX IF NOT EXISTS districts_member ON districts(member_id)",
+    "ALTER TABLE buildings ADD COLUMN pos_x REAL",
+    "ALTER TABLE buildings ADD COLUMN pos_y REAL",
+    "ALTER TABLE buildings ADD COLUMN facing INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE buildings ADD COLUMN district_id TEXT",
+    "ALTER TABLE buildings ADD COLUMN likes INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE buildings ADD COLUMN touched INTEGER NOT NULL DEFAULT 0",
+    "UPDATE buildings SET touched = created",
+    "CREATE INDEX IF NOT EXISTS buildings_district ON buildings(district_id)",
+    "CREATE INDEX IF NOT EXISTS buildings_touched ON buildings(group_id, touched)",
+    "CREATE TABLE IF NOT EXISTS building_likes (building_id TEXT NOT NULL, member_id TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(building_id, member_id))",
+    "CREATE INDEX IF NOT EXISTS building_likes_member ON building_likes(member_id)",
+    "ALTER TABLE members ADD COLUMN ruin_until INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN ruin_kind TEXT",
+    "ALTER TABLE members ADD COLUMN ruin_x REAL",
+    "ALTER TABLE members ADD COLUMN ruin_y REAL",
+    "ALTER TABLE groups ADD COLUMN village_rev INTEGER NOT NULL DEFAULT 0",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

@@ -5,6 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 import { createApp, dayStart, weekStart } from "../server/app.js";
 import { sqliteAdapter } from "../server/sqlite.js";
 import { SCHEMA_VERSION, migrations } from "../server/schema.js";
+import { CAPACITY, cellLayout, chooseCell, placeIn, ringOf } from "../shared/village.js";
 
 const call = (app, path, { method = "GET", body, headers = {} } = {}) =>
   app
@@ -81,6 +82,61 @@ test("finished Fidan modu sessions turn into village buildings on upgrade", asyn
   const rows = sqlite.prepare("SELECT kind, minutes FROM buildings ORDER BY created").all();
   assert.deepEqual(rows.map((r) => [r.kind, r.minutes]), [["cottage", 25], ["tower", 75]]);
   assert.equal(sqlite.prepare("SELECT value FROM settings WHERE key = 'schema'").get().value, String(SCHEMA_VERSION));
+});
+
+test("the shared village gives old buildings a stored spot, in the order they were built", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const db = sqliteAdapter(sqlite);
+  for (const [i, statements] of migrations.slice(0, 5).entries())
+    await db.batch([
+      ...statements.map((sql) => [sql, []]),
+      ["INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [String(i + 1)]],
+    ]);
+  sqlite.exec(`
+    INSERT INTO groups (id, name, invite) VALUES ('g', 'Tayfa', 'invite-123456789012');
+    INSERT INTO members (id, group_id, token, name, avatar, color, joined, updated) VALUES
+      ('m1', 'g', 't1', 'Elif', '🍒', 'pink', 1, 1), ('m2', 'g', 't2', 'Ege', '🎧', 'mint', 2, 2);
+  `);
+  const insert = sqlite.prepare("INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created) VALUES (?, ?, 'g', ?, ?, ?, ?)");
+  for (let i = 0; i < 12; i++) insert.run(`b${String(i).padStart(2, "0")}`, "m1", ["cottage", "house", "tower"][i % 3], 25, i, 100 + i);
+  insert.run("e1", "m2", "house", 50, 7, 500);
+  await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
+  const districts = sqlite.prepare("SELECT id, member_id, dx, dy, buildings FROM districts ORDER BY created, id").all();
+  const rows = sqlite.prepare("SELECT id, member_id, kind, pos_x, pos_y, district_id FROM buildings ORDER BY created").all();
+  assert.ok(rows.every((b) => b.pos_x !== null && b.district_id), "every building has a spot");
+  const elif = districts.filter((d) => d.member_id === "m1");
+  assert.ok(elif.length >= 2, "a full district opens a neighbouring one");
+  assert.equal(elif.reduce((n, d) => n + d.buildings, 0), 12);
+  assert.ok(elif.every((d) => d.buildings <= CAPACITY));
+  assert.equal(districts.find((d) => d.member_id === "m2").buildings, 1);
+  // The first districts are the cells next to the square.
+  assert.ok(districts.slice(0, 2).every((d) => ringOf(d.dx, d.dy) === 1));
+  for (const a of rows)
+    for (const b of rows)
+      if (a !== b) assert.ok(Math.hypot(a.pos_x - b.pos_x, a.pos_y - b.pos_y) > 3.5, `${a.id} and ${b.id} overlap`);
+  // A second start changes nothing: spots are stored once.
+  const before = JSON.stringify(rows);
+  await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
+  assert.equal(JSON.stringify(sqlite.prepare("SELECT id, member_id, kind, pos_x, pos_y, district_id FROM buildings ORDER BY created").all()), before);
+});
+
+test("district choice: newcomers near the square, full districts grow next door", () => {
+  const cells = new Map();
+  const first = chooseCell(cells);
+  assert.equal(ringOf(...first), 1);
+  cells.set(first.join(","), { memberId: "a" });
+  const second = chooseCell(cells);
+  assert.equal(ringOf(...second), 1);
+  assert.notDeepEqual(second, first);
+  cells.set(second.join(","), { memberId: "b" });
+  const grow = chooseCell(cells, [first]);
+  assert.equal(Math.max(Math.abs(grow[0] - first[0]), Math.abs(grow[1] - first[1]), Math.abs(grow[0] + grow[1] - first[0] - first[1])), 1, "next to their own district");
+  // An empty plot left by someone who quit is handed out again.
+  cells.set(second.join(","), { memberId: null });
+  assert.deepEqual(chooseCell(cells), second);
+  // The same seeds always draw the same lanes and give the same spots.
+  const layout = cellLayout("g", 1, 0);
+  assert.deepEqual(placeIn(layout, [], "house"), placeIn(cellLayout("g", 1, 0), [], "house"));
 });
 
 test("changing ADMIN_KEY signs every remembered owner device out", async () => {
