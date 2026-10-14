@@ -297,19 +297,29 @@ export default function App() {
   useEffect(() => {
     let taps = [],
       hold = 0,
+      note = 0,
       typed = "";
     const open = () => {
       navigator.vibrate?.(40);
       location.href = "/batur";
     };
     const down = (e) => {
+      // A long press on the footer's signature reveals Batur's hidden note.
+      if (e.target.closest?.("[data-note]"))
+        note = setTimeout(() => {
+          navigator.vibrate?.([30, 60, 30]);
+          notify("Batur’dan gizli not: Bunu sizin için yaptım. Aynı masada olmasak da aynı yoldayız. Bir sonraki kahve benden. ☕✳", 9000);
+        }, 700);
       if (!e.target.closest?.("[data-door]")) return;
       const now = Date.now();
       taps = taps.filter((t) => now - t < 4000);
       if (taps.length >= 6) hold = setTimeout(open, 650);
       taps.push(now);
     };
-    const up = () => clearTimeout(hold);
+    const up = () => {
+      clearTimeout(hold);
+      clearTimeout(note);
+    };
     const key = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.("input, textarea, select, [contenteditable]")) return;
       typed = (typed + (e.key.length === 1 ? e.key.toLocaleLowerCase("tr") : "")).slice(-5);
@@ -357,10 +367,10 @@ export default function App() {
     finishInFlight = useRef(false),
     revision = useRef(null),
     lastFocus = useRef(null);
-  const notify = (message) => {
+  const notify = (message, ms = 4500) => {
     setToast(message);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 4500);
+    toastTimer.current = setTimeout(() => setToast(""), ms);
   };
   const signedOut = (message) => {
     setSession(null);
@@ -1288,7 +1298,7 @@ export default function App() {
             <span>
               Biraz çalışma, biraz muhabbet. <span data-door="">kütüp ✳</span>
             </span>
-            <span>Batur’dan, bizim tayfaya.</span>
+            <span data-note="">Batur’dan, bizim tayfaya.</span>
           </footer>
         </div>
       </main>
