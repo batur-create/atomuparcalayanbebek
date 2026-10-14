@@ -166,7 +166,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   async function init() {
     await migrate(db);
-    await layoutVillages();
+    // A layout failure must not take the whole app down; unplaced buildings
+    // are retried on the next cold start.
+    await layoutVillages().catch((error) => console.error("Kütüp village layout:", error));
     const stored = await db.get("SELECT value FROM settings WHERE key = 'vapid'");
     if (stored) vapid = JSON.parse(stored.value);
     else {

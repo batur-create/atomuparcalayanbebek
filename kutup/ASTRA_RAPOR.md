@@ -58,12 +58,12 @@ Küçük commit’ler sonunda `npm run test:all` yeşil bırakıldı. İlk başa
 | Görsel | 12 SVG sahne, mobil Canvas harita ve 1.000 bina gerçek tarayıcıda çizildi ve ekran görüntüleri incelendi. |
 | `npm audit --json` | **0** bildirilen açık; bu sonuç uygulamaya yönelik pentest sertifikası değildir. |
 | Canlı salt okunur health isteği | Çevre proxy’si `CONNECT ... 403` döndürdü; siteye ulaşılamadı. Bu, canlı sitenin bozuk olduğu anlamına gelmez. |
-| Deploy | **Çalıştırılmadı / yayın bekliyor.** Cloudflare API kimliği bu ortamda yok; ağ da engelli. Yerel workerd sonucu canlı deploy sonucu değildir. |
+| Deploy | Astra ortamında çalıştırılmadı (Cloudflare kimliği yoktu). **14 Ekim 2026’da Claude yayınladı:** önce JSON + D1 SQL yedeği, sonra deploy; canlı D1 şema 10, 33 adımlı canlı duman testi geçti. Ayrıntı HANDOFF §6b. |
 | Bulut ortamı | Güncel `start_skill` taslağı kaydedildi. Kurulum betiği ve bilinmeyen sırlar değiştirilmedi. Taslak kaydı yayın değildir. |
 
 Tarayıcı ölçümü: **1.000 bina, 122 mahalle, 4.497 çizim öğesi**. Dünya oluşturma **47,7 ms**; merkezdeki örnek alan sorgusu 128 öğe döndürdü. Bu yerel Chromium ölçümüdür; telefon FPS’i, Cloudflare CPU süresi veya D1 günlük kotası ölçümü değildir. DPR 2’de 40 adet 256px karo yaklaşık 40 MiB ham piksel belleğidir; ana canvas ve tarayıcı ek yükü buna dahil değildir.
 
-Kanıtlar: [sonuç JSON’u](audit/2026-10-14/results.json), [mobil köy](audit/2026-10-14/mobile-village.png), [kod penceresi — kod maskeli](audit/2026-10-14/owner-recovery.png), [12 inşaat sahnesi](audit/2026-10-14/construction-scenes.png), [1.000 bina](audit/2026-10-14/village-1000.png). Hepsi sentetik yerel veridir.
+Kanıtlar: [sonuç JSON’u](audit/2026-10-14/results.json), [mobil köy](https://github.com/batur-create/atomuparcalayanbebek/blob/c7988d81/kutup/audit/2026-10-14/mobile-village.png), [kod penceresi — kod maskeli](https://github.com/batur-create/atomuparcalayanbebek/blob/c7988d81/kutup/audit/2026-10-14/owner-recovery.png), [12 inşaat sahnesi](https://github.com/batur-create/atomuparcalayanbebek/blob/c7988d81/kutup/audit/2026-10-14/construction-scenes.png), [1.000 bina](https://github.com/batur-create/atomuparcalayanbebek/blob/c7988d81/kutup/audit/2026-10-14/village-1000.png). Hepsi sentetik yerel veridir. PNG’ler çalışma ağacından kaldırıldı (`.gitignore`: `audit/**/*.png`); bağlantılar `c7988d81` commit’indeki kopyalara gider.
 
 ## Tespit edilip değiştirilmeden bırakılanlar
 

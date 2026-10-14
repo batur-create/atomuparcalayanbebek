@@ -21,7 +21,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 - Planlar (iki hafta ileri, "Ben de gelirim"), pano (mesaj, kalp, kahve daveti), haftalık odak tablosu.
 - **İnşaat modu ve köy (Forest tarzı):** Odak seansları 25/50/75 dk. İnşaat modu açıkken seans süresi binayı belirler: 25 → kulübe, 50 → iki katlı ev, 75 → kule (eşikler 40 ve 70 dk). Seans boyunca canlı izometrik şantiye çizilir. Uygulamadan 10 saniyeden uzun çıkılırsa (sekme kapatma dahil) bina çöker; tamamlanınca köye kalıcı olarak eklenir. Ekran Wake Lock ile açık tutulur. Tek ortak köyde herkesin kendi mahallesi var; Paket 1 tamamlandı.
 - **"Batur'a ilet":** fikir, hata ya da sohbet. Kargo takibi gibi aşamaları var: new → seen → accepted → building → done, ya da declined. Kendine ait ilham örnekleri, gönderme animasyonu, "yeni gelişme" rozeti ve her aşamada gönderene push.
-- **`/batur` yönetici paneli:** istekler (açınca "İncelendi" olur, tek tuşla aşama, not, geçmiş, arkadaşın gördüğü takip çizgisinin önizlemesi, silme), yeni istek push'u, ekipler, davet yenileme, üye çıkarma. Giriş: `ADMIN_KEY` ya da ilk ziyarette belirlenen anahtar; sonra 30 günlük `kutup_owner` çerezi (yolu `/api/owner`, SameSite=Strict). Yönetici şu an hiçbir üyeye bağlı değil.
+- **`/batur` yönetici paneli:** istekler (açınca "İncelendi" olur, tek tuşla aşama, not, geçmiş, arkadaşın gördüğü takip çizgisinin önizlemesi, silme), yeni istek push'u, ekipler, davet yenileme, üye çıkarma. Giriş: `ADMIN_KEY` ya da ilk ziyarette belirlenen anahtar; sonra 30 günlük `kutup_owner` çerezi (yolu `/api/owner`, SameSite=Strict). Yönetici şu an hiçbir üyeye bağlı değil. Sağ üstteki "Uygulamaya dön" düğmesi ana uygulamaya götürür.
 - Hareket katmanı: başlıklar Bricolage Grotesque, gövde DM Sans. Ziyaret başına bir kez oynayan açılış koreografisi. Diğer hareketler sadece bir eyleme cevap verir. `prefers-reduced-motion` destekleniyor.
 
 ## 3. Mimari
@@ -29,7 +29,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 ```
 kutup/
   server/app.js     Tüm API: Fetch Request/Response + async DB adaptörü (all/get/run/read/batch). Node ve Worker'da aynı kod.
-  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 5). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
+  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 10). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
                     D1 yüzünden her eleman TEK SQL ifadesi olmalı.
   server/push.js    Web Push (Web Crypto)
   server/sqlite.js  node:sqlite adaptörü
@@ -70,7 +70,7 @@ npm run deploy       # vite build + wrangler deploy (canlı)
 
 - **Wrangler (Batur’un Windows çalışma ortamı):** Cloudflare hesabına OAuth ile bağlı. Bu bağlantı Codex bulut ortamına taşınmış sayılmaz; 14 Ekim denetiminde burada yayın kimliği yoktu ve Cloudflare ağı 403 verdi. Token süresi dolarsa `npx wrangler login --device --browser=false` çalıştır. Çıkan kodu tarayıcı panelinde `https://dash.cloudflare.com/oauth2/device/verify` adresinde kutuya yaz, Batur'a "Continue ve Allow'a bas" de. Kodun ömrü 5 dakika.
 - **Canlı `ADMIN_KEY`** Cloudflare'de secret olarak tanımlı. Yerel kopyası `kutup/data/batur-key-canli.txt`. Asla ekrana basma ya da sohbete yazma.
-- **Canlı duman testi:** API ile geçici bir ekip kur, dene, sonunda `POST /api/leave` ile sil. Yayından hemen sonra kenar önbellek birkaç saniye eski HTML verebilir.
+- **Canlı duman testi:** `node tests/live-smoke.mjs` (kutup/ içinde; geçici ekip kurar, hesap/senkron/kurtarma/çıkış/push bağlamayı dener, sonunda `POST /api/leave` ile siler, gerçek ekiplerin değişmediğini kontrol eder; anahtar ve kodları ekrana basmaz). Yeni özellik eklerken betiğe adım ekle. Yayından hemen sonra kenar önbellek birkaç saniye eski HTML verebilir.
 - **Yerelde `/batur` testi:** Anahtarı yazmak yerine Node ile yerel veritabanına `owner_sessions` satırı ekle (`token = sha256(rastgele)`, `key_hash = sha256(anahtar)`). Sonra sayfada `document.cookie = "kutup_owner=<rastgele>; path=/api/owner"` yap.
 - **İnşaat animasyonunu hızlı test etmek için** yerel veritabanında `members.focus_end`'i birkaç saniye sonraya çek (`focus_beat = şimdi`), sonra sayfada `visibilitychange` olayı tetikle. Uygulamadan çıkmayı taklit etmek için `document.visibilityState`'i geçici olarak "hidden" yap.
 
@@ -99,7 +99,7 @@ npm run deploy       # vite build + wrangler deploy (canlı)
 
 ### Astra denetimi (14 Ekim 2026)
 
-**Yerelde tamamlandı; yayın bekliyor.** Ayrıntılar ve commit listesi [ASTRA_RAPOR.md](ASTRA_RAPOR.md), kurtarma prosedürü [RECOVERY.md](RECOVERY.md). `npm run test:all`: **63/63**, gerçek Chromium: **18/18**, `npm audit`: **0** bildirilen açık. `audit/2026-10-14/` sentetik verili ekran görüntülerini ve ölçümü içerir. Canlı arkadaş grubuna ve `data/` dosyalarına dokunulmadı.
+**Yayında (14 Ekim 2026; Claude inceledi ve yayınladı, aşağıdaki son maddeye bak).** Ayrıntılar ve commit listesi [ASTRA_RAPOR.md](ASTRA_RAPOR.md), kurtarma prosedürü [RECOVERY.md](RECOVERY.md). `npm run test:all`: **63/63**, gerçek Chromium: **18/18**, `npm audit`: **0** bildirilen açık. `audit/2026-10-14/` sentetik verili ekran görüntülerini ve ölçümü içerir. Canlı arkadaş grubuna ve `data/` dosyalarına dokunulmadı.
 
 - **Göç 8:** ortak `auth_limits`; normal/owner push abonelikleri oturumla bağlı; owner aboneliğinde `key_hash`; oturum süre indeksleri. Eski abonelikler ilk doğrulanmış ziyarette tekrar bağlanır; sunucu anonim eski kayıtlara bildirim göndermez. Parola kurtarma eski cihazları kapatır; normal cihaz aktarımı ilk cihazı açık tutar. Yönetici tüm cihazlardan çıkış, push ve verilmiş kodları da iptal eder. Node SSE her gönderimde oturumu doğrular.
 - **Göç 9:** `write_guard` ve `snapshot_changed` CHECK koşulu; okuma/planlama sırasında değişen ekip veya istek olduğunda batch tamamen geri alınır ve güncel veriyle denenir. Bunu kaldırma; aynı boş arsayı kapma, aynı adlı katılma/profil, paralel odak başlatma ve gecikmiş “görüldü” yarışları için gereklidir. Göç 1–7 değişmedi.
@@ -108,7 +108,12 @@ npm run deploy       # vite build + wrangler deploy (canlı)
 - **Arayüz:** hesap/profil akışları `src/Account.jsx`, ortak pencereler `src/Modal.jsx` içinde. Modal arka planı `inert`, odağı hapseder/geri verir; giriş sekmeleri ok tuşlarıyla çalışır. Batur kodu prompt yerine kopyalanabilir pencere. Haritada sayfalı bina seçimi ve Enter desteği var. Küçük yazıların ana muted rengi koyulaştırıldı.
 - **Çizim:** görünen karolar 40’lık önbelleğe sığacak ölçek seçer; son çizilen karo ekrana aktarılır. Hareket azaltmada çökme anında enkaz görünür. 1.000 bina/122 mahalle Chromium’da doğrulandı; uzakta tek kişi adı, yakında mahalle tabelaları korunur. Saklı koordinatlar değişmedi.
 - **Araçlar:** `npm run test:browser` Python Playwright + Chromium ister; tüm verisi geçicidir. Vite HMR artık Node HTTP portunu paylaşır. Bulut `start_skill` taslağı güncellendi; bu site yayını değildir.
-- **Claude’un ilk işi:** yetkili ortamda yedek al, güncel dalı çek, testleri çalıştır, göç 8/9/10’u inceleyip yayınla; eski bir üye ve owner cihazında push yeniden bağlanmasını, ikinci cihazla kod/giriş ve revocation’ı doğrula. Canlı `ADMIN_KEY` ve davetleri değiştirme; gerçek üyeler için deneme silmesi yapma. Paket 2–9 eklenmedi, önce denetim yayını.
+- **Claude incelemesi ve yayın (14 Ekim 2026):**
+  - **İnceleme:** göç 1–7 aynen duruyor, 8–10 sona eklenmiş, her eleman tek SQL ifadesi. `main` dalına dokunulmamış, sır commit'lenmemiş (yalnızca test şifreleri var). `write_guard`, `INSERT OR REPLACE` ile de CHECK ihlalinde ABORT eder (SQLite kuralı); D1 batch'i tek işlem olduğu için hepsi geri alınır. `auth_limits` yalnızca giriş/sıfırlama/kod/yönetici girişinde birincil anahtar upsert'i yapar, bu da D1 okuma bütçesine dokunmaz. Köy, inşaat modu, hesaplar, gizli kapı ve easter egg'ler korunmuş (bileşenler `Account.jsx`'e taşınmış, davranış aynı).
+  - **Değiştirdiklerim:** `init()` içinde `layoutVillages()` hatası yine loglanıp geçiliyor. Astra'nın fail-fast hâli, yerleşim hatasında bütün uygulamayı durdururdu. `.coffee-card .eyebrow` 9.5px'ten 10px'e çekildi (eski bir kural). `/batur` paneline sağ üstte "Uygulamaya dön" düğmesi eklendi (Batur istedi). `audit/` PNG'leri çalışma ağacından kaldırıldı ve `.gitignore`'a eklendi; rapor bağlantıları `c7988d81`'e sabitlendi.
+  - **Yayın:** önce `/api/owner/backup` JSON'u ve `wrangler d1 export` SQL yedeği alındı (`data/backup-before-astra-*.json`, `data/kutup-before-astra-*.sql`; canlı şema 7, 1 ekip, 4 üye). Ardından deploy yapıldı; canlı D1 şeması 10. 33 adımlı duman testi (`tests/live-smoke.mjs`) geçti: hesapsız ekip reddi, kurma/katılma, push'un oturuma bağlanması, durum senkronu ve `rev` yoklaması, ayrı geliş/mola soğumaları, pano, köy, büyük harfle giriş, tek kullanımlık aktarım kodu (ilk cihaz açık kalır), Batur koduyla kurtarma (3 eski cihaz 401, eski şifre geçersiz), yönetici "tüm cihazlarda çıkış" (oturum ve push silinir), temizlik (geçici ekip silindi, gerçek ekip 4 kişi aynen).
+  - **Push geçişi:** yayından sonra üye aboneliklerinin 1/5'i, yönetici aboneliklerinin 1/3'ü bağlıydı. Diğerleri sahibi uygulamayı (ya da `/batur`'u) bir kez açınca kendiliğinden bağlanır, o zamana kadar bildirim almazlar. Arkadaşlara "uygulamayı bir kez aç" demek yeterli.
+  - **Açık not:** oturumlar kayan değil, girişten itibaren 365 gün geçerli (çerez de yenilenmiyor). Hesabı olanlar yeniden giriş yapabilir; hesapsız eski üyeler Batur kodu ister. İleride `/session`'da çerezi ve `created`'i tazelemek düşünülebilir. `npm run test:browser` için Python Playwright bu makinede kurulu değil; görsel kontrol Playwright MCP ile 375px'te yapıldı (taşma yok, köy canvas'ı çiziliyor).
 
 ### Önceki paketlerin durumu
 

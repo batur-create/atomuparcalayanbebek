@@ -1,6 +1,7 @@
 // Batur’s panel at /batur: requests with one-tap stages, teams and members.
 import React, { useEffect, useState } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   Bell,
   ChevronDown,
@@ -308,9 +309,14 @@ export function OwnerPage() {
   const shown = (items || []).filter((x) => inFilter(x, filter) || x.id === openId);
   return (
     <main className="owner-page">
-      <a className="brand" href="/">
-        kütüp<span>✳</span>
-      </a>
+      <div className="owner-top">
+        <a className="brand" href="/">
+          kütüp<span>✳</span>
+        </a>
+        <a className="btn outline owner-back" href="/">
+          <ArrowLeft size={15} /> Uygulamaya dön
+        </a>
+      </div>
       <div className="owner-heading">
         <span className="eyebrow">BATUR’A ÖZEL</span>
         <h1>Tayfadan sana. 💌</h1>

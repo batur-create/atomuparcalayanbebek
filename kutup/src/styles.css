@@ -2248,6 +2248,18 @@ button:active {
   max-width: 1250px;
   margin: auto;
 }
+.owner-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.owner-back {
+  font-size: 13px;
+  padding: 10px 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
 .owner-heading {
   margin: 45px 0 25px;
 }
@@ -3696,7 +3708,7 @@ button:active {
     padding: 18px 16px;
   }
   .coffee-card .eyebrow {
-    font-size: 9.5px;
+    font-size: 10px;
     letter-spacing: 1px;
   }
   .coffee-card h3 {
