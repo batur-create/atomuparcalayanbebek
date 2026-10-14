@@ -119,6 +119,29 @@ function json(data, status = 200, headers = {}) {
     headers: { "Content-Type": "application/json; charset=utf-8", ...headers },
   });
 }
+async function readBody(request) {
+  const max = 16384;
+  if (Number(request.headers.get("content-length")) > max) fail("İstek çok büyük.", 413);
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let size = 0, body = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > max) {
+        await reader.cancel();
+        fail("İstek çok büyük.", 413);
+      }
+      body += decoder.decode(value, { stream: true });
+    }
+    return body + decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
+}
 export const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "same-origin",
@@ -1192,8 +1215,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   const ownerRequest = async (id) =>
     (await requests("f.id = ?", [id], { sender: true, limit: 1 }))[0] || null;
 
-  async function updateRequest(ctx, id, { status, reply }, { onlyIfNew = false } = {}) {
-    const item = await db.get("SELECT id, kind, text, status, reply, member_id FROM feedback WHERE id = ?", [id]);
+  async function updateRequest(ctx, id, { status, reply }, { onlyIfNew = false, attempt = 0 } = {}) {
+    const item = await db.get("SELECT id, kind, text, status, reply, member_id, updated FROM feedback WHERE id = ?", [id]);
     if (!item) fail("İstek bulunamadı.", 404);
     if (onlyIfNew && item.status !== "new") return ownerRequest(id);
     const nextStatus = status ?? item.status;
@@ -1204,7 +1227,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const replyChanged = (nextReply || "") !== (item.reply || "");
     if (!statusChanged && !replyChanged) return ownerRequest(id);
     const now = Date.now();
-    await db.batch([
+    try {
+      await db.batch([
+      ["INSERT OR REPLACE INTO write_guard (id, valid) VALUES (1, CASE WHEN EXISTS (SELECT 1 FROM feedback WHERE id = ? AND status = ? AND reply IS ? AND updated = ?) THEN 1 ELSE 0 END)", [id, item.status, item.reply, item.updated]],
       ["UPDATE feedback SET status = ?, reply = ?, updated = ? WHERE id = ?", [nextStatus, nextReply, now, id]],
       ...(statusChanged
         ? [[
@@ -1212,7 +1237,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             [crypto.randomUUID(), id, nextStatus, now],
           ]]
         : []),
-    ]);
+      ]);
+    } catch (error) {
+      if (attempt < 4 && String(error.message).includes("snapshot_changed"))
+        return updateRequest(ctx, id, { status, reply }, { onlyIfNew, attempt: attempt + 1 });
+      throw error;
+    }
     const preview = item.text.length > 70 ? `${item.text.slice(0, 70)}…` : item.text;
     await notifyMember(ctx, item.member_id, {
       title: statusChanged ? statusPush(item.kind, nextStatus) : "Batur sana bir not yazdı 💬",
@@ -1517,7 +1547,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (request.headers.get("x-kutup") !== "1")
           fail("İstek doğrulanamadı. Sayfayı yenile.", 403);
         const origin = request.headers.get("origin");
-        if (origin && origin !== "null") {
+        if (origin) {
           let allowed;
           try {
             allowed = new URL(origin).origin === new URL(config.publicOrigin || url.origin).origin;
@@ -1536,7 +1566,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       await ensureReady();
       let body = {};
       if (writes) {
-        const raw = await request.text();
+        const raw = await readBody(request);
         if (raw.length > 12000) fail("İstek çok büyük.", 413);
         if (raw) {
           try {
@@ -1547,9 +1577,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           if (!body || typeof body !== "object" || Array.isArray(body)) fail("İstek okunamadı.");
         }
       }
-      const params = Object.fromEntries(
-        match.r.keys.map((key, i) => [key, decodeURIComponent(match.m[i + 1])]),
-      );
+      let params;
+      try {
+        params = Object.fromEntries(match.r.keys.map((key, i) => [key, decodeURIComponent(match.m[i + 1])]));
+      } catch { fail("Bağlantı okunamadı."); }
       let member = null;
       if (match.r.auth) {
         member = await authenticate(request);

@@ -263,3 +263,49 @@ test("two devices cannot replace each other's newly started focus timer", async 
   const winner = starts.find((r) => r.status === 200).data.state.members[0];
   assert.equal((await call(app, "/state", { headers })).data.members[0].focusEnd, winner.focusEnd);
 });
+
+test("a delayed seen request cannot overwrite a newer feedback stage", async () => {
+  const { sqlite, app, headers } = await auditFixture();
+  const sent = await call(app, "/feedback", { method: "POST", headers, body: { kind: "idea", text: "Eşzamanlı panel testi" } });
+  const id = sent.data.id;
+  const db = sqliteAdapter(sqlite), originalGet = db.get;
+  let hold = true, release, reached;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const read = new Promise((resolve) => { reached = resolve; });
+  db.get = async (sql, params) => {
+    const row = await originalGet(sql, params);
+    if (hold && sql.startsWith("SELECT id, kind, text, status, reply, member_id")) {
+      hold = false;
+      reached();
+      await gate;
+    }
+    return row;
+  };
+  const owner = createApp({ db, config: { adminKey: "feedback-test-owner-key" } });
+  const opts = { method: "POST", headers: { "X-Owner-Key": "feedback-test-owner-key" }, body: {} };
+  const seen = call(owner, `/owner/feedback/${id}/seen`, opts);
+  await read;
+  const progressed = await call(owner, `/owner/feedback/${id}`, { ...opts, body: { status: "building", reply: "Üzerinde çalışıyorum." } });
+  assert.equal(progressed.data.item.status, "building");
+  release();
+  const late = await seen;
+  assert.equal(late.data.item.status, "building");
+  assert.equal(late.data.item.reply, "Üzerinde çalışıyorum.");
+  assert.deepEqual(late.data.item.events.map((e) => e.status), ["new", "building"]);
+});
+
+test("oversized streaming requests stop early and invalid origins and paths fail cleanly", async () => {
+  const { app } = await auditFixture();
+  let chunks = 0, cancelled = false;
+  const body = new ReadableStream({
+    pull(controller) { chunks++; controller.enqueue(new Uint8Array(10000)); },
+    cancel() { cancelled = true; },
+  });
+  const oversized = await app.fetch(new Request("https://kutup.test/api/login", {
+    method: "POST", headers: { "X-Kutup": "1" }, body, duplex: "half",
+  }));
+  assert.equal(oversized.status, 413);
+  assert.ok(cancelled && chunks <= 3, "the whole body is never buffered");
+  assert.equal((await call(app, "/login", { method: "POST", headers: { Origin: "null" }, body: {} })).status, 403);
+  assert.equal((await call(app, "/invites/%ZZ")).status, 400);
+});

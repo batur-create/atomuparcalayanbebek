@@ -436,8 +436,9 @@ export default function App() {
   useEffect(() => {
     if (me?.focusEnd && me.focusEnd <= now && !finishInFlight.current) {
       finishInFlight.current = true;
+      const epoch = sessionEpoch.current;
       api("/focus", { action: "finish" })
-        .then((r) => r.state && updateData(r.state))
+        .then((r) => epoch === sessionEpoch.current && r.state && updateData(r.state))
         .catch(() => {})
         .finally(() => {
           setTimeout(() => {
@@ -493,6 +494,7 @@ export default function App() {
   useEffect(() => {
     if (!strictEnd) return releaseScreen();
     const GRACE = 10000;
+    const epoch = sessionEpoch.current;
     const SEEN = "kutup-fidan";
     let hiddenAt = null,
       gone = false;
@@ -504,8 +506,10 @@ export default function App() {
       releaseScreen();
       try {
         const r = await api("/focus", { action: "wither" });
+        if (epoch !== sessionEpoch.current) return;
         if (r.state) updateData(r.state);
       } catch {}
+      if (epoch !== sessionEpoch.current) return;
       notify("İnşaatın çöktü 🧱 Uygulamadan çıkınca yıkılır. Bir dahakine!");
       navigator.vibrate?.(300);
     };

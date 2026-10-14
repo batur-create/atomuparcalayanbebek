@@ -565,6 +565,16 @@ export function defineSuite(target) {
       "small talk has no build stage",
     );
     assert.equal((await request(`/owner/feedback/${hello.data.id}`, { cookie: owner, method: "DELETE" })).status, 200);
+    const raced = await request("/feedback", { cookie: people.bob, body: { kind: "idea", text: "İki açık panel aynı isteği güncelliyor." } });
+    const competing = await Promise.all([
+      request(`/owner/feedback/${raced.data.id}/seen`, { cookie: owner, body: {} }),
+      request(`/owner/feedback/${raced.data.id}`, { cookie: owner, body: { status: "building" } }),
+    ]);
+    assert.ok(competing.every((r) => r.status === 200));
+    const finalStage = (await request("/feedback", { cookie: people.bob })).data.find((r) => r.id === raced.data.id);
+    assert.equal(finalStage.status, "building", "opening an older panel cannot undo progress");
+    assert.equal(finalStage.events.at(-1).status, "building");
+    await request(`/owner/feedback/${raced.data.id}`, { cookie: owner, method: "DELETE" });
     assert.equal((await request(`/owner/feedback/${id}`, { cookie: people.bob, body: { status: "done" } })).status, 401);
     await waitFor(() => pushes() >= before + 3, 8000, "stage pushes");
     // Signing out ends the cookie session.
