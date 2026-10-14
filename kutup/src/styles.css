@@ -390,6 +390,28 @@ button:active {
 .notification-button.enabled {
   color: var(--accent);
 }
+.notification-button {
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+/* While the bell is working (permission, subscribing), it gently swings. */
+.notification-button.working {
+  cursor: progress;
+}
+.notification-button.working svg {
+  transform-origin: 50% 15%;
+  animation: bell-swing 0.9s ease-in-out infinite;
+}
+@keyframes bell-swing {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(14deg); }
+  75% { transform: rotate(-14deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notification-button.working svg {
+    animation: none;
+    opacity: 0.5;
+  }
+}
 .btn {
   display: inline-flex;
   align-items: center;

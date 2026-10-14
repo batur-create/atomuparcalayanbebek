@@ -1188,13 +1188,30 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return changed(m);
   });
 
-  route("POST", "/push", async ({ member, body }) => {
+  route("POST", "/push", async ({ member, body, ctx }) => {
     const clean = validSubscription(body.subscription);
     await db.run(
       "INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET member_id = excluded.member_id, subscription = excluded.subscription, session_token = excluded.session_token",
       [clean.endpoint, member.id, JSON.stringify(clean), member.session_token],
     );
-    return json({ ok: true });
+    // Switching the bell on ends with a real notification on this device only,
+    // so "on" is proven, not assumed. A few per minute at most.
+    let test = false;
+    if (body.test === true) {
+      try {
+        limit(`${member.id}:push-test`, 4);
+        test = true;
+      } catch {}
+    }
+    if (test)
+      deliver(
+        ctx,
+        [{ endpoint: clean.endpoint, subscription: JSON.stringify(clean) }],
+        { title: "Bildirimler açık 🔔", body: "Biri kütübe gelince ilk sen duyacaksın.", url: "/", tag: `test-${Date.now()}` },
+        "subscriptions",
+        { urgency: "high", ttl: 600 },
+      );
+    return json({ ok: true, test });
   });
 
   route("DELETE", "/push", async ({ member, body }) => {

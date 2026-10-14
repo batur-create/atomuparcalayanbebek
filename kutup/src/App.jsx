@@ -79,6 +79,18 @@ const startParams = new URLSearchParams(location.search);
 let introPlayed = false;
 // Nothing is shown before signing in: no sample people, no sample village.
 const EMPTY = { group: { name: "", invite: "", rev: 0 }, members: [], messages: [], plans: [] };
+// Browser push steps (service worker start-up, subscribing) can hang without
+// ever failing; give each a deadline so the bell always answers.
+const within = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(Object.assign(new Error("timeout"), { name: "TimeoutError" })), ms)),
+  ]);
+const sameKey = (buffer, key) => {
+  if (!buffer) return true;
+  const bytes = new Uint8Array(buffer);
+  return bytes.length === key.length && bytes.every((b, i) => b === key[i]);
+};
 function Icon({ name: Component, ...props }) {
   return <Component size={19} strokeWidth={1.8} {...props} />;
 }
@@ -205,7 +217,9 @@ export default function App() {
     ),
     [inviteInfo, setInviteInfo] = useState(null);
   const [notificationOn, setNotificationOn] = useState(false),
+    [notificationWorking, setNotificationWorking] = useState(false),
     [now, setNow] = useState(Date.now());
+  const notificationBusy = useRef(false);
   const ownerPage = location.pathname === "/batur";
   const requestUpdates = useRequestUpdates(session, tab);
   // The opening sequence plays once per visit, never when switching tabs.
@@ -374,14 +388,20 @@ export default function App() {
     if (!session) return;
     let source, timer, ticks = 0, gone = false, inFlight = false;
     const controller = new AbortController();
+    // One poll at a time, but never forever: a request stalled by a network
+    // switch or a suspended phone is cut after 15 s so syncing carries on.
     const refresh = async (full) => {
       if (gone || inFlight) return;
       inFlight = true;
+      const attempt = new AbortController();
+      const stop = () => attempt.abort();
+      controller.signal.addEventListener("abort", stop, { once: true });
+      const timeout = setTimeout(stop, 15000);
       try {
         const known = revision.current;
         const d = await get(
           full || known === null ? "/state" : `/state?rev=${known}`,
-          controller.signal,
+          attempt.signal,
         );
         if (gone) return;
         if (!d.unchanged) updateData(d);
@@ -392,6 +412,8 @@ export default function App() {
           signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
         else setConnected(false);
       } finally {
+        clearTimeout(timeout);
+        controller.signal.removeEventListener("abort", stop);
         inFlight = false;
       }
     };
@@ -409,20 +431,40 @@ export default function App() {
         if (document.visibilityState !== "visible") return;
         refresh(++ticks % 12 === 0);
       }, 5000);
+    // The bell mirrors this device's real state: a live subscription, permission
+    // still granted, and not switched off here. The first check also re-registers
+    // the subscription so the server binds it to this device.
+    let registered = false;
+    const checkPush = () => {
+      if (!pushSupported || notificationBusy.current) return;
+      within(navigator.serviceWorker.ready, 8000)
+        .then((r) => r.pushManager?.getSubscription())
+        .then(async (s) => {
+          if (gone || notificationBusy.current) return;
+          const off = !!storage.get("kutup-push-off");
+          const on = !!s && Notification.permission === "granted" && !off;
+          if (s && !registered) {
+            registered = true;
+            // Re-register a live one; repeat a switch-off the server may have missed.
+            const sync = on
+              ? api("/push", { subscription: s.toJSON() })
+              : off
+                ? api("/push", { endpoint: s.endpoint }, "DELETE")
+                : null;
+            await sync?.catch(() => (registered = false));
+          }
+          if (!gone) setNotificationOn(on);
+        })
+        .catch(() => {});
+    };
     const visible = () => {
-      if (document.visibilityState === "visible") refresh(true);
+      if (document.visibilityState !== "visible") return;
+      refresh(true);
+      checkPush();
     };
     document.addEventListener("visibilitychange", visible);
     window.addEventListener("online", visible);
-    if (pushSupported)
-      navigator.serviceWorker.ready
-        .then((r) => r.pushManager?.getSubscription())
-        .then(async (s) => {
-          if (gone) return;
-          if (s) await api("/push", { subscription: s.toJSON() });
-          if (!gone) setNotificationOn(!!s);
-        })
-        .catch(() => {});
+    checkPush();
     return () => {
       gone = true;
       controller.abort();
@@ -610,48 +652,108 @@ export default function App() {
     history.replaceState({}, "", "/");
     notify(welcome);
   };
+  // The bell: one tap, one answer. Every step has a deadline and its own message,
+  // and turning on ends with a real test notification on this device.
   async function enableNotifications() {
+    if (notificationBusy.current) return;
     if (!pushSupported) {
       notify(
         isIOS && !standalone
           ? "iPhone’da önce Safari’de Paylaş → Ana Ekrana Ekle, sonra Kütüp’ü ana ekrandan aç."
           : "Bu tarayıcı bildirim desteklemiyor. Chrome veya Safari ile dene.",
+        7000,
+      );
+      return;
+    }
+    notificationBusy.current = true;
+    setNotificationWorking(true);
+    try {
+      if (notificationOn) await notificationsOff();
+      else await notificationsOn();
+    } finally {
+      notificationBusy.current = false;
+      setNotificationWorking(false);
+    }
+  }
+  async function notificationsOff() {
+    // Off on this device at once; telling the server is best effort (a stale
+    // subscription is dropped on its next push, and the next visit retries).
+    storage.set("kutup-push-off", "1");
+    setNotificationOn(false);
+    try {
+      const registration = await within(navigator.serviceWorker.ready, 8000);
+      const sub = await registration.pushManager.getSubscription();
+      if (sub) {
+        await api("/push", { endpoint: sub.endpoint }, "DELETE").catch(() => {});
+        // Batur’s owner alerts share this browser subscription; keep it for them.
+        if (!storage.get("kutup-owner-push")) await sub.unsubscribe().catch(() => {});
+      }
+    } catch {}
+    notify("Bildirimler kapandı. Zile dokunup istediğin an açabilirsin.");
+  }
+  async function notificationsOn() {
+    // The permission prompt has to open straight from the tap (Safari insists),
+    // so nothing is awaited before it.
+    let permission = Notification.permission;
+    if (permission === "default") permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      notify(
+        permission === "denied"
+          ? isIOS
+            ? "Bildirim izni kapalı. iPhone Ayarlar → Bildirimler → Kütüp’ten açıp tekrar dene."
+            : "Bildirim izni engelli. Adres çubuğundaki site ayarlarından Bildirimler’i “İzin ver” yapıp tekrar dene."
+          : "İzin vermedin, bildirimler kapalı kaldı. Fikrin değişirse zile tekrar dokun.",
+        8000,
+      );
+      return;
+    }
+    let registration;
+    try {
+      registration = await within(
+        navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready),
+        10000,
+      );
+    } catch {
+      notify("Bildirim servisi başlatılamadı. Sayfayı yenileyip tekrar dene.", 7000);
+      return;
+    }
+    const key = pushKey(session.pushPublicKey);
+    let sub;
+    try {
+      sub = await registration.pushManager.getSubscription();
+      // A subscription made for another server key can never receive our pushes.
+      if (sub && !sameKey(sub.options?.applicationServerKey, key)) {
+        await sub.unsubscribe().catch(() => {});
+        sub = null;
+      }
+      sub ||= await within(
+        registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }),
+        15000,
+      );
+    } catch (e) {
+      notify(
+        e.name === "NotAllowedError"
+          ? "Bildirim izni verilmedi. Tarayıcı ayarlarından izin verip tekrar dene."
+          : e.name === "TimeoutError" || e.name === "AbortError"
+            ? "Telefonun bildirim servisine ulaşılamadı. İnternetini kontrol edip tekrar dene. Brave kullanıyorsan ayarlardan “Google bildirim servisi”ni aç."
+            : "Bu tarayıcı bildirim aboneliği açamadı. Chrome ya da Safari ile dene.",
+        8000,
       );
       return;
     }
     try {
-      if (notificationOn) {
-        const reg = await navigator.serviceWorker.ready,
-          sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await api("/push", { endpoint: sub.endpoint }, "DELETE");
-          await sub.unsubscribe();
-        }
-        setNotificationOn(false);
-        notify("Bildirimler kapandı.");
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        notify(
-          "Bildirim izni kapalı. Tarayıcının site ayarlarından açabilirsin.",
-        );
-        return;
-      }
-      const registration = await navigator.serviceWorker.ready;
-      const sub =
-        (await registration.pushManager.getSubscription()) ||
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: pushKey(session.pushPublicKey),
-        }));
-      await api("/push", { subscription: sub.toJSON() });
+      const result = await api("/push", { subscription: sub.toJSON(), test: true });
+      storage.set("kutup-push-off", "");
       setNotificationOn(true);
-      notify("Biri gelince ya da kahveye çağırınca haberin olacak. 🔔");
-    } catch {
       notify(
-        "Bildirim bağlantısı kurulamadı. HTTPS ve tarayıcı izinlerini kontrol et.",
+        result.test
+          ? "Bildirimler açık! Çalıştığını gör diye sana bir deneme bildirimi yolladım 🔔"
+          : "Bildirimler açık! Biri gelince ilk sen duyacaksın 🔔",
+        6000,
       );
+    } catch (e) {
+      if (e.status === 401) return signedOut("Bu cihazdaki oturum kapandı. Yeniden giriş yap.");
+      notify(e.status === 0 ? "İnternet yok gibi. Bağlanınca zile tekrar dokun." : e.message, 7000);
     }
   }
   if (ownerPage) return <OwnerPage />;
@@ -822,7 +924,9 @@ export default function App() {
               })}
             </span>
             <button
-              className={`icon-button notification-button ${notificationOn ? "enabled" : ""}`}
+              className={`icon-button notification-button ${notificationOn ? "enabled" : ""} ${notificationWorking ? "working" : ""}`}
+              aria-busy={notificationWorking}
+              aria-pressed={notificationOn}
               aria-label={
                 notificationOn ? "Bildirimleri kapat" : "Bildirimleri aç"
               }
@@ -922,7 +1026,7 @@ export default function App() {
             )}
           </div>
           {tab === "home" && session && !notificationOn && (
-            <SetupCard enable={enableNotifications} />
+            <SetupCard enable={enableNotifications} busy={notificationWorking} />
           )}
           {tab === "home" && session && !session.username && (
             <button className="account-nudge" onClick={() => setModal("profile")}>
@@ -2314,7 +2418,7 @@ function AmbientSound() {
 }
 // Getting notifications working is the whole point of Kütüp, so the home screen
 // walks people through it until they turn it on (or hide the card).
-function SetupCard({ enable }) {
+function SetupCard({ enable, busy }) {
   const [hidden, setHidden] = useState(storage.get("kutup-setup-hidden") === "1");
   if (hidden || (!pushSupported && !isIOS)) return null;
   const needsHomeScreen = isIOS && !standalone;
@@ -2331,8 +2435,7 @@ function SetupCard({ enable }) {
           {needsHomeScreen ? (
             <>
               Safari’de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>. Sonra Kütüp’ü
-              ana ekrandan aç; “Benim köşem → Başka cihazda aç” kodunla gir ve
-              🔔’a bas.
+              ana ekrandan aç, kullanıcı adınla giriş yap ve 🔔’a bas.
             </>
           ) : (
             "Arkadaşın gelince, kahveye çağırınca ya da plan yapınca telefonuna düşsün."
@@ -2340,9 +2443,9 @@ function SetupCard({ enable }) {
         </p>
       </div>
       {!needsHomeScreen && (
-        <button className="btn primary" onClick={enable}>
-          <Bell size={16} /> Bildirimleri aç
-        </button>
+        <Busy loading={busy} className="btn primary" onClick={() => enable()}>
+          {!busy && <Bell size={16} />} Bildirimleri aç
+        </Busy>
       )}
       <button
         className="icon-button setup-close"

@@ -349,3 +349,35 @@ test("presence cooldowns expire independently and concurrent arrivals share one 
   assert.ok(after.pushed_here_at >= boundary);
   assert.equal(after.pushed_break_at, before.pushed_break_at);
 });
+
+test("a real arrival notifies again after five minutes; a return from a break waits out 45", async () => {
+  const { app, sqlite, headers } = await auditFixture();
+  const presence = (status) => call(app, "/presence", { method: "POST", headers, body: { status } });
+  const pushedHere = () => sqlite.prepare("SELECT pushed_here_at FROM members").get().pushed_here_at;
+  await presence("here");
+  const first = pushedHere();
+  assert.ok(first > 0);
+  await presence("away");
+  await presence("here");
+  assert.equal(pushedHere(), first, "flipping away/here within five minutes does not ping again");
+  const sixMinutesAgo = Date.now() - 6 * 60000;
+  sqlite.prepare("UPDATE members SET pushed_here_at = ?").run(sixMinutesAgo);
+  await presence("break");
+  await presence("here");
+  assert.equal(pushedHere(), sixMinutesAgo, "coming back from a break keeps the long cooldown");
+  await presence("away");
+  await presence("here");
+  assert.ok(pushedHere() > sixMinutesAgo, "a real arrival after five minutes notifies");
+});
+
+test("migration 11 binds subscriptions saved before devices existed to the latest session", async () => {
+  const { sqlite } = await auditFixture();
+  const member = sqlite.prepare("SELECT id FROM members").get().id;
+  sqlite.prepare("INSERT INTO sessions (token, member_id, created, seen) VALUES ('old', ?, 1, 1), ('newest', ?, 2, ?)").run(member, member, Date.now() + 1000);
+  sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription) VALUES ('https://fcm.googleapis.com/fcm/send/legacy', ?, '{}')").run(member);
+  sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES ('https://fcm.googleapis.com/fcm/send/bound', ?, '{}', 'old')").run(member);
+  for (const sql of migrations[10]) sqlite.exec(sql);
+  const token = (endpoint) => sqlite.prepare("SELECT session_token FROM subscriptions WHERE endpoint = ?").get(endpoint).session_token;
+  assert.equal(token("https://fcm.googleapis.com/fcm/send/legacy"), "newest");
+  assert.equal(token("https://fcm.googleapis.com/fcm/send/bound"), "old", "already bound subscriptions are untouched");
+});

@@ -393,6 +393,15 @@ export function defineSuite(target) {
       (await request("/push", { cookie: people.bob, body: { subscription: receiver.subscription(endpoint) } })).status,
       200,
     );
+    // Switching the bell on proves itself with a test notification to that device only.
+    const bell = push.url("/push/bell");
+    const switched = await request("/push", { cookie: people.bob, body: { subscription: receiver.subscription(bell), test: true } });
+    assert.equal(switched.data.test, true);
+    await waitFor(() => push.received.some((p) => p.path === "/push/bell"), 8000, "bell test push");
+    const bellPush = push.received.find((p) => p.path === "/push/bell");
+    assert.equal(JSON.parse(receiver.decrypt(bellPush.body)).title, "Bildirimler açık 🔔");
+    assert.equal(bellPush.headers.urgency, "high");
+    assert.equal(push.received.some((p) => p.path === "/push/deniz"), false, "the test push goes to that device only");
     const ece = await request("/join", { body: { invite: group.invite, name: "Ece", avatar: "🌸" } });
     people.ece = ece.cookie;
     const publicKey = ece.data.pushPublicKey;
@@ -404,12 +413,15 @@ export function defineSuite(target) {
     await waitFor(() => pushes().length >= 1, 8000, "arrival push");
     const [first] = pushes();
     assert.equal(first.headers["content-encoding"], "aes128gcm");
-    assert.equal(first.headers.ttl, "1800");
+    // Arrivals go out at high urgency (no Android doze delay) and live for two hours.
+    assert.equal(first.headers.ttl, "7200");
+    assert.equal(first.headers.urgency, "high");
     await verifyVapid(first.headers.authorization, endpoint, publicKey);
     const payload = JSON.parse(receiver.decrypt(first.body));
     assert.equal(payload.title, "Ece kütüpte! 📚");
     assert.equal(payload.body, "Kafeterya");
-    // Leaving and arriving again within 45 minutes does not ping again.
+    assert.equal(payload.sticky, true);
+    // Leaving and arriving again within 5 minutes does not ping again.
     await request("/presence", { cookie: people.ece, body: { status: "away" } });
     await request("/presence", { cookie: people.ece, body: { status: "here" } });
     await request("/presence", { cookie: people.ece, body: { status: "break" } });

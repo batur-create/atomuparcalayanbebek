@@ -29,7 +29,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 ```
 kutup/
   server/app.js     Tüm API: Fetch Request/Response + async DB adaptörü (all/get/run/read/batch). Node ve Worker'da aynı kod.
-  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 10). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
+  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 11). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
                     D1 yüzünden her eleman TEK SQL ifadesi olmalı.
   server/push.js    Web Push (Web Crypto)
   server/sqlite.js  node:sqlite adaptörü
@@ -64,7 +64,7 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (63 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (65 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
 ```
 
@@ -115,20 +115,27 @@ npm run deploy       # vite build + wrangler deploy (canlı)
   - **Push geçişi:** yayından sonra üye aboneliklerinin 1/5'i, yönetici aboneliklerinin 1/3'ü bağlıydı. Diğerleri sahibi uygulamayı (ya da `/batur`'u) bir kez açınca kendiliğinden bağlanır, o zamana kadar bildirim almazlar. Arkadaşlara "uygulamayı bir kez aç" demek yeterli.
   - **Açık not:** oturumlar kayan değil, girişten itibaren 365 gün geçerli (çerez de yenilenmiyor). Hesabı olanlar yeniden giriş yapabilir; hesapsız eski üyeler Batur kodu ister. İleride `/session`'da çerezi ve `created`'i tazelemek düşünülebilir. `npm run test:browser` için Python Playwright bu makinede kurulu değil; görsel kontrol Playwright MCP ile 375px'te yapıldı (taşma yok, köy canvas'ı çiziliyor).
 
-### Devam eden iş: Bildirim sağlamlaştırma (Paket 2'den önce; Batur istedi, Telegram istemedi)
+### Bildirim ve senkron sağlamlaştırma (14 Ekim 2026, yayında)
 
-**Durum: kod yazıldı, TEST EDİLMEDİ, YAYINLANMADI.** Kredi penceresi doldu, burada durdum.
-- **Yapılanlar (1. katman):**
-  - Göç 11: eski (oturumsuz) push aboneliklerini üyenin en son oturumuna bağlar. Canlıda 5 aboneliğin 4'ü bağsızdı.
-  - `init()`: `key_hash`'i boş eski owner aboneliklerini mevcut anahtara bağlar.
-  - `sendPush` artık `urgency` alıyor. Geliş/mola bildirimleri `Urgency: high` ile gidiyor; geliş için TTL 2 saat.
-  - Kural: gerçek geliş (`away`/`coming` → `here`) her zaman bildirim üretir, yalnızca 5 dakikalık tekrar koruması var (`ARRIVAL_REPEAT`). `break` → `here` ve mola bildirimleri 45 dakikalık soğumayı korur.
-  - `sw.js`: geliş bildiriminde (`payload.sticky`) `requireInteraction`; ayrıca `renotify`, titreşim deseni ve `pushsubscriptionchange` → yeni aboneliği `/api/push`'a kaydeder.
-- **Kalanlar:**
-  1. `tests/suite.js:407` geliş TTL beklentisini `"7200"` yap ve `urgency: high` beklentisi ekle. Satır 412'deki yorumu "5 dakika içinde" diye düzelt.
-  2. `core.test.js`'e iki test ekle: göç 11'in NULL `session_token`'ı en son oturuma bağlaması; 6 dakika sonra `away` → `here`'in yeniden bildirim üretmesi.
-  3. `npm run test:all`, ardından deploy, ardından `node tests/live-smoke.mjs`. Bağlı abonelik sayısının 5/5'e yakın çıktığını kontrol et.
-- **2. katman (sonra):** `push_outbox` tablosu ve Cron Trigger ile 429/5xx/ağ hatalarında artan aralıkla yeniden deneme; servis çalışanından `/api/push/ack` teslim makbuzu; profilde "test bildirimi gönder"; `/batur`'da üye başına bildirim sağlığı (bağlı cihaz sayısı, son makbuz). İsteğe bağlı: geliş bildiriminde "Yoldayım" eylem düğmesi.
+Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi web push ile").
+- **Plan/senkron hatası (arkadaşlar "planlarım başkalarında görünmüyor" dedi):**
+  - **Kök neden:** Astra'nın yoklama döngüsüne eklediği `inFlight` kilidinde zaman aşımı yoktu. Ağ değişimi ya da arka plana atılan telefon yüzünden takılan tek bir `/api/state` isteği, sayfa yenilenene kadar bütün senkronu durduruyordu.
+  - **Düzeltme:** her yoklamanın kendi `AbortController`'ı var ve 15 saniyede kesiliyor (`App.jsx` `refresh`).
+  - **Doğrulama:** canlıda gerçek tarayıcı + ikinci kullanıcıyla denendi. İstek bilerek takılı bırakıldı; 15 saniyede kesildi ve öbür kullanıcının planı ekrana düştü. Sunucu tarafı (plan kaydı, `bump`, 2 saatlik görünürlük) zaten doğruydu.
+- **Bildirim teslimi:**
+  - Göç 11: eski oturumsuz abonelikleri üyenin en son oturumuna bağladı. `init()` boş `key_hash`'li owner aboneliklerini mevcut anahtara bağlar. Yayın sonrası canlıda üye abonelikleri 9/9, owner abonelikleri 3/3 bağlı.
+  - Geliş/mola bildirimleri `Urgency: high` ile gidiyor (Android uykudayken gecikmesin); geliş TTL'i 2 saat.
+  - Gerçek geliş (`away`/`coming` → `here`) her seferinde bildirim üretir; yalnızca 5 dakikalık tekrar koruması var (`ARRIVAL_REPEAT`). `break` → `here` ve mola bildirimleri 45 dakikalık soğumayı korur.
+  - `sw.js`: geliş bildirimi (`payload.sticky`) `requireInteraction` ile ekranda kalır; ayrıca `renotify` ve titreşim deseni var. `pushsubscriptionchange` gelince yeni abonelik kendiliğinden `/api/push`'a kaydedilir.
+- **Zil düğmesi (`enableNotifications` → `notificationsOn`/`notificationsOff`):**
+  - Çift dokunmaya kilit (`notificationBusy`), çalışırken sallanan zil (`.working`, hareket azaltmada soluk), `aria-pressed`/`aria-busy`.
+  - Her adımın kendi süre sınırı ve kendi Türkçe mesajı var: izin reddi/engel (iOS ve Android ayrı tarif), servis çalışanı başlamadı, push servisine ulaşılamadı (Brave notu), sunucu hatası, oturum kapalı. Eski yanıltıcı "HTTPS…" mesajı kaldırıldı.
+  - Açınca `POST /api/push {test:true}` yalnızca o cihaza "Bildirimler açık 🔔" deneme bildirimi yollar (üye başına dakikada en fazla 4).
+  - Kapatma anında olur: `kutup-push-off` işareti konur, sunucudan silinir; owner bildirimleri açık değilse tarayıcı aboneliği de kaldırılır. Yeniden açılışta kendiliğinden geri açılmaz; işaret varsa ve abonelik duruyorsa silme isteği tekrarlanır.
+  - Uygulama görünür olunca zil gerçek durumu yeniden okur (izin ayarlardan alındıysa kapalı gösterir).
+  - Canlı Chromium'da uçtan uca doğrulandı: açma → FCM üzerinden deneme bildirimi gösterildi; ikinci kullanıcı "kütüpte" dedi → `requireInteraction`'lı, titreşimli geliş bildirimi anında geldi; kapatma 0,4 sn, yeniden açma 1,5 sn.
+- **Testler:** 65/65 (bildirim zili deneme push'u, `urgency`/TTL, 5 dk / 45 dk kuralı, göç 11). `tests/live-smoke.mjs` şema sürümünü koddan okur.
+- **Sıradaki bildirim işi (2. katman, isteğe bağlı):** `push_outbox` + Cron Trigger ile 429/5xx/ağ hatalarında yeniden deneme, servis çalışanından `/api/push/ack` teslim makbuzu, `/batur`'da üye başına bildirim sağlığı, geliş bildiriminde "Yoldayım" eylem düğmesi. iPhone'da web push yalnızca ana ekran uygulamasında çalışır; ekranda kalma ve titreşim deseni iOS'ta yok.
 
 ### Önceki paketlerin durumu
 

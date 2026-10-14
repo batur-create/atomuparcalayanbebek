@@ -3,6 +3,7 @@
 // Never prints the owner key, cookies, codes or passwords.
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { SCHEMA_VERSION } from "../server/schema.js";
 
 // Run from kutup/: node tests/live-smoke.mjs (needs wrangler login and data/batur-key-canli.txt).
 const dir = process.argv[2] || process.cwd();
@@ -53,7 +54,7 @@ check("owner panel reachable with key", before.status === 200);
 const realTeams = (before.data || []).map((g) => ({ id: g.id, members: g.members.length }));
 console.log("     teams before:", JSON.stringify(realTeams.map((t) => t.members)));
 const schema = d1("SELECT value FROM settings WHERE key = 'schema'")[0]?.value;
-check("live D1 schema is 10", schema === "10", `schema ${schema}`);
+check(`live D1 schema is ${SCHEMA_VERSION}`, schema === String(SCHEMA_VERSION), `schema ${schema}`);
 
 // 1. New team requires an account; with one it works.
 const noAccount = await call("/groups", { body: { name: "Duman A", groupName: `Duman ${tag}` } });
