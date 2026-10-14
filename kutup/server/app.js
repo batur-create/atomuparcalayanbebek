@@ -944,50 +944,60 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const arrival =
       status === "coming" ? text(body.arrival || "Birazdan", 32, "Geliş saati") : null;
     const now = Date.now();
-    const previous = m.status_until < now ? "away" : m.status;
-    const statements = [
-      [
-        "UPDATE members SET status = ?, location = ?, desk = ?, arrival = ?, status_until = ?, since = ?, updated = ? WHERE id = ?",
-        [
-          status,
-          location,
-          desk,
-          arrival,
-          status === "away" ? 0 : now + 8 * HOUR,
-          status === "away" ? 0 : previous === status ? m.since || now : now,
-          now,
-          m.id,
-        ],
-      ],
-      bump(m.group_id),
-    ];
     let push = null;
-    if (previous !== status) {
-      const phrases = {
-        here: `kütübe geldi${location ? ` · ${location}` : ""}. Bir sandalye çek! 🪑`,
-        coming: `yola koyuldu · ${arrival} 🛵`,
-        break: "molaya çıktı. Kahveye eşlik eden? ☕",
-        away: "bugünlük paydos etti. Görüşürüz! 👋",
-      };
-      statements.push(systemMessage(m.group_id, m.id, phrases[status]));
-      // One arrival ping per person per 45 minutes, even if they flip statuses.
-      const cooling = m.pushed_kind === status && now - m.pushed_at < PUSH_COOLDOWN;
-      if ((status === "here" || status === "break") && !cooling) {
-        statements.push([
-          "UPDATE members SET pushed_kind = ?, pushed_at = ? WHERE id = ?",
-          [status, now, m.id],
-        ]);
-        push =
-          status === "here"
-            ? {
-                title: `${m.name} kütüpte! 📚`,
-                body: `${location || "Milli Kütüphane"}${desk ? ` · Masa ${desk}` : ""}`,
-                url: "/",
-              }
-            : { title: `${m.name} molada ☕`, body: "Bir kahvelik ara verelim mi?", url: "/?tab=board" };
+    await retrying(async () => {
+      // A second device may have changed presence after authentication. Re-read
+      // within the revision guard so only one request records and sends a ping.
+      const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
+      if (!current) fail("Oturum kapanmış. Tekrar giriş yap.", 401);
+      const previous = current.status_until < now ? "away" : current.status;
+      push = null;
+      const statements = [
+        [
+          "UPDATE members SET status = ?, location = ?, desk = ?, arrival = ?, status_until = ?, since = ?, updated = ? WHERE id = ?",
+          [
+            status,
+            location,
+            desk,
+            arrival,
+            status === "away" ? 0 : now + 8 * HOUR,
+            status === "away" ? 0 : previous === status ? current.since || now : now,
+            now,
+            m.id,
+          ],
+        ],
+        bump(m.group_id),
+      ];
+      if (previous !== status) {
+        const phrases = {
+          here: `kütübe geldi${location ? ` · ${location}` : ""}. Bir sandalye çek! 🪑`,
+          coming: `yola koyuldu · ${arrival} 🛵`,
+          break: "molaya çıktı. Kahveye eşlik eden? ☕",
+          away: "bugünlük paydos etti. Görüşürüz! 👋",
+        };
+        statements.push(systemMessage(m.group_id, m.id, phrases[status]));
+        // Each kind has its own persistent timer: here -> break -> here cannot
+        // erase the arrival cooldown (and vice versa).
+        const pushedAt = status === "here" ? current.pushed_here_at : current.pushed_break_at;
+        const cooling = now - pushedAt < PUSH_COOLDOWN;
+        if ((status === "here" || status === "break") && !cooling) {
+          const column = status === "here" ? "pushed_here_at" : "pushed_break_at";
+          statements.push([
+            `UPDATE members SET pushed_kind = ?, pushed_at = ?, ${column} = ? WHERE id = ?`,
+            [status, now, now, m.id],
+          ]);
+          push =
+            status === "here"
+              ? {
+                  title: `${current.name} kütüpte! 📚`,
+                  body: `${location || "Milli Kütüphane"}${desk ? ` · Masa ${desk}` : ""}`,
+                  url: "/",
+                }
+              : { title: `${current.name} molada ☕`, body: "Bir kahvelik ara verelim mi?", url: "/?tab=board" };
+        }
       }
-    }
-    await db.batch(statements);
+      return statements;
+    }, m.group_id);
     if (push) await notify(ctx, m.group_id, m.id, push);
     return changed(m);
   });

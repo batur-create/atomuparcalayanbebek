@@ -397,7 +397,10 @@ export function defineSuite(target) {
     people.ece = ece.cookie;
     const publicKey = ece.data.pushPublicKey;
     const pushes = () => push.received.filter((p) => p.path === "/push/deniz");
-    await request("/presence", { cookie: people.ece, body: { status: "here", location: "Kafeterya" } });
+    const arrivals = await Promise.all([1, 2].map(() =>
+      request("/presence", { cookie: people.ece, body: { status: "here", location: "Kafeterya" } }),
+    ));
+    assert.ok(arrivals.every((r) => r.status === 200), "simultaneous arrivals both succeed");
     await waitFor(() => pushes().length >= 1, 8000, "arrival push");
     const [first] = pushes();
     assert.equal(first.headers["content-encoding"], "aes128gcm");
@@ -409,15 +412,21 @@ export function defineSuite(target) {
     // Leaving and arriving again within 45 minutes does not ping again.
     await request("/presence", { cookie: people.ece, body: { status: "away" } });
     await request("/presence", { cookie: people.ece, body: { status: "here" } });
+    await request("/presence", { cookie: people.ece, body: { status: "break" } });
+    await waitFor(() => pushes().length >= 2, 8000, "first break push");
+    // Switching between two notifying statuses must not reset their timers.
+    await request("/presence", { cookie: people.ece, body: { status: "here" } });
+    await request("/presence", { cookie: people.ece, body: { status: "break" } });
+    await request("/presence", { cookie: people.ece, body: { status: "here" } });
     await request("/messages", { cookie: people.ece, body: { text: "Kafeteryada kahve?", kind: "coffee" } });
-    await waitFor(() => pushes().length >= 2, 8000, "coffee push");
+    await waitFor(() => pushes().length >= 3, 8000, "coffee push");
     await new Promise((r) => setTimeout(r, 500));
     const titles = pushes().map((p) => JSON.parse(receiver.decrypt(p.body)).title);
-    assert.deepEqual(titles, ["Ece kütüpte! 📚", "Ece: mola? ☕"]);
+    assert.deepEqual(titles, ["Ece kütüpte! 📚", "Ece molada ☕", "Ece: mola? ☕"]);
     // Plans notify too and deep-link to the plans tab.
     await request("/plans", { cookie: people.ece, body: { starts: Date.now() + 86400000, note: "Sabah kulübü" } });
-    await waitFor(() => pushes().length >= 3, 8000, "plan push");
-    const planPush = JSON.parse(receiver.decrypt(pushes()[2].body));
+    await waitFor(() => pushes().length >= 4, 8000, "plan push");
+    const planPush = JSON.parse(receiver.decrypt(pushes()[3].body));
     assert.match(planPush.body, /Sabah kulübü/);
     assert.equal(planPush.url, "/?tab=plans");
   });

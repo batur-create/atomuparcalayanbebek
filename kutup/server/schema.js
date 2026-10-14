@@ -123,6 +123,12 @@ export const migrations = [
   [
     "CREATE TABLE write_guard (id INTEGER PRIMARY KEY CHECK(id = 1), valid INTEGER NOT NULL CONSTRAINT snapshot_changed CHECK(valid = 1))",
   ],
+  // 10 — changing between arrival and break must not reset either cooldown.
+  [
+    "ALTER TABLE members ADD COLUMN pushed_here_at INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN pushed_break_at INTEGER NOT NULL DEFAULT 0",
+    "UPDATE members SET pushed_here_at = CASE WHEN pushed_kind = 'here' THEN pushed_at ELSE 0 END, pushed_break_at = CASE WHEN pushed_kind = 'break' THEN pushed_at ELSE 0 END",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

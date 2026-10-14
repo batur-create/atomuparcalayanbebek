@@ -309,3 +309,43 @@ test("oversized streaming requests stop early and invalid origins and paths fail
   assert.equal((await call(app, "/login", { method: "POST", headers: { Origin: "null" }, body: {} })).status, 403);
   assert.equal((await call(app, "/invites/%ZZ")).status, 400);
 });
+
+test("upgrading status cooldowns preserves the last known notification time", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const db = sqliteAdapter(sqlite);
+  for (const [i, statements] of migrations.slice(0, 9).entries()) {
+    await db.batch([
+      ...statements.map((sql) => [sql, []]),
+      ["INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [String(i + 1)]],
+    ]);
+  }
+  sqlite.exec(`
+    INSERT INTO groups (id, name, invite) VALUES ('g', 'Tayfa', 'old-cooldown-invite');
+    INSERT INTO members (id, group_id, token, name, avatar, color, joined, updated, pushed_kind, pushed_at) VALUES
+      ('m1', 'g', 't1', 'Elif', '🍒', 'pink', 1, 1, 'here', 1000),
+      ('m2', 'g', 't2', 'Ege', '🎧', 'mint', 2, 2, 'break', 2000);
+  `);
+  await createApp({ db, config: { adminKey: "cooldown-upgrade-test-key" } }).ready();
+  const timers = sqlite.prepare("SELECT pushed_here_at, pushed_break_at FROM members ORDER BY id").all();
+  assert.deepEqual(timers.map((r) => [r.pushed_here_at, r.pushed_break_at]), [[1000, 0], [0, 2000]]);
+});
+
+test("presence cooldowns expire independently and concurrent arrivals share one activity", async () => {
+  const { app, sqlite, headers } = await auditFixture();
+  const presence = (status) => call(app, "/presence", { method: "POST", headers, body: { status } });
+  const results = await Promise.all([presence("here"), presence("here")]);
+  assert.ok(results.every((r) => r.status === 200));
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM messages WHERE text LIKE '%kütübe geldi%'").get().n, 1);
+  await presence("break");
+  const before = sqlite.prepare("SELECT pushed_here_at, pushed_break_at FROM members").get();
+  await presence("here");
+  await presence("break");
+  assert.deepEqual(sqlite.prepare("SELECT pushed_here_at, pushed_break_at FROM members").get(), before);
+  // Only the arrival timer has elapsed; a fresh arrival can notify again.
+  sqlite.prepare("UPDATE members SET pushed_here_at = ?").run(Date.now() - 46 * 60000);
+  const boundary = Date.now();
+  assert.equal((await presence("here")).status, 200);
+  const after = sqlite.prepare("SELECT pushed_here_at, pushed_break_at FROM members").get();
+  assert.ok(after.pushed_here_at >= boundary);
+  assert.equal(after.pushed_break_at, before.pushed_break_at);
+});
