@@ -17,6 +17,7 @@ export function defineSuite(target) {
   let child, base, push;
   const people = {};
   let group, plan, messageId, feedbackId;
+  let accountNumber = 0;
 
   async function start() {
     if (target === "node") {
@@ -102,7 +103,9 @@ export function defineSuite(target) {
     else child.kill("SIGTERM");
     await done;
   }
-  async function request(path, { cookie, body, method, owner, headers = {} } = {}) {
+  async function request(path, { cookie, body, method, owner, headers = {}, account = true } = {}) {
+    if (account && ["/groups", "/join"].includes(path) && body?.name && body.username === undefined)
+      body = { ...body, username: body.name === "Deniz" ? "deniz" : `test_${++accountNumber}`, password: "test-pass-123" };
     const response = await fetch(`${base}/api${path}`, {
       method: method || (body ? "POST" : "GET"),
       headers: {
@@ -434,7 +437,7 @@ export function defineSuite(target) {
 
   test(`[${target}] a username and password open the same profile anywhere; Batur can reset it`, async () => {
     assert.equal((await request("/account", { cookie: people.alice, body: { username: "Ay lin", password: "gizli123" } })).status, 400);
-    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Aylin" } })).status, 400, "a password is needed");
+    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Aylin", password: "short" } })).status, 400, "a valid password is needed");
     const set = await request("/account", { cookie: people.alice, body: { username: "Aylin.K", password: "gizli123" } });
     assert.deepEqual(set.data, { ok: true, username: "aylin.k" });
     assert.equal((await request("/session", { cookie: people.alice })).data.username, "aylin.k");
@@ -458,6 +461,8 @@ export function defineSuite(target) {
     assert.equal((await request("/reset", { body: { code: "AAAA-BBBB", username: "deniz", password: "yeni1234" } })).status, 404);
     const back = await request("/reset", { body: { code: reset.data.code, username: "Deniz", password: "yeni1234" } });
     assert.equal(back.status, 200);
+    assert.equal((await request("/session", { cookie: people.bob })).status, 401, "reset revokes old devices");
+    people.bob = back.cookie;
     assert.equal(back.data.username, "deniz");
     assert.equal((await request("/login", { body: { username: "deniz", password: "yeni1234" } })).status, 200);
     assert.equal((await request("/reset", { body: { code: reset.data.code, username: "deniz", password: "yeni5678" } })).status, 404, "single use");
@@ -465,6 +470,7 @@ export function defineSuite(target) {
     const again = await request(`/owner/members/${bobId}/reset`, { owner: adminKey, body: {} });
     const claimed = await request("/transfer/claim", { body: { code: again.data.code } });
     assert.equal(claimed.data.memberId, bobId);
+    people.bob = claimed.cookie;
     assert.equal((await request("/transfer/claim", { body: { code: again.data.code } })).status, 404);
     await request("/leave", { cookie: fresh.cookie, body: {} });
   });
@@ -491,6 +497,9 @@ export function defineSuite(target) {
   });
 
   test(`[${target}] requests move through stages Batur picks, and the sender is told`, async () => {
+    // The recovered device re-registers its browser subscription on sign-in.
+    const recoveredPhone = pushReceiver();
+    assert.equal((await request("/push", { cookie: people.bob, body: { subscription: recoveredPhone.subscription(push.url("/push/deniz")) } })).status, 200);
     // Batur signs in once; the panel then works on its cookie alone.
     assert.equal((await request("/owner/login", { body: { key: "nope" } })).status, 401);
     const login = await request("/owner/login", { body: { key: adminKey } });
@@ -612,6 +621,53 @@ export function defineSuite(target) {
     const village = (await request("/village", { cookie: people.alice })).data;
     assert.equal(village.buildings.length, 0, "their buildings go with them");
     assert.ok(village.districts.some((d) => d[1] === null), "their district stays as an empty plot");
+  });
+
+  test(`[${target}] accounts are required and concurrent recovery codes are single use`, async () => {
+    // A fresh process keeps the persisted auth limits but resets the burst limiter
+    // accumulated by the preceding simulated users on this one test IP.
+    await stop();
+    await start();
+    assert.equal((await request("/groups", { account: false, body: { name: "Eksik hesap" } })).status, 400);
+    assert.equal((await request("/join", { account: false, body: { name: "Eksik hesap", invite: group.invite } })).status, 400);
+    const created = await request("/groups", { body: { name: "Kurtarma testi", username: "recover", password: "before-123" } });
+    assert.equal(created.status, 201);
+    const transfer = await request("/transfer", { cookie: created.cookie, body: {} });
+    const claims = await Promise.all([1, 2].map(() => request("/transfer/claim", { body: { code: transfer.data.code } })));
+    assert.deepEqual(claims.map((r) => r.status).sort(), [200, 404]);
+    const owner = (await request("/owner/login", { body: { key: adminKey } })).cookie;
+    const reset = await request(`/owner/members/${created.data.memberId}/reset`, { cookie: owner, body: {} });
+    const resets = await Promise.all([1, 2].map((n) => request("/reset", { body: { code: reset.data.code, password: `after-${n}-123` } })));
+    assert.deepEqual(resets.map((r) => r.status).sort(), [200, 404]);
+    assert.equal((await request("/session", { cookie: created.cookie })).status, 401);
+    assert.equal((await request("/session", { cookie: claims.find((r) => r.status === 200).cookie })).status, 401);
+    assert.equal((await request("/session", { cookie: resets.find((r) => r.status === 200).cookie })).status, 200);
+  });
+
+  test(`[${target}] revocation closes streams, disables push and cancels issued codes`, async () => {
+    const ownerPushCount = push.received.filter((p) => p.path === "/push/batur").length;
+    const owner = (await request("/owner/login", { body: { key: adminKey } })).cookie;
+    const revoked = await request("/groups", { body: { name: "Kayıp cihaz" } });
+    const friend = await request("/join", { body: { name: "Arkadaş", invite: revoked.data.group.invite } });
+    const receiver = pushReceiver();
+    const endpoint = push.url("/push/revoked");
+    assert.equal((await request("/push", { cookie: revoked.cookie, body: { subscription: receiver.subscription(endpoint) } })).status, 200);
+    const code = (await request("/transfer", { cookie: revoked.cookie, body: {} })).data.code;
+    let stream;
+    if (target === "node") {
+      const r = await fetch(`${base}/api/events`, { headers: { Cookie: revoked.cookie }, signal: AbortSignal.timeout(5000) });
+      stream = r.body.getReader();
+      await stream.read();
+    }
+    assert.equal((await request(`/owner/members/${revoked.data.memberId}/signout`, { cookie: owner, body: {} })).status, 200);
+    assert.equal((await request("/session", { cookie: revoked.cookie })).status, 401);
+    assert.equal((await request("/transfer/claim", { body: { code } })).status, 404);
+    if (stream) await waitFor(async () => (await stream.read()).done, 3000, "revoked stream closes");
+    await request("/presence", { cookie: friend.cookie, body: { status: "here" } });
+    await request("/feedback", { cookie: friend.cookie, body: { kind: "hello", text: "Çıkıştan sonra bildirim testi" } });
+    await new Promise((r) => setTimeout(r, 200));
+    assert.equal(push.received.some((p) => p.path === "/push/revoked"), false);
+    assert.equal(push.received.filter((p) => p.path === "/push/batur").length, ownerPushCount, "logged-out owner gets no more requests");
   });
 
   test(`[${target}] data survives a restart`, async () => {

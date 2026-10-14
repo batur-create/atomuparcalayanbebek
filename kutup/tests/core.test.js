@@ -35,6 +35,7 @@ test("a database from the first Kütüp release upgrades in place and keeps its 
   sqlite
     .prepare("INSERT INTO members (id, group_id, token, name, avatar, color, joined, updated) VALUES ('m1', 'g1', ?, 'Batur', '🪐', 'lilac', 1, 1)")
     .run(createHash("sha256").update(token).digest("hex"));
+  sqlite.prepare("UPDATE members SET joined = ?, updated = ?").run(Date.now(), Date.now());
   sqlite.prepare("INSERT INTO messages VALUES ('x', 'g1', 'm1', 'eski mesaj', 'message', 5)").run();
   sqlite.prepare("INSERT INTO feedback VALUES ('f1', 'm1', 'idea', 'eski fikir', 'planned', 7)").run();
   const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "k".repeat(20) } });
@@ -163,4 +164,37 @@ test("days and weeks follow Türkiye time", () => {
   assert.equal(new Date(weekStart(now)).toISOString(), "2026-10-11T21:00:00.000Z");
   const sunday = Date.parse("2026-10-18T20:59:00Z"); // 23:59 Sunday in Istanbul
   assert.equal(new Date(weekStart(sunday)).toISOString(), "2026-10-11T21:00:00.000Z");
+});
+
+test("authentication rate limits survive new application instances", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const first = createApp({ db: sqliteAdapter(sqlite) });
+  const second = createApp({ db: sqliteAdapter(sqlite) });
+  await first.ready();
+  await second.ready();
+  for (let i = 0; i < 8; i++)
+    assert.equal((await call(i % 2 ? first : second, "/login", { method: "POST", body: { username: "missing", password: "password" } })).status, 401);
+  assert.equal((await call(second, "/login", { method: "POST", body: { username: "missing", password: "password" } })).status, 429);
+  assert.ok(sqlite.prepare("SELECT key FROM auth_limits").all().every((r) => /^[a-f0-9]{64}$/.test(r.key)));
+  sqlite.prepare("UPDATE auth_limits SET expires = 0").run();
+  assert.equal((await call(first, "/login", { method: "POST", body: { username: "missing", password: "password" } })).status, 401);
+});
+
+test("session lifetimes are enforced on the server, even with a copied cookie", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "a-test-owner-key" } });
+  const signup = await app.fetch(new Request("https://kutup.test/api/groups", {
+    method: "POST", headers: { "X-Kutup": "1" },
+    body: JSON.stringify({ name: "Test", username: "test", password: "test123" }),
+  }));
+  const cookie = signup.headers.get("set-cookie").split(";")[0];
+  assert.equal((await call(app, "/session", { headers: { Cookie: cookie } })).status, 200);
+  sqlite.exec("UPDATE sessions SET created = 1");
+  assert.equal((await call(app, "/session", { headers: { Cookie: cookie } })).status, 401);
+  const owner = await app.fetch(new Request("https://kutup.test/api/owner/login", {
+    method: "POST", headers: { "X-Kutup": "1" }, body: JSON.stringify({ key: "a-test-owner-key" }),
+  }));
+  const ownerCookie = owner.headers.get("set-cookie").split(";")[0];
+  sqlite.exec("UPDATE owner_sessions SET created = 1");
+  assert.equal((await call(app, "/owner/feedback", { headers: { Cookie: ownerCookie } })).status, 401);
 });

@@ -223,6 +223,20 @@ export function OwnerPage() {
       })
       .catch(() => setStatus({ claimed: true, signedIn: false }));
   }, []);
+  useEffect(() => {
+    if (!status?.signedIn || !pushSupported || !storage.get("kutup-owner-push")) return;
+    let gone = false;
+    navigator.serviceWorker.register("/sw.js")
+      .then(() => navigator.serviceWorker.ready)
+      .then((r) => r.pushManager.getSubscription())
+      .then(async (sub) => {
+        if (gone) return;
+        if (sub) await api("/owner/push", { subscription: sub.toJSON() });
+        setPushOn(!!sub);
+      })
+      .catch(() => { if (!gone) setError("Bildirim bağlantısı yenilenemedi. Bildirim düğmesinden tekrar deneyebilirsin."); });
+    return () => { gone = true; };
+  }, [status?.signedIn]);
   const signIn = async (e) => {
     e.preventDefault();
     if (status?.claimed === false && key !== confirmKey) {

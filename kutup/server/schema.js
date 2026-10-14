@@ -106,6 +106,19 @@ export const migrations = [
     "CREATE UNIQUE INDEX IF NOT EXISTS members_username ON members(username)",
     "CREATE INDEX IF NOT EXISTS members_reset ON members(reset_hash)",
   ],
+  // 8 — shared authentication limits and push subscriptions bound to a device.
+  // Old subscriptions are rebound by the client on its next authenticated visit.
+  [
+    "CREATE TABLE auth_limits (key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, expires INTEGER NOT NULL)",
+    "CREATE INDEX auth_limits_expires ON auth_limits(expires)",
+    "ALTER TABLE subscriptions ADD COLUMN session_token TEXT REFERENCES sessions(token) ON DELETE CASCADE",
+    "CREATE INDEX subscriptions_session ON subscriptions(session_token)",
+    "ALTER TABLE owner_subscriptions ADD COLUMN session_token TEXT REFERENCES owner_sessions(token) ON DELETE CASCADE",
+    "ALTER TABLE owner_subscriptions ADD COLUMN key_hash TEXT",
+    "CREATE INDEX owner_subscriptions_session ON owner_subscriptions(session_token)",
+    "CREATE INDEX sessions_created ON sessions(created)",
+    "CREATE INDEX owner_sessions_created ON owner_sessions(created)",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

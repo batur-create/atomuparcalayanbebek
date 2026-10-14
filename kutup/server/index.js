@@ -38,14 +38,21 @@ if (!adminKey) {
   }
 }
 
-// groupId → Map(open SSE response → member id)
+// groupId → Map(open SSE response → authenticated device)
 const clients = new Map();
 const pending = new Set();
+let activeSession;
+function validDevice(res, device) {
+  if (res.writableEnded) return false;
+  if (activeSession.get(device.token, Date.now() - 365 * 86400000)) return true;
+  res.end();
+  return false;
+}
 function broadcast(groupId, { removed } = {}) {
   const group = clients.get(groupId);
   // Someone who left or was removed stops receiving the group's updates at once.
   if (removed && group)
-    for (const [res, memberId] of group) if (memberId === removed) res.end();
+    for (const [res, device] of group) if (device.id === removed) res.end();
   if (!group?.size || pending.has(groupId)) return;
   pending.add(groupId);
   setImmediate(async () => {
@@ -54,7 +61,8 @@ function broadcast(groupId, { removed } = {}) {
       const state = await app.snapshot(groupId);
       if (!state) return;
       const data = `event: state\ndata: ${JSON.stringify(state)}\n\n`;
-      for (const res of clients.get(groupId)?.keys() || []) res.write(data);
+      for (const [res, device] of clients.get(groupId) || [])
+        if (validDevice(res, device)) res.write(data);
     } catch (error) {
       console.error("Kütüp broadcast error:", error.message);
     }
@@ -74,6 +82,7 @@ const app = createApp({
   },
 });
 await app.ready();
+activeSession = database.prepare("SELECT 1 FROM sessions WHERE token = ? AND created > ?");
 
 function requestUrl(req) {
   const forwarded = trustProxy && req.headers["x-forwarded-proto"];
@@ -133,9 +142,13 @@ async function events(req, res, request) {
     "X-Accel-Buffering": "no",
     ...SECURITY_HEADERS,
   });
-  group.set(res, member.id);
-  res.write(`retry: 3000\nevent: state\ndata: ${JSON.stringify(await app.snapshot(groupId))}\n\n`);
-  const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20000);
+  const device = { id: member.id, token: member.session_token };
+  group.set(res, device);
+  const state = await app.snapshot(groupId);
+  if (validDevice(res, device)) res.write(`retry: 3000\nevent: state\ndata: ${JSON.stringify(state)}\n\n`);
+  const heartbeat = setInterval(() => {
+    if (validDevice(res, device)) res.write(": heartbeat\n\n");
+  }, 20000);
   req.on("close", () => {
     clearInterval(heartbeat);
     group.delete(res);

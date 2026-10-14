@@ -14,6 +14,8 @@ export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
 const STATUSES = ["here", "coming", "break", "away"];
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
+const SESSION_AGE = 365 * DAY;
+const OWNER_AGE = 30 * DAY;
 const TR_OFFSET = 3 * HOUR; // Türkiye has no DST: UTC+3 all year.
 const PUSH_HOSTS = [
   "fcm.googleapis.com",
@@ -175,8 +177,24 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     bucket.count++;
     buckets.set(key, bucket);
+    if (buckets.size > 4096) buckets.delete(buckets.keys().next().value);
     if (bucket.count > max)
       fail("Biraz hızlı gittik. Bir dakika sonra tekrar dene.", 429);
+  }
+
+  // SQLite/D1 serializes this upsert across processes and Worker isolates.
+  // Hash the key so IP addresses and usernames are not retained in this table.
+  async function authLimit(key, max) {
+    const now = Date.now();
+    const bucket = await db.get(
+      `INSERT INTO auth_limits (key, attempts, expires) VALUES (?, 1, ?)
+       ON CONFLICT(key) DO UPDATE SET
+         attempts = CASE WHEN expires <= ? THEN 1 ELSE attempts + 1 END,
+         expires = CASE WHEN expires <= ? THEN excluded.expires ELSE expires END
+       RETURNING attempts`,
+      [await sha(key), now + 60000, now, now],
+    );
+    if (bucket.attempts > max) fail("Biraz hızlı gittik. Bir dakika sonra tekrar dene.", 429);
   }
 
   // ---------- session ----------
@@ -201,8 +219,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return db.get(
       `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen
        FROM sessions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
-       WHERE s.token = ?`,
-      [await sha(token)],
+       WHERE s.token = ? AND s.created > ?`,
+      [await sha(token), Date.now() - SESSION_AGE],
     );
   }
   async function newSession(memberId) {
@@ -487,22 +505,27 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // Everyone in the group except the sender.
   async function notify(ctx, groupId, senderId, message) {
     const subs = await db.all(
-      "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN members m ON m.id = s.member_id WHERE m.group_id = ? AND m.id <> ?",
-      [groupId, senderId],
+      "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND m.id <> ? AND a.created > ?",
+      [groupId, senderId, Date.now() - SESSION_AGE],
     );
     deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message });
   }
   // One person, on all of their devices.
   async function notifyMember(ctx, memberId, message) {
     const subs = await db.all(
-      "SELECT endpoint, subscription FROM subscriptions WHERE member_id = ?",
-      [memberId],
+      "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN sessions a ON a.token = s.session_token AND a.member_id = s.member_id WHERE s.member_id = ? AND a.created > ?",
+      [memberId, Date.now() - SESSION_AGE],
     );
     deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message });
   }
   // Batur’s own devices, for new requests.
   async function notifyOwner(ctx, message) {
-    const subs = await db.all("SELECT endpoint, subscription FROM owner_subscriptions");
+    const subs = await db.all(
+      `SELECT s.endpoint, s.subscription FROM owner_subscriptions s
+       WHERE s.key_hash = ? AND (s.session_token IS NULL OR EXISTS
+         (SELECT 1 FROM owner_sessions a WHERE a.token = s.session_token AND a.created > ?))`,
+      [await ownerHash(), Date.now() - OWNER_AGE],
+    );
     deliver(ctx, subs, { tag: `owner-${Date.now()}`, ...message }, "owner_subscriptions");
   }
   function validSubscription(sub) {
@@ -550,7 +573,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return (await db.get("SELECT value FROM settings WHERE key = 'owner-hash'"))?.value || null;
   }
   async function keyMatches(key, ip) {
-    limit(`${ip}:owner`, 20);
+    await authLimit(`${ip}:owner`, 20);
     const hash = await ownerHash();
     return !!hash && !!key && sameSecret(await sha(key), hash);
   }
@@ -558,7 +581,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const token = readCookie(request, "kutup_owner");
     if (!token || token.length > 128) return false;
     const [session, hash] = await Promise.all([
-      db.get("SELECT key_hash FROM owner_sessions WHERE token = ?", [await sha(token)]),
+      db.get("SELECT key_hash FROM owner_sessions WHERE token = ? AND created > ?", [await sha(token), Date.now() - OWNER_AGE]),
       ownerHash(),
     ]);
     return !!session && !!hash && session.key_hash === hash;
@@ -620,6 +643,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM messages WHERE created < ?", [now - 120 * DAY]],
       ["DELETE FROM attendees WHERE plan_id IN (SELECT id FROM plans WHERE starts < ?)", [now - 30 * DAY]],
       ["DELETE FROM plans WHERE starts < ?", [now - 30 * DAY]],
+      ["DELETE FROM sessions WHERE created <= ?", [now - SESSION_AGE]],
+      ["DELETE FROM owner_sessions WHERE created <= ?", [now - OWNER_AGE]],
+      ["DELETE FROM auth_limits WHERE expires <= ?", [now]],
     ]);
   }
 
@@ -654,8 +680,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   async function join(request, group, body, extraStatements = []) {
     const p = profile(body);
-    const account = body.username !== undefined ? usernameOf(body.username) : null;
-    const secret = account ? await hashPassword(passwordOf(body.password)) : null;
+    const account = usernameOf(body.username);
+    const secret = await hashPassword(passwordOf(body.password));
     if (account && (await db.get("SELECT 1 AS hit FROM members WHERE username = ?", [account])))
       fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
     const existing = await db.all("SELECT name FROM members WHERE group_id = ?", [group.id]);
@@ -738,8 +764,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }
   route("POST", "/login", async ({ request, body, ip }) => {
     const username = usernameOf(body.username);
-    limit(`${ip}:login`, 12);
-    limit(`login:${username}`, 8);
+    await authLimit(`${ip}:login`, 12);
+    await authLimit(`login:${username}`, 8);
     const member = await db.get("SELECT id, group_id, username, pass_hash FROM members WHERE username = ?", [username]);
     if (!member || !(await checkPassword(String(body.password || ""), member.pass_hash)))
       fail("Kullanıcı adı ya da şifre yanlış.", 401);
@@ -747,22 +773,32 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
   // Forgot the password: Batur gives out a one-day code; it sets a new password.
   route("POST", "/reset", async ({ request, body, ip }) => {
-    limit(`${ip}:login`, 12);
+    await authLimit(`${ip}:reset`, 12);
     const code = text(body.code, 20, "Kod", 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const hashed = await sha(code);
     const member = await db.get(
       "SELECT id, group_id, username FROM members WHERE reset_hash = ? AND reset_until > ?",
-      [await sha(code), Date.now()],
+      [hashed, Date.now()],
     );
     if (!member) fail("Bu kod geçersiz ya da süresi dolmuş. Batur’dan yenisini iste.", 404);
     const username = member.username || usernameOf(body.username);
     if (!member.username && (await db.get("SELECT 1 AS hit FROM members WHERE username = ?", [username])))
       fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
-    await db.run("UPDATE members SET username = ?, pass_hash = ?, reset_hash = NULL, reset_until = 0 WHERE id = ?", [
-      username,
-      await hashPassword(passwordOf(body.password)),
-      member.id,
+    const secret = await hashPassword(passwordOf(body.password));
+    const session = await newSession(member.id);
+    const now = Date.now();
+    await db.batch([
+      ["INSERT INTO sessions (token, member_id, created, seen) SELECT ?, id, ?, ? FROM members WHERE id = ? AND reset_hash = ? AND reset_until > ?", [session.hash, now, now, member.id, hashed, now]],
+      ["DELETE FROM sessions WHERE member_id = ? AND token <> ? AND EXISTS (SELECT 1 FROM sessions WHERE token = ?)", [member.id, session.hash, session.hash]],
+      ["UPDATE members SET username = ?, pass_hash = ?, reset_hash = NULL, reset_until = 0, transfer_hash = NULL, transfer_until = 0 WHERE id = ? AND EXISTS (SELECT 1 FROM sessions WHERE token = ?)", [username, secret, member.id, session.hash]],
     ]);
-    return signIn(request, { ...member, username });
+    if (!(await db.get("SELECT 1 FROM sessions WHERE token = ?", [session.hash])))
+      fail("Bu kod kullanılmış ya da süresi dolmuş. Batur’dan yenisini iste.", 404);
+    onChange(member.group_id, { removed: member.id });
+    return json(
+      { memberId: member.id, username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
+      200, { "Set-Cookie": sessionCookie(request, session.token) },
+    );
   }, false);
 
   // Moving to another device (or from Safari to the iPhone home-screen app, which
@@ -780,24 +816,31 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ code: `${code.slice(0, 4)}-${code.slice(4)}`, until });
   });
 
-  route("POST", "/transfer/claim", async ({ request, body }) => {
+  route("POST", "/transfer/claim", async ({ request, body, ip }) => {
+    await authLimit(`${ip}:transfer`, 12);
     const code = text(body.code, 20, "Kod", 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (code.length !== 8) fail("Kod 8 karakter olmalı.");
     const hashed = await sha(code);
     const member = await db.get(
       // A code from another device, or a one-day code Batur made in his panel.
-      "SELECT id, group_id, name, username FROM members WHERE (transfer_hash = ? AND transfer_until > ?) OR (reset_hash = ? AND reset_until > ?)",
+      "SELECT id, group_id, name, username, reset_hash FROM members WHERE (transfer_hash = ? AND transfer_until > ?) OR (reset_hash = ? AND reset_until > ?)",
       [hashed, Date.now(), hashed, Date.now()],
     );
     if (!member) fail("Bu kod geçersiz ya da süresi dolmuş. Diğer cihazdan ya da Batur’dan yeni kod al.", 404);
     const session = await newSession(member.id);
+    const now = Date.now();
+    const recovery = member.reset_hash === hashed;
     await db.batch([
-      session.statement,
+      ["INSERT INTO sessions (token, member_id, created, seen) SELECT ?, id, ?, ? FROM members WHERE id = ? AND ((transfer_hash = ? AND transfer_until > ?) OR (reset_hash = ? AND reset_until > ?))", [session.hash, now, now, member.id, hashed, now, hashed, now]],
+      ...(recovery ? [["DELETE FROM sessions WHERE member_id = ? AND token <> ? AND EXISTS (SELECT 1 FROM sessions WHERE token = ?)", [member.id, session.hash, session.hash]]] : []),
       [
-        "UPDATE members SET transfer_hash = NULL, transfer_until = 0, reset_hash = NULL, reset_until = 0 WHERE id = ?",
-        [member.id],
+        "UPDATE members SET transfer_hash = NULL, transfer_until = 0, reset_hash = NULL, reset_until = 0 WHERE id = ? AND EXISTS (SELECT 1 FROM sessions WHERE token = ?)",
+        [member.id, session.hash],
       ],
     ]);
+    if (!(await db.get("SELECT 1 FROM sessions WHERE token = ?", [session.hash])))
+      fail("Bu kod kullanılmış ya da süresi dolmuş. Yeni kod al.", 404);
+    if (recovery) onChange(member.group_id, { removed: member.id });
     return json(
       { memberId: member.id, username: member.username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
       200,
@@ -1071,8 +1114,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   route("POST", "/push", async ({ member, body }) => {
     const clean = validSubscription(body.subscription);
     await db.run(
-      "INSERT INTO subscriptions (endpoint, member_id, subscription) VALUES (?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET member_id = excluded.member_id, subscription = excluded.subscription",
-      [clean.endpoint, member.id, JSON.stringify(clean)],
+      "INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET member_id = excluded.member_id, subscription = excluded.subscription, session_token = excluded.session_token",
+      [clean.endpoint, member.id, JSON.stringify(clean), member.session_token],
     );
     return json({ ok: true });
   });
@@ -1262,9 +1305,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   route("POST", "/owner/push", async ({ request, ip, body }) => {
     await requireOwner(request, ip);
     const clean = validSubscription(body.subscription);
+    const ownerToken = readCookie(request, "kutup_owner");
     await db.run(
-      "INSERT INTO owner_subscriptions (endpoint, subscription) VALUES (?, ?) ON CONFLICT(endpoint) DO UPDATE SET subscription = excluded.subscription",
-      [clean.endpoint, JSON.stringify(clean)],
+      "INSERT INTO owner_subscriptions (endpoint, subscription, session_token, key_hash) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET subscription = excluded.subscription, session_token = excluded.session_token, key_hash = excluded.key_hash",
+      [clean.endpoint, JSON.stringify(clean), await ownerSignedIn(request) ? await sha(ownerToken) : null, await ownerHash()],
     );
     return json({ ok: true });
   }, false);
@@ -1276,7 +1320,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
 
   route("POST", "/owner/claim", async ({ request, body, ip }) => {
-    limit(`${ip}:owner`, 20);
+    await authLimit(`${ip}:owner`, 20);
     if (config.adminKey) fail("Bu kutunun anahtarı yayın ayarlarında tanımlı.", 409);
     const key = text(body.key, 200, "Anahtar", 12);
     const result = await db.run(
@@ -1379,8 +1423,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // Signs a member out on every device (a lost phone, a shared computer).
   route("POST", "/owner/members/:id/signout", async ({ request, ip, params }) => {
     await requireOwner(request, ip);
-    const result = await db.run("DELETE FROM sessions WHERE member_id = ?", [params.id]);
-    return json({ ok: true, closed: result.changes });
+    const member = await db.get("SELECT id, group_id FROM members WHERE id = ?", [params.id]);
+    if (!member) fail("Kişi bulunamadı.", 404);
+    const { count } = await db.get("SELECT count(*) AS count FROM sessions WHERE member_id = ?", [member.id]);
+    await db.batch([
+      ["DELETE FROM sessions WHERE member_id = ?", [member.id]],
+      ["DELETE FROM subscriptions WHERE member_id = ?", [member.id]],
+      ["UPDATE members SET transfer_hash = NULL, transfer_until = 0, reset_hash = NULL, reset_until = 0 WHERE id = ?", [member.id]],
+    ]);
+    onChange(member.group_id, { removed: member.id });
+    return json({ ok: true, closed: count });
   }, false);
 
   // Everything, as JSON: a copy Batur can keep. Secrets that open accounts or
