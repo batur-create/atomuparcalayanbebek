@@ -1221,3 +1221,65 @@ h3,
     animation: none;
   }
 }
+/* ---------- accounts ---------- */
+.account-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 14px;
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.account-box.missing {
+  border-style: dashed;
+}
+.account-box > div:first-child {
+  flex: 1 1 220px;
+}
+.account-box strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--accent-deep);
+}
+.account-box p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b6679;
+}
+.account-form {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 100%;
+}
+.account-form input {
+  font-size: 16px;
+}
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 4px 0 16px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f1efe8;
+}
+.segmented button {
+  min-height: 38px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #77727f;
+  background: none;
+}
+.segmented button.active {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(40, 30, 70, 0.1);
+}

@@ -348,6 +348,7 @@ export default function App() {
       .then((d) => {
         setSession({
           memberId: d.memberId,
+          username: d.username || null,
           pushPublicKey: d.pushPublicKey,
           live: d.live,
         });
@@ -589,6 +590,7 @@ export default function App() {
   const joinSuccess = (d, welcome = "Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨") => {
     setSession({
       memberId: d.memberId,
+      username: d.username || null,
       pushPublicKey: d.pushPublicKey,
       live: d.live,
     });
@@ -1253,6 +1255,8 @@ export default function App() {
       {modal === "profile" && me && (
         <ProfileModal
           me={me}
+          username={session?.username}
+          onAccount={(username) => setSession((s) => ({ ...s, username }))}
           theme={theme}
           setTheme={setTheme}
           close={() => setModal(null)}
@@ -1880,6 +1884,8 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [mode, setMode] = useState(standalone && !invite ? "code" : "profile"),
+    [via, setVia] = useState("login"),
+    [login, setLogin] = useState({ username: "", password: "" }),
     [code, setCode] = useState("");
   const submit = async (e) => {
     e.preventDefault();
@@ -1904,7 +1910,7 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
     setBusy(true);
     setError("");
     try {
-      const d = await api("/transfer/claim", { code });
+      const d = via === "login" ? await api("/login", login) : await api("/transfer/claim", { code });
       onSuccess(d, "Tekrar hoş geldin! Profilin bu cihazda da açık. ✨");
     } catch (e) {
       setError(e.message);
@@ -1916,10 +1922,62 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
     return (
       <Modal
         title="Zaten ekiptesin. 🔑"
-        subtitle="Diğer cihazında Kütüp’ü aç: Benim köşem → Başka cihazda aç. Çıkan kodu buraya yaz."
+        subtitle={
+          via === "login"
+            ? "Kullanıcı adın ve şifrenle gir. Şifreni unuttuysan Batur’dan giriş kodu iste."
+            : "Diğer cihazındaki “Başka cihazda aç” kodunu ya da Batur’un verdiği giriş kodunu yaz."
+        }
         close={close}
       >
+        <div className="segmented" role="tablist">
+          {[
+            ["login", "Kullanıcı adıyla"],
+            ["code", "Kodla"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={via === id}
+              className={via === id ? "active" : ""}
+              onClick={() => {
+                setVia(id);
+                setError("");
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <form onSubmit={claim}>
+          {via === "login" ? (
+            <>
+              <label className="field-label">
+                Kullanıcı adı
+                <input
+                  required
+                  autoFocus
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  maxLength={24}
+                  value={login.username}
+                  onChange={(e) => setLogin({ ...login, username: e.target.value })}
+                />
+              </label>
+              <label className="field-label">
+                Şifre
+                <input
+                  required
+                  type="password"
+                  autoComplete="current-password"
+                  maxLength={128}
+                  value={login.password}
+                  onChange={(e) => setLogin({ ...login, password: e.target.value })}
+                />
+              </label>
+            </>
+          ) : (
           <label className="field-label">
             Giriş kodun
             <input
@@ -1935,7 +1993,8 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
               onChange={(e) => setCode(e.target.value.toUpperCase())}
             />
           </label>
-          {standalone && isIOS && (
+          )}
+          {via === "code" && standalone && isIOS && (
             <p className="form-warning">
               Ana ekrandaki Kütüp, Safari’den ayrı bir oturum tutar. Safari’de
               katıldıysan kodunu oradan al.
@@ -2014,7 +2073,7 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
             setError("");
           }}
         >
-          <KeyRound size={15} /> Zaten ekipteyim, giriş kodum var
+          <KeyRound size={15} /> Zaten hesabım var, giriş yap
         </button>
         <p className="form-footnote">
           <ShieldCheck size={14} /> E-posta yok, şifre yok. Oturumun bu
@@ -2054,7 +2113,7 @@ function DeviceTransfer({ notify }) {
         <div className="transfer-code" aria-live="polite">
           <b>{code.code}</b>
           <small>
-            Diğer cihazda: Yerini al → “Zaten ekipteyim, giriş kodum var”
+            Diğer cihazda: Yerini al → “Zaten hesabım var, giriş yap”
           </small>
         </div>
       ) : (
@@ -2070,7 +2129,74 @@ function DeviceTransfer({ notify }) {
     </div>
   );
 }
-function ProfileModal({ me, theme, setTheme, close, mutate, notify, onLeft }) {
+function AccountBox({ username, notify, onSaved }) {
+  const [value, setValue] = useState({ username: username || "", password: "" }),
+    [busy, setBusy] = useState(false),
+    [open, setOpen] = useState(!username);
+  const save = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const r = await api("/account", { username: value.username, ...(value.password ? { password: value.password } : {}) });
+      onSaved(r.username);
+      setValue({ username: r.username, password: "" });
+      setOpen(false);
+      notify("Hesabın hazır. Artık her cihazdan kullanıcı adın ve şifrenle girebilirsin. 🔐");
+    } catch (error) {
+      notify(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className={`account-box ${username ? "" : "missing"}`}>
+      <div>
+        <strong>
+          <KeyRound size={16} /> {username ? `Hesabın: @${username}` : "Hesabını koru"}
+        </strong>
+        <p>
+          {username
+            ? "Her tarayıcıdan ve telefondan bu kullanıcı adı ve şifreyle girersin."
+            : "Kullanıcı adı ve şifre belirle; başka bir cihazdan ya da tarayıcıdan girince profilin seni beklesin."}
+        </p>
+      </div>
+      {open ? (
+        <form onSubmit={save} className="account-form">
+          <input
+            required
+            aria-label="Kullanıcı adı"
+            placeholder="kullanıcı adı"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={24}
+            value={value.username}
+            onChange={(e) => setValue({ ...value, username: e.target.value })}
+          />
+          <input
+            required={!username}
+            type="password"
+            aria-label={username ? "Yeni şifre (isteğe bağlı)" : "Şifre"}
+            placeholder={username ? "yeni şifre (boş bırakabilirsin)" : "şifre (en az 6 karakter)"}
+            autoComplete="new-password"
+            minLength={6}
+            maxLength={128}
+            value={value.password}
+            onChange={(e) => setValue({ ...value, password: e.target.value })}
+          />
+          <Busy loading={busy} className="btn primary" type="submit">
+            Kaydet
+          </Busy>
+        </form>
+      ) : (
+        <button type="button" className="btn outline" onClick={() => setOpen(true)}>
+          Değiştir
+        </button>
+      )}
+    </div>
+  );
+}
+function ProfileModal({ me, username, onAccount, theme, setTheme, close, mutate, notify, onLeft }) {
   const [value, setValue] = useState({
       name: me.name,
       avatar: me.avatar,
@@ -2130,7 +2256,8 @@ function ProfileModal({ me, theme, setTheme, close, mutate, notify, onLeft }) {
           Böyle çok daha ben <Sparkles size={16} />
         </Busy>
       </form>
-      <DeviceTransfer notify={notify} />
+      <AccountBox username={username} notify={notify} onSaved={onAccount} />
+        <DeviceTransfer notify={notify} />
       <button type="button" className="text-button leave-button" onClick={leave}>
         <LogOut size={15} /> Ekipten ayrıl
       </button>
