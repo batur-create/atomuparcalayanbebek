@@ -10,7 +10,7 @@ import {
   poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG,
 } from "./iso.js";
 import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
-import { crewSVG } from "./crew.js";
+import { crewSVG, fleeSVG } from "./crew.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -55,18 +55,49 @@ function scaffoldSVG(P, sp, built = 1) {
   s += seg(P(w, -w + 0.25, 0.1), P(w, 0, 1.2), pole, 1.2, 0.7) + seg(P(-w + 0.25, w, 0.1), P(0, w, 1.2), pole, 1.2, 0.7);
   return s;
 }
+// Infill walls are laid in aerated-concrete blocks, course by course; the
+// course being laid creeps along the two visible faces.
+const BLOCK = { faces: ["#ecebe6", "#d9d7cf", "#c4c1b8"], grain: "#c9c6bd", pattern: "blocks" };
+function masonrySVG(P, sp, t) {
+  const courses = Math.max(4, Math.round(sp.h / 0.25)),
+    done = Math.floor(t * courses),
+    part = t * courses - done,
+    w = sp.hw,
+    step = sp.h / courses;
+  let s = done ? wallsSVG(P, { ...sp, wall: BLOCK }, done / courses) : "";
+  if (part > 0 && done < courses) {
+    const z0 = 0.3 + done * step,
+      z1 = z0 + step,
+      reach = -w + 2 * w * part;
+    s += box(P, -w, w - 0.2, reach, w, z0, z1, BLOCK.faces) + box(P, w - 0.2, -w, w, reach, z0, z1, BLOCK.faces);
+  }
+  return s;
+}
+// Render and paint go up the scaffold from the ground: only the two visible
+// faces sweep upward, then the finished wall (trim, floor bands) takes over.
+function facadeSVG(P, sp, t) {
+  if (t >= 1) return wallsSVG(P, sp, 1);
+  const w = sp.hw,
+    z1 = 0.3 + sp.h * t,
+    [, left, right] = sp.wall.faces;
+  return poly([P(-w, w, 0.3), P(w, w, 0.3), P(w, w, z1), P(-w, w, z1)], left) + poly([P(w, -w, 0.3), P(w, w, 0.3), P(w, w, z1), P(w, -w, z1)], right);
+}
+
 function sceneParts(P, sp, seed, plan) {
   const w = sp.hw;
   return [
     { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
     { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
-    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => wallsSVG(P, sp, t) },
-    { a: 0.8, b: 0.84, kind: "pop", anchor: [0, w, 0.3], draw: () => doorSVG(P, sp) },
+    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => masonrySVG(P, sp, t) },
+    { a: 0.86, b: 0.93, kind: "grow", draw: (t) => facadeSVG(P, sp, t) },
+    // The door is fitted into its frame from the threshold up.
+    { a: 0.8, b: 0.84, kind: "reveal", fit: true, draw: () => doorSVG(P, sp) },
     { a: 0.78, b: 0.86, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
     { a: FRAME_END - 0.02, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
     { a: 0.68, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
     { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
-    { a: 0.94, b: 0.98, kind: "pop", anchor: [0, w + 0.9, 0], draw: () => gardenSVG(P, sp, seed) },
+    // Planting: the garden comes up out of the ground.
+    { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) },
     { a: 0.03, b: 0.84, kind: "erect", live: true, draw: (time, shown, built) => craneSVG(P, sp, time, shown, built, workHeight(plan, sp, shown)) },
   ];
 }
@@ -162,24 +193,48 @@ export function ConstructionScene({ run, outcome }) {
       }
       if (mode === "collapse") {
         caption.innerHTML = "";
-        crewBack.innerHTML = crewFront.innerHTML = "";
-        const tau = motionReduced ? 1.5 : (now - eventAt) / 1000;
+        crewBack.innerHTML = "";
+        const tau = motionReduced ? 3 : (now - eventAt) / 1000;
+        // 1) Cracks open and the structure shakes harder and harder; 2) it comes
+        // down piece by piece; 3) dust. The crew runs clear; the debris stays.
+        const SHAKE = motionReduced ? 0 : 0.75,
+          fallT = tau - SHAKE;
+        if (fallT < 0) building.setAttribute("transform", `translate(${f(Math.sin(tau * 55) * 3.2 * (tau / SHAKE))} 0)`);
+        else building.removeAttribute("transform");
         parts.forEach((p) => {
           if (!p.fall) return p.el.setAttribute("opacity", "0");
-          const l = Math.max(0, tau - p.fall.d);
+          const l = Math.max(0, fallT - p.fall.d);
           p.el.setAttribute("transform", `${p.fall.base} translate(${f(p.fall.dx * l)} ${f(320 * l * l)}) rotate(${f(p.fall.r * l)} ${f(p.fall.cx)} ${f(p.fall.cy)})`);
-          p.el.setAttribute("opacity", Math.max(0, (1 - l * 1.3) * p.fall.op).toFixed(2));
+          // Pieces fall in full colour and only disappear into the dust once down.
+          p.el.setAttribute("opacity", (p.fall.op * clamp(1 - (l - 0.55) * 2.5)).toFixed(2));
         });
-        if (tau > 0.9 && !rubble)
+        crewFront.innerHTML = motionReduced ? "" : fleeSVG(P, sp, tau);
+        let cracks = "";
+        if (fallT < 0.25) {
+          const grow = clamp(tau / Math.max(0.01, SHAKE)),
+            w = sp.hw,
+            top = topOf(sp);
+          [[-0.9, "y"], [0.5, "y"], [-0.4, "x"], [0.8, "x"]].forEach(([u, face], i) => {
+            let d = "";
+            for (let j = 0; j <= 6; j++) {
+              const z = top - 0.2 - (top - 0.5) * grow * (j / 6),
+                off = u + (j % 2 ? 0.18 : -0.12) * (i % 2 ? 1 : -1);
+              const q = face === "y" ? P(off * w, w + 0.02, z) : P(w + 0.02, off * w, z);
+              d += `${j ? "L" : "M"}${f(q[0])} ${f(q[1])}`;
+            }
+            cracks += `<path d="${d}" fill="none" stroke="#3b2f2a" stroke-width="1.8" stroke-linejoin="round"/>`;
+          });
+        }
+        if (fallT > 0.15 && !rubble)
           rubble = foundationSVG(P, sp) + [[-1, 0.4], [0.3, -0.6], [0.9, 0.8], [-0.2, 1.2], [0.8, -1.3], [-1.3, -0.7]].map(([x, y], i) => box(P, x - 0.35, y - 0.25, x + 0.35, y + 0.25, 0.3, 0.55 + (i % 2) * 0.22, i % 3 ? sp.wall.faces : WOOD)).join("");
         let dust = "";
-        const k = clamp(tau / 1.4);
+        const k = clamp(Math.max(0, fallT) / 1.4);
         for (let i = 0; i < 12; i++) {
           const a = (i / 12) * Math.PI * 2,
             q = P(Math.cos(a) * (sp.hw + 0.4), Math.sin(a) * (sp.hw + 0.4), 0.3);
           dust += `<circle cx="${f(q[0] + Math.cos(a) * 34 * k)}" cy="${f(q[1] - 16 * k)}" r="${f(7 + 28 * k)}" fill="#ddd3c3" opacity="${(0.75 * (1 - k)).toFixed(2)}"/>`;
         }
-        fx.innerHTML = (rubble ? `<g opacity="${clamp((tau - 0.9) / 0.4).toFixed(2)}">${rubble}</g>` : "") + dust;
+        fx.innerHTML = (rubble ? `<g opacity="${clamp((fallT - 0.15) / 0.4).toFixed(2)}">${rubble}</g>` : "") + (fallT > 0 ? dust : "") + cracks;
         return;
       }
       const lit = mode === "done";
@@ -240,6 +295,12 @@ export function ConstructionScene({ run, outcome }) {
               tops = [P(0, 0, ridgeOf(sp)), P(-hw, -hw, ridgeOf(sp))].map((q) => q[1]);
             p.top = Math.min(...tops) - 30;
             p.bottom = Math.max(P(hw + 0.5, hw + 0.5, topOf(sp))[1], P(hw, -hw, topOf(sp))[1]) + 20;
+            // Smaller pieces (door, garden) reveal over their own height.
+            if (p.fit)
+              try {
+                const bb = p.el.querySelector("g").getBBox();
+                if (bb.height > 0) [p.top, p.bottom] = [bb.y - 2, bb.y + bb.height + 2];
+              } catch {}
             p.ready = true;
           }
           const y = p.bottom - (p.bottom - p.top) * l;

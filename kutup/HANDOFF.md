@@ -205,8 +205,9 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
        - Grobeton ve her beton: tamburu dönen transmikser. Temel ve döşeme betonunda üç bomlu pompa döküm cephesine uzanır; hortumcu ve vibratörcü işçi orada çalışır.
        - Her evrede işine uygun minik işçiler (baret, yelek, sallanma).
        - Çizim sırası: `yard` (çit, konteyner, toprak; `siteSVG().yard`) → `crew-back` → bina → `crew-front`. 15 fps.
+     - **(c) ilk yarı ✅ (14 Ekim gece):** `Village.jsx`'teki `masonrySVG` ile dolgu duvarlar gazbeton bloklarla sıra sıra örülür; o an örülen sıra iki görünen yüzde ilerler. `facadeSVG` ile "Cephe: mantolama, sıva ve boya" evresinde (0.86–0.93) son duvar rengi iki yüzde alttan yukarı çıkar, sonunda bitmiş duvar (`wallsSVG`) devralır.
        - **Kalan:**
-         - (c) Gerçek duvar örgüsü, çatı makası ve kiremit, cephe iskelesiyle mantolama/sıva/boya, kapı (hâlâ `pop` ile büyüyerek geliyor).
+         - (c) Çatı makası, çatı makası ve kiremit, cephe iskelesiyle mantolama/sıva/boya, kapı (hâlâ `pop` ile büyüyerek geliyor).
          - (d) Peyzaj (bahçe hâlâ `pop`) ve fiziksel çöküş. Çöküş şimdilik eski usul: parçalar düşüp soluyor.
   2. **Yapı kataloğu (koleksiyon, "pokemon gibi").**
      - Sınıflar seans süresine bağlı kalır: Küçük 25, Orta 50, Büyük 75 dk.

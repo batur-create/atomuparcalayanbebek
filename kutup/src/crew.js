@@ -135,3 +135,14 @@ export function crewSVG(P, sp, plan, shown, time) {
   crew.forEach(([x, y, z], i) => (people += worker(P, x, y, z, time, i * 1.7, i % 2 ? "#f4f2ea" : "#f6d24a")));
   return { behind, front: machines + people };
 }
+
+// When a build collapses the crew runs clear of it.
+export function fleeSVG(P, sp, tau) {
+  const w = sp.hw,
+    run = Math.min(2.4, tau * 2.6);
+  let s = "";
+  [[w + 0.4, w * 0.2, 1, 0.35], [-w * 0.3, w + 0.4, -0.25, 1], [w + 0.3, -w + 0.4, 1, -0.7]].forEach(([x, y, dx, dy], i) => {
+    s += worker(P, x + dx * run, y + dy * run, 0, tau * 2.5, i * 1.3, i % 2 ? "#f4f2ea" : "#f6d24a");
+  });
+  return s;
+}

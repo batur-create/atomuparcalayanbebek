@@ -12,7 +12,7 @@ export const LATER = [
   ["walls", "Duvar örme", FRAME_END, 0.68],
   ["roof", "Çatı: makas, aşık, kiremit", 0.68, 0.78],
   ["openings", "Doğrama ve kapı", 0.78, 0.86],
-  ["finish", "İnce işler ve tesisat", 0.86, 0.93],
+  ["finish", "Cephe: mantolama, sıva ve boya", 0.86, 0.93],
   ["handover", "Peyzaj ve teslim", 0.93, 1],
 ];
 
