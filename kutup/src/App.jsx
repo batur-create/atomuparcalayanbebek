@@ -291,6 +291,41 @@ export default function App() {
     const timer = setTimeout(() => setIntro(false), 2600);
     return () => clearTimeout(timer);
   }, []);
+  // Batur's door: seven quick taps on a ✳ with the last one held, or typing
+  // "batur" anywhere outside a text field, opens /batur. It only shows the
+  // door; the panel still asks for the key (or the remembered owner cookie).
+  useEffect(() => {
+    let taps = [],
+      hold = 0,
+      typed = "";
+    const open = () => {
+      navigator.vibrate?.(40);
+      location.href = "/batur";
+    };
+    const down = (e) => {
+      if (!e.target.closest?.("[data-door]")) return;
+      const now = Date.now();
+      taps = taps.filter((t) => now - t < 4000);
+      if (taps.length >= 6) hold = setTimeout(open, 650);
+      taps.push(now);
+    };
+    const up = () => clearTimeout(hold);
+    const key = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+      typed = (typed + (e.key.length === 1 ? e.key.toLocaleLowerCase("tr") : "")).slice(-5);
+      if (typed === "batur") open();
+    };
+    document.addEventListener("pointerdown", down);
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", up);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", down);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", up);
+      document.removeEventListener("keydown", key);
+    };
+  }, []);
   // The last build-mode session's ending, replayed on the construction site.
   const [buildOutcome, setBuildOutcome] = useState(null);
   // Friends who just switched to "Kütüpte" get a short glow on their card.
@@ -652,7 +687,7 @@ export default function App() {
     return (
       <div className="loading-screen">
         <span className="brand">
-          kütüp<span>✳</span>
+          kütüp<span data-door="">✳</span>
         </span>
         <p>Bir sandalye çekiyoruz…</p>
         <LoaderCircle className="spin" />
@@ -701,7 +736,7 @@ export default function App() {
           onClick={() => navigate("home")}
           aria-label="Kütüp ana sayfa"
         >
-          kütüp<span>✳</span>
+          kütüp<span data-door="">✳</span>
         </button>
         <div className="group-switch">
           <span className="group-symbol">✷</span>
@@ -1251,7 +1286,7 @@ export default function App() {
           </div>
           <footer className="page-footer">
             <span>
-              Biraz çalışma, biraz muhabbet. <span>kütüp ✳</span>
+              Biraz çalışma, biraz muhabbet. <span data-door="">kütüp ✳</span>
             </span>
             <span>Batur’dan, bizim tayfaya.</span>
           </footer>
@@ -1914,7 +1949,7 @@ function Welcome({ invite, inviteInfo, open }) {
     <main className="welcome">
       <section className="welcome-card">
         <span className="brand welcome-brand">
-          kütüp<span>✳</span>
+          kütüp<span data-door="">✳</span>
         </span>
         <h1>{invite ? `${inviteInfo?.name || "Ekibin"} seni bekliyor.` : "Kim nerede, artık sormak yok."}</h1>
         <p>
