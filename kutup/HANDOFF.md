@@ -64,8 +64,10 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (65 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (67 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
+npm run test:browser # gerçek tarayıcı, 18 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
+node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
 - **Wrangler (Batur’un Windows çalışma ortamı):** Cloudflare hesabına OAuth ile bağlı. Bu bağlantı Codex bulut ortamına taşınmış sayılmaz; 14 Ekim denetiminde burada yayın kimliği yoktu ve Cloudflare ağı 403 verdi. Token süresi dolarsa `npx wrangler login --device --browser=false` çalıştır. Çıkan kodu tarayıcı panelinde `https://dash.cloudflare.com/oauth2/device/verify` adresinde kutuya yaz, Batur'a "Continue ve Allow'a bas" de. Kodun ömrü 5 dakika.
@@ -113,7 +115,10 @@ npm run deploy       # vite build + wrangler deploy (canlı)
   - **Değiştirdiklerim:** `init()` içinde `layoutVillages()` hatası yine loglanıp geçiliyor. Astra'nın fail-fast hâli, yerleşim hatasında bütün uygulamayı durdururdu. `.coffee-card .eyebrow` 9.5px'ten 10px'e çekildi (eski bir kural). `/batur` paneline sağ üstte "Uygulamaya dön" düğmesi eklendi (Batur istedi). `audit/` PNG'leri çalışma ağacından kaldırıldı ve `.gitignore`'a eklendi; rapor bağlantıları `c7988d81`'e sabitlendi.
   - **Yayın:** önce `/api/owner/backup` JSON'u ve `wrangler d1 export` SQL yedeği alındı (`data/backup-before-astra-*.json`, `data/kutup-before-astra-*.sql`; canlı şema 7, 1 ekip, 4 üye). Ardından deploy yapıldı; canlı D1 şeması 10. 33 adımlı duman testi (`tests/live-smoke.mjs`) geçti: hesapsız ekip reddi, kurma/katılma, push'un oturuma bağlanması, durum senkronu ve `rev` yoklaması, ayrı geliş/mola soğumaları, pano, köy, büyük harfle giriş, tek kullanımlık aktarım kodu (ilk cihaz açık kalır), Batur koduyla kurtarma (3 eski cihaz 401, eski şifre geçersiz), yönetici "tüm cihazlarda çıkış" (oturum ve push silinir), temizlik (geçici ekip silindi, gerçek ekip 4 kişi aynen).
   - **Push geçişi:** yayından sonra üye aboneliklerinin 1/5'i, yönetici aboneliklerinin 1/3'ü bağlıydı. Diğerleri sahibi uygulamayı (ya da `/batur`'u) bir kez açınca kendiliğinden bağlanır, o zamana kadar bildirim almazlar. Arkadaşlara "uygulamayı bir kez aç" demek yeterli.
-  - **Açık not:** oturumlar kayan değil, girişten itibaren 365 gün geçerli (çerez de yenilenmiyor). Hesabı olanlar yeniden giriş yapabilir; hesapsız eski üyeler Batur kodu ister. İleride `/session`'da çerezi ve `created`'i tazelemek düşünülebilir. `npm run test:browser` için Python Playwright bu makinede kurulu değil; görsel kontrol Playwright MCP ile 375px'te yapıldı (taşma yok, köy canvas'ı çiziliyor).
+  - **Açık notlar (14 Ekim akşamı kapatıldı):**
+    - Oturum artık kayan: `GET /session`, 30 günden eski oturumun `created` değerini ve çerezini yeniler; yalnızca bir yıl hiç açılmayan cihaz düşer.
+    - JSON yedekten geri yükleme aracı eklendi (`server/restore.js`, `scripts/restore-backup.mjs`); gerçek canlı yedekle prova edildi.
+    - `npm run test:browser` Windows'ta çalışıyor: Python Playwright kuruldu, betik Chrome/Edge'i kendisi buluyor; 18/18 geçti.
 
 ### Bildirim ve senkron sağlamlaştırma (14 Ekim 2026, yayında)
 

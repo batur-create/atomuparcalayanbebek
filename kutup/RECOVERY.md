@@ -48,8 +48,18 @@ JSON dosyası da hassastır: kullanıcı adları, özel geri bildirimler ve paro
 ## SQL veya JSON’dan kurtarma provası
 
 - SQL yedeğini önce **ayrı, boş** bir yerel veritabanında ya da ayrı bir test D1 veritabanında geri yükle. Canlı `kutup` üzerine deneme yapma. Node SQLite kopyasında `PRAGMA integrity_check` ve `PRAGMA foreign_key_check` çalıştır.
-- JSON için henüz test edilmiş bir restore CLI/API yok. Elle canlı tablolara ekleme yapma. Bir sonraki restore aracı boş hedef zorunluluğu, sürüm/kolon doğrulaması, işlem bütünlüğü, FK kontrolü, sayaçların karşılaştırılması ve bina konumlarının birebir korunmasıyla geliştirilmelidir.
-- JSON doğrudan oturum açan sırları dışlar; eski `members.token`, transfer/reset kodları veya session cookie’leri uydurarak geri giriş oluşturma. Hesabı olanlar mevcut parola özetleriyle giriş yapabilmeli; eski, hesabı olmayan üyeler için yeni yönetici kurtarma kodları üretilmelidir.
+- **JSON yedeği geri yükleme aracı** (`server/restore.js`, testli). Kullanımı:
+
+  ```sh
+  node scripts/restore-backup.mjs data/kutup-yedek.json data/kopya.sqlite --sql data/d1-icin.sql
+  ```
+
+  - Hedef dosya yeni ve boş olmalı; var olan bir dosyanın üstüne yazmaz.
+  - Yedeği güncel şemaya kurar (eski şemalı yedekler de olur), tek işlemde ekler. Ardından yabancı anahtar ve bütünlük kontrolü yapar, tablo satır sayılarını ve her binanın `pos_x/pos_y/facing/district_id` değerini yedekle birebir karşılaştırır. Bir şey uymazsa durur ve hiçbir şey bırakmaz.
+  - `--sql` ile **boş** bir D1 veritabanına yüklenecek dosya da yazar: şema ve bütün satırlar.
+  - 14 Ekim'de gerçek canlı yedekle (şema 7) yerelde prova edildi.
+- **D1'e taşıma:** canlı `kutup` üzerine asla yükleme. Yeni boş bir D1 aç (`npx wrangler d1 create kutup-geri`), `npx wrangler d1 execute kutup-geri --remote --file=data/d1-icin.sql` ile yükle ve kontrol et. Ancak Batur onaylarsa `wrangler.jsonc`'deki `DB` bağını yeni veritabanına çevirip yayınla.
+- JSON doğrudan oturum açan sırları dışlar: oturumlar, push abonelikleri, transfer ve sıfırlama kodları geri gelmez. Eski `members.token` yerine araç rastgele, kullanılmayan bir değer koyar. Hesabı olanlar parolalarıyla yeniden giriş yapar. Hesabı olmayan eski üyeler için panelden yeni giriş kodu üret. Herkes bildirimi bir kez yeniden açmalı (yeni sunucuda VAPID anahtarı da yenidir).
 - Başarılı provanın fark raporu ve veri kaybı kapsamı görülmeden üretim verisini değiştirme.
 
 ## Bilinçli korunan silme davranışı

@@ -248,7 +248,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const token = readCookie(request, "kutup_session");
     if (!token || token.length > 128) return null;
     return db.get(
-      `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen
+      `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen, s.created AS session_created
        FROM sessions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
        WHERE s.token = ? AND s.created > ?`,
       [await sha(token), Date.now() - SESSION_AGE],
@@ -900,16 +900,26 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     );
   }, false);
 
-  route("GET", "/session", async ({ member }) => {
-    if (Date.now() - member.session_seen > HOUR)
-      await db.run("UPDATE sessions SET seen = ? WHERE token = ?", [Date.now(), member.session_token]);
-    return json({
-      memberId: member.id,
-      username: member.username || null,
-      live,
-      pushPublicKey: vapid.publicKey,
-      ...(await snapshot(member.group_id)),
-    });
+  // Opening the app keeps a device signed in: once a month the year starts
+  // again, on the server and in the cookie, so only an unused device expires.
+  route("GET", "/session", async ({ request, member }) => {
+    const now = Date.now();
+    const renew = now - member.session_created > 30 * DAY;
+    if (renew)
+      await db.run("UPDATE sessions SET created = ?, seen = ? WHERE token = ?", [now, now, member.session_token]);
+    else if (now - member.session_seen > HOUR)
+      await db.run("UPDATE sessions SET seen = ? WHERE token = ?", [now, member.session_token]);
+    return json(
+      {
+        memberId: member.id,
+        username: member.username || null,
+        live,
+        pushPublicKey: vapid.publicKey,
+        ...(await snapshot(member.group_id)),
+      },
+      200,
+      renew ? { "Set-Cookie": sessionCookie(request, readCookie(request, "kutup_session")) } : {},
+    );
   });
 
   // Cheap polling: when nothing changed since `rev`, only the revision travels.

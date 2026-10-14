@@ -381,3 +381,43 @@ test("migration 11 binds subscriptions saved before devices existed to the lates
   assert.equal(token("https://fcm.googleapis.com/fcm/send/legacy"), "newest");
   assert.equal(token("https://fcm.googleapis.com/fcm/send/bound"), "old", "already bound subscriptions are untouched");
 });
+
+test("opening the app renews a month-old session; an unused one still expires after a year", async () => {
+  const { app, sqlite, headers } = await auditFixture();
+  const DAY = 86400000;
+  sqlite.prepare("UPDATE sessions SET created = ?").run(Date.now() - 40 * DAY);
+  const renewed = await call(app, "/session", { headers });
+  assert.equal(renewed.status, 200);
+  assert.ok(renewed.cookie?.startsWith("kutup_session="), "the cookie gets a fresh year");
+  assert.ok(sqlite.prepare("SELECT created FROM sessions").get().created > Date.now() - 60000);
+  const fresh = await call(app, "/session", { headers });
+  assert.equal(fresh.cookie, undefined, "a recent session is not rewritten on every visit");
+  sqlite.prepare("UPDATE sessions SET created = ?").run(Date.now() - 366 * DAY);
+  assert.equal((await call(app, "/session", { headers })).status, 401);
+});
+
+test("a JSON backup restores into an empty database with sign-in and stored spots intact", async () => {
+  const { restoreBackup, restoreSql } = await import("../server/restore.js");
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "restore-test-owner-key" } });
+  const made = await call(app, "/groups", { method: "POST", body: { name: "Yedekli", username: "yedekli", password: "yedek-123" } });
+  const headers = { Cookie: made.cookie };
+  await call(app, "/presence", { method: "POST", headers, body: { status: "here" } });
+  await call(app, "/messages", { method: "POST", headers, body: { text: "yedekten önce bir mesaj" } });
+  await call(app, "/plans", { method: "POST", headers, body: { starts: Date.now() + 86400000, note: "yarın" } });
+  const backup = (await call(app, "/owner/backup", { headers: { "X-Owner-Key": "restore-test-owner-key" } })).data;
+  const copy = new DatabaseSync(":memory:");
+  const report = await restoreBackup(backup, copy);
+  assert.equal(report.counts.members, 1);
+  assert.equal(report.counts.plans, 1);
+  assert.ok(report.counts.messages >= 2);
+  await assert.rejects(restoreBackup(backup, copy), /boş değil/, "never restores over existing data");
+  const restored = createApp({ db: sqliteAdapter(copy) });
+  assert.equal((await call(restored, "/login", { method: "POST", body: { username: "yedekli", password: "yedek-123" } })).status, 200);
+  const sql = restoreSql(copy);
+  assert.match(sql, /INSERT INTO plans/);
+  const replay = new DatabaseSync(":memory:");
+  replay.exec(sql);
+  assert.equal(replay.prepare("SELECT count(*) AS n FROM members").get().n, 1, "the D1 file replays on an empty database");
+});

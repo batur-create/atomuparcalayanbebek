@@ -1,5 +1,6 @@
-"""Optional real-browser audit. Requires Python playwright and local Chromium.
-Run: python tests/browser_smoke.py --chromium /usr/bin/chromium --artifacts /tmp/kutup-audit
+"""Optional real-browser audit. Requires Python playwright (pip install playwright)
+and a Chromium-based browser: Chromium on PATH, or Chrome/Edge in their usual places.
+Run: npm run test:browser  (or: python tests/browser_smoke.py --chromium <path> --artifacts <dir>)
 Always starts an isolated local server and database; never connects to the live site.
 """
 import argparse
@@ -15,9 +16,18 @@ import time
 import urllib.request
 from playwright.sync_api import sync_playwright, expect
 
+def find_chromium():
+    for name in ('chromium', 'chromium-browser', 'google-chrome', 'chrome'):
+        if shutil.which(name): return shutil.which(name)
+    for base in (os.environ.get('PROGRAMFILES', ''), os.environ.get('PROGRAMFILES(X86)', ''), os.environ.get('LOCALAPPDATA', '')):
+        for tail in (('Google', 'Chrome', 'Application', 'chrome.exe'), ('Microsoft', 'Edge', 'Application', 'msedge.exe')):
+            candidate = Path(base, *tail)
+            if base and candidate.exists(): return str(candidate)
+    return None
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--chromium', default=shutil.which('chromium'))
-parser.add_argument('--artifacts', default='/tmp/kutup-audit-artifacts')
+parser.add_argument('--chromium', default=find_chromium())
+parser.add_argument('--artifacts', default=str(Path(tempfile.gettempdir()) / 'kutup-audit-artifacts'))
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 artifacts = Path(args.artifacts); artifacts.mkdir(parents=True, exist_ok=True)
