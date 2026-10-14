@@ -29,6 +29,7 @@ const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, m
 /** Merges an /api/village answer into what we already have (it may be partial). */
 export function mergeVillage(prev, raw) {
   if (!raw || raw.unchanged) return prev;
+  if (prev && raw.rev < prev.rev) return prev;
   const buildings = new Map(raw.partial && prev ? prev.buildings.map((b) => [b.id, b]) : []);
   for (const r of raw.buildings) buildings.set(r[0], row(r));
   const districts = raw.districts.map(([id, memberId, q, r, seed]) => ({ id, memberId, q, r, seed }));
@@ -205,6 +206,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
   const people = new Map(members.map((m) => [m.id, m]));
   const districts = village.districts.map((d) => ({ ...d, layout: cellLayout(groupKey, d.q, d.r) }));
   const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]));
+  const linkSet = new Set(network.links);
   const built = new Set(districts.map((d) => cellKey(d.q, d.r)));
   const ground = [],
     standing = [];
@@ -376,7 +378,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
     const door = b.facing ? [b.x + sp.hw + 0.7, b.y] : [b.x, b.y + sp.hw + 0.7];
     let best = { d: Infinity, point: door };
     for (const l of linesNear(door[0], door[1])) {
-      if (network.links.includes(l)) continue;
+      if (linkSet.has(l)) continue;
       const n = nearestOnLine(door, l);
       if (n.d < best.d) best = n;
     }

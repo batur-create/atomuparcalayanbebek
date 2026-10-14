@@ -12,6 +12,8 @@ import { ConstructionScene, KINDS } from "./Village.jsx";
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
 export function useVillage(session, villageRev) {
   const [village, setVillage] = useState(null);
+  const [error, setError] = useState("");
+  const [attempt, retry] = useState(0);
   const known = useRef({ member: null, data: null });
   useEffect(() => {
     if (!session) {
@@ -19,29 +21,51 @@ export function useVillage(session, villageRev) {
       setVillage(null);
       return;
     }
-    if (known.current.member !== session.memberId) known.current = { member: session.memberId, data: null };
-    const have = known.current.data;
-    let gone = false;
-    get(`/village${have ? `?rev=${have.rev}&after=${have.until || 0}` : ""}`)
-      .then((raw) => {
+    if (known.current.member !== session.memberId) {
+      known.current = { member: session.memberId, data: null };
+      setVillage(null);
+    }
+    let gone = false, timer, inFlight = false;
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (gone || inFlight) return;
+      clearTimeout(timer);
+      inFlight = true;
+      const have = known.current.data;
+      try {
+        const raw = await get(`/village${have ? `?rev=${have.rev}&after=${have.until || 0}` : ""}`, controller.signal);
         if (gone) return;
-        const next = mergeVillage(have, raw);
+        const next = mergeVillage(known.current.data, raw);
         known.current.data = next;
         setVillage(next);
-      })
-      .catch(() => {});
+        setError("");
+      } catch (e) {
+        if (!gone) {
+          setError(e.message);
+          timer = setTimeout(refresh, 5000);
+        }
+      } finally {
+        inFlight = false;
+      }
+    };
+    refresh();
+    window.addEventListener("online", refresh);
     return () => {
       gone = true;
+      controller.abort();
+      clearTimeout(timer);
+      window.removeEventListener("online", refresh);
     };
-  }, [session?.memberId, villageRev]);
+  }, [session?.memberId, villageRev, attempt]);
   const like = async (building) => {
     const r = await api(`/buildings/${building.id}/like`, {});
     const patch = (v) => v && { ...v, buildings: v.buildings.map((b) => (b.id === building.id ? { ...b, likes: r.likes, mine: r.liked } : b)) };
     known.current.data = patch(known.current.data);
     setVillage(patch);
+    retry((n) => n + 1);
     return r;
   };
-  return { village, like };
+  return { village, like, error, retry: () => retry((n) => n + 1) };
 }
 
 // Time of day, re-checked every few minutes; tiles repaint only when it changes.
@@ -180,7 +204,7 @@ function BuildingCard({ building, owner, me, onLike, close, canLike }) {
 }
 
 // ---------- the Köy tab ----------
-export function VillagePanel({ me, members, groupId, village, like, run, outcome, notify, session }) {
+export function VillagePanel({ me, members, groupId, village, like, run, outcome, notify, session, error, retry }) {
   const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId });
   const [picked, setPicked] = useState(null),
     [full, setFull] = useState(false),
@@ -216,6 +240,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   };
   return (
     <section className="panel village-panel">
+      {error && <p className="form-error" role="status">Köy güncellenemedi. <button className="text-button" onClick={retry}>Tekrar dene</button></p>}
       <div className="section-heading">
         <h2>{showScene ? "Şantiye" : "Kütüp köyü"}</h2>
         <span className="count-tag">

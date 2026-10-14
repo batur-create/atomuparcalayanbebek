@@ -71,6 +71,7 @@ import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
 import { KINDS, kindFor } from "./Village.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
+import { mergeState } from "./sync.js";
 
 const nav = [
   { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
@@ -258,6 +259,8 @@ export default function App() {
   const [session, setSession] = useState(null),
     [data, setData] = useState(EMPTY),
     [loading, setLoading] = useState(true);
+  const sessionEpoch = useRef(0);
+  const updateData = (incoming) => setData((previous) => mergeState(previous, incoming));
   const [tab, setTab] = useState(
       TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
     ),
@@ -369,7 +372,7 @@ export default function App() {
     );
   }, [data, session]);
   const me = data.members.find((m) => m.id === session?.memberId);
-  const { village, like } = useVillage(session, data.group.villageRev);
+  const { village, like, error: villageError, retry: retryVillage } = useVillage(session, data.group.villageRev);
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
   const toastTimer = useRef(),
@@ -382,6 +385,7 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(""), ms);
   };
   const signedOut = (message) => {
+    sessionEpoch.current++;
     setSession(null);
     setData(EMPTY);
     setNotificationOn(false);
@@ -443,25 +447,34 @@ export default function App() {
   // a light revision poll (only a number travels when nothing changed).
   useEffect(() => {
     if (!session) return;
-    let source, timer, ticks = 0;
+    let source, timer, ticks = 0, gone = false, inFlight = false;
+    const controller = new AbortController();
     const refresh = async (full) => {
+      if (gone || inFlight) return;
+      inFlight = true;
       try {
         const known = revision.current;
         const d = await get(
           full || known === null ? "/state" : `/state?rev=${known}`,
+          controller.signal,
         );
-        if (!d.unchanged) setData(d);
+        if (gone) return;
+        if (!d.unchanged) updateData(d);
         setConnected(true);
       } catch (e) {
+        if (gone) return;
         if (e.status === 401)
           signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
         else setConnected(false);
+      } finally {
+        inFlight = false;
       }
     };
     if (session.live === "sse" && "EventSource" in window) {
       source = new EventSource("/api/events");
       source.addEventListener("state", (event) => {
-        setData(JSON.parse(event.data));
+        if (gone) return;
+        updateData(JSON.parse(event.data));
         setConnected(true);
       });
       source.onerror = () => setConnected(false);
@@ -480,11 +493,14 @@ export default function App() {
       navigator.serviceWorker.ready
         .then((r) => r.pushManager?.getSubscription())
         .then(async (s) => {
+          if (gone) return;
           if (s) await api("/push", { subscription: s.toJSON() });
-          setNotificationOn(!!s);
+          if (!gone) setNotificationOn(!!s);
         })
         .catch(() => {});
     return () => {
+      gone = true;
+      controller.abort();
       source?.close();
       clearInterval(timer);
       document.removeEventListener("visibilitychange", visible);
@@ -496,7 +512,7 @@ export default function App() {
     if (me?.focusEnd && me.focusEnd <= now && !finishInFlight.current) {
       finishInFlight.current = true;
       api("/focus", { action: "finish" })
-        .then((r) => r.state && setData(r.state))
+        .then((r) => r.state && updateData(r.state))
         .catch(() => {})
         .finally(() => {
           setTimeout(() => {
@@ -563,7 +579,7 @@ export default function App() {
       releaseScreen();
       try {
         const r = await api("/focus", { action: "wither" });
-        if (r.state) setData(r.state);
+        if (r.state) updateData(r.state);
       } catch {}
       notify("İnşaatın çöktü 🧱 Uygulamadan çıkınca yıkılır. Bir dahakine!");
       navigator.vibrate?.(300);
@@ -625,15 +641,19 @@ export default function App() {
     action();
   };
   const mutate = async (path, body, success, method = "POST") => {
+    const epoch = sessionEpoch.current;
     try {
       const result = await api(path, body, method);
-      setData(result.state || (await get("/state")));
+      const state = result.state || (await get("/state"));
+      if (epoch !== sessionEpoch.current) return false;
+      updateData(state);
       const said = path === "/messages" ? String(body?.text || "") : "";
       if (/\p{L}{3}/u.test(said) && said === said.toLocaleUpperCase("tr") && said !== said.toLocaleLowerCase("tr"))
         notify("Şşşt! Burası kütüphane 🤫");
       else if (success) notify(success);
       return result;
     } catch (e) {
+      if (epoch !== sessionEpoch.current) return false;
       if (e.status === 401)
         signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
       else notify(e.message);
@@ -646,6 +666,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const joinSuccess = (d, welcome = "Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨") => {
+    sessionEpoch.current++;
     setSession({
       memberId: d.memberId,
       username: d.username || null,
@@ -1212,6 +1233,8 @@ export default function App() {
                   groupId={data.group.id}
                   village={village}
                   like={like}
+                  error={villageError}
+                  retry={retryVillage}
                   run={buildRun}
                   outcome={buildOutcome}
                   notify={notify}
@@ -2296,8 +2319,8 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
           <KeyRound size={15} /> Zaten hesabım var, giriş yap
         </button>
         <p className="form-footnote">
-          <ShieldCheck size={14} /> E-posta yok, şifre yok. Oturumun bu
-          tarayıcıda kalır.
+          <ShieldCheck size={14} /> E-posta gerekmiyor. Kullanıcı adın ve şifrenle
+          her cihazdan aynı hesabı açabilirsin.
           <br />
           Davet bağlantısı olanlar katılabilir; güvendiğin kişilerle paylaş.
         </p>

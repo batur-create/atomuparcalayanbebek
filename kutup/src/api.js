@@ -1,9 +1,10 @@
-export async function api(path, body, method = "POST", extraHeaders = {}) {
+export async function api(path, body, method = "POST", extraHeaders = {}, signal) {
   let response;
   try {
     response = await fetch(`/api${path}`, {
       method,
       credentials: "same-origin",
+      signal,
       headers: {
         "Content-Type": "application/json",
         "X-Kutup": "1",
@@ -11,12 +12,17 @@ export async function api(path, body, method = "POST", extraHeaders = {}) {
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
-  } catch {
+  } catch (cause) {
+    if (cause.name === "AbortError") throw cause;
     const error = new Error("İnternet bağlantısı yok gibi. Tekrar deneyelim.");
     error.status = 0;
     throw error;
   }
-  const data = await response.json().catch(() => ({}));
+  const data = await response.json().catch(() => {
+    const error = new Error("Sunucudan yanıt okunamadı. Birazdan tekrar deneyelim.");
+    error.status = response.ok ? 502 : response.status;
+    throw error;
+  });
   if (!response.ok) {
     const error = new Error(
       data.error || "Bağlantı kurulamadı. Tekrar deneyelim.",
@@ -26,7 +32,7 @@ export async function api(path, body, method = "POST", extraHeaders = {}) {
   }
   return data;
 }
-export const get = (path) => api(path, undefined, "GET");
+export const get = (path, signal) => api(path, undefined, "GET", {}, signal);
 export const AVATARS = [
   "🪐",
   "🌱",

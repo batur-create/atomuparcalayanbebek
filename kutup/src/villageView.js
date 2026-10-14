@@ -6,12 +6,16 @@ import { useCanvas, useSVG } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
 
 const TS = 256;
-const LEVELS = [1.5, 2.12, 3, 4.24, 6, 8.5, 12, 17, 24, 34];
 const MAX_TILES = 40;
-const levelFor = (s) => {
-  for (let i = 0; i < LEVELS.length; i++) if (LEVELS[i] >= s * 0.97) return i;
-  return LEVELS.length - 1;
-};
+const scaleFor = (level) => 2 ** (level / 2);
+// Never ask for more visible tiles than fit in the cache. Otherwise a large
+// fullscreen map keeps evicting tiles that the next frame immediately needs.
+export function tileLevel(scale, width, height) {
+  let level = Math.ceil(Math.log2(Math.max(0.0001, scale) * 0.97) * 2);
+  while ((Math.ceil(width * scaleFor(level) / scale / TS) + 1) *
+    (Math.ceil(height * scaleFor(level) / scale / TS) + 1) > MAX_TILES) level--;
+  return level;
+}
 const screen = (x, y, z = 0) => [(x - y) * 0.866, (x + y) * 0.5 - z];
 
 export function createView(canvas, { interactive = false, onPick = () => {}, onCamera = () => {} } = {}) {
@@ -41,7 +45,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
 
   // ---------- tiles ----------
   function renderTile(L, i, j) {
-    const ls = LEVELS[L];
+    const ls = scaleFor(L);
     const c = document.createElement("canvas");
     c.width = c.height = Math.round(TS * dpr);
     const t = c.getContext("2d");
@@ -72,7 +76,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     }
   }
   function visibleRange(L) {
-    const ls = LEVELS[L];
+    const ls = scaleFor(L);
     const x0 = cam.x - W / 2 / cam.s,
       y0 = cam.y - H / 2 / cam.s,
       x1 = cam.x + W / 2 / cam.s,
@@ -80,7 +84,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     return [Math.floor((x0 * ls) / TS), Math.floor((y0 * ls) / TS), Math.floor((x1 * ls) / TS), Math.floor((y1 * ls) / TS)];
   }
   function blit(g, L, missing) {
-    const ls = LEVELS[L],
+    const ls = scaleFor(L),
       size = (TS / ls) * cam.s;
     const [i0, j0, i1, j1] = visibleRange(L);
     for (let i = i0; i <= i1; i++)
@@ -228,7 +232,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     !reduced && !still && (world?.smoke.length || world?.walkers.length || world?.balloons.length || selected);
   function frame(now) {
     raf = 0;
-    if (destroyed || !world) return;
+    if (destroyed || !world || document.visibilityState === "hidden") return;
     if (flight) {
       const k = Math.min(1, (now - flight.t0) / flight.ms),
         e = 1 - Math.pow(1 - k, 3);
@@ -242,7 +246,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = tint(GROUND);
     ctx.fillRect(0, 0, W, H);
-    const L = levelFor(cam.s);
+    const L = tileLevel(cam.s, W, H);
     if (fallback && (fallback.g !== gen || fallback.L !== L)) blit(fallback.g, fallback.L, null);
     const missing = [];
     blit(gen, L, missing);
@@ -254,8 +258,10 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       store(keyOf(gen, L, i, j), renderTile(L, i, j));
     }
     const pending = missing.length && missing.some(([i, j]) => !tiles.has(keyOf(gen, L, i, j)));
-    if (pending) blit(gen, L, null);
-    else fallback = { g: gen, L };
+    // Even the last newly painted tile must reach the screen before we sleep
+    // (especially with reduced motion and no live characters).
+    if (missing.length) blit(gen, L, null);
+    if (!pending) fallback = { g: gen, L };
     drawLive(now);
     if (pending || flight || inertia || gestureActive()) request();
     else if (animated() && visible) {
@@ -271,7 +277,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     }
   }
   function request() {
-    if (!raf && !destroyed && visible) raf = requestAnimationFrame(frame);
+    if (!raf && !destroyed && visible && document.visibilityState !== "hidden") raf = requestAnimationFrame(frame);
   }
 
   // ---------- camera ----------
@@ -408,6 +414,10 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       request();
     } else if (e.key === "+" || e.key === "=") zoomAt(W / 2, H / 2, 1.3);
     else if (e.key === "-") zoomAt(W / 2, H / 2, 1 / 1.3);
+    else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      pick(W / 2, H / 2);
+    }
   }
   if (interactive) {
     canvas.addEventListener("pointerdown", down);
@@ -437,6 +447,11 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
   observer?.observe(canvas);
   const visibility = () => {
     if (document.visibilityState === "visible") request();
+    else {
+      cancelAnimationFrame(raf);
+      clearTimeout(liveTimer);
+      raf = liveTimer = 0;
+    }
   };
   document.addEventListener("visibilitychange", visibility);
 
