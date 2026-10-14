@@ -196,7 +196,7 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
        - İşlevsel yapılar: fırın, çay ocağı, mahalle kütüphanesi, değirmen, su kulesi, sera, atölye, okul…
        - Süs yapıları: çeşme, gazebo, heykel, köprü, saat kulesi…
      - **Para birimi:** odak dakikasıyla tuğla (Paket 9'daki fikir buraya taşınır; 1 dk = 1 tuğla gibi). Seans başında sınıftan yapı seçilir; bazıları tuğlayla açılır.
-     - **Nadirlik:** nadir ve özel yapılar var. "Haftanın yapısı" her hafta katalogya yeni yapı getirir. "Haftanın en çok çalışanı" ödül yapısı alır. İleride bazı yapılar bonus verebilir.
+     - **Nadirlik:** nadir ve özel yapılar var. "Haftanın yapısı" her hafta kataloğa yeni yapı getirir. "Haftanın en çok çalışanı" ödül yapısı alır. İleride bazı yapılar bonus verebilir.
      - **Koleksiyon sayfası:** "n/N", yapılmayanlar silüet olarak görünür.
      - **Veri:** `shared/catalog.js` (id, sınıf, ad, tür, nadirlik, bedel, eklenme haftası, planlayıcı ayak izi). Göçle `buildings.model` ve tuğla bakiyesi eklenir. `iso.js`'te model başına `spec`/çizim yazılır. Var olan binalar model olmadan aynı görünmeye devam eder.
      - Paket 6'nın bina çeşitliliği ve Paket 9'un tuğlası bununla birleşir.
