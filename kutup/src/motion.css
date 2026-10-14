@@ -1408,3 +1408,16 @@ h3,
   user-select: none;
   -webkit-touch-callout: none;
 }
+/* Çay egg: 🍵 on every avatar for a minute */
+.tea-time .avatar {
+  position: relative;
+}
+.tea-time .avatar::after {
+  content: "🍵";
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  font-size: 14px;
+  line-height: 1;
+  animation: pop-up 0.5s var(--ease-spring) backwards;
+}

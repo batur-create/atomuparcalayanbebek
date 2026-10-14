@@ -336,6 +336,15 @@ export default function App() {
       document.removeEventListener("keydown", key);
     };
   }, []);
+  useEffect(() => {
+    if (!session) return;
+    const hour = new Date(Date.now() + 3 * 3600000).getUTCHours();
+    const night = new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+    if (hour >= 3 && hour < 5 && storage.get("kutup-owl") !== night) {
+      storage.set("kutup-owl", night);
+      setTimeout(() => notify("Saat kaç olmuş! Uyu artık 🦉 Kitaplar sabah da burada.", 7000), 1500);
+    }
+  }, [session?.memberId]);
   // The last build-mode session's ending, replayed on the construction site.
   const [buildOutcome, setBuildOutcome] = useState(null);
   // Friends who just switched to "Kütüpte" get a short glow on their card.
@@ -619,7 +628,10 @@ export default function App() {
     try {
       const result = await api(path, body, method);
       setData(result.state || (await get("/state")));
-      if (success) notify(success);
+      const said = path === "/messages" ? String(body?.text || "") : "";
+      if (/\p{L}{3}/u.test(said) && said === said.toLocaleUpperCase("tr") && said !== said.toLocaleLowerCase("tr"))
+        notify("Şşşt! Burası kütüphane 🤫");
+      else if (success) notify(success);
       return result;
     } catch (e) {
       if (e.status === 401)
@@ -736,7 +748,13 @@ export default function App() {
         : m.status === filter),
   );
   return (
-    <div className={`app-shell ${intro ? "intro" : ""}`}>
+    <div
+      className={`app-shell ${intro ? "intro" : ""} ${
+        data.messages.some((m) => m.kind !== "system" && m.text.trim().toLocaleLowerCase("tr") === "çay" && now - m.created < 60000)
+          ? "tea-time"
+          : ""
+      }`}
+    >
       {mobileMenu && (
         <div className="sidebar-scrim" onClick={() => setMobileMenu(false)} />
       )}
