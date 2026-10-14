@@ -206,6 +206,9 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
        - Her evrede işine uygun minik işçiler (baret, yelek, sallanma).
        - Çizim sırası: `yard` (çit, konteyner, toprak; `siteSVG().yard`) → `crew-back` → bina → `crew-front`. 15 fps.
      - **(c) ilk yarı ✅ (14 Ekim gece):** `Village.jsx`'teki `masonrySVG` ile dolgu duvarlar gazbeton bloklarla sıra sıra örülür; o an örülen sıra iki görünen yüzde ilerler. `facadeSVG` ile "Cephe: mantolama, sıva ve boya" evresinde (0.86–0.93) son duvar rengi iki yüzde alttan yukarı çıkar, sonunda bitmiş duvar (`wallsSVG`) devralır.
+     - **Ayrıntı turu 1 ✅ (14 Ekim gece; kodun bir kısmı yanlışlıkla `90558727`'ye girdi, yayını sonraki commit'te):**
+       - Kapı ve bahçe artık `pop` değil, `reveal` + `fit` ile çiziliyor: kendi yüksekliklerinde alttan yukarı açılıyor (kapı eşikten takılıyor, bahçe topraktan yeşeriyor). Sahnede `pop` kalmadı.
+       - Çöküş baştan yazıldı. 0,75 sn boyunca duvarlarda zikzak çatlaklar büyüyor, yapı giderek sertleşen bir sarsıntıyla titriyor. Ardından parçalar tam renkli düşüyor ve ancak yere indikten sonra tozda kayboluyor. İşçiler `fleeSVG` ile binadan uzağa koşuyor; enkaz kalıyor. Hareket azaltmada enkaz yine anında görünür.
        - **Kalan:**
          - (c) Çatı makası, çatı makası ve kiremit, cephe iskelesiyle mantolama/sıva/boya, kapı (hâlâ `pop` ile büyüyerek geliyor).
          - (d) Peyzaj (bahçe hâlâ `pop`) ve fiziksel çöküş. Çöküş şimdilik eski usul: parçalar düşüp soluyor.
