@@ -1283,3 +1283,66 @@ h3,
   color: var(--ink);
   box-shadow: 0 1px 4px rgba(40, 30, 70, 0.1);
 }
+/* ---------- welcome (signed out) ---------- */
+.welcome {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: radial-gradient(circle at 20% 10%, var(--hero), transparent 55%), var(--canvas);
+}
+.welcome-card {
+  width: min(430px, 100%);
+  padding: 34px 28px 26px;
+  border-radius: 24px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 50px rgba(60, 45, 110, 0.1);
+  animation: rise-in 0.8s var(--ease-out) backwards;
+}
+.welcome-brand {
+  display: inline-block;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--ink);
+}
+.welcome-brand span {
+  color: var(--accent);
+}
+.welcome h1 {
+  margin: 22px 0 10px;
+  font-size: clamp(26px, 7vw, 34px);
+  line-height: 1.12;
+  letter-spacing: -1.2px;
+}
+.welcome-card > p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #77727f;
+}
+.welcome-actions {
+  display: grid;
+  gap: 10px;
+  margin: 26px 0 18px;
+}
+.welcome-actions .btn {
+  min-height: 48px;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.welcome-card > p.welcome-note {
+  font-size: 12px;
+  color: #9a95a3;
+}
+.welcome-toast {
+  left: 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-card {
+    animation: none;
+  }
+}

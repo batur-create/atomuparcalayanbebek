@@ -55,7 +55,6 @@ import {
   dayWord,
   sinceLabel,
   minutesLabel,
-  DEMO,
 } from "./api.js";
 import {
   Avatar,
@@ -88,6 +87,8 @@ const standalone =
   navigator.standalone === true;
 const startParams = new URLSearchParams(location.search);
 let introPlayed = false;
+// Nothing is shown before signing in: no sample people, no sample village.
+const EMPTY = { group: { name: "", invite: "", rev: 0 }, members: [], messages: [], plans: [] };
 function Icon({ name: Component, ...props }) {
   return <Component size={19} strokeWidth={1.8} {...props} />;
 }
@@ -255,7 +256,7 @@ function HeroArt() {
 
 export default function App() {
   const [session, setSession] = useState(null),
-    [data, setData] = useState(DEMO),
+    [data, setData] = useState(EMPTY),
     [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(
       TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
@@ -328,7 +329,7 @@ export default function App() {
   };
   const signedOut = (message) => {
     setSession(null);
-    setData(DEMO);
+    setData(EMPTY);
     setNotificationOn(false);
     if (message) notify(message);
   };
@@ -656,6 +657,31 @@ export default function App() {
         <p>Bir sandalye çekiyoruz…</p>
         <LoaderCircle className="spin" />
       </div>
+    );
+  if (!session)
+    return (
+      <>
+        <Welcome invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} />
+        {(modal === "onboard" || modal === "login") && (
+          <Onboard
+            invite={invite}
+            inviteInfo={inviteInfo}
+            start={modal === "login" ? "code" : undefined}
+            close={() => setModal(null)}
+            onSuccess={joinSuccess}
+            existing={false}
+          />
+        )}
+        {toast && (
+          <div role="status" className="toast welcome-toast">
+            <span>✦</span>
+            {toast}
+            <button aria-label="Mesajı kapat" onClick={() => setToast("")}>
+              <X size={15} />
+            </button>
+          </div>
+        )}
+      </>
     );
   const visibleMembers = data.members.filter(
     (m) =>
@@ -1873,7 +1899,42 @@ function ProfileFields({ value, setValue }) {
     </>
   );
 }
-function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
+function Welcome({ invite, inviteInfo, open }) {
+  return (
+    <main className="welcome">
+      <section className="welcome-card">
+        <span className="brand welcome-brand">
+          kütüp<span>✳</span>
+        </span>
+        <h1>{invite ? `${inviteInfo?.name || "Ekibin"} seni bekliyor.` : "Kim nerede, artık sormak yok."}</h1>
+        <p>
+          Milli Kütüphane’ye giden arkadaşlar için: kim kütüpte, kim yolda, kim ne zaman geliyor. Odaklandıkça ortak köyünüz büyür.
+        </p>
+        <div className="welcome-actions">
+          {invite && (
+            <button className="btn primary full" onClick={() => open("onboard")}>
+              Ekibe katıl <ArrowRight size={17} />
+            </button>
+          )}
+          <button className={`btn ${invite ? "outline" : "primary"} full`} onClick={() => open("login")}>
+            <KeyRound size={16} /> Giriş yap
+          </button>
+          {!invite && (
+            <button className="btn outline full" onClick={() => open("onboard")}>
+              <Plus size={16} /> Yeni ekip kur
+            </button>
+          )}
+        </div>
+        <p className="welcome-note">
+          {invite
+            ? "Hesabın varsa giriş yap; yoksa ekibe katılırken kullanıcı adı ve şifreni belirlersin."
+            : "Arkadaşından davet linki geldiyse linke dokun, doğrudan ekibine katılırsın. Tek başına çalışmak istersen kendi ekibini kur. Şifreni unuttuysan Batur’dan giriş kodu iste."}
+        </p>
+      </section>
+    </main>
+  );
+}
+function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
   const [value, setValue] = useState({
       name: "",
       avatar: "🪐",
@@ -1883,7 +1944,7 @@ function Onboard({ invite, inviteInfo, close, onSuccess, existing }) {
     [groupName, setGroupName] = useState("Bizim tayfa"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [mode, setMode] = useState(standalone && !invite ? "code" : "profile"),
+    [mode, setMode] = useState(start || (standalone && !invite ? "code" : "profile")),
     [via, setVia] = useState("login"),
     [login, setLogin] = useState({ username: "", password: "" }),
     [code, setCode] = useState("");

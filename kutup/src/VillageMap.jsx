@@ -2,42 +2,21 @@
 // building card, the Köy tab panel and the home screen's "şu an" card.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Expand, Heart, LocateFixed, Minus, Plus, Shrink, X } from "lucide-react";
-import { api, dateLabel, get, minutesLabel, shortTime, DEMO } from "./api.js";
+import { api, dateLabel, get, minutesLabel, shortTime } from "./api.js";
 import { Avatar } from "./ui.jsx";
-import { createPlanner } from "../shared/village.js";
 import { buildWorld, mergeVillage, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene, KINDS } from "./Village.jsx";
 
 // ---------- data ----------
-// The signed-out preview gets a small village laid out by the same planner.
-let demoVillage = null;
-function demo() {
-  if (demoVillage) return demoVillage;
-  let n = 0;
-  const planner = createPlanner("demo", [], []);
-  for (const m of DEMO.members) planner.ensure(m.id, () => `d${n++}`);
-  const buildings = DEMO.buildings.map((b) => {
-    const spot = planner.place(b.memberId, b.kind, () => `d${n++}`);
-    return { ...b, ...spot, likes: b.seed % 3, mine: false };
-  });
-  demoVillage = {
-    rev: 0,
-    districts: planner.districts.map(({ id, memberId, q, r }) => ({ id, memberId, q, r })),
-    buildings,
-    ruins: [],
-  };
-  return demoVillage;
-}
-
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
 export function useVillage(session, villageRev) {
-  const [village, setVillage] = useState(() => (session ? null : demo()));
+  const [village, setVillage] = useState(null);
   const known = useRef({ member: null, data: null });
   useEffect(() => {
     if (!session) {
       known.current = { member: null, data: null };
-      setVillage(demo());
+      setVillage(null);
       return;
     }
     if (known.current.member !== session.memberId) known.current = { member: session.memberId, data: null };
