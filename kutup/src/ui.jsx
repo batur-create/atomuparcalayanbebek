@@ -17,6 +17,9 @@ export const storage = {
 };
 export const reducedMotion = () =>
   window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+export const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+export const standalone = window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
 export const pushSupported =
   "Notification" in window &&
   "PushManager" in window &&
@@ -54,9 +57,9 @@ export function Avatar({ member, size = "", className = "" }) {
     </span>
   );
 }
-export function Busy({ children, loading, ...props }) {
+export function Busy({ children, loading, disabled, ...props }) {
   return (
-    <button disabled={loading} {...props}>
+    <button {...props} disabled={loading || disabled} aria-busy={loading || undefined}>
       {loading ? <LoaderCircle size={17} className="spin" /> : null}
       {children}
     </button>

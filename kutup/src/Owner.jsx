@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Bell,
   ChevronDown,
+  Copy,
   Download,
   KeyRound,
   Lock,
@@ -16,6 +17,7 @@ import { api, get, FEEDBACK, STATUS, dateLabel, shortTime } from "./api.js";
 import { allowedStatuses, statusLabel } from "../shared/requests.js";
 import { Avatar, Busy, Empty, pushKey, pushSupported, storage } from "./ui.jsx";
 import { RequestTracker, ago } from "./Requests.jsx";
+import { Modal } from "./Modal.jsx";
 
 const STAGE_FILTERS = [
   ["open", "Bekleyen", "📮"],
@@ -164,6 +166,8 @@ export function OwnerPage() {
     [openId, setOpenId] = useState(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [recovery, setRecovery] = useState(null),
+    [copied, setCopied] = useState(false),
     [pushOn, setPushOn] = useState(!!storage.get("kutup-owner-push"));
   // One browser has one push subscription; it may already serve the member side,
   // so turning owner alerts off only forgets it here and never unsubscribes.
@@ -360,9 +364,8 @@ export function OwnerPage() {
               )}
             </Busy>
             <p className="form-footnote">
-              Bu cihaz seni 30 gün hatırlar. Anahtar: yayın ayarlarındaki
-              ADMIN_KEY (canlı sitede bilgisayarındaki
-              kutup/data/batur-key-canli.txt).
+              Bu cihaz seni 30 gün hatırlar. Ortak bir bilgisayardaysan
+              işin bitince çıkış yapmayı unutma.
             </p>
           </form>
         )
@@ -500,10 +503,8 @@ export function OwnerPage() {
                           onClick={async () => {
                             try {
                               const r = await api(`/owner/members/${m.id}/reset`, {});
-                              prompt(
-                                `${m.name} için giriş kodu (24 saat, tek kullanımlık). “Zaten ekipteyim” ekranına yazınca hesabına girer; kullanıcı adı ve yeni şifre belirlemek için de kullanılır.`,
-                                r.code,
-                              );
+                              setRecovery({ name: m.name, ...r });
+                              setCopied(false);
                             } catch (e) {
                               alert(e.message);
                             }
@@ -549,6 +550,18 @@ export function OwnerPage() {
             </div>
           )}
         </>
+      )}
+      {recovery && (
+        <Modal title={`${recovery.name} için bir anahtar 🔑`} subtitle="24 saat geçerli, yalnızca bir kez kullanılabilir." close={() => setRecovery(null)}>
+          <label className="field-label">Giriş / şifre sıfırlama kodu
+            <input className="recovery-code" readOnly value={recovery.code} onFocus={(e) => e.target.select()} />
+          </label>
+          <button className="btn primary full" onClick={async () => {
+            try { await navigator.clipboard.writeText(recovery.code); setCopied(true); }
+            catch { setCopied(false); document.querySelector(".recovery-code")?.focus(); }
+          }}><Copy size={16} /> {copied ? "Kopyalandı ✨" : "Kodu kopyala"}</button>
+          <p className="form-footnote" role="status">{copied ? "Hazır. Kodu yalnızca bu hesabın sahibine gönder." : "Giriş yap → Şifremi unuttum ekranında yeni şifre belirleyebilir; Kodla sekmesinden de hesabını açabilir."}</p>
+        </Modal>
       )}
     </main>
   );

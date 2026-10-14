@@ -84,11 +84,18 @@ function useSky() {
 /** World + sky for a village; rebuilt only when what is drawn actually changes. */
 export function useVillageWorld({ village, members, me, groupId }) {
   const sky = useSky();
+  const [expiry, expire] = useState(0);
+  useEffect(() => {
+    const next = Math.min(...(village?.ruins || []).map((r) => r.until).filter((t) => t > Date.now()));
+    if (!Number.isFinite(next)) return;
+    const timer = setTimeout(() => expire((n) => n + 1), Math.max(1, next - Date.now() + 1));
+    return () => clearTimeout(timer);
+  }, [village?.ruins, expiry]);
   const tint = useMemo(() => tinter(sky), [sky.key]);
   const people = members.map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}`).join("|");
   const world = useMemo(
     () => (village ? buildWorld({ groupKey: groupId || "demo", village, members, me, sky }) : null),
-    [village, people, me, sky.key, groupId],
+    [village, people, me, sky.key, groupId, expiry],
   );
   return { world, sky, tint };
 }
@@ -101,6 +108,7 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
     fitted = useRef(false),
     moved = useRef(false),
     pickRef = useRef(onPick);
+  const fitRef = useRef(null);
   pickRef.current = onPick;
   const fitNow = (ms = 0) => {
     const v = view.current;
@@ -120,15 +128,16 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
     }
     fitted.current = true;
   };
+  fitRef.current = fitNow;
   useEffect(() => {
     const v = createView(canvas.current, { interactive, onPick: (b) => pickRef.current?.(b) });
     view.current = v;
-    if (viewRef) viewRef.current = { view: v, fit: () => fitNow(500) };
+    if (viewRef) viewRef.current = { view: v, fit: () => fitRef.current(500) };
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       v.resize(width, height);
       // Until someone pans or zooms, keep the whole village framed as the layout settles.
-      if (!moved.current) fitNow();
+      if (!moved.current) fitRef.current();
     });
     const touched = () => (moved.current = true);
     canvas.current.addEventListener("pointerdown", touched);
@@ -151,6 +160,7 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
         ref={canvas}
         role="img"
         aria-label={label}
+        aria-description={interactive ? "Ok tuşlarıyla gez, artı ve eksiyle yakınlaştır; ortadaki binayı Enter ile seç. Haritanın altındaki bina listesiyle de gezebilirsin." : undefined}
         tabIndex={interactive ? 0 : -1}
         className={interactive ? "interactive" : ""}
       />
@@ -208,6 +218,8 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId });
   const [picked, setPicked] = useState(null),
     [full, setFull] = useState(false),
+    [listOpen, setListOpen] = useState(false),
+    [buildingPage, setBuildingPage] = useState(0),
     [, tick] = useState(0);
   const map = useRef(null);
   // Keep the finished scene on screen for a moment, then show the village.
@@ -257,6 +269,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 ? "Bitti! Mahallene taşınıyor."
                 : "İnşaat çöktü. Enkazı bir gün mahallende kalacak; sonraki bina temizler."}
           </p>
+
         </>
       ) : (
         <>
@@ -330,6 +343,31 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 ? `Mahallende ${myCount} bina var. Sürükle, iki parmakla yakınlaştır, binaya dokun.`
                 : "Mahallen hazır, tabelan dikili. İnşaat modunda bir seans bitir, ilk kulüben yükselsin."}
           </p>
+          {!!count && (
+            <details className="village-building-list" onToggle={(e) => setListOpen(e.currentTarget.open)}>
+              <summary>Binalara göz at</summary>
+              {listOpen && <>
+                <label className="field-label">Bir eser seç
+                  <select value={picked || ""} onChange={(e) => {
+                    const b = village.buildings.find((home) => home.id === e.target.value);
+                    setPicked(b?.id || null);
+                    map.current?.view.select(b?.id || null);
+                    if (b) map.current?.view.flyTo({ x: (b.x - b.y) * 0.866, y: (b.x + b.y) * 0.5, s: 16 }, 500);
+                  }}>
+                    <option value="">Bina seç…</option>
+                    {village.buildings.slice(buildingPage * 20, (buildingPage + 1) * 20).map((b) => (
+                      <option value={b.id} key={b.id}>{members.find((m) => m.id === b.memberId)?.name || "Komşun"} · {KINDS[b.kind].label} · {dateLabel(b.created)}</option>
+                    ))}
+                  </select>
+                </label>
+                {count > 20 && <div className="village-list-pages">
+                  <button className="text-button" disabled={buildingPage === 0} onClick={() => setBuildingPage((n) => n - 1)}>Önceki</button>
+                  <span>{buildingPage + 1} / {Math.ceil(count / 20)}</span>
+                  <button className="text-button" disabled={(buildingPage + 1) * 20 >= count} onClick={() => setBuildingPage((n) => n + 1)}>Sonraki</button>
+                </div>}
+              </>}
+            </details>
+          )}
         </>
       )}
     </section>

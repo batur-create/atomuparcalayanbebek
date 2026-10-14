@@ -228,7 +228,7 @@ const server = createServer(async (req, res) => {
 });
 if (dev) {
   const { createServer: createVite } = await import("vite");
-  vite = await createVite({ root, server: { middlewareMode: true }, appType: "spa" });
+  vite = await createVite({ root, server: { middlewareMode: true, hmr: { server } }, appType: "spa" });
 }
 
 server.listen(Number(process.env.PORT || 3001), process.env.HOST || (dev ? "127.0.0.1" : "0.0.0.0"), () =>

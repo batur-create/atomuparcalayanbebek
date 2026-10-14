@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kütüp isolated visual fixture</title>
+<style>
+  body { margin: 0; background: #f6f5f0; color: #30312f; font: 14px system-ui; }
+  #scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 20px; }
+  article { border: 1px solid #deded5; border-radius: 18px; background: #fffefb; overflow: hidden; }
+  h2 { font-size: 15px; margin: 16px 16px 0; } svg { width: 100%; display: block; }
+  #map { display: block; width: 100vw; height: 80vh; }
+</style>
+<div id="scenes"></div><canvas id="map"></canvas>
+<script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { ConstructionScene } from '../src/Village.jsx';
+import { createPlanner } from '../shared/village.js';
+import { buildWorld, skyAt, tinter } from '../src/villageWorld.js';
+import { createView } from '../src/villageView.js';
+
+const kinds = ['cottage', 'house', 'tower'];
+const names = ['Kulübe', 'İki katlı ev', 'Kule'];
+const states = ['Temel', 'Yükseliyor', 'Tamamlandı', 'Enkaz'];
+const scenes = states.flatMap((label, stage) => kinds.map((kind, i) => {
+  const minutes = [25, 50, 75][i];
+  const props = stage < 2
+    ? { run: { kind, seed: i + 5, minutes, endsAt: Date.now() + minutes * 60000 * (stage ? .45 : .9) } }
+    : { outcome: { kind, seed: i + 5, type: stage === 2 ? 'built' : 'collapsed', at: Date.now() } };
+  return React.createElement('article', { key: `${kind}-${stage}`, 'data-stage': stage },
+    React.createElement('h2', null, `${names[i]} · ${label}`), React.createElement(ConstructionScene, props));
+}));
+createRoot(document.querySelector('#scenes')).render(scenes);
+
+window.makeVillage = (count = 1000) => {
+  const members = ['Ada', 'Deniz', 'Ece', 'Batur', 'Sıla'].map((name, i) => ({ id: `m${i}`, name, avatar: '🌱', color: 'lilac', status: 'away' }));
+  const planner = createPlanner('audit-fixture', [], []);
+  let serial = 0;
+  const buildings = [];
+  for (let i = 0; i < count; i++) {
+    const memberId = members[i % members.length].id, kind = kinds[i % 3];
+    const p = planner.place(memberId, kind, () => `d${++serial}`);
+    if (!p) throw new Error('No building spot');
+    buildings.push({ id: `b${i}`, memberId, kind, seed: i, x: p.x, y: p.y, facing: p.facing, minutes: 25, created: i, likes: 0 });
+  }
+  const village = { rev: 1, buildings, districts: planner.districts, ruins: [] };
+  const sky = skyAt(Date.parse('2026-10-14T09:00:00Z'));
+  const t0 = performance.now();
+  const world = buildWorld({ groupKey: 'audit-fixture', village, members, me: 'm0', sky });
+  const worldMs = performance.now() - t0;
+  const canvas = document.querySelector('#map');
+  const view = createView(canvas, { interactive: true });
+  view.resize(innerWidth, innerHeight * .8);
+  view.setWorld(world, sky, tinter(sky));
+  view.limits(.01, 30);
+  view.fit(world.area, 20);
+  window.auditView = view;
+  window.auditWorld = world;
+  return { buildings: count, districts: village.districts.length, worldMs, items: world.items.length, nearbyItems: world.query(-20, -20, 20, 20).length };
+};
+window.fixtureReady = true;
+</script>
+</html>

@@ -91,6 +91,7 @@ export function ConstructionScene({ run, outcome }) {
     const root = ref.current;
     if (!root) return;
     const sp = spec(kind, seed);
+    const motionReduced = reducedMotion();
     const s = { cottage: 31, house: 28, tower: 23.5 }[kind];
     const P = projector({ cx: 350, cy: 268, s });
     root.innerHTML = "";
@@ -118,7 +119,7 @@ export function ConstructionScene({ run, outcome }) {
     const start = performance.now();
     const progressOf = (r) => clamp(1 - (r.endsAt - Date.now()) / (r.minutes * 60000));
     const draw = (now) => {
-      const time = (now - start) / 1000;
+      const time = motionReduced ? 0 : (now - start) / 1000;
       const { run: r, outcome: out } = live.current;
       if (mode === "build") {
         if (r) shown += (progressOf(r) - shown) * (shown === 0 ? 1 : 0.15);
@@ -146,7 +147,7 @@ export function ConstructionScene({ run, outcome }) {
         }
       }
       if (mode === "collapse") {
-        const tau = (now - eventAt) / 1000;
+        const tau = motionReduced ? 1.5 : (now - eventAt) / 1000;
         parts.forEach((p) => {
           if (!p.fall) return p.el.setAttribute("opacity", "0");
           const l = Math.max(0, tau - p.fall.d);
@@ -217,10 +218,10 @@ export function ConstructionScene({ run, outcome }) {
       if (mode === "done") {
         const dt = (now - eventAt) / 1000,
           base = P(0, 0, 0),
-          bounce = 1 + 0.06 * Math.exp(-dt * 5) * Math.cos(dt * 14);
+          bounce = motionReduced ? 1 : 1 + 0.06 * Math.exp(-dt * 5) * Math.cos(dt * 14);
         building.setAttribute("transform", `translate(${f(base[0])} ${f(base[1])}) scale(${bounce.toFixed(4)}) translate(${f(-base[0])} ${f(-base[1])})`);
         const apex = P(0, 0, ridgeOf(sp));
-        for (let i = 0; i < 18 && dt < 1.5; i++) {
+        for (let i = 0; !motionReduced && i < 18 && dt < 1.5; i++) {
           const a = -Math.PI / 2 + (i / 17 - 0.5) * 2.5,
             vx = Math.cos(a) * 130,
             vy = Math.sin(a) * 170,
@@ -245,7 +246,7 @@ export function ConstructionScene({ run, outcome }) {
       }
       raf = requestAnimationFrame(loop);
     };
-    if (reducedMotion()) {
+    if (motionReduced) {
       shown = run ? progressOf(run) : 1;
       draw(performance.now());
       const timer = setInterval(() => {

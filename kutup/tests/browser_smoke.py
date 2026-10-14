@@ -1,0 +1,159 @@
+"""Optional real-browser audit. Requires Python playwright and local Chromium.
+Run: python tests/browser_smoke.py --chromium /usr/bin/chromium --artifacts /tmp/kutup-audit
+Always starts an isolated local server and database; never connects to the live site.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import secrets
+import shutil
+import socket
+import subprocess
+import tempfile
+import time
+import urllib.request
+from playwright.sync_api import sync_playwright, expect
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--chromium', default=shutil.which('chromium'))
+parser.add_argument('--artifacts', default='/tmp/kutup-audit-artifacts')
+args = parser.parse_args()
+root = Path(__file__).resolve().parents[1]
+artifacts = Path(args.artifacts); artifacts.mkdir(parents=True, exist_ok=True)
+results = []
+def check(name, condition):
+    assert condition, name
+    results.append(name)
+    print('PASS', name, flush=True)
+
+def json_call(page, path, body=None):
+    return page.evaluate('''async ([path, body]) => {
+      const r = await fetch('/api' + path, {method: body === null ? 'GET' : 'POST',
+        headers: {'X-Kutup':'1','Content-Type':'application/json'},
+        ...(body === null ? {} : {body: JSON.stringify(body)})});
+      if (!r.ok) throw new Error(path + ': ' + r.status);
+      return r.json();
+    }''', [path, body])
+
+def signup(page, username, name):
+    page.get_by_label('Sana ne diyelim?').fill(name)
+    page.get_by_label('Kullanıcı adı', exact=True).fill(username)
+    page.get_by_label('Şifre', exact=True).fill('audit-password-123')
+    page.locator('[role=dialog] button[type=submit]').click()
+    expect(page.get_by_role('dialog')).to_have_count(0)
+
+with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
+    key = secrets.token_urlsafe(32)
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
+    base = f'http://127.0.0.1:{port}'
+    with open(Path(directory) / 'server.log', 'w') as log:
+        server = subprocess.Popen(['node', 'server/index.js', '--dev'], cwd=root,
+            env={**os.environ, 'DATA_DIR': directory, 'ADMIN_KEY': key, 'KUTUP_TEST_HOOKS':'1', 'HOST':'127.0.0.1', 'PORT':str(port)},
+            stdout=log, stderr=log)
+        try:
+            for _ in range(150):
+                try:
+                    with urllib.request.urlopen(base + '/api/health', timeout=1) as r:
+                        if r.status == 200: break
+                except OSError: time.sleep(.1)
+            else: raise RuntimeError('Isolated server did not start')
+            with sync_playwright() as p:
+                browser = p.chromium.launch(executable_path=args.chromium, args=['--no-sandbox'])
+                context = browser.new_context(viewport={'width':375,'height':812}, device_scale_factor=2, reduced_motion='reduce')
+                page = context.new_page(); errors=[]
+                page.on('pageerror', lambda e: errors.append(str(e)))
+                page.goto(base)
+                page.get_by_role('button', name='Yeni ekip kur').click()
+                page.keyboard.press('Shift+Tab')
+                check('Modal traps keyboard focus', page.get_by_role('dialog').evaluate('(d)=>d.contains(document.activeElement)'))
+                page.keyboard.press('Escape')
+                check('Modal restores focus and background', page.get_by_role('button', name='Yeni ekip kur').evaluate('(e)=>document.activeElement===e') and not page.locator('#root').evaluate('(e)=>e.inert'))
+                page.get_by_role('button', name='Yeni ekip kur').click()
+                page.get_by_label('Ekibinizin adı').fill('Denetim tayfası')
+                signup(page, 'audit_ada', 'Ada')
+                session = json_call(page, '/session')
+                check('Mobile account creation', session['username']=='audit_ada')
+                second = browser.new_context(viewport={'width':375,'height':812}, reduced_motion='reduce')
+                friend = second.new_page(); friend.on('pageerror', lambda e: errors.append(str(e)))
+                friend.goto(base + '/join/' + session['group']['invite'])
+                signup(friend, 'audit_ece', 'Ece')
+                page.get_by_role('button', name='Ben geldim!', exact=True).click()
+                page.locator('[role=dialog] button[type=submit]').click()
+                expect(page.get_by_role('dialog')).to_have_count(0)
+                expect(friend.locator('.member-card').filter(has=friend.get_by_text('Ada',exact=True))).to_contain_text('Kütüpte')
+                check('Presence reaches a second browser through SSE', True)
+                for name in ['Kütüp','Planlar','Köy','Pano','Batur’a']:
+                    page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
+                    page.wait_for_timeout(100)
+                    check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+                page.locator('.feedback-form textarea').fill('Denetim: Batur paneli ve özel geri bildirim akışı.')
+                page.locator('.feedback-form button[type=submit]').click()
+                expect(page.locator('.feedback-success')).to_be_visible()
+                check('Feedback is sent and tracked', len(json_call(page, '/feedback')) == 1)
+                failed = [False]
+                def fail_once(route):
+                    if not failed[0]: failed[0] = True; route.abort()
+                    else: route.continue_()
+                page.route('**/api/village**', fail_once)
+                page.goto(base + '/?tab=focus')
+                expect(page.get_by_role('button',name='Tekrar dene')).to_be_visible()
+                page.get_by_role('button',name='Tekrar dene').click()
+                expect(page.get_by_text('Köy güncellenemedi.',exact=False)).to_have_count(0)
+                page.locator('.village-map-wrap').scroll_into_view_if_needed(); page.wait_for_timeout(300)
+                check('Village recovers after a failed fetch', page.locator('.village-map-wrap canvas').count()==1)
+                page.get_by_role('button',name='Temeli at 🏡',exact=True).click()
+                expect(page.locator('.village-scene')).to_be_visible()
+                json_call(page, '/__test/expire', {'name':'Ada'})
+                # A reload also checks persistence and settlement after the tab was closed.
+                page.goto(base + '/?tab=focus')
+                expect(page.locator('.village-building-list')).to_be_visible(timeout=12000)
+                page.get_by_text('Binalara göz at',exact=True).click()
+                building = json_call(page, '/village')['buildings'][0][0]
+                page.get_by_label('Bir eser seç').select_option(building)
+                expect(page.get_by_role('dialog',name='Kulübe bilgisi')).to_be_visible()
+                page.get_by_role('button',name='Kartı kapat').click()
+                page.locator('.village-panel').screenshot(path=str(artifacts/'mobile-village.png'))
+                check('Focus creates a building and keyboard list opens its card', True)
+                owner = browser.new_page(viewport={'width':375,'height':812}, reduced_motion='reduce')
+                owner.on('pageerror', lambda e: errors.append(str(e)))
+                owner.goto(base + '/batur')
+                owner.get_by_label('Yönetici anahtarı').fill(key)
+                owner.get_by_role('button',name='Kutuyu aç',exact=True).click()
+                owner.get_by_role('button',name='Ekipler',exact=False).click()
+                owner.get_by_role('button',name='Ada için giriş kodu üret').click()
+                code = owner.get_by_label('Giriş / şifre sıfırlama kodu').input_value()
+                owner.screenshot(path=str(artifacts/'owner-recovery.png'), mask=[owner.locator('.recovery-code')])
+                check('Owner recovery uses an accessible modal', owner.locator('#root').evaluate('(e)=>e.inert'))
+                guest = browser.new_page(viewport={'width':375,'height':812}, reduced_motion='reduce')
+                guest.goto(base); guest.get_by_role('button',name='Giriş yap',exact=True).click()
+                guest.get_by_role('tab',name='Şifremi unuttum',exact=True).click()
+                guest.get_by_label('Batur’un kodu',exact=True).fill(code)
+                guest.get_by_label('Kullanıcı adı',exact=True).fill('audit_ada')
+                guest.get_by_label('Yeni şifre',exact=True).fill('changed-password-123')
+                guest.locator('[role=dialog] button[type=submit]').click()
+                expect(guest.get_by_role('dialog')).to_have_count(0)
+                check('Password recovery retains the existing profile', json_call(guest,'/session')['memberId']==session['memberId'])
+                visual = browser.new_page(viewport={'width':1200,'height':1100}, reduced_motion='reduce')
+                visual.on('pageerror', lambda e: errors.append(str(e)))
+                visual.goto(base + '/tests/visual-harness.html')
+                visual.wait_for_function('window.fixtureReady===true'); visual.wait_for_timeout(200)
+                check('All twelve construction stages render', visual.locator('#scenes svg').count()==12)
+                check('Reduced-motion collapse immediately shows rubble', visual.locator('article[data-stage="3"] .fx polygon').count()>0)
+                visual.locator('#scenes').screenshot(path=str(artifacts/'construction-scenes.png'))
+                visual.set_viewport_size({'width':1920,'height':1080})
+                metrics = visual.evaluate('makeVillage(1000)')
+                visual.locator('#map').scroll_into_view_if_needed(); visual.wait_for_timeout(1200)
+                visual.locator('#map').screenshot(path=str(artifacts/'village-1000.png'))
+                colors = visual.locator('#map').evaluate('''c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,s=new Set();for(let i=0;i<d.length;i+=64)s.add(`${d[i]},${d[i+1]},${d[i+2]}`);return s.size}''')
+                check('A 1,000-building village paints in a real browser', colors>100 and metrics['buildings']==1000)
+                if errors: print('Browser errors:', json.dumps(errors), flush=True)
+                check('No browser JavaScript errors', not errors)
+                (artifacts/'results.json').write_text(json.dumps({'passed':results,'metrics':metrics,'browser':browser.version},ensure_ascii=False,indent=2))
+                print(json.dumps(metrics), flush=True)
+                browser.close()
+        finally:
+            server.terminate()
+            try: server.wait(timeout=5)
+            except subprocess.TimeoutExpired: server.kill(); server.wait()

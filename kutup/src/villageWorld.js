@@ -401,6 +401,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
     });
   }
   for (const ruin of village.ruins) {
+    if (ruin.until <= Date.now()) continue;
     let { x, y } = ruin;
     const d = districts.find((dd) => dd.memberId === ruin.memberId);
     if (x === null && d) [x, y] = [d.layout.sign[0] + 2.2, d.layout.sign[1] + 2.2];
@@ -467,6 +468,17 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
     }
   }
   const mine = districts.filter((d) => d.memberId === me);
+  // One name per person at distant zoom; repeating it on every district hides
+  // the buildings once a friend owns dozens of neighbourhoods.
+  const farLabels = new Set();
+  for (const member of members) {
+    const own = districts.filter((d) => d.memberId === member.id);
+    if (!own.length) continue;
+    const x = own.reduce((n, d) => n + d.layout.center[0], 0) / own.length;
+    const y = own.reduce((n, d) => n + d.layout.center[1], 0) / own.length;
+    const nearest = own.reduce((best, d) => Math.hypot(d.layout.center[0] - x, d.layout.center[1] - y) < Math.hypot(best.layout.center[0] - x, best.layout.center[1] - y) ? d : best);
+    farLabels.add(nearest.id);
+  }
   // What the village actually covers on screen (item boxes are padded for drawing).
   let area = [-PLAZA * 1.3, -PLAZA, PLAZA * 1.3, PLAZA * 0.8];
   for (const d of cellsDrawn.values())
@@ -475,7 +487,9 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
       area = [Math.min(area[0], sx), Math.min(area[1], sy - 4), Math.max(area[2], sx), Math.max(area[3], sy)];
     }
   return {
-    items, query, bounds, area, districts, balloons, walkers, smoke, buildings: homes, lit,
+    items, query, bounds, area, districts, balloons, walkers, smoke, buildings: homes, lit, farLabels,
+    lamps: standing.filter((item) => item.type === "lamp"),
+    byId: new Map(standing.filter((item) => item.id).map((item) => [item.id, item])),
     names: new Map(members.map((m) => [m.id, m.name])),
     count: homes.length,
     focusOf(memberId) {

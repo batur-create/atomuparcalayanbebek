@@ -1,0 +1,30 @@
+{
+  "passed": [
+    "Modal traps keyboard focus",
+    "Modal restores focus and background",
+    "Mobile account creation",
+    "Presence reaches a second browser through SSE",
+    "375px: Kütüp has no horizontal overflow",
+    "375px: Planlar has no horizontal overflow",
+    "375px: Köy has no horizontal overflow",
+    "375px: Pano has no horizontal overflow",
+    "375px: Batur’a has no horizontal overflow",
+    "Feedback is sent and tracked",
+    "Village recovers after a failed fetch",
+    "Focus creates a building and keyboard list opens its card",
+    "Owner recovery uses an accessible modal",
+    "Password recovery retains the existing profile",
+    "All twelve construction stages render",
+    "Reduced-motion collapse immediately shows rubble",
+    "A 1,000-building village paints in a real browser",
+    "No browser JavaScript errors"
+  ],
+  "metrics": {
+    "buildings": 1000,
+    "districts": 122,
+    "worldMs": 76.8999999910593,
+    "items": 4497,
+    "nearbyItems": 128
+  },
+  "browser": "154.0.8037.57"
+}

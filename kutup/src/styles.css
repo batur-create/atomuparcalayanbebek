@@ -6,7 +6,7 @@
   --canvas: #f6f5f0;
   --paper: #fffefb;
   --ink: #30312f;
-  --muted: #91918a;
+  --muted: #6f7169;
   --border: #e8e7df;
   --accent: #7361ce;
   --accent-deep: #5c49b6;
@@ -4597,3 +4597,14 @@ input.code-input {
     font-size: 22px;
   }
 }
+/* Accessible alternatives to map gestures and browser-native recovery prompts. */
+.recovery-code {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+.village-building-list { margin: 0 20px 20px; font-size: 13px; }
+.village-building-list summary { cursor: pointer; padding: 8px 0; }
+.village-list-pages { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+summary:focus-visible, canvas:focus-visible { outline: 3px solid var(--accent, #8c79d2); outline-offset: 3px; }

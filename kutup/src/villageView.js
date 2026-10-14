@@ -110,8 +110,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     const s = cam.s;
     // Lamp glow at night.
     if (sky?.lamps)
-      for (const item of world.items) {
-        if (item.type !== "lamp") continue;
+      for (const item of world.lamps) {
         const p = atScreen(item.x, item.y, 2.0);
         if (!onScreen(p)) continue;
         const r = s * 2.4;
@@ -165,6 +164,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     if (interactive && s < 9 && s > 2)
       for (const d of world.districts) {
         if (!d.memberId) continue;
+        if (s < 4.2 && !world.farLabels.has(d.id)) continue;
         const name = world.names?.get(d.memberId);
         if (!name) continue;
         const [x, y] = d.layout.sign;
@@ -173,7 +173,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         pill(p[0], p[1] - 8, name);
       }
     if (selected) {
-      const item = world.items.find((it) => it.id === selected);
+      const item = world.byId.get(selected);
       if (item) {
         const p = atScreen(item.x, item.y);
         const pulse = reduced ? 0.5 : (Math.sin(time * 4) + 1) / 2;
