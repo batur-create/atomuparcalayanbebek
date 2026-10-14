@@ -10,7 +10,9 @@ import {
 
 export const GROUND = "#a4d078";
 const MEADOW = "#b3da88",
-  MEADOW_EDGE = "#97c46c",
+  // A soft, wide band instead of a hard outline where a district meets the fields.
+  MEADOW_EDGE = "#a8d07d",
+  FLOWERS = ["#ffffff", "#f7d154", "#f29bb8", "#b9a3ea"],
   PLOT = "#c9d98f",
   ROAD = "#ecdcb9",
   ROAD_EDGE = "#cfb98f",
@@ -136,34 +138,147 @@ function fillShape(view, points, color, edge = null, edgeWidth = 0) {
     ctx.stroke();
   }
 }
-function treeArt(view, x, y, size, tone) {
+// Trees of the Ankara steppe edge: broadleaf (layered crown, lit from the
+// upper left like the houses), black pine (Karaçam) and poplar (kavak). In
+// autumn some broadleaves and poplars turn. Species and tone come from the seed.
+const LEAVES = [
+  ["#47793a", "#5c9548", "#86bf66"],
+  ["#41703a", "#538b45", "#79b25c"],
+];
+const AUTUMN = [
+  ["#b5602c", "#d6843a", "#f0ad57"],
+  ["#bf9426", "#dcb33a", "#f1d270"],
+];
+const PINE = ["#355f3e", "#46784d", "#5d9160"];
+const frac = (v) => v - Math.floor(v);
+function treeKind(tone) {
+  const p = frac(tone * 997.31);
+  return p < 0.2 ? "pine" : p < 0.34 ? "poplar" : "broad";
+}
+function treeColors(kind, tone, autumn) {
+  if (kind === "pine") return PINE;
+  if (autumn && frac(tone * 53.7) < (kind === "poplar" ? 0.7 : 0.42)) return AUTUMN[kind === "poplar" ? 1 : frac(tone * 7.1) < 0.5 ? 0 : 1];
+  return LEAVES[tone < 0.5 ? 0 : 1];
+}
+function treeArt(view, x, y, size, tone, autumn) {
   const P = view.at(x, y);
   const s = view.s * size;
   const [bx, by] = P(0, 0, 0);
-  ellipse(bx + s * 0.3, by + s * 0.06, s * 0.75, s * 0.26, "#3f5f2a", 0.18);
-  if (view.detail === 0) return circle(bx, by - s * 0.9, s * 0.62, tone < 0.5 ? "#5e9b4c" : "#4f8a41");
-  view.ctx.fillStyle = view.tint("#9a6b3f");
-  view.ctx.fillRect(bx - s * 0.1, by - s * 0.8, s * 0.2, s * 0.8);
-  circle(bx, by - s * 1.05, s * 0.62, tone < 0.5 ? "#5e9b4c" : "#4f8a41");
-  circle(bx - s * 0.2, by - s * 1.25, s * 0.36, tone < 0.3 ? "#86c266" : "#7dbb5f");
+  const kind = treeKind(tone),
+    [dark, mid, light] = treeColors(kind, tone, autumn);
+  // Soft shadow toward the lower right, like the buildings'.
+  ellipse(bx + s * 0.32, by + s * 0.05, s * (kind === "poplar" ? 0.5 : 0.78), s * 0.24, "#3f5f2a", 0.2);
+  if (view.detail === 0) {
+    if (kind === "pine") return poly([[bx - s * 0.5, by - s * 0.3], [bx + s * 0.5, by - s * 0.3], [bx, by - s * 1.7]], mid);
+    if (kind === "poplar") return ellipse(bx, by - s * 1.2, s * 0.3, s * 0.95, mid);
+    return circle(bx, by - s * 1.0, s * 0.62, mid);
+  }
+  const trunk = (w, h) => poly([[bx - w, by], [bx + w, by], [bx + w * 0.6, by - h], [bx - w * 0.6, by - h]], "#8b5e36");
+  if (kind === "pine") {
+    trunk(s * 0.07, s * 0.45);
+    // Three tiers; the left half catches the light.
+    [[0.62, 0.32, 1.05], [0.5, 0.72, 1.42], [0.36, 1.1, 1.78]].forEach(([w, base, tip]) => {
+      poly([[bx - s * w, by - s * base], [bx, by - s * base + s * 0.08], [bx, by - s * tip]], mid);
+      poly([[bx, by - s * base + s * 0.08], [bx + s * w, by - s * base], [bx, by - s * tip]], dark);
+    });
+    return "";
+  }
+  if (kind === "poplar") {
+    trunk(s * 0.05, s * 0.5);
+    ellipse(bx, by - s * 1.25, s * 0.32, s * 0.92, dark);
+    ellipse(bx - s * 0.07, by - s * 1.33, s * 0.22, s * 0.8, mid);
+    ellipse(bx - s * 0.13, by - s * 1.5, s * 0.09, s * 0.45, light, 0.85);
+    return "";
+  }
+  trunk(s * 0.09, s * 0.82);
+  circle(bx + s * 0.08, by - s * 0.98, s * 0.58, dark);
+  circle(bx - s * 0.22, by - s * 1.1, s * 0.46, mid);
+  circle(bx + s * 0.26, by - s * 1.2, s * 0.4, mid);
+  circle(bx - s * 0.02, by - s * 1.42, s * 0.42, mid);
+  circle(bx - s * 0.2, by - s * 1.45, s * 0.2, light, 0.9);
+  circle(bx + s * 0.12, by - s * 1.6, s * 0.12, light, 0.7);
   return "";
 }
-function signArt(view, x, y, label, vacant) {
+function bushArt(view, x, y, size, tone, flowering) {
   const P = view.at(x, y);
-  box(P, -0.07, -0.07, 0.07, 0.07, 0, 1.35, WOOD);
-  box(P, 0.07, -0.95, 0.15, 0.95, 0.85, 1.55, vacant ? ["#e6dcc7", "#d8ccb2", "#c4b697"] : ["#f3e3c3", "#e9d2a8", "#d2b685"]);
+  const s = view.s * size;
+  const [bx, by] = P(0, 0, 0);
+  const [dark, mid, light] = LEAVES[tone < 0.5 ? 0 : 1];
+  ellipse(bx + s * 0.2, by + s * 0.04, s * 0.62, s * 0.2, "#3f5f2a", 0.18);
+  circle(bx + s * 0.18, by - s * 0.24, s * 0.3, dark);
+  circle(bx - s * 0.16, by - s * 0.26, s * 0.32, mid);
+  circle(bx + 0, by - s * 0.42, s * 0.28, mid);
+  if (view.detail > 0) circle(bx - s * 0.16, by - s * 0.44, s * 0.12, light, 0.9);
+  if (flowering && view.detail > 0)
+    for (const [dx, dy] of [[-0.3, -0.3], [0.05, -0.55], [0.3, -0.25], [-0.05, -0.18]])
+      circle(bx + s * dx, by + s * dy, s * 0.06, tone < 0.5 ? "#f6d6e3" : "#fff3c2");
+}
+function rockArt(view, x, y, size) {
+  const P = view.at(x, y);
+  const k = size;
+  box(P, -0.35 * k, -0.28 * k, 0.35 * k, 0.28 * k, 0, 0.28 * k, ["#cfc9bd", "#b3ac9f", "#9a9386"]);
+  box(P, -0.15 * k, -0.2 * k, 0.2 * k, 0.15 * k, 0.28 * k, 0.42 * k, ["#dcd6ca", "#c2bbae", "#a8a194"]);
+}
+// Grass tufts and wildflowers on a district's meadow, painted once into tiles.
+function meadowDetail(view, spots) {
+  if (view.detail === 0) return;
+  const P = view.at(0, 0);
+  const { ctx } = view;
+  ctx.lineCap = "round";
+  for (const t of spots) {
+    const [px, py] = P(t.x, t.y, 0);
+    const h = view.s * 0.28 * t.size;
+    if (t.flower) {
+      circle(px, py - h * 0.6, view.s * 0.07, t.flower);
+      circle(px + view.s * 0.16, py - h * 0.35, view.s * 0.06, t.flower);
+      continue;
+    }
+    ctx.strokeStyle = view.tint(t.size > 1 ? "#7fb257" : "#8fbf62");
+    ctx.lineWidth = Math.max(0.6, view.s * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(px - h * 0.5, py - h);
+    ctx.lineTo(px, py);
+    ctx.lineTo(px + h * 0.1, py - h * 1.2);
+    ctx.moveTo(px, py);
+    ctx.lineTo(px + h * 0.6, py - h * 0.85);
+    ctx.stroke();
+  }
+}
+// A proper village name board: two posts, a framed plank with a little roof,
+// the owner's colour on the end and a flower box at its feet.
+const SIGN_POST = ["#a87447", "#8d5f37", "#744c2b"];
+function signArt(view, x, y, label, vacant, color) {
+  const P = view.at(x, y);
+  const frame = vacant ? ["#cfc6b4", "#b9af9b", "#a39883"] : SIGN_POST;
+  const panel = vacant ? "#e3dccd" : "#f4e5c6";
+  // Flower box (or a tuft of weeds on an empty plot).
+  box(P, 0.15, -0.55, 0.45, 0.55, 0, 0.22, vacant ? ["#c9c0ad", "#b3a991", "#9d927a"] : ["#c98d55", "#ad7543", "#925f35"]);
+  if (view.detail > 0)
+    for (const [py, c] of [[-0.35, vacant ? "#9fb47a" : "#f29bb8"], [0, vacant ? "#a9bd84" : "#fff3c2"], [0.33, vacant ? "#9fb47a" : "#b9a3ea"]]) {
+      const [fx, fy] = P(0.3, py, 0.3);
+      circle(fx, fy, view.s * 0.11, "#6a9f4a");
+      circle(fx, fy - view.s * 0.07, view.s * 0.07, c);
+    }
+  for (const py of [-0.82, 0.82]) box(P, -0.06, py - 0.06, 0.06, py + 0.06, 0, 1.62, frame);
+  box(P, 0.02, -1.0, 0.13, 1.0, 0.84, 1.52, frame);
+  // The lighter panel inset on the face (the face runs along the y axis).
+  poly([P(0.131, -0.92, 0.9), P(0.131, 0.92, 0.9), P(0.131, 0.92, 1.46), P(0.131, -0.92, 1.46)], panel);
+  if (color) poly([P(0.132, 0.74, 0.9), P(0.132, 0.92, 0.9), P(0.132, 0.92, 1.46), P(0.132, 0.74, 1.46)], color);
+  // Little roof.
+  box(P, -0.08, -1.12, 0.24, 1.12, 1.62, 1.7, frame);
   if (view.s < 9 || !label) return;
-  const [cx, cy] = P(0.16, 0, 1.2);
+  const [cx, cy] = P(0.16, -0.08, 1.18);
   const { ctx } = view;
   ctx.save();
   ctx.translate(cx, cy);
-  // The board's face runs along the y axis: skew the text onto it.
-  ctx.transform(1, 0.577, 0, 1, 0, 0);
-  ctx.fillStyle = view.tint("#6b4a2b");
-  ctx.font = `700 ${Math.max(10, view.s * 0.42).toFixed(1)}px "DM Sans", sans-serif`;
+  // The board's face runs along the y axis, which climbs to the right on
+  // screen: skew the text up the same slope so it sits on the plank.
+  ctx.transform(1, -0.577, 0, 1, 0, 0);
+  ctx.fillStyle = view.tint(vacant ? "#8a8070" : "#5e3f22");
+  ctx.font = `700 ${Math.max(10, view.s * 0.4).toFixed(1)}px "DM Sans", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const max = view.s * 1.75;
+  const max = view.s * 1.5;
   let text = label;
   while (text.length > 3 && ctx.measureText(text).width > max) text = text.slice(0, -2) + "…";
   ctx.fillText(text, 0, 0);
@@ -204,6 +319,9 @@ function plazaArt(view) {
  */
 export function buildWorld({ groupKey, village, members, me, sky }) {
   const people = new Map(members.map((m) => [m.id, m]));
+  // September to November in Ankara: some leaves turn.
+  const month = new Date(Date.now() + 3 * 3600000).getUTCMonth(),
+    autumn = month >= 8 && month <= 10;
   const districts = village.districts.map((d) => ({ ...d, layout: cellLayout(groupKey, d.q, d.r) }));
   const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]));
   const linkSet = new Set(network.links);
@@ -289,7 +407,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
     const [cx, cy] = L.center;
     const owner = d.memberId ? people.get(d.memberId) : null;
     if (!d.passThrough)
-      add(ground, { pass: 0, bbox: boxOf(cx, cy, 24, 24, 13, 13), draw: (v) => fillShape(v, L.boundary, owner ? MEADOW : PLOT, MEADOW_EDGE, 0.22) });
+      add(ground, { pass: 0, bbox: boxOf(cx, cy, 24, 24, 13, 13), draw: (v) => fillShape(v, L.boundary, owner ? MEADOW : PLOT, MEADOW_EDGE, 0.9) });
     if (L.hill && !d.passThrough) {
       const { x, y, r } = L.hill;
       add(ground, { pass: 1, bbox: boxOf(x, y, r * 1.8, r * 1.8, r, r), draw: (v) => {
@@ -325,12 +443,51 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
       if (!t.wild && Math.hypot(t.x - cx, t.y - cy) > L.radiusAt(Math.atan2(t.y - cy, t.x - cx)) - 0.5) continue;
       if (t.wild && cellList.some((o) => o !== d && Math.abs(t.x - o.layout.center[0]) < 16 && Math.abs(t.y - o.layout.center[1]) < 16 && Math.hypot(t.x - o.layout.center[0], t.y - o.layout.center[1]) < o.layout.radiusAt(0) + 1)) continue;
       if (Math.hypot(t.x, t.y) < PLAZA + 1.2) continue;
-      add(standing, { type: "tree", depth: t.x + t.y, x: t.x, y: t.y, bbox: boxOf(t.x, t.y, 1.2 * t.size, 1.2 * t.size, 2 * t.size, 0.6), draw: (v) => treeArt(v, t.x, t.y, t.size, t.tone) });
+      add(standing, { type: "tree", depth: t.x + t.y, x: t.x, y: t.y, bbox: boxOf(t.x, t.y, 1.3 * t.size, 1.3 * t.size, 2.4 * t.size, 0.6), draw: (v) => treeArt(v, t.x, t.y, t.size, t.tone, autumn) });
+    }
+    // Landscaping on settled districts: grass and wildflowers on the meadow,
+    // bushes along the edge and a few field stones, all from the district seed
+    // and kept off lanes, the pond and the houses.
+    if (!d.passThrough) {
+      const rr = rng(L.seed + 11);
+      // One lookup for the whole district (the 3×3 hash cells cover it).
+      const lanesHere = [...linesNear(cx, cy)];
+      const clear = (x, y, pad) =>
+        Math.hypot(x - cx, y - cy) < L.radiusAt(Math.atan2(y - cy, x - cx)) - 0.4 &&
+        !lanesHere.some((l) => lineDistance([x, y], l).d < LANE + pad) &&
+        !(L.pond && Math.hypot(x - L.pond.x, y - L.pond.y) < L.pond.rx + pad) &&
+        !(L.sign && Math.hypot(x - L.sign[0], y - L.sign[1]) < 1.4) &&
+        !blockedByHome(x, y, pad);
+      const spots = [];
+      for (let i = 0; i < 40; i++) {
+        const a = rr() * Math.PI * 2,
+          dist = Math.sqrt(rr()) * L.radiusAt(a),
+          x = cx + Math.cos(a) * dist,
+          y = cy + Math.sin(a) * dist,
+          size = 0.7 + rr() * 0.7,
+          flower = rr() < 0.3 ? FLOWERS[Math.floor(rr() * FLOWERS.length)] : null;
+        if (clear(x, y, 0.15)) spots.push({ x, y, size, flower });
+      }
+      if (spots.length) add(ground, { pass: 1, bbox: boxOf(cx, cy, 24, 24, 13, 13), draw: (v) => meadowDetail(v, spots) });
+      for (let i = 0; i < 7; i++) {
+        const a = rr() * Math.PI * 2,
+          dist = L.radiusAt(a) - 1 - rr() * 1.6,
+          x = cx + Math.cos(a) * dist,
+          y = cy + Math.sin(a) * dist,
+          size = 0.8 + rr() * 0.6,
+          tone = rr(),
+          flowering = rr() < 0.4;
+        if (!clear(x, y, 0.7)) continue;
+        if (i < 5)
+          add(standing, { type: "bush", depth: x + y, x, y, bbox: boxOf(x, y, 1, 1, 1, 0.5), draw: (v) => bushArt(v, x, y, size, tone, flowering) });
+        else add(standing, { type: "rock", depth: x + y, x, y, bbox: boxOf(x, y, 0.9, 0.9, 0.6, 0.5), draw: (v) => rockArt(v, x, y, size) });
+      }
     }
     if (!d.passThrough && L.sign) {
       const [x, y] = L.sign;
       const label = owner ? owner.name : "Boş arsa";
-      add(standing, { type: "sign", depth: x + y, x, y, district: d, bbox: boxOf(x, y, 1.6, 1.6, 2, 1), draw: (v) => signArt(v, x, y, label, !owner) });
+      const color = owner ? MEMBER_COLORS[owner.color] || MEMBER_COLORS.lilac : null;
+      add(standing, { type: "sign", depth: x + y, x, y, district: d, bbox: boxOf(x, y, 1.8, 1.8, 2.2, 1), draw: (v) => signArt(v, x, y, label, !owner, color) });
       // A lamp on the other side of the entrance.
       const [ex, ey] = L.entrance;
       const lx = ex + (ex - x) * 0.55 + (cx - ex) * 0.06,

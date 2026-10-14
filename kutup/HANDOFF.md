@@ -165,7 +165,43 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
   - Form artık saat değerini her biçimde okuyor ("10:00:00" dahil), "okunamadı" ile "geçti" mesajlarını ayırıyor ve sunucu hatasını formun içinde gösteriyor.
   - Yeni akış: 7 günlük gün çipleri, geçmişi kapalı saat çipleri, "Başka saat", hazır plan adları, canlı özet.
   - Durum penceresinde salon seçimi artık düğmelerle yapılıyor ve yalnızca tayfanın kullandığı salonlar var: 📚 Adnan (Adnan Ötüken Okuma Salonu, varsayılan; “genelde Adnan’dayız aga”), 📖 Müjgan (Dr. Müjgan Cunbur Okuma Salonu), ☕ Kafeterya, 🌳 Bahçe ve Başka…. Batur diğer salonları istemedi.
-- **Sıradaki (Batur'a seçtiğim):** önce Paket 3'ün gözlemevi (küçük), sonra **Paket 2 — Mürekkep**. Uygulamanın yüzü; Paket 4'ün kutlaması ve Paket 5'in şantiye şefi ona bağlı.
+- **Köy görselleri 1. parça ✅ yayında (14 Ekim akşamı, `villageWorld.js`):**
+  - Ağaçlar türlere ayrıldı (`treeKind`, tohumdan): katmanlı taçlı ve sol üstten ışık alan geniş yapraklı, iki tonlu üç katlı karaçam, kavak. Eylül–kasımda geniş yaprakların ~%40'ı, kavakların ~%70'i sonbahar renginde.
+  - Mahalle kenarı sert çizgi yerine geniş, yumuşak bant oldu. Her mahallede ot öbekleri ve kır çiçekleri (zemin geçişi 1, tek öğe), kenarda çalılar (bir kısmı çiçekli) ve kayalar var. Hepsi tohumdan üretiliyor; yollara, gölete, tabelaya ve evlere değmiyor.
+  - Tabela yeniden yapıldı: iki direk, çerçeveli tahta, açık renk pano, sahibinin renginde şerit, çatı ve çiçek kasası. Yazı eğimi düzeltildi (eskiden tahtanın tersine eğiliyordu).
+  - 1.000 binada köyü kurma ~80 → ~110–135 ms (yalnızca veri değişince; gerçek köy küçük).
+- **Batur'un istekleri (14 Ekim akşamı) — sıradaki büyük işler, bu sırayla:**
+  1. **2. dalga: inşaat animasyonu, mühendislik doğruluğunda (Paket 5'in yerine geçer).** Batur'un ölçütü: "ODTÜ inşaat mühendisliği standardında accurate". Silikleşip hayalet gibi beliren parça olmayacak; her parça gerçekten yerine konur, örülür ya da dökülerek yükselir. Makineler ve işçiler doğru evrede gelip gider.
+     - **Doğru iş akışı (betonarme):**
+       1. Mobilizasyon: şantiye çiti, konteyner, iş güvenliği tabelası, malzeme sahası.
+       2. Aplikasyon: total station, kazık, ip iskelesi.
+       3. Hafriyat: ekskavatör kazar; damperli kamyon gelir, dolar, gider.
+       4. Grobeton (transmikser).
+       5. Temel su yalıtımı.
+       6. Temel donatısı (alt/üst hasır, kolon filizleri) → yan kalıp → beton: transmikser ile beton pompası gelir, bom açılır, hortumcu ve vibratörcü işçi çalışır → kür (koyu ıslak griden açık griye).
+       7. **Her kat için döngü:** kolon donatısı (filizlere bindirme) → kolon kalıbı → kolon betonu → kalıp söküm → kiriş ve döşeme kalıbı ile dikmeler → döşeme donatısı → döşeme betonu (pompa + mikser) → kür → üst kat.
+       8. Duvar örme (tuğla ya da gazbeton, sıra sıra, lentolar).
+       9. Çatı: makas, aşık, yalıtım, kiremit (saçaktan mahyaya). Kulede kule vinç, evde mobil vinç.
+       10. Cephe: dış iskele kurulur → doğrama → mantolama → sıva → boya.
+       11. İnce işler: kapı, oluk, baca, ışıklar.
+       12. İskele söküm, temizlik, peyzaj (çim, ağaç, yol taşı, posta kutusu), kurdele, "İskân alındı ✅".
+     - Ekranda o anki iş kalemi ve "hakediş %" görünür. Kulübe 1 kat, ev 2 kat, kule 4–5 kat. Evre ağırlıkları seansın 25/50/75 dakikasına yayılır.
+     - **Uygulama:** `ConstructionScene` (SVG, tek rAF, 30 fps) içinde zaman çizelgesi (`phase`, `progress`) ile çizim yapılacak. Makine ve işçi sprite'ları önceden üretilir, görünmezken döngü durur. Hareket azaltmada yalnızca evre geçişleri kalır.
+     - **Çöküş:** çatlak → sallanma → parça parça yıkılma → toz → işçiler kaçar.
+     - Küçük parçalarla gidilecek: (a) evre zaman çizelgesi, kaba yapı döngüsü, donatı/kalıp/beton çizimi; (b) makineler (ekskavatör, kamyon, transmikser, pompa, vinç) ve işçiler; (c) duvar, çatı, cephe ve ince işler; (d) peyzaj, teslim, çöküş.
+  2. **Yapı kataloğu (koleksiyon, "pokemon gibi").**
+     - Sınıflar seans süresine bağlı kalır: Küçük 25, Orta 50, Büyük 75 dk.
+     - Her sınıfta geniş bir katalog olacak:
+       - Konutlar: kulübe, taş köy evi, ahşap dağ evi, kerpiç ev, apartman, köşk…
+       - İşlevsel yapılar: fırın, çay ocağı, mahalle kütüphanesi, değirmen, su kulesi, sera, atölye, okul…
+       - Süs yapıları: çeşme, gazebo, heykel, köprü, saat kulesi…
+     - **Para birimi:** odak dakikasıyla tuğla (Paket 9'daki fikir buraya taşınır; 1 dk = 1 tuğla gibi). Seans başında sınıftan yapı seçilir; bazıları tuğlayla açılır.
+     - **Nadirlik:** nadir ve özel yapılar var. "Haftanın yapısı" her hafta katalogya yeni yapı getirir. "Haftanın en çok çalışanı" ödül yapısı alır. İleride bazı yapılar bonus verebilir.
+     - **Koleksiyon sayfası:** "n/N", yapılmayanlar silüet olarak görünür.
+     - **Veri:** `shared/catalog.js` (id, sınıf, ad, tür, nadirlik, bedel, eklenme haftası, planlayıcı ayak izi). Göçle `buildings.model` ve tuğla bakiyesi eklenir. `iso.js`'te model başına `spec`/çizim yazılır. Var olan binalar model olmadan aynı görünmeye devam eder.
+     - Paket 6'nın bina çeşitliliği ve Paket 9'un tuğlası bununla birleşir.
+  3. Sonra Paket 3'ün gözlemevi ve **Paket 2 — Mürekkep** (aşağıdaki plan geçerli).
+- **Paket 2 planı (Mürekkep):** uygulamanın yüzü; Paket 4'ün kutlaması ve şantiye şefi ona bağlı.
   - Plan: `src/Mascot.jsx` (parçalı SVG; kafa, gözler, kulaklar, kuyruk, pati, gözlük, atkı `var(--accent)`; 9 poz; bekleme hareketleri; `say` balonu) ve `src/mascotLines.js` (olay başına 8–15 cümle, tekrar etmeyen seçici).
   - Ardından tanıtım: 3 kart, cihaz başına bir kez. Sonra "İlk gün görevleri" kartı (sunucudan türet: profil süslendi mi, ilk `here`, abonelik var mı, ilk bina; ödül Kurucu tabelası). Sonra sekme ipuçları. En sonda boş durumlara ve şantiyeye yerleştirme.
 - **Paket 1.5 plan notu (tamamlandı):**
