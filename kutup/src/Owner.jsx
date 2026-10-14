@@ -452,10 +452,28 @@ export function OwnerPage() {
                         <div>
                           <strong>{m.name}</strong>
                           <small>
-                            {STATUS[m.status]?.[0]} · son görülme{" "}
+                            {m.username ? `@${m.username}` : "kullanıcı adı yok"} · {STATUS[m.status]?.[0]} · son görülme{" "}
                             {m.seen ? `${dateLabel(m.seen)} ${shortTime(m.seen)}` : "—"}
                           </small>
                         </div>
+                        <button
+                          className="icon-button"
+                          aria-label={`${m.name} için giriş kodu üret`}
+                          title="Giriş / şifre sıfırlama kodu"
+                          onClick={async () => {
+                            try {
+                              const r = await api(`/owner/members/${m.id}/reset`, {});
+                              prompt(
+                                `${m.name} için giriş kodu (24 saat, tek kullanımlık). “Zaten ekipteyim” ekranına yazınca hesabına girer; kullanıcı adı ve yeni şifre belirlemek için de kullanılır.`,
+                                r.code,
+                              );
+                            } catch (e) {
+                              alert(e.message);
+                            }
+                          }}
+                        >
+                          <KeyRound size={17} />
+                        </button>
                         <button
                           className="icon-button"
                           aria-label={`${m.name} kişisini ekipten çıkar`}

@@ -79,6 +79,35 @@ function profile(body) {
     note: text(body.note || "", 70, "Masa notu"),
   };
 }
+// Usernames: 3–24 letters, digits, dots or underscores; stored lower-case.
+function usernameOf(value) {
+  // ı and i count as the same letter, so AYLIN, Aylın and aylin are one name.
+  const clean = text(value, 24, "Kullanıcı adı", 3).toLocaleLowerCase("tr").replace(/ı/g, "i");
+  if (!/^[a-z0-9çğöşü._]+$/.test(clean))
+    fail("Kullanıcı adında sadece harf, rakam, nokta ve alt çizgi olabilir.");
+  return clean;
+}
+function passwordOf(value) {
+  if (typeof value !== "string" || value.length < 6) fail("Şifre en az 6 karakter olmalı.");
+  if (value.length > 128) fail("Şifre çok uzun.");
+  return value;
+}
+// PBKDF2 through Web Crypto (works in Node and Workers). The iteration count is
+// kept moderate for the Workers free-plan CPU budget; logins are rate limited.
+const PBKDF2_ROUNDS = 20000;
+async function derive(password, salt, rounds) {
+  const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+  return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: rounds }, key, 256));
+}
+async function hashPassword(password) {
+  const salt = randomHex(16);
+  return `pbkdf2$${PBKDF2_ROUNDS}$${salt}$${await derive(password, salt, PBKDF2_ROUNDS)}`;
+}
+async function checkPassword(password, stored) {
+  const [kind, rounds, salt, hash] = String(stored || "").split("$");
+  if (kind !== "pbkdf2" || !hash) return false;
+  return sameSecret(await derive(password, salt, Number(rounds)), hash);
+}
 const sameName = (a, b) =>
   a.toLocaleLowerCase("tr") === b.toLocaleLowerCase("tr");
 
@@ -625,6 +654,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   async function join(request, group, body, extraStatements = []) {
     const p = profile(body);
+    const account = body.username !== undefined ? usernameOf(body.username) : null;
+    const secret = account ? await hashPassword(passwordOf(body.password)) : null;
+    if (account && (await db.get("SELECT 1 AS hit FROM members WHERE username = ?", [account])))
+      fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
     const existing = await db.all("SELECT name FROM members WHERE group_id = ?", [group.id]);
     if (existing.length >= 80) fail("Bu ekip 80 kişiye ulaştı. Yeni bir ekip kurabilirsiniz.");
     if (existing.some((m) => sameName(m.name, p.name)))
@@ -638,8 +671,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     await retrying(async () => [
       ...extraStatements,
       [
-        "INSERT INTO members (id, group_id, token, name, avatar, color, note, joined, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [id, group.id, session.hash, p.name, p.avatar, p.color, p.note, now, now],
+        "INSERT INTO members (id, group_id, token, name, avatar, color, note, joined, updated, username, pass_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, group.id, session.hash, p.name, p.avatar, p.color, p.note, now, now, account, secret],
       ],
       session.statement,
       // A district of their own in the shared village, nearest free one to the square.
@@ -650,7 +683,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     ]);
     onChange(group.id);
     return json(
-      { memberId: id, live, pushPublicKey: vapid.publicKey, ...(await snapshot(group.id)) },
+      { memberId: id, username: account, live, pushPublicKey: vapid.publicKey, ...(await snapshot(group.id)) },
       201,
       { "Set-Cookie": sessionCookie(request, session.token) },
     );
@@ -679,6 +712,59 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return join(request, group, body);
   }, false);
 
+  // ---------- accounts ----------
+  // A signed-in device can set or change the username and password at any time.
+  route("POST", "/account", async ({ member, body }) => {
+    const username = usernameOf(body.username);
+    const taken = await db.get("SELECT 1 AS hit FROM members WHERE username = ? AND id <> ?", [username, member.id]);
+    if (taken) fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
+    if (!member.pass_hash && !body.password) fail("Bir şifre belirle.");
+    const secret = body.password ? await hashPassword(passwordOf(body.password)) : member.pass_hash;
+    await db.run("UPDATE members SET username = ?, pass_hash = ?, reset_hash = NULL, reset_until = 0 WHERE id = ?", [
+      username,
+      secret,
+      member.id,
+    ]);
+    return json({ ok: true, username });
+  });
+  async function signIn(request, member) {
+    const session = await newSession(member.id);
+    await db.batch([session.statement]);
+    return json(
+      { memberId: member.id, username: member.username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
+      200,
+      { "Set-Cookie": sessionCookie(request, session.token) },
+    );
+  }
+  route("POST", "/login", async ({ request, body, ip }) => {
+    const username = usernameOf(body.username);
+    limit(`${ip}:login`, 12);
+    limit(`login:${username}`, 8);
+    const member = await db.get("SELECT id, group_id, username, pass_hash FROM members WHERE username = ?", [username]);
+    if (!member || !(await checkPassword(String(body.password || ""), member.pass_hash)))
+      fail("Kullanıcı adı ya da şifre yanlış.", 401);
+    return signIn(request, member);
+  }, false);
+  // Forgot the password: Batur gives out a one-day code; it sets a new password.
+  route("POST", "/reset", async ({ request, body, ip }) => {
+    limit(`${ip}:login`, 12);
+    const code = text(body.code, 20, "Kod", 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const member = await db.get(
+      "SELECT id, group_id, username FROM members WHERE reset_hash = ? AND reset_until > ?",
+      [await sha(code), Date.now()],
+    );
+    if (!member) fail("Bu kod geçersiz ya da süresi dolmuş. Batur’dan yenisini iste.", 404);
+    const username = member.username || usernameOf(body.username);
+    if (!member.username && (await db.get("SELECT 1 AS hit FROM members WHERE username = ?", [username])))
+      fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
+    await db.run("UPDATE members SET username = ?, pass_hash = ?, reset_hash = NULL, reset_until = 0 WHERE id = ?", [
+      username,
+      await hashPassword(passwordOf(body.password)),
+      member.id,
+    ]);
+    return signIn(request, { ...member, username });
+  }, false);
+
   // Moving to another device (or from Safari to the iPhone home-screen app, which
   // has its own cookie jar): a short single-use code creates a second session.
   route("POST", "/transfer", async ({ member }) => {
@@ -697,18 +783,23 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   route("POST", "/transfer/claim", async ({ request, body }) => {
     const code = text(body.code, 20, "Kod", 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (code.length !== 8) fail("Kod 8 karakter olmalı.");
+    const hashed = await sha(code);
     const member = await db.get(
-      "SELECT id, group_id, name FROM members WHERE transfer_hash = ? AND transfer_until > ?",
-      [await sha(code), Date.now()],
+      // A code from another device, or a one-day code Batur made in his panel.
+      "SELECT id, group_id, name, username FROM members WHERE (transfer_hash = ? AND transfer_until > ?) OR (reset_hash = ? AND reset_until > ?)",
+      [hashed, Date.now(), hashed, Date.now()],
     );
-    if (!member) fail("Bu kod geçersiz ya da süresi dolmuş. Diğer cihazdan yeni kod al.", 404);
+    if (!member) fail("Bu kod geçersiz ya da süresi dolmuş. Diğer cihazdan ya da Batur’dan yeni kod al.", 404);
     const session = await newSession(member.id);
     await db.batch([
       session.statement,
-      ["UPDATE members SET transfer_hash = NULL, transfer_until = 0 WHERE id = ?", [member.id]],
+      [
+        "UPDATE members SET transfer_hash = NULL, transfer_until = 0, reset_hash = NULL, reset_until = 0 WHERE id = ?",
+        [member.id],
+      ],
     ]);
     return json(
-      { memberId: member.id, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
+      { memberId: member.id, username: member.username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
       200,
       { "Set-Cookie": sessionCookie(request, session.token) },
     );
@@ -719,6 +810,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       await db.run("UPDATE sessions SET seen = ? WHERE token = ?", [Date.now(), member.session_token]);
     return json({
       memberId: member.id,
+      username: member.username || null,
       live,
       pushPublicKey: vapid.publicKey,
       ...(await snapshot(member.group_id)),
@@ -1239,7 +1331,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [groups, members] = await db.read([
       ["SELECT id, name, invite, created FROM groups ORDER BY created DESC", []],
       [
-        "SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, MAX(s.seen) AS seen FROM members m LEFT JOIN sessions s ON s.member_id = m.id GROUP BY m.id ORDER BY m.joined",
+        "SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username, MAX(s.seen) AS seen FROM members m LEFT JOIN sessions s ON s.member_id = m.id GROUP BY m.id ORDER BY m.joined",
         [],
       ],
     ]);
@@ -1264,6 +1356,20 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!result.changes) fail("Ekip bulunamadı.", 404);
     onChange(params.id);
     return json({ invite });
+  }, false);
+
+  route("POST", "/owner/members/:id/reset", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    let code = "";
+    for (const b of crypto.getRandomValues(new Uint8Array(8))) code += TRANSFER_ALPHABET[b % TRANSFER_ALPHABET.length];
+    const result = await db.run("UPDATE members SET reset_hash = ?, reset_until = ? WHERE id = ?", [
+      await sha(code),
+      Date.now() + 24 * HOUR,
+      params.id,
+    ]);
+    if (!result.changes) fail("Kişi bulunamadı.", 404);
+    const { username } = await db.get("SELECT username FROM members WHERE id = ?", [params.id]);
+    return json({ code: `${code.slice(0, 4)}-${code.slice(4)}`, username });
   }, false);
 
   route("DELETE", "/owner/members/:id", async ({ request, ip, params }) => {

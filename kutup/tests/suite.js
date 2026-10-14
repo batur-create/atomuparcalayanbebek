@@ -423,6 +423,43 @@ export function defineSuite(target) {
     assert.equal((await request("/transfer/claim", { body: { code: data.code } })).status, 404, "single use");
   });
 
+  test(`[${target}] a username and password open the same profile anywhere; Batur can reset it`, async () => {
+    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Ay lin", password: "gizli123" } })).status, 400);
+    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Aylin" } })).status, 400, "a password is needed");
+    const set = await request("/account", { cookie: people.alice, body: { username: "Aylin.K", password: "gizli123" } });
+    assert.deepEqual(set.data, { ok: true, username: "aylin.k" });
+    assert.equal((await request("/session", { cookie: people.alice })).data.username, "aylin.k");
+    assert.equal((await request("/account", { cookie: people.bob, body: { username: "AYLIN.K", password: "baska123" } })).status, 409);
+    assert.equal((await request("/login", { body: { username: "aylin.k", password: "yanlis12" } })).status, 401);
+    const login = await request("/login", { body: { username: "Aylin.K", password: "gizli123" } });
+    assert.equal(login.status, 200);
+    assert.equal(member(login.data, "Aylin").id, login.data.memberId);
+    assert.equal((await request("/session", { cookie: login.cookie })).status, 200, "a new browser is signed in");
+    assert.equal((await state("alice")).members.some((m) => "username" in m || "pass_hash" in m), false, "nobody else sees it");
+    // New friends create their account while joining.
+    const fresh = await request("/join", { body: { invite: group.invite, name: "Selin", username: "selin", password: "kutup123" } });
+    assert.equal(fresh.status, 201);
+    assert.equal(fresh.data.username, "selin");
+    assert.equal((await request("/join", { body: { invite: group.invite, name: "Selin 2", username: "selin", password: "kutup123" } })).status, 409);
+    // Forgot it: Batur makes a one-day code, the code sets a new password (and a username if there was none).
+    const bobId = member(await state("bob"), "Deniz").id;
+    assert.equal((await request(`/owner/members/${bobId}/reset`, { body: {} })).status, 401);
+    const reset = await request(`/owner/members/${bobId}/reset`, { owner: adminKey, body: {} });
+    assert.match(reset.data.code, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    assert.equal((await request("/reset", { body: { code: "AAAA-BBBB", username: "deniz", password: "yeni1234" } })).status, 404);
+    const back = await request("/reset", { body: { code: reset.data.code, username: "Deniz", password: "yeni1234" } });
+    assert.equal(back.status, 200);
+    assert.equal(back.data.username, "deniz");
+    assert.equal((await request("/login", { body: { username: "deniz", password: "yeni1234" } })).status, 200);
+    assert.equal((await request("/reset", { body: { code: reset.data.code, username: "deniz", password: "yeni5678" } })).status, 404, "single use");
+    // Batur’s code also works on the “Zaten ekipteyim” screen, once.
+    const again = await request(`/owner/members/${bobId}/reset`, { owner: adminKey, body: {} });
+    const claimed = await request("/transfer/claim", { body: { code: again.data.code } });
+    assert.equal(claimed.data.memberId, bobId);
+    assert.equal((await request("/transfer/claim", { body: { code: again.data.code } })).status, 404);
+    await request("/leave", { cookie: fresh.cookie, body: {} });
+  });
+
   test(`[${target}] feedback is private to its sender and Batur`, async () => {
     const result = await request("/feedback", {
       cookie: people.alice,

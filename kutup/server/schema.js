@@ -96,6 +96,16 @@ export const migrations = [
     "ALTER TABLE members ADD COLUMN ruin_y REAL",
     "ALTER TABLE groups ADD COLUMN village_rev INTEGER NOT NULL DEFAULT 0",
   ],
+  // 7 — accounts: a username and password open the same profile on any device;
+  // Batur can hand out a one-day reset code.
+  [
+    "ALTER TABLE members ADD COLUMN username TEXT",
+    "ALTER TABLE members ADD COLUMN pass_hash TEXT",
+    "ALTER TABLE members ADD COLUMN reset_hash TEXT",
+    "ALTER TABLE members ADD COLUMN reset_until INTEGER NOT NULL DEFAULT 0",
+    "CREATE UNIQUE INDEX IF NOT EXISTS members_username ON members(username)",
+    "CREATE INDEX IF NOT EXISTS members_reset ON members(reset_hash)",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;
