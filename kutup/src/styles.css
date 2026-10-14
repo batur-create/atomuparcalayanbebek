@@ -4494,7 +4494,7 @@ input.code-input {
 }
 .detail-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 24px 0;
 }
@@ -4502,7 +4502,8 @@ input.code-input {
   flex-direction: column;
   gap: 4px;
   margin: 0;
-  padding: 14px;
+  padding: 14px 8px;
+  text-align: center;
 }
 .detail-stats .detail-stat span {
   font-size: 11px;

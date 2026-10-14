@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { createApp, dayStart, weekStart } from "../server/app.js";
 import { sqliteAdapter } from "../server/sqlite.js";
-import { SCHEMA_VERSION } from "../server/schema.js";
+import { SCHEMA_VERSION, migrations } from "../server/schema.js";
 
 const call = (app, path, { method = "GET", body, headers = {} } = {}) =>
   app
@@ -60,6 +60,27 @@ test("without ADMIN_KEY, Batur claims the box once with a key of his own", async
   assert.equal((await call(app, "/owner/status")).data.claimed, true);
   assert.equal((await call(app, "/owner/feedback", { headers: { "X-Owner-Key": key } })).status, 200);
   assert.equal((await call(app, "/owner/feedback", { headers: { "X-Owner-Key": "yanlis-anahtar-123" } })).status, 401);
+});
+
+test("finished Fidan modu sessions turn into village buildings on upgrade", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const db = sqliteAdapter(sqlite);
+  // A database as it was with Fidan modu (schema 4).
+  for (const [i, statements] of migrations.slice(0, 4).entries())
+    await db.batch([
+      ...statements.map((sql) => [sql, []]),
+      ["INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [String(i + 1)]],
+    ]);
+  sqlite.exec(`
+    INSERT INTO groups (id, name, invite) VALUES ('g', 'Tayfa', 'invite-123456789012');
+    INSERT INTO members (id, group_id, token, name, avatar, color, joined, updated) VALUES ('m', 'g', 't', 'Elif', '🍒', 'pink', 1, 1);
+    INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES
+      ('a', 'm', 25, 10, 1), ('b', 'm', 75, 20, 1), ('c', 'm', 50, 30, 0);
+  `);
+  await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
+  const rows = sqlite.prepare("SELECT kind, minutes FROM buildings ORDER BY created").all();
+  assert.deepEqual(rows.map((r) => [r.kind, r.minutes]), [["cottage", 25], ["tower", 75]]);
+  assert.equal(sqlite.prepare("SELECT value FROM settings WHERE key = 'schema'").get().value, String(SCHEMA_VERSION));
 });
 
 test("changing ADMIN_KEY signs every remembered owner device out", async () => {

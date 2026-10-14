@@ -24,7 +24,7 @@ const MESSAGE_LIMIT = 50;
 const ACTIVITY_LIMIT = 25;
 const PUSH_COOLDOWN = 45 * 60000;
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const BEAT_GRACE = 90000; // a Fidan modu session must have been seen in its last 90 seconds
+const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
 // Session length decides the building: 25 → kulübe, 50 → iki katlı ev, 75 → kule.
 const KIND_SQL = "CASE WHEN focus_minutes >= 70 THEN 'tower' WHEN focus_minutes >= 40 THEN 'house' ELSE 'cottage' END";
@@ -789,7 +789,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const withered = !!before?.strict && before.beat < before.ends - BEAT_GRACE;
       return changed(m, { credited: withered ? 0 : before?.minutes || 0, withered });
     }
-    // Fidan modu: the app reports it is still on screen.
+    // Build mode: the app reports it is still on screen.
     if (action === "beat") {
       await db.run(
         "UPDATE members SET focus_beat = ? WHERE id = ? AND focus_strict = 1 AND focus_end > ?",
@@ -797,7 +797,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       );
       return json({ ok: true });
     }
-    // Giving up, or leaving the app in Fidan modu, ends the session without minutes.
+    // Giving up, or leaving the app in build mode, ends the session without minutes.
     if (action === "cancel" || action === "wither") {
       const strictRunning = m.focus_strict === 1 && m.focus_end > now;
       await db.batch([
@@ -1079,7 +1079,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   if (config.testHooks)
     route("POST", "/__test/expire", async ({ body }) => {
       // Ends the named person's focus session now; `away` pretends their app was
-      // closed long before the end (no recent Fidan modu heartbeat).
+      // closed long before the end (no recent build-mode heartbeat).
       await db.run(
         "UPDATE members SET focus_end = CASE WHEN focus_end > 0 THEN ? ELSE 0 END, focus_beat = CASE WHEN ? THEN 0 ELSE ? END, status_until = 0 WHERE name = ?",
         [Date.now() - 1000, body.away ? 1 : 0, Date.now() - 1000, body.name],

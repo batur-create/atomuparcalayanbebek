@@ -1,7 +1,7 @@
 // Versioned schema shared by node:sqlite and Cloudflare D1.
 // Every migration is a list of single statements (D1 cannot run multi-statement strings
 // through prepared statements), applied together with the version bump in one batch.
-const migrations = [
+export const migrations = [
   // 1 — the original Kütüp schema (idempotent, so pre-versioning databases pass through).
   [
     "CREATE TABLE IF NOT EXISTS groups (id TEXT PRIMARY KEY, name TEXT NOT NULL, invite TEXT UNIQUE NOT NULL)",

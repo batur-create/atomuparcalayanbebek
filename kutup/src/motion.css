@@ -210,7 +210,7 @@ h3,
   transform: scale(0.97);
 }
 
-/* ---------- Fidan modu ---------- */
+/* ---------- İnşaat modu toggle ---------- */
 .fidan-toggle {
   display: flex;
   align-items: flex-start;
@@ -930,11 +930,6 @@ h3,
 }
 .village-new {
   animation: village-pop 0.9s 0.2s var(--ease-spring) backwards;
-}
-.build-hint {
-  margin: -4px 0 10px;
-  font-size: 11.5px;
-  color: #b9bca9;
 }
 @media (prefers-reduced-motion: reduce) {
   .tracker.waiting .tracker-runner,
