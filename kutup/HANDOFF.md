@@ -189,6 +189,20 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
      - **Uygulama:** `ConstructionScene` (SVG, tek rAF, 30 fps) içinde zaman çizelgesi (`phase`, `progress`) ile çizim yapılacak. Makine ve işçi sprite'ları önceden üretilir, görünmezken döngü durur. Hareket azaltmada yalnızca evre geçişleri kalır.
      - **Çöküş:** çatlak → sallanma → parça parça yıkılma → toz → işçiler kaçar.
      - Küçük parçalarla gidilecek: (a) evre zaman çizelgesi, kaba yapı döngüsü, donatı/kalıp/beton çizimi; (b) makineler (ekskavatör, kamyon, transmikser, pompa, vinç) ve işçiler; (c) duvar, çatı, cephe ve ince işler; (d) peyzaj, teslim, çöküş.
+     - **(a) ✅ yayında (14 Ekim gece):**
+       - `src/construction.js`: `sitePlan(sp)` evreleri ağırlıklarıyla seansa yayar (kaba yapı %0–55, sonra `LATER`: duvar, çatı, doğrama, ince işler, teslim). `siteSVG(P, sp, plan, shown)` her şeyi ilerlemeden doğrudan çizer:
+         - Hazırlık: çit ve konteyner, kazık ve ip iskelesi, total station.
+         - Temel: kliple kırpılan hafriyat çukuru ve toprak yığını, grobeton, alt ve üst hasır, kolon filizleri, yan kalıp, yükselip kürlenen beton, geri dolgu.
+         - Her kat: etriyeli kolon kafesi → kontrplak kolon kalıbı → beton kolon, dikmeler, 3×3 döşeme kalıbı, döşeme donatısı, arkadan öne dökülen döşeme.
+       - `Village.jsx`'te yeni parça türleri:
+         - `site`: ilerlemeyle yeniden çizilir.
+         - `erect`: iskele ve vinç parça parça kurulur ve sökülür; artık silikleşmiyor.
+         - `reveal`: çatı saçaktan mahyaya kırpılarak açılır.
+       - Vinç kancası çalışılan katta, yükü evreye göre değişir. Sol üstte iş kalemi ve "Hakediş %" yazar (viewBox içinde 24/20 px, telefonda yaklaşık 12/10 px).
+       - **Kalan:**
+         - (b) Makineler ve işçiler.
+         - (c) Gerçek duvar örgüsü, çatı makası ve kiremit, cephe iskelesiyle mantolama/sıva/boya, kapı (hâlâ `pop` ile büyüyerek geliyor).
+         - (d) Peyzaj (bahçe hâlâ `pop`) ve fiziksel çöküş. Çöküş şimdilik eski usul: parçalar düşüp soluyor.
   2. **Yapı kataloğu (koleksiyon, "pokemon gibi").**
      - Sınıflar seans süresine bağlı kalır: Küçük 25, Orta 50, Büyük 75 dk.
      - Her sınıfta geniş bir katalog olacak:

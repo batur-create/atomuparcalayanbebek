@@ -9,6 +9,7 @@ import {
   CRANE, DIRT, GRASS, STONE, WOOD, box, chimneySVG, doorSVG, f, flagSVG, foundationSVG, gardenSVG,
   poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG,
 } from "./iso.js";
+import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -20,28 +21,30 @@ export { kindFor };
 // ---------- construction site ----------
 // The crane stands to the left with its arm across the screen, and always lowers
 // its load just above whatever is being built.
-function craneSVG(P, sp, time, shown) {
+function craneSVG(P, sp, time, shown, built, workZ) {
   const zc = Math.max(topOf(sp) + 2.3, 4.6),
     mast = [-3.0, 3.0],
     end = [0.6, -0.6];
-  const walls = Math.max(0, Math.min(1, (shown - 0.32) / 0.3)),
-    roofUp = Math.max(0, Math.min(1, (shown - 0.62) / 0.13));
   const u = 0.72 + 0.14 * Math.sin(time * 0.7),
     x = mast[0] + (end[0] - mast[0]) * u,
     y = mast[1] + (end[1] - mast[1]) * u,
-    z = Math.min(zc - 0.9, 0.3 + sp.h * walls + (ridgeOf(sp) - topOf(sp)) * roofUp + 0.9 + 0.2 * Math.sin(time * 1.4));
-  const load = shown < 0.32 ? WOOD : shown < 0.62 ? sp.wall.faces : [sp.roof[2], sp.roof[0], sp.roof[1]];
-  let s = box(P, mast[0] - 0.16, mast[1] - 0.16, mast[0] + 0.16, mast[1] + 0.16, 0, zc, CRANE);
-  for (let k = 0.5; k < zc - 0.3; k += 0.55) s += seg(P(mast[0] - 0.16, mast[1] + 0.17, k), P(mast[0] + 0.16, mast[1] + 0.17, k + 0.5), "#c99622", 1);
+    z = Math.min(zc - 0.9, workZ + 0.9 + 0.2 * Math.sin(time * 1.4));
+  // Rebar bundles and formwork for the frame, blocks for the walls, then roof tiles.
+  const load = shown < FRAME_END ? ["#9a5a40", "#84492f", "#6f3c26"] : shown < 0.68 ? sp.wall.faces : [sp.roof[2], sp.roof[0], sp.roof[1]];
+  // Erected section by section, and taken down the same way.
+  const mastTop = zc * built;
+  let s = box(P, mast[0] - 0.16, mast[1] - 0.16, mast[0] + 0.16, mast[1] + 0.16, 0, mastTop, CRANE);
+  for (let k = 0.5; k < mastTop - 0.3; k += 0.55) s += seg(P(mast[0] - 0.16, mast[1] + 0.17, k), P(mast[0] + 0.16, mast[1] + 0.17, k + 0.5), "#c99622", 1);
+  if (built < 1) return s;
   s += box(P, mast[0] - 0.3, mast[1] - 0.3, mast[0] + 0.3, mast[1] + 0.3, zc - 0.05, zc + 0.35, ["#5f6f86", "#4b5a70", "#3c4a5e"]);
   s += seg(P(mast[0], mast[1], zc + 0.4), P(end[0], end[1], zc + 0.4), "#e4b031", 4) + seg(P(mast[0], mast[1], zc + 0.4), P(mast[0] - 1.1, mast[1] + 1.1, zc + 0.4), "#c99622", 4);
   s += box(P, mast[0] - 1.35, mast[1] + 0.85, mast[0] - 0.85, mast[1] + 1.35, zc + 0.05, zc + 0.6, STONE);
   s += seg(P(x, y, zc + 0.4), P(x, y, z + 0.38), "#5f5e5a", 1.1) + box(P, x - 0.38, y - 0.38, x + 0.38, y + 0.38, z, z + 0.38, load);
   return s;
 }
-function scaffoldSVG(P, sp) {
+function scaffoldSVG(P, sp, built = 1) {
   const w = sp.hw + 0.45,
-    top = topOf(sp) + 0.2,
+    top = (topOf(sp) + 0.2) * built,
     pole = "#c79a5a",
     plank = "#ad7f43";
   let s = "";
@@ -51,29 +54,27 @@ function scaffoldSVG(P, sp) {
   s += seg(P(w, -w + 0.25, 0.1), P(w, 0, 1.2), pole, 1.2, 0.7) + seg(P(-w + 0.25, w, 0.1), P(0, w, 1.2), pole, 1.2, 0.7);
   return s;
 }
-function sceneParts(P, sp, seed) {
-  const w = sp.hw,
-    top = topOf(sp);
+function sceneParts(P, sp, seed, plan) {
+  const w = sp.hw;
   return [
-    { a: 0, b: 0.05, kind: "drop", dist: 30, out: [0.1, 0.14], draw: () => [[-w - 0.2, -w - 0.2], [w + 0.2, -w - 0.2], [w + 0.2, w + 0.2], [-w - 0.2, w + 0.2]].map(([x, y]) => box(P, x - 0.08, y - 0.08, x + 0.08, y + 0.08, 0, 0.7, WOOD)).join("") },
-    { a: 0.32, b: 0.62, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
-    { a: 0.04, b: 0.12, kind: "drop", dist: -22, draw: () => foundationSVG(P, sp) },
-    { a: 0.12, b: 0.28, kind: "grow", draw: (t) => [[-w, -w], [w, -w], [-w, w], [w, w]].map(([x, y], i) => { const k = Math.max(0, Math.min(1, t * 1.6 - i * 0.2)); return k > 0 ? box(P, x - 0.12, y - 0.12, x + 0.12, y + 0.12, 0.3, 0.3 + sp.h * k, WOOD) : ""; }).join("") },
-    { a: 0.26, b: 0.32, kind: "drop", dist: 30, draw: () => `<polygon points="${pts([P(-w, -w, top), P(w, -w, top), P(w, w, top), P(-w, w, top)])}" fill="none" stroke="#bd8649" stroke-width="3.5" stroke-linejoin="round"/>` },
-    { a: 0.32, b: 0.62, kind: "grow", draw: (t) => wallsSVG(P, sp, t) },
-    { a: 0.78, b: 0.82, kind: "pop", anchor: [0, w, 0.3], draw: () => doorSVG(P, sp) },
-    { a: 0.82, b: 0.93, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
-    { a: 0.1, b: 0.96, kind: "span", draw: () => scaffoldSVG(P, sp) },
-    { a: 0.62, b: 0.75, kind: "drop", dist: 80, land: true, draw: () => roofSVG(P, sp) },
-    { a: 0.75, b: 0.79, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
-    { a: 0.92, b: 0.97, kind: "pop", anchor: [0, w + 0.9, 0], draw: () => gardenSVG(P, sp, seed) },
-    { a: 0.05, b: 0.96, kind: "span", live: true, draw: (time, shown) => craneSVG(P, sp, time, shown) },
+    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
+    { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
+    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => wallsSVG(P, sp, t) },
+    { a: 0.8, b: 0.84, kind: "pop", anchor: [0, w, 0.3], draw: () => doorSVG(P, sp) },
+    { a: 0.78, b: 0.86, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
+    { a: FRAME_END - 0.02, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
+    { a: 0.68, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
+    { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
+    { a: 0.94, b: 0.98, kind: "pop", anchor: [0, w + 0.9, 0], draw: () => gardenSVG(P, sp, seed) },
+    { a: 0.03, b: 0.84, kind: "erect", live: true, draw: (time, shown, built) => craneSVG(P, sp, time, shown, built, workHeight(plan, sp, shown)) },
   ];
 }
 
 const springOut = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2));
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const NS = "http://www.w3.org/2000/svg";
+let sceneSerial = 0;
+const escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 /**
  * Live construction site.
@@ -107,7 +108,10 @@ export function ConstructionScene({ run, outcome }) {
       [[-2.9, -1.6], [2.8, -2.9], [-2.4, -3.0], [2.9, 2.2]].map(([x, y]) => { const p = P(x, y, 0); return `<ellipse cx="${f(p[0])}" cy="${f(p[1] - 6)}" rx="9" ry="7" fill="#79b25a"/>`; }).join("");
     const building = layer("site");
     const fx = layer("fx");
-    const parts = sceneParts(P, sp, seed).map((p) => ({ ...p, el: building.appendChild(document.createElementNS(NS, "g")) }));
+    const caption = layer("caption");
+    const plan = sitePlan(sp);
+    const uid = ++sceneSerial;
+    const parts = sceneParts(P, sp, seed, plan).map((p) => ({ ...p, el: building.appendChild(document.createElementNS(NS, "g")) }));
     let shown = 0,
       raf = 0,
       last = 0,
@@ -147,6 +151,7 @@ export function ConstructionScene({ run, outcome }) {
         }
       }
       if (mode === "collapse") {
+        caption.innerHTML = "";
         const tau = motionReduced ? 1.5 : (now - eventAt) / 1000;
         parts.forEach((p) => {
           if (!p.fall) return p.el.setAttribute("opacity", "0");
@@ -198,12 +203,36 @@ export function ConstructionScene({ run, outcome }) {
             q = P(...p.anchor);
           p.el.setAttribute("transform", `translate(${f(q[0])} ${f(q[1])}) scale(${Math.max(0.001, e).toFixed(3)}) translate(${f(-q[0])} ${f(-q[1])})`);
           op = l > 0 ? 1 : 0;
-        } else if (p.kind === "span") {
-          op = clamp((shown - p.a) / 0.04) * clamp((p.b - shown) / 0.04);
-          if (op > 0 && (p.live || !p.ready)) {
-            p.el.innerHTML = p.draw(time, shown);
+        } else if (p.kind === "site") {
+          const key = shown.toFixed(3);
+          if (key !== p.key) {
+            p.el.innerHTML = p.draw(shown);
+            p.key = key;
+          }
+        } else if (p.kind === "erect") {
+          const built = clamp((shown - p.a) / 0.03) * clamp((p.b - shown) / 0.03);
+          op = built > 0 ? 1 : 0;
+          const key = built.toFixed(2) + (p.live ? Math.floor(time * 15) : "");
+          if (op && key !== p.key) {
+            p.el.innerHTML = p.draw(time, shown, built);
+            p.key = key;
+          }
+        } else if (p.kind === "reveal") {
+          // Tiles go on from the eaves up to the ridge: a clip uncovers the roof bottom-up.
+          if (!p.ready) {
+            const id = `reveal${uid}-${parts.indexOf(p)}`;
+            p.el.innerHTML = `<clipPath id="${id}"><rect x="0" y="0" width="680" height="0"/></clipPath><g clip-path="url(#${id})">${p.draw()}</g>`;
+            p.rect = p.el.querySelector("rect");
+            const hw = sp.hw,
+              tops = [P(0, 0, ridgeOf(sp)), P(-hw, -hw, ridgeOf(sp))].map((q) => q[1]);
+            p.top = Math.min(...tops) - 30;
+            p.bottom = Math.max(P(hw + 0.5, hw + 0.5, topOf(sp))[1], P(hw, -hw, topOf(sp))[1]) + 20;
             p.ready = true;
           }
+          const y = p.bottom - (p.bottom - p.top) * l;
+          p.rect.setAttribute("y", y.toFixed(1));
+          p.rect.setAttribute("height", Math.max(0, p.bottom - y).toFixed(1));
+          op = l > 0 ? 1 : 0;
         }
         p.el.setAttribute("opacity", op.toFixed(2));
       });
@@ -237,6 +266,12 @@ export function ConstructionScene({ run, outcome }) {
           }
       }
       fx.innerHTML = effects;
+      const label = mode === "done" ? "İskân alındı ✅" : phaseAt(plan, shown).label;
+      const text = `${label}|${Math.round(shown * 100)}`;
+      if (text !== caption.dataset.text) {
+        caption.dataset.text = text;
+        caption.innerHTML = `<text x="22" y="40" fill="#4f4a3f" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="#8a8170" font-size="20" font-family="DM Sans, sans-serif">Hakediş %${Math.round(shown * 100)}</text>`;
+      }
     };
     const loop = (now) => {
       // 30 fps is plenty for a scene that changes in minutes, and spares the battery.
