@@ -265,7 +265,8 @@ export function defineSuite(target) {
 
   test(`[${target}] focus validates duration and lets friends join the same timer`, async () => {
     assert.equal((await request("/focus", { cookie: people.alice, body: { action: "start", minutes: 1 } })).status, 400);
-    assert.equal((await request("/focus", { cookie: people.alice, body: { action: "start", minutes: 25 } })).status, 200);
+    const starts = await Promise.all([1, 2].map(() => request("/focus", { cookie: people.alice, body: { action: "start", minutes: 25 } })));
+    assert.deepEqual(starts.map((r) => r.status).sort(), [200, 400], "one timer wins across devices");
     const aylin = member(await state("alice"), "Aylin");
     assert.ok(aylin.focusEnd > Date.now() + 24 * 60000);
     const early = await request("/focus", { cookie: people.alice, body: { action: "finish" } });

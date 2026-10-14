@@ -119,6 +119,10 @@ export const migrations = [
     "CREATE INDEX sessions_created ON sessions(created)",
     "CREATE INDEX owner_sessions_created ON owner_sessions(created)",
   ],
+  // 9 — a failed optimistic guard aborts the entire batch on SQLite and D1.
+  [
+    "CREATE TABLE write_guard (id INTEGER PRIMARY KEY CHECK(id = 1), valid INTEGER NOT NULL CONSTRAINT snapshot_changed CHECK(valid = 1))",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

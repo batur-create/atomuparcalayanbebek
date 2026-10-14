@@ -17,7 +17,7 @@ const call = (app, path, { method = "GET", body, headers = {} } = {}) =>
       }),
       { ip: "test" },
     )
-    .then(async (r) => ({ status: r.status, data: await r.json() }));
+    .then(async (r) => ({ status: r.status, data: await r.json(), cookie: r.headers.get("set-cookie")?.split(";")[0] }));
 
 test("a database from the first Kütüp release upgrades in place and keeps its sessions", async () => {
   const sqlite = new DatabaseSync(":memory:");
@@ -197,4 +197,69 @@ test("session lifetimes are enforced on the server, even with a copied cookie", 
   const ownerCookie = owner.headers.get("set-cookie").split(";")[0];
   sqlite.exec("UPDATE owner_sessions SET created = 1");
   assert.equal((await call(app, "/owner/feedback", { headers: { Cookie: ownerCookie } })).status, 401);
+});
+
+async function auditFixture() {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const joined = await call(app, "/groups", { method: "POST", body: { name: "Birinci", username: "birinci", password: "test123" } });
+  assert.equal(joined.status, 201);
+  const headers = { Cookie: joined.cookie };
+  return { sqlite, app, joined, headers };
+}
+
+test("an expired presence changes the revision seen by idle polling clients", async () => {
+  const { sqlite, app, headers } = await auditFixture();
+  const here = await call(app, "/presence", { method: "POST", headers, body: { status: "here" } });
+  const rev = here.data.state.group.rev;
+  sqlite.exec("UPDATE members SET status_until = 1");
+  const fresh = (await call(app, `/state?rev=${rev}`, { headers })).data;
+  assert.equal(fresh.members[0].status, "away");
+  assert.ok(fresh.group.rev > rev);
+  assert.equal((await call(app, `/state?rev=${fresh.group.rev}`, { headers })).data.unchanged, true);
+});
+
+test("late focus settlement appears in village deltas without moving existing buildings", async () => {
+  const { sqlite, app, headers } = await auditFixture();
+  const start = () => call(app, "/focus", { method: "POST", headers, body: { action: "start", minutes: 25, strict: true } });
+  const finishAt = async (time) => {
+    sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ?").run(time, time);
+    return call(app, "/state", { headers });
+  };
+  await start();
+  await finishAt(Date.now() - 1000);
+  const village = (await call(app, "/village", { headers })).data;
+  assert.equal(village.buildings.length, 1);
+  await start();
+  const earlier = village.until - 3600000;
+  await finishAt(earlier);
+  const delta = (await call(app, `/village?rev=${village.rev}&after=${village.until}`, { headers })).data;
+  assert.equal(delta.partial, true);
+  assert.ok(delta.buildings.some((b) => b[8] === earlier), "late credit has its insertion time as the sync cursor");
+  const full = (await call(app, "/village", { headers })).data;
+  assert.equal(full.buildings.length, 2);
+  assert.deepEqual(full.buildings.find((b) => b[0] === village.buildings[0][0]).slice(4, 7), village.buildings[0].slice(4, 7));
+});
+
+test("parallel joins reclaim distinct plots and cannot duplicate names", async () => {
+  const { app, joined, sqlite } = await auditFixture();
+  const join = (name, username) => call(app, "/join", { method: "POST", body: { invite: joined.data.group.invite, name, username, password: "test123" } });
+  const leaver = await join("Ayrılan", "ayrilan");
+  await call(app, "/leave", { method: "POST", headers: { Cookie: leaver.cookie }, body: {} });
+  const people = await Promise.all([join("İkinci", "ikinci"), join("Üçüncü", "ucuncu")]);
+  assert.deepEqual(people.map((r) => r.status), [201, 201]);
+  for (const p of people) assert.equal(sqlite.prepare("SELECT count(*) AS n FROM districts WHERE member_id = ?").get(p.data.memberId).n, 1);
+  const duplicates = await Promise.all([join("Aynı İsim", "ayni1"), join("aynı isim", "ayni2")]);
+  assert.deepEqual(duplicates.map((r) => r.status).sort(), [201, 409]);
+  const edits = await Promise.all(people.map((p) => call(app, "/profile", { method: "POST", headers: { Cookie: p.cookie }, body: { name: "Yeni isim" } })));
+  assert.deepEqual(edits.map((r) => r.status).sort(), [200, 409]);
+});
+
+test("two devices cannot replace each other's newly started focus timer", async () => {
+  const { app, headers } = await auditFixture();
+  const starts = await Promise.all([25, 50].map((minutes) => call(app, "/focus", { method: "POST", headers, body: { action: "start", minutes } })));
+  assert.deepEqual(starts.map((r) => r.status).sort(), [200, 400]);
+  const winner = starts.find((r) => r.status === 200).data.state.members[0];
+  assert.equal((await call(app, "/state", { headers })).data.members[0].focusEnd, winner.focusEnd);
 });

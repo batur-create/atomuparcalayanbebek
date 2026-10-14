@@ -143,7 +143,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   async function init() {
     await migrate(db);
-    await layoutVillages().catch((error) => console.error("Kütüp village layout:", error));
+    await layoutVillages();
     const stored = await db.get("SELECT value FROM settings WHERE key = 'vapid'");
     if (stored) vapid = JSON.parse(stored.value);
     else {
@@ -298,6 +298,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return {
       group,
       expiredFocus: members.some((m) => m.focusEnd > 0 && m.focusEnd <= now),
+      expiredPresence: members.some((m) => m.status !== "away" && m.status_until <= now),
       members: members.map(({ status_until, ...m }) => {
         const expired = m.status !== "away" && status_until < now;
         return {
@@ -352,12 +353,20 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   const newDistrictId = () => crypto.randomUUID();
   // Writes racing for the same lattice cell fail on UNIQUE(group_id, dx, dy);
   // planning again from a fresh read settles it.
-  async function retrying(build) {
+  async function retrying(build, groupId) {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await db.batch(await build());
+        const before = groupId && await db.get("SELECT rev FROM groups WHERE id = ?", [groupId]);
+        const statements = await build();
+        return await db.batch([
+          ...(before ? [[
+            "INSERT OR REPLACE INTO write_guard (id, valid) VALUES (1, CASE WHEN EXISTS (SELECT 1 FROM groups WHERE id = ? AND rev = ?) THEN 1 ELSE 0 END)",
+            [groupId, before.rev],
+          ]] : []),
+          ...statements,
+        ]);
       } catch (error) {
-        if (attempt >= 2) throw error;
+        if (error instanceof HttpError || attempt >= 4) throw error;
       }
     }
   }
@@ -404,8 +413,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             ...districtChanges(groupId, spot?.changes, guard),
             [
               `INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created, touched, pos_x, pos_y, facing, district_id)
-               SELECT ?, id, group_id, ?, focus_minutes, focus_seed, focus_end, focus_end, ?, ?, ?, ? FROM members WHERE id = ? AND ${guard[0]}`,
-              [randomHex(16), kind, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, b.id, ...guard[1]],
+               SELECT ?, id, group_id, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ? FROM members WHERE id = ? AND ${guard[0]}`,
+              [randomHex(16), kind, now, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, b.id, ...guard[1]],
             ],
             [`UPDATE districts SET buildings = buildings + 1 WHERE id = ? AND ${guard[0]}`, [spot?.district.id ?? null, ...guard[1]]],
             // A finished building clears the last collapse's rubble.
@@ -478,11 +487,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const now = Date.now();
     let state = await readSnapshot(groupId, now);
     if (state?.expiredFocus) {
-      await retrying(() => settleFocus(groupId, now));
+      await retrying(() => settleFocus(groupId, now), groupId);
+      state = await readSnapshot(groupId, now);
+    }
+    if (state?.expiredPresence) {
+      await db.batch([
+        ["UPDATE groups SET rev = rev + 1 WHERE id = ? AND EXISTS (SELECT 1 FROM members WHERE group_id = ? AND status <> 'away' AND status_until <= ?)", [groupId, groupId, now]],
+        ["UPDATE members SET status = 'away', since = 0, status_until = 0 WHERE group_id = ? AND status <> 'away' AND status_until <= ?", [groupId, now]],
+      ]);
       state = await readSnapshot(groupId, now);
     }
     if (!state) return null;
     delete state.expiredFocus;
+    delete state.expiredPresence;
     return { ...state, serverTime: now };
   }
 
@@ -684,17 +701,17 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const secret = await hashPassword(passwordOf(body.password));
     if (account && (await db.get("SELECT 1 AS hit FROM members WHERE username = ?", [account])))
       fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
-    const existing = await db.all("SELECT name FROM members WHERE group_id = ?", [group.id]);
-    if (existing.length >= 80) fail("Bu ekip 80 kişiye ulaştı. Yeni bir ekip kurabilirsiniz.");
-    if (existing.some((m) => sameName(m.name, p.name)))
-      fail(
-        "Bu isim ekipte zaten var. Sen misin? Eski cihazında “Benim köşem → Başka cihazda aç” ile kod alıp gir.",
-        409,
-      );
     const id = crypto.randomUUID(),
       now = Date.now(),
       session = await newSession(id);
-    await retrying(async () => [
+    await retrying(async () => {
+      if (await db.get("SELECT 1 FROM members WHERE username = ?", [account]))
+        fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
+      const existing = await db.all("SELECT name FROM members WHERE group_id = ?", [group.id]);
+      if (existing.length >= 80) fail("Bu ekip 80 kişiye ulaştı. Yeni bir ekip kurabilirsiniz.");
+      if (existing.some((m) => sameName(m.name, p.name)))
+        fail("Bu isim ekipte zaten var. Sen misin? Eski cihazında “Benim köşem → Başka cihazda aç” ile kod alıp gir.", 409);
+      return [
       ...extraStatements,
       [
         "INSERT INTO members (id, group_id, token, name, avatar, color, note, joined, updated, username, pass_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -706,7 +723,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       systemMessage(group.id, id, "ekibe katıldı. Hoş geldin! ✨"),
       bump(group.id),
       bumpVillage(group.id),
-    ]);
+      ];
+    }, group.id);
     onChange(group.id);
     return json(
       { memberId: id, username: account, live, pushPublicKey: vapid.publicKey, ...(await snapshot(group.id)) },
@@ -755,7 +773,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   });
   async function signIn(request, member) {
     const session = await newSession(member.id);
-    await db.batch([session.statement]);
+    const now = Date.now();
+    await db.run("INSERT INTO sessions (token, member_id, created, seen) SELECT ?, id, ?, ? FROM members WHERE id = ? AND pass_hash = ?", [session.hash, now, now, member.id, member.pass_hash]);
+    if (!(await db.get("SELECT 1 FROM sessions WHERE token = ?", [session.hash])))
+      fail("Hesabın değişti. Güncel şifrenle yeniden giriş yap.", 401);
     return json(
       { memberId: member.id, username: member.username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
       200,
@@ -865,8 +886,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const known = url.searchParams.get("rev");
     if (known !== null && Number(known) === member.group_rev) {
       const due = await db.get(
-        "SELECT 1 AS due FROM members WHERE group_id = ? AND focus_end > 0 AND focus_end <= ? LIMIT 1",
-        [member.group_id, Date.now()],
+        "SELECT 1 AS due FROM members WHERE group_id = ? AND ((focus_end > 0 AND focus_end <= ?) OR (status <> 'away' AND status_until <= ?)) LIMIT 1",
+        [member.group_id, Date.now(), Date.now()],
       );
       if (!due) return json({ unchanged: true, rev: member.group_rev });
     }
@@ -875,18 +896,20 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   route("POST", "/profile", async ({ member, body }) => {
     const p = profile(body);
-    const names = await db.all("SELECT name FROM members WHERE group_id = ? AND id <> ?", [
+    await retrying(async () => {
+      const names = await db.all("SELECT name FROM members WHERE group_id = ? AND id <> ?", [
       member.group_id,
       member.id,
     ]);
     if (names.some((x) => sameName(x.name, p.name))) fail("Bu isim ekipte zaten var.", 409);
-    await db.batch([
+      return [
       [
         "UPDATE members SET name = ?, avatar = ?, color = ?, note = ?, updated = ? WHERE id = ?",
         [p.name, p.avatar, p.color, p.note, Date.now(), member.id],
       ],
       bump(member.group_id),
-    ]);
+      ];
+    }, member.group_id);
     return changed(member);
   });
 
@@ -1058,7 +1081,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
         [m.id, now],
       );
-      if (before) await retrying(() => settleFocus(m.group_id, now, m.id));
+      if (before) await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
       const withered = !!before?.strict && before.beat < before.ends - BEAT_GRACE;
       return changed(m, { credited: withered ? 0 : before?.minutes || 0, withered });
     }
@@ -1072,14 +1095,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     // Giving up, or leaving the app in build mode, ends the session without minutes.
     if (action === "cancel" || action === "wither") {
-      const strictRunning = m.focus_strict === 1 && m.focus_end > now;
-      await db.batch([
+      let strictRunning = false;
+      await retrying(async () => {
+        const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
+        if (!current || current.focus_end !== m.focus_end) fail("Odak oturumu değişti. Sayfayı yenile.", 409);
+        strictRunning = current.focus_strict === 1 && current.focus_end > now;
+        return [
         ...(strictRunning
           ? [await ruinStatement(m, now), systemMessage(m.group_id, m.id, WITHERED), bumpVillage(m.group_id)]
           : []),
         ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE id = ?", [m.id]],
         bump(m.group_id),
-      ]);
+        ];
+      }, m.group_id);
       return changed(m, { withered: strictRunning });
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
@@ -1100,14 +1128,18 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       end = now + minutes * 60000;
     }
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-    await retrying(async () => [
+    await retrying(async () => {
+      const current = await db.get("SELECT focus_end FROM members WHERE id = ?", [m.id]);
+      if (!current || current.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
+      return [
       // An expired, uncredited session is settled before the new one starts.
       ...(await settleFocus(m.group_id, now, m.id)),
       [
         "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ? WHERE id = ?",
         [end, minutes, body.strict === true ? 1 : 0, now, seed, m.id],
       ],
-    ]);
+      ];
+    }, m.group_id);
     return changed(m);
   });
 
