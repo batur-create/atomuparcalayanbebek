@@ -60,18 +60,25 @@ export async function verifyVapid(header, endpoint, publicKey) {
 // A stand-in push service that records what the server sends.
 export async function fakePushService() {
   const received = [];
+  const replies = new Map();
   const server = createServer((req, res) => {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
     req.on("end", () => {
       received.push({ path: req.url, headers: req.headers, body: Buffer.concat(chunks) });
-      res.writeHead(201);
-      res.end();
+      const reply = replies.get(req.url);
+      const status = reply?.statuses.length > 1 ? reply.statuses.shift() : reply?.statuses[0] ?? 201;
+      const finish = () => {
+        if (status === 0) req.socket.destroy();
+        else { res.writeHead(status); res.end(); }
+      };
+      if (reply?.delay) setTimeout(finish, reply.delay); else finish();
     });
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   return {
     received,
+    respond: (path, statuses, delay = 0) => replies.set(path, { statuses: [...statuses], delay }),
     url: (path) => `http://127.0.0.1:${server.address().port}${path}`,
     close: () => new Promise((r) => server.close(r)),
   };

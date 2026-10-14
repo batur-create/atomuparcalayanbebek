@@ -29,7 +29,25 @@ function d1Adapter(d1) {
 }
 
 let app;
+function getApp(env) {
+  if (!env.DB) throw new Error("Kütüp requires the DB binding");
+  app ??= createApp({
+    db: d1Adapter(env.DB),
+    live: "poll",
+    config: {
+      adminKey: env.ADMIN_KEY,
+      publicOrigin: env.PUBLIC_ORIGIN,
+      vapidSubject: env.VAPID_SUBJECT,
+      pushExtraHosts: env.PUSH_EXTRA_HOSTS,
+      testHooks: env.KUTUP_TEST_HOOKS === "1",
+    },
+  });
+  return app;
+}
 export default {
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(getApp(env).drainPushOutbox());
+  },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname !== "/api" && !url.pathname.startsWith("/api/"))
@@ -44,18 +62,7 @@ export default {
         JSON.stringify({ error: "Veritabanı bağlı değil: D1 bağlantısının adı DB olmalı." }),
         { status: 503, headers: { "Content-Type": "application/json" } },
       );
-    app ??= createApp({
-      db: d1Adapter(env.DB),
-      live: "poll",
-      config: {
-        adminKey: env.ADMIN_KEY,
-        publicOrigin: env.PUBLIC_ORIGIN,
-        vapidSubject: env.VAPID_SUBJECT,
-        pushExtraHosts: env.PUSH_EXTRA_HOSTS,
-        testHooks: env.KUTUP_TEST_HOOKS === "1",
-      },
-    });
-    return app.fetch(request, {
+    return getApp(env).fetch(request, {
       ip: request.headers.get("cf-connecting-ip") || "",
       waitUntil: (promise) => ctx.waitUntil(promise),
     });

@@ -141,6 +141,23 @@ export const migrations = [
     "ALTER TABLE members ADD COLUMN badge TEXT",
     "CREATE TABLE IF NOT EXISTS achievements (member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, key TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(member_id, key))",
   ],
+  // 13 — durable push retries, leased across Worker isolates. The subscription
+  // identity is captured so rebinding an endpoint never delivers old private data.
+  [
+    `CREATE TABLE push_outbox (
+      id TEXT PRIMARY KEY, endpoint TEXT NOT NULL,
+      subscription_table TEXT NOT NULL CHECK(subscription_table IN ('subscriptions', 'owner_subscriptions')),
+      payload TEXT NOT NULL, urgency TEXT NOT NULL DEFAULT 'normal', ttl INTEGER NOT NULL CHECK(ttl > 0),
+      attempts INTEGER NOT NULL DEFAULT 0, next_at INTEGER NOT NULL, created INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'sending')),
+      lease_token TEXT, member_id TEXT, session_token TEXT, key_hash TEXT, subject TEXT NOT NULL)`,
+    "CREATE INDEX push_outbox_due ON push_outbox(next_at, id)",
+    "CREATE INDEX push_outbox_endpoint ON push_outbox(subscription_table, endpoint)",
+    "CREATE TRIGGER subscriptions_outbox_delete AFTER DELETE ON subscriptions BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint; END",
+    "CREATE TRIGGER owner_subscriptions_outbox_delete AFTER DELETE ON owner_subscriptions BEGIN DELETE FROM push_outbox WHERE subscription_table = 'owner_subscriptions' AND endpoint = OLD.endpoint; END",
+    "CREATE TRIGGER subscriptions_outbox_rebind AFTER UPDATE ON subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.member_id IS NOT NEW.member_id OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint; END",
+    "CREATE TRIGGER owner_subscriptions_outbox_rebind AFTER UPDATE ON owner_subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.key_hash IS NOT NEW.key_hash OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'owner_subscriptions' AND endpoint = OLD.endpoint; END",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

@@ -239,7 +239,16 @@ setInterval(() => {
   for (const groupId of clients.keys()) broadcast(groupId);
 }, 60000).unref();
 
+let pushDrain;
+const pushTimer = setInterval(() => {
+  if (pushDrain) return;
+  pushDrain = app.drainPushOutbox()
+    .catch(() => console.error("Kütüp push queue: scheduled retry deferred."))
+    .finally(() => { pushDrain = null; });
+}, 60000).unref();
+
 function stop() {
+  clearInterval(pushTimer);
   for (const group of clients.values()) for (const res of group.keys()) res.end();
   server.close(() => {
     database.close();

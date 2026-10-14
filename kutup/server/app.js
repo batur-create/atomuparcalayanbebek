@@ -3,6 +3,7 @@
 // Node build (node:sqlite + SSE) and the Cloudflare Worker / ChatGPT Sites build (D1).
 import { SCHEMA_VERSION, migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
+import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
 
@@ -536,6 +537,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }
 
   // ---------- push ----------
+  const outbox = createPushOutbox({
+    db, allowed: pushAllowed, ownerHash, sessionAge: SESSION_AGE, ownerAge: OWNER_AGE,
+    send: (subscription, payload, options) => sendPush(subscription, payload, { keys: vapid, ...options }),
+  });
+  async function drainPushOutbox() {
+    await ensureReady();
+    await outbox.drain();
+  }
   function pushAllowed(endpoint) {
     let url;
     try {
@@ -554,28 +563,28 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // Everyone in the group except the sender.
   async function notify(ctx, groupId, senderId, message, options) {
     const subs = await db.all(
-      "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND m.id <> ? AND a.created > ?",
+      "SELECT s.endpoint, s.subscription, s.member_id, s.session_token FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND m.id <> ? AND a.created > ?",
       [groupId, senderId, Date.now() - SESSION_AGE],
     );
-    deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message }, "subscriptions", options);
+    await deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message }, "subscriptions", options);
   }
   // One person, on all of their devices.
   async function notifyMember(ctx, memberId, message) {
     const subs = await db.all(
-      "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN sessions a ON a.token = s.session_token AND a.member_id = s.member_id WHERE s.member_id = ? AND a.created > ?",
+      "SELECT s.endpoint, s.subscription, s.member_id, s.session_token FROM subscriptions s JOIN sessions a ON a.token = s.session_token AND a.member_id = s.member_id WHERE s.member_id = ? AND a.created > ?",
       [memberId, Date.now() - SESSION_AGE],
     );
-    deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message });
+    await deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message });
   }
   // Batur’s own devices, for new requests.
   async function notifyOwner(ctx, message) {
     const subs = await db.all(
-      `SELECT s.endpoint, s.subscription FROM owner_subscriptions s
+      `SELECT s.endpoint, s.subscription, s.session_token, s.key_hash FROM owner_subscriptions s
        WHERE s.key_hash = ? AND (s.session_token IS NULL OR EXISTS
          (SELECT 1 FROM owner_sessions a WHERE a.token = s.session_token AND a.created > ?))`,
       [await ownerHash(), Date.now() - OWNER_AGE],
     );
-    deliver(ctx, subs, { tag: `owner-${Date.now()}`, ...message }, "owner_subscriptions");
+    await deliver(ctx, subs, { tag: `owner-${Date.now()}`, ...message }, "owner_subscriptions");
   }
   function validSubscription(sub) {
     if (
@@ -592,25 +601,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!pushAllowed(sub.endpoint)) fail("Bu bildirim sağlayıcısı desteklenmiyor.");
     return { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } };
   }
-  function deliver(ctx, subs, message, table = "subscriptions", options = {}) {
+  async function deliver(ctx, subs, message, table = "subscriptions", options = {}) {
     if (!subs.length) return;
     const subject = config.vapidSubject || ctx.origin;
-    const payload = JSON.stringify(message);
-    ctx.waitUntil(
-      Promise.allSettled(
-        subs.map(async (sub) => {
-          try {
-            const subscription = JSON.parse(sub.subscription);
-            if (!pushAllowed(subscription.endpoint)) return;
-            const status = await sendPush(subscription, payload, { keys: vapid, subject, ...options });
-            if (status === 404 || status === 410)
-              await db.run(`DELETE FROM ${table} WHERE endpoint = ?`, [sub.endpoint]);
-          } catch {
-            // A dead push service must never break the request.
-          }
-        }),
-      ),
-    );
+    const ids = await outbox.enqueue(subs, message, table, { subject, ...options });
+    ctx.waitUntil(outbox.drain(ids).catch(() => console.error("Kütüp push queue: retry deferred.")));
   }
 
   // ---------- owner ----------
@@ -1216,9 +1211,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       } catch {}
     }
     if (test)
-      deliver(
+      await deliver(
         ctx,
-        [{ endpoint: clean.endpoint, subscription: JSON.stringify(clean) }],
+        [{ endpoint: clean.endpoint, subscription: JSON.stringify(clean), member_id: member.id, session_token: member.session_token }],
         { title: "Bildirimler açık 🔔", body: "Biri kütübe gelince ilk sen duyacaksın.", url: "/", tag: `test-${Date.now()}` },
         "subscriptions",
         { urgency: "high", ttl: 600 },
@@ -1609,6 +1604,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       return json({ ok: true });
     }, false);
 
+  if (config.testHooks)
+    route("POST", "/__test/push-outbox", async ({ body }) => {
+      // Isolated tests only. Production must never expose queue controls.
+      if (body.action === "due")
+        await db.run("UPDATE push_outbox SET next_at = 0 WHERE endpoint = ? AND status = 'pending'", [body.endpoint]);
+      if (body.action === "expire")
+        await db.run("UPDATE push_outbox SET created = 0, next_at = 0 WHERE endpoint = ?", [body.endpoint]);
+      if (body.action === "drain") await drainPushOutbox();
+      const rows = await db.all("SELECT id, attempts, status, next_at, created, ttl FROM push_outbox WHERE endpoint = ?", [body.endpoint || ""]);
+      const subscribed = await db.get("SELECT 1 AS active FROM subscriptions WHERE endpoint = ?", [body.endpoint || ""]);
+      return json({ rows, subscribed: !!subscribed });
+    }, false);
+
   // ---------- request entry ----------
   async function handle(request, { ip = "", waitUntil } = {}) {
     const url = new URL(request.url);
@@ -1677,5 +1685,5 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
   }
 
-  return { fetch: handle, authenticate, snapshot, ready: ensureReady, live };
+  return { fetch: handle, authenticate, snapshot, ready: ensureReady, drainPushOutbox, live };
 }

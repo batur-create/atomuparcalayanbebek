@@ -702,6 +702,73 @@ export function defineSuite(target) {
     assert.equal(push.received.filter((p) => p.path === "/push/batur").length, ownerPushCount, "logged-out owner gets no more requests");
   });
 
+  test(`[${target}] durable push retries survive restart and concurrent scheduled jobs`, async () => {
+    const person = await request("/groups", { body: { name: "Kuyruk testi", groupName: "Geçici kuyruk" } });
+    assert.equal(person.status, 201);
+    const receiver = pushReceiver();
+    const path = "/push/outbox-retry", endpoint = push.url(path);
+    const sent = (p = path) => push.received.filter((r) => r.path === p);
+    const inspect = async (ep = endpoint, action = "inspect") => {
+      const result = await request("/__test/push-outbox", { body: { endpoint: ep, action } });
+      assert.equal(result.status, 200);
+      return result.data;
+    };
+    const runScheduled = async () => {
+      if (target === "worker") {
+        const r = await fetch(`${base}/cdn-cgi/local/scheduled?cron=${encodeURIComponent("* * * * *")}`);
+        assert.equal(r.status, 200, "real workerd scheduled handler runs");
+        assert.doesNotMatch(await r.text(), /<!doctype html>/i, "scheduled probe must not return the SPA");
+      } else await inspect(endpoint, "drain");
+    };
+    const subscribe = async (ep) => {
+      const r = await request("/push", { cookie: person.cookie, body: { subscription: receiver.subscription(ep), test: true } });
+      assert.equal(r.status, 200); assert.equal(r.data.test, true);
+    };
+    try {
+      push.respond(path, [500, 429, 201], 150);
+      await subscribe(endpoint);
+      await waitFor(async () => (await inspect()).rows.some((r) => r.attempts === 1 && r.status === "pending"));
+      assert.equal(sent().length, 1);
+      const [first] = (await inspect()).rows;
+      assert.ok(first.next_at >= first.created + 30000);
+      assert.equal(JSON.parse(receiver.decrypt(sent()[0].body)).id, first.id);
+      await stop(); await start();
+      assert.equal((await inspect()).rows[0].id, first.id, "restart preserves the unsent notification");
+      await inspect(endpoint, "due");
+      await Promise.all([runScheduled(), runScheduled()]);
+      await waitFor(async () => (await inspect()).rows.some((r) => r.attempts === 2 && r.status === "pending"));
+      assert.equal(sent().length, 2, "concurrent schedulers send exactly one retry");
+      assert.ok((await inspect()).rows[0].next_at >= Date.now() + 110000);
+      await inspect(endpoint, "due"); await runScheduled();
+      await waitFor(async () => !(await inspect()).rows.length);
+      assert.equal(sent().length, 3);
+      assert.ok(sent().every((r) => JSON.parse(receiver.decrypt(r.body)).id === first.id));
+
+      const gone = "/push/outbox-gone", goneEndpoint = push.url(gone);
+      push.respond(gone, [410]); await subscribe(goneEndpoint);
+      await waitFor(async () => !(await inspect(goneEndpoint)).subscribed);
+      assert.equal(sent(gone).length, 1);
+      assert.equal((await inspect(goneEndpoint)).rows.length, 0);
+
+      const old = "/push/outbox-expired", oldEndpoint = push.url(old);
+      push.respond(old, [500]); await subscribe(oldEndpoint);
+      await waitFor(async () => (await inspect(oldEndpoint)).rows.some((r) => r.status === "pending" && r.attempts === 1));
+      await inspect(oldEndpoint, "expire"); await runScheduled();
+      assert.equal(sent(old).length, 1, "expired TTL is not resent");
+      assert.equal((await inspect(oldEndpoint)).rows.length, 0);
+
+      const revoked = "/push/outbox-revoked", revokedEndpoint = push.url(revoked);
+      push.respond(revoked, [500]); await subscribe(revokedEndpoint);
+      await waitFor(async () => (await inspect(revokedEndpoint)).rows.some((r) => r.status === "pending" && r.attempts === 1));
+      const logout = await request(`/owner/members/${person.data.memberId}/signout`, { owner: adminKey, body: {} });
+      assert.equal(logout.status, 200);
+      assert.equal((await inspect(revokedEndpoint)).rows.length, 0);
+      await runScheduled(); assert.equal(sent(revoked).length, 1, "revoked device is never retried");
+    } finally {
+      await request(`/owner/members/${person.data.memberId}`, { owner: adminKey, method: "DELETE" });
+    }
+  });
+
   test(`[${target}] data survives a restart`, async () => {
     await stop();
     await start();
