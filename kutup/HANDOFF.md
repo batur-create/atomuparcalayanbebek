@@ -115,6 +115,21 @@ npm run deploy       # vite build + wrangler deploy (canlı)
   - **Push geçişi:** yayından sonra üye aboneliklerinin 1/5'i, yönetici aboneliklerinin 1/3'ü bağlıydı. Diğerleri sahibi uygulamayı (ya da `/batur`'u) bir kez açınca kendiliğinden bağlanır, o zamana kadar bildirim almazlar. Arkadaşlara "uygulamayı bir kez aç" demek yeterli.
   - **Açık not:** oturumlar kayan değil, girişten itibaren 365 gün geçerli (çerez de yenilenmiyor). Hesabı olanlar yeniden giriş yapabilir; hesapsız eski üyeler Batur kodu ister. İleride `/session`'da çerezi ve `created`'i tazelemek düşünülebilir. `npm run test:browser` için Python Playwright bu makinede kurulu değil; görsel kontrol Playwright MCP ile 375px'te yapıldı (taşma yok, köy canvas'ı çiziliyor).
 
+### Devam eden iş: Bildirim sağlamlaştırma (Paket 2'den önce; Batur istedi, Telegram istemedi)
+
+**Durum: kod yazıldı, TEST EDİLMEDİ, YAYINLANMADI.** Kredi penceresi doldu, burada durdum.
+- **Yapılanlar (1. katman):**
+  - Göç 11: eski (oturumsuz) push aboneliklerini üyenin en son oturumuna bağlar. Canlıda 5 aboneliğin 4'ü bağsızdı.
+  - `init()`: `key_hash`'i boş eski owner aboneliklerini mevcut anahtara bağlar.
+  - `sendPush` artık `urgency` alıyor. Geliş/mola bildirimleri `Urgency: high` ile gidiyor; geliş için TTL 2 saat.
+  - Kural: gerçek geliş (`away`/`coming` → `here`) her zaman bildirim üretir, yalnızca 5 dakikalık tekrar koruması var (`ARRIVAL_REPEAT`). `break` → `here` ve mola bildirimleri 45 dakikalık soğumayı korur.
+  - `sw.js`: geliş bildiriminde (`payload.sticky`) `requireInteraction`; ayrıca `renotify`, titreşim deseni ve `pushsubscriptionchange` → yeni aboneliği `/api/push`'a kaydeder.
+- **Kalanlar:**
+  1. `tests/suite.js:407` geliş TTL beklentisini `"7200"` yap ve `urgency: high` beklentisi ekle. Satır 412'deki yorumu "5 dakika içinde" diye düzelt.
+  2. `core.test.js`'e iki test ekle: göç 11'in NULL `session_token`'ı en son oturuma bağlaması; 6 dakika sonra `away` → `here`'in yeniden bildirim üretmesi.
+  3. `npm run test:all`, ardından deploy, ardından `node tests/live-smoke.mjs`. Bağlı abonelik sayısının 5/5'e yakın çıktığını kontrol et.
+- **2. katman (sonra):** `push_outbox` tablosu ve Cron Trigger ile 429/5xx/ağ hatalarında artan aralıkla yeniden deneme; servis çalışanından `/api/push/ack` teslim makbuzu; profilde "test bildirimi gönder"; `/batur`'da üye başına bildirim sağlığı (bağlı cihaz sayısı, son makbuz). İsteğe bağlı: geliş bildiriminde "Yoldayım" eylem düğmesi.
+
 ### Önceki paketlerin durumu
 
 - **Paket 1 ✅ yayında.** Ortak köy: `shared/village.js` (hex kafes mahalleler, kıvrımlı yollar, Poisson yerleşim, `createPlanner`), göç 6 (`districts`, `buildings.pos_x/pos_y/facing/district_id/likes/touched`, `building_likes`, `members.ruin_*`, `groups.village_rev`), açılışta `layoutVillages()` eski binalara kalıcı konum verir. `/api/village?rev=&after=` artımlı (sadece değişen satırlar), `POST /api/buildings/:id/like`. Çizim: `src/iso.js` (SVG/Canvas ortak primitifler), `src/villageWorld.js` (dünya + gün/gece tonu), `src/villageView.js` (256px karo önbelleği, LOD, pinch/pan, canlı katman), `src/VillageMap.jsx` (`useVillage`, `VillagePanel`, ana sayfa `VillageNow`). Mahalle kapasitesi en fazla 9, pratikte 7–9.

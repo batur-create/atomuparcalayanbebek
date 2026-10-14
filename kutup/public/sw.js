@@ -7,13 +7,45 @@ self.addEventListener("push", (event) => {
   try {
     payload = { ...payload, ...event.data.json() };
   } catch {}
+  // Arrivals stay on screen until dismissed (Android/desktop) and buzz harder.
+  // Options a browser does not know (iOS ignores most) are simply skipped.
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: "/icon-192.png",
       tag: payload.tag || "kutup",
+      renotify: true,
+      requireInteraction: !!payload.sticky,
+      vibrate: payload.sticky ? [300, 120, 300, 120, 600] : [200, 100, 200],
       data: { url: payload.url || "/" },
     }),
+  );
+});
+// The browser can rotate a subscription on its own; register the new one right
+// away instead of waiting for the next time the app is opened.
+const keyBytes = (text) => {
+  const raw = atob(text.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (text.length % 4)) % 4));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+};
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      let subscription = event.newSubscription;
+      if (!subscription) {
+        let key = event.oldSubscription?.options?.applicationServerKey;
+        if (!key) {
+          const session = await fetch("/api/session").then((r) => (r.ok ? r.json() : null));
+          if (!session?.pushPublicKey) return;
+          key = keyBytes(session.pushPublicKey);
+        }
+        subscription = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      }
+      await fetch("/api/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Kutup": "1" },
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+    })().catch(() => {}),
   );
 });
 // Open the tab the notification is about (board, plans…), reusing an open window.

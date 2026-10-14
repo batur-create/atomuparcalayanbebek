@@ -129,6 +129,12 @@ export const migrations = [
     "ALTER TABLE members ADD COLUMN pushed_break_at INTEGER NOT NULL DEFAULT 0",
     "UPDATE members SET pushed_here_at = CASE WHEN pushed_kind = 'here' THEN pushed_at ELSE 0 END, pushed_break_at = CASE WHEN pushed_kind = 'break' THEN pushed_at ELSE 0 END",
   ],
+  // 11 — subscriptions saved before migration 8 had no device; bind each to the
+  // member's most recently used session so they keep receiving pushes. A device
+  // that re-registers later rebinds itself to its own session.
+  [
+    "UPDATE subscriptions SET session_token = (SELECT s.token FROM sessions s WHERE s.member_id = subscriptions.member_id ORDER BY s.seen DESC, s.created DESC LIMIT 1) WHERE session_token IS NULL",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

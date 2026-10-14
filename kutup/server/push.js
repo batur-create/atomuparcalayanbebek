@@ -144,7 +144,8 @@ export async function encryptPayload(subscription, payload) {
 }
 
 // Resolves to the push service HTTP status (201 on success).
-export async function sendPush(subscription, payload, { keys, subject, ttl = 1800 }) {
+// "high" urgency wakes a dozing Android phone right away (RFC 8030 §5.3).
+export async function sendPush(subscription, payload, { keys, subject, ttl = 1800, urgency = "normal" }) {
   const response = await fetch(subscription.endpoint, {
     method: "POST",
     headers: {
@@ -152,7 +153,7 @@ export async function sendPush(subscription, payload, { keys, subject, ttl = 180
       "Content-Encoding": "aes128gcm",
       "Content-Type": "application/octet-stream",
       TTL: String(ttl),
-      Urgency: "normal",
+      Urgency: urgency,
     },
     body: await encryptPayload(subscription, payload),
     signal: AbortSignal.timeout(10000),

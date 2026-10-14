@@ -26,6 +26,9 @@ const PUSH_HOSTS = [
 const MESSAGE_LIMIT = 50;
 const ACTIVITY_LIMIT = 25;
 const PUSH_COOLDOWN = 45 * 60000;
+// A real arrival (from away or on the way) always notifies; this only stops
+// someone from pinging everyone by flipping away/here in a loop.
+const ARRIVAL_REPEAT = 5 * 60000;
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
@@ -169,6 +172,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // A layout failure must not take the whole app down; unplaced buildings
     // are retried on the next cold start.
     await layoutVillages().catch((error) => console.error("Kütüp village layout:", error));
+    // Owner devices that subscribed before migration 8 belong to the current key.
+    const owner = await ownerHash();
+    if (owner) await db.run("UPDATE owner_subscriptions SET key_hash = ? WHERE key_hash IS NULL", [owner]);
     const stored = await db.get("SELECT value FROM settings WHERE key = 'vapid'");
     if (stored) vapid = JSON.parse(stored.value);
     else {
@@ -545,12 +551,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     );
   }
   // Everyone in the group except the sender.
-  async function notify(ctx, groupId, senderId, message) {
+  async function notify(ctx, groupId, senderId, message, options) {
     const subs = await db.all(
       "SELECT s.endpoint, s.subscription FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND m.id <> ? AND a.created > ?",
       [groupId, senderId, Date.now() - SESSION_AGE],
     );
-    deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message });
+    deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message }, "subscriptions", options);
   }
   // One person, on all of their devices.
   async function notifyMember(ctx, memberId, message) {
@@ -585,7 +591,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!pushAllowed(sub.endpoint)) fail("Bu bildirim sağlayıcısı desteklenmiyor.");
     return { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } };
   }
-  function deliver(ctx, subs, message, table = "subscriptions") {
+  function deliver(ctx, subs, message, table = "subscriptions", options = {}) {
     if (!subs.length) return;
     const subject = config.vapidSubject || ctx.origin;
     const payload = JSON.stringify(message);
@@ -595,7 +601,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           try {
             const subscription = JSON.parse(sub.subscription);
             if (!pushAllowed(subscription.endpoint)) return;
-            const status = await sendPush(subscription, payload, { keys: vapid, subject });
+            const status = await sendPush(subscription, payload, { keys: vapid, subject, ...options });
             if (status === 404 || status === 410)
               await db.run(`DELETE FROM ${table} WHERE endpoint = ?`, [sub.endpoint]);
           } catch {
@@ -979,9 +985,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         };
         statements.push(systemMessage(m.group_id, m.id, phrases[status]));
         // Each kind has its own persistent timer: here -> break -> here cannot
-        // erase the arrival cooldown (and vice versa).
+        // erase the arrival cooldown (and vice versa). Coming back from a break
+        // waits out the long cooldown; a real arrival only the short one.
         const pushedAt = status === "here" ? current.pushed_here_at : current.pushed_break_at;
-        const cooling = now - pushedAt < PUSH_COOLDOWN;
+        const wait = status === "here" && previous !== "break" ? ARRIVAL_REPEAT : PUSH_COOLDOWN;
+        const cooling = now - pushedAt < wait;
         if ((status === "here" || status === "break") && !cooling) {
           const column = status === "here" ? "pushed_here_at" : "pushed_break_at";
           statements.push([
@@ -994,13 +1002,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
                   title: `${current.name} kütüpte! 📚`,
                   body: `${location || "Milli Kütüphane"}${desk ? ` · Masa ${desk}` : ""}`,
                   url: "/",
+                  sticky: true,
                 }
               : { title: `${current.name} molada ☕`, body: "Bir kahvelik ara verelim mi?", url: "/?tab=board" };
         }
       }
       return statements;
     }, m.group_id);
-    if (push) await notify(ctx, m.group_id, m.id, push);
+    if (push)
+      await notify(ctx, m.group_id, m.id, push, { urgency: "high", ttl: status === "here" ? 2 * 3600 : 1800 });
     return changed(m);
   });
 
