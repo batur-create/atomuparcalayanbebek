@@ -160,7 +160,14 @@ Batur istedi; Telegram gibi yedek kanal istemedi ("elimizden gelenin en iyisi we
   - **Kalan:** köyde Batur'un mahallesinde "Olay Ufku Gözlemevi" (kubbe, üstünde dönen mini kara delik, gece kubbeden ışık). `badge = 'dev'` olan üyenin mahallesine, binalarla çakışmayan sabit bir noktaya çizilecek (`villageWorld.js` / `iso.js`). Bunun dışında Paket 3 bitti.
   - **Batur'un yapması gereken:** `/batur` → Ekipler → kendi satırında ✦'e bas.
 - **Paket 4 ön sürümü ✅ (yalnız istemci, rozet yok):** Gizli not (alt bilgideki imzaya uzun bas), Şşşt (tamamı büyük harf pano mesajı), Çay (panoda tam "çay" → 60 sn tüm avatarlarda 🍵, .tea-time), Gece kuşu (03–05 arası açılış, gecede bir uyarı). Kalan: achievements tablosu, n/12 profil, 🦉 avatar kilidi, Mürekkep kutlaması.
-- **Sıradaki:** Paket 3'ün gözlemevi (küçük), sonra Paket 2 — Mürekkep.
+- **Plan formu ve salonlar (14 Ekim akşamı, yayında):**
+  - Zeynep'in planı sunucuya hiç ulaşmamıştı (kaydı da pano mesajı da yok).
+  - Form artık saat değerini her biçimde okuyor ("10:00:00" dahil), "okunamadı" ile "geçti" mesajlarını ayırıyor ve sunucu hatasını formun içinde gösteriyor.
+  - Yeni akış: 7 günlük gün çipleri, geçmişi kapalı saat çipleri, "Başka saat", hazır plan adları, canlı özet.
+  - Durum penceresinde Milli Kütüphane'nin yönetmelikteki gerçek salon adları var (Adnan Ötüken, Dr. Müjgan Cunbur, Süreli Yayınlar, Danışma Kaynakları, İbn-i Sina Nadir Eserler, Mikrofilm, İnteraktif, Müzik Dinleme, Çok Amaçlı Çalışma), ayrıca Kafeterya ve Bahçe. Kat bilgisi resmî kaynakta olmadığı için yazılmadı.
+- **Sıradaki (Batur'a seçtiğim):** önce Paket 3'ün gözlemevi (küçük), sonra **Paket 2 — Mürekkep**. Uygulamanın yüzü; Paket 4'ün kutlaması ve Paket 5'in şantiye şefi ona bağlı.
+  - Plan: `src/Mascot.jsx` (parçalı SVG; kafa, gözler, kulaklar, kuyruk, pati, gözlük, atkı `var(--accent)`; 9 poz; bekleme hareketleri; `say` balonu) ve `src/mascotLines.js` (olay başına 8–15 cümle, tekrar etmeyen seçici).
+  - Ardından tanıtım: 3 kart, cihaz başına bir kez. Sonra "İlk gün görevleri" kartı (sunucudan türet: profil süslendi mi, ilk `here`, abonelik var mı, ilk bina; ödül Kurucu tabelası). Sonra sekme ipuçları. En sonda boş durumlara ve şantiyeye yerleştirme.
 - **Paket 1.5 plan notu (tamamlandı):**
   1. ✅ Demo kaldırıldı; oturumsuz → `Welcome` ekranı (Giriş yap / Yeni ekip kur; davet linkinde "Ekibe katıl"). Kalan: girişte "Şifremi unuttum" için `/reset` formu (kod + kullanıcı adı + yeni şifre). Şimdilik Batur kodu "Kodla" sekmesinde giriş yaptırıyor, sonra Benim köşem → Hesap'tan yeni şifre belirleniyor.
   2. Katılma/kurma formunda kullanıcı adı + şifre zorunlu (Astra denetiminde sunucu da zorunlu hale getirildi; eski hesaplar korunur).
