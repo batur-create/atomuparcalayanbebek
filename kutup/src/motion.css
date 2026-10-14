@@ -1421,3 +1421,72 @@ h3,
   line-height: 1;
   animation: pop-up 0.5s var(--ease-spring) backwards;
 }
+
+/* ---------- plan form: a day, a time, go ---------- */
+.plan-step {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8f836c;
+  margin: 2px 0 6px;
+}
+.plan-days {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin: 0 0 12px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.plan-days::-webkit-scrollbar {
+  display: none;
+}
+.plan-form .plan-days button,
+.plan-form .plan-times button {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.plan-times {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 12px;
+}
+.plan-form .plan-times button:disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+.plan-exact {
+  margin-bottom: 6px;
+}
+.plan-names {
+  margin: -4px 0 12px;
+}
+.plan-form .plan-names button {
+  font-size: 12px;
+  padding: 6px 9px;
+}
+.plan-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+.plan-summary b {
+  font-size: 15px;
+}
+.plan-summary span {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.plan-summary.late {
+  background: #fbe6df;
+  color: #a64528;
+}

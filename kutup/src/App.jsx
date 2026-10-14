@@ -612,7 +612,9 @@ export default function App() {
     }
     action();
   };
-  const mutate = async (path, body, success, method = "POST") => {
+  // onError: show the failure where the person is looking (e.g. inside a form)
+  // instead of a toast that may sit behind it.
+  const mutate = async (path, body, success, method = "POST", onError) => {
     const epoch = sessionEpoch.current;
     try {
       const result = await api(path, body, method);
@@ -628,6 +630,7 @@ export default function App() {
       if (epoch !== sessionEpoch.current) return false;
       if (e.status === 401)
         signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
+      else if (onError) onError(e.message);
       else notify(e.message);
       return false;
     }
@@ -1969,20 +1972,27 @@ function Plans({ data, me, requireMember, mutate, open }) {
     </div>
   );
 }
-const PLACES = [
-  "Zemin · Genel salon",
-  "1. kat · Sessiz salon",
-  "2. kat · Okuma salonu",
-  "Grup çalışma alanı",
-  "Kafeterya",
-  "Bahçe",
+// Milli Kütüphane's own room names (from its user-services regulation); kept
+// under the server's 40-character limit. Old free-text places still work.
+const READING_ROOMS = [
+  "Adnan Ötüken Okuma Salonu",
+  "Dr. Müjgan Cunbur Okuma Salonu",
+  "Süreli Yayınlar Salonu",
+  "Danışma Kaynakları Salonu",
+  "İbn-i Sina Nadir Eserler Salonu",
+  "Mikrofilm Salonu",
+  "İnteraktif Salon",
+  "Müzik Dinleme Salonu",
+  "Çok Amaçlı Çalışma Salonu",
 ];
+const BREAK_PLACES = ["Kafeterya", "Bahçe"];
+const PLACES = [...READING_ROOMS, ...BREAK_PLACES];
 const OTHER_PLACE = "Başka bir yer…";
 function PresenceModal({ me, coming, close, mutate }) {
   const known = !me.location || PLACES.includes(me.location);
   const [status, setStatus] = useState(coming ? "coming" : "here"),
     [location, setLocation] = useState(
-      known ? me.location || "1. kat · Sessiz salon" : OTHER_PLACE,
+      known ? me.location || READING_ROOMS[0] : OTHER_PLACE,
     ),
     [customPlace, setCustomPlace] = useState(known ? "" : me.location),
     [desk, setDesk] = useState(me.desk || ""),
@@ -2054,9 +2064,17 @@ function PresenceModal({ me, coming, close, mutate }) {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               >
-                {[...PLACES, OTHER_PLACE].map((x) => (
-                  <option key={x}>{x}</option>
-                ))}
+                <optgroup label="Okuma salonları">
+                  {READING_ROOMS.map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Mola yerleri">
+                  {BREAK_PLACES.map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </optgroup>
+                <option>{OTHER_PLACE}</option>
               </select>
             </label>
             {location === OTHER_PLACE && (
@@ -2067,7 +2085,7 @@ function PresenceModal({ me, coming, close, mutate }) {
                   maxLength={40}
                   value={customPlace}
                   onChange={(e) => setCustomPlace(e.target.value)}
-                  placeholder="Örn. 3. kat · Süreli yayınlar"
+                  placeholder="Örn. 2. kat koridor masaları"
                 />
               </label>
             )}
@@ -2157,73 +2175,149 @@ function InviteModal({ group, close, notify }) {
     </Modal>
   );
 }
+// A plan in three taps: a day, a time, go. The exact pickers stay one tap away.
+const PLAN_TIMES = ["09:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
+const PLAN_NAMES = ["Sabah kulübü ☀️", "Öğleden sonra 📚", "Akşam kütüpü 🌙", "Sınav kampı 🔥"];
+// Browsers hand back "10:00", "10:00:00" or "10:00:00.000"; read only what is
+// needed, in Türkiye time (UTC+3 all year).
+function planStart(date, time) {
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date),
+    clock = /^(\d{1,2}):(\d{2})/.exec(time);
+  return day && clock ? Date.UTC(+day[1], +day[2] - 1, +day[3], +clock[1] - 3, +clock[2]) : NaN;
+}
+function untilWords(ms) {
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 60) return `${Math.max(1, minutes)} dk sonra`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} saat sonra`;
+  return `${Math.round(hours / 24)} gün sonra`;
+}
 function PlanModal({ close, mutate }) {
-  const [date, setDate] = useState(dayInput(1)),
-    [time, setTime] = useState("10:00"),
+  const firstFree = (day) => PLAN_TIMES.find((t) => planStart(day, t) > Date.now() + 10 * 60000);
+  const today = dayInput(),
+    startDay = firstFree(today) ? today : dayInput(1);
+  const [date, setDate] = useState(startDay),
+    [time, setTime] = useState(firstFree(startDay) || "10:00"),
+    [exact, setExact] = useState(false),
     [note, setNote] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const days = [
-    ["Bugün", dayInput()],
-    ["Yarın", dayInput(1)],
-    ["Öbür gün", dayInput(2)],
-  ];
+  const days = Array.from({ length: 7 }, (_, offset) => {
+    const value = dayInput(offset),
+      at = Date.now() + offset * 86400000;
+    const label =
+      offset === 0
+        ? "Bugün"
+        : offset === 1
+          ? "Yarın"
+          : new Intl.DateTimeFormat("tr-TR", { weekday: "short", day: "numeric", timeZone: "Europe/Istanbul" }).format(at);
+    return [label, value];
+  });
+  const starts = planStart(date, time),
+    past = Number.isFinite(starts) && starts < Date.now();
+  const pickDay = (value) => {
+    setDate(value);
+    setError("");
+    // Today, a time that already went by moves on to the next free one.
+    if (planStart(value, time) < Date.now()) setTime(firstFree(value) || time);
+  };
   return (
     <Modal
       title="Güzel bir plan var. 🗓️"
-      subtitle="Bir zaman seç. Gerisi bir “ben de gelirim”e bakar."
+      subtitle="Bir gün, bir saat. Gerisi bir “ben de gelirim”e bakar."
       close={close}
     >
       <form
+        className="plan-form"
         onSubmit={async (e) => {
           e.preventDefault();
-          const starts = new Date(`${date}T${time}:00+03:00`).getTime();
-          if (!Number.isFinite(starts) || starts < Date.now()) {
+          if (!Number.isFinite(starts)) {
+            setError("Gün ya da saat okunamadı. Bir daha seçer misin?");
+            return;
+          }
+          if (past) {
             setError("Bu saat geçti bile. İleri bir saat seç. 🙂");
             return;
           }
           setError("");
           setBusy(true);
-          if (await mutate("/plans", { starts, note }, "Plan panoda. Ekibin katılabilir!"))
-            close();
+          const saved = await mutate("/plans", { starts, note }, "Plan panoda. Ekibin katılabilir! 🗓️", "POST", (message) =>
+            setError(`Plan kaydedilemedi: ${message}`),
+          );
           setBusy(false);
+          if (saved) close();
         }}
       >
-        <div className="quick-messages day-chips">
+        <span className="plan-step">Hangi gün?</span>
+        <div className="quick-messages plan-days" role="group" aria-label="Gün">
           {days.map(([label, value]) => (
             <button
               type="button"
-              key={label}
+              key={value}
               aria-pressed={date === value}
               className={date === value ? "selected" : ""}
-              onClick={() => setDate(value)}
+              onClick={() => pickDay(value)}
             >
               {label}
             </button>
           ))}
         </div>
-        <div className="form-row">
-          <label className="field-label">
-            Hangi gün?
-            <input
-              type="date"
-              required
-              min={dayInput()}
-              max={dayInput(14)}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
-          <label className="field-label">
-            Saat kaçta?
-            <input
-              type="time"
-              required
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
-          </label>
+        <span className="plan-step">Saat kaçta?</span>
+        <div className="quick-messages plan-times" role="group" aria-label="Saat">
+          {PLAN_TIMES.map((value) => {
+            const gone = planStart(date, value) < Date.now();
+            return (
+              <button
+                type="button"
+                key={value}
+                disabled={gone}
+                aria-pressed={time === value}
+                className={time === value ? "selected" : ""}
+                onClick={() => {
+                  setTime(value);
+                  setError("");
+                }}
+              >
+                {value}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            aria-expanded={exact}
+            className={exact || !PLAN_TIMES.includes(time) ? "selected" : ""}
+            onClick={() => setExact(!exact)}
+          >
+            Başka saat
+          </button>
         </div>
+        {exact && (
+          <div className="form-row plan-exact">
+            <label className="field-label">
+              Gün
+              <input
+                type="date"
+                required
+                min={dayInput()}
+                max={dayInput(14)}
+                value={date}
+                onChange={(e) => pickDay(e.target.value)}
+              />
+            </label>
+            <label className="field-label">
+              Saat
+              <input
+                type="time"
+                required
+                value={time}
+                onChange={(e) => {
+                  setTime(e.target.value);
+                  setError("");
+                }}
+              />
+            </label>
+          </div>
+        )}
         <label className="field-label">
           Planın adı <span>isteğe bağlı</span>
           <input
@@ -2233,16 +2327,35 @@ function PlanModal({ close, mutate }) {
             placeholder="Örn. Sabah erkenciler kulübü"
           />
         </label>
+        <div className="quick-messages plan-names">
+          {PLAN_NAMES.map((name) => (
+            <button type="button" key={name} className={note === name ? "selected" : ""} onClick={() => setNote(name)}>
+              {name}
+            </button>
+          ))}
+        </div>
+        <p className={`plan-summary ${past ? "late" : ""}`} aria-live="polite">
+          <CalendarDays size={16} />
+          {Number.isFinite(starts) ? (
+            <>
+              <b>
+                {dayWord(starts)} · {shortTime(starts)}
+              </b>
+              <span>{past ? "bu saat geçti" : untilWords(starts - Date.now())}</span>
+            </>
+          ) : (
+            <b>Bir gün ve saat seç</b>
+          )}
+        </p>
         <p className="form-footnote">
-          <MapPin size={14} /> Milli Kütüphane · Saatler Türkiye saatine göre.
-          Bildirimi açık olanlara haber gider.
+          <MapPin size={14} /> Milli Kütüphane · Türkiye saati. Bildirimi açık olanlara haber gider.
         </p>
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
-        <Busy loading={busy} className="btn primary full" type="submit">
+        <Busy loading={busy} disabled={past} className="btn primary full" type="submit">
           Takvime bırakalım <Plus size={17} />
         </Busy>
       </form>
