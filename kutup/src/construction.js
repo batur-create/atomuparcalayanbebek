@@ -81,7 +81,7 @@ const mixAll = (a, b, t) => a.map((c, i) => mix(c, b[i], t));
 
 let clipSerial = 0;
 
-/** SVG for everything up to the finished frame, at progress `shown` (0…1). */
+/** SVG for everything up to the finished frame, at progress `shown` (0…1): { yard, rest }. */
 export function siteSVG(P, sp, plan, shown) {
   const k = {};
   for (const p of plan) k[p.floor >= 0 ? `${p.key}${p.floor}` : p.key] = clamp((shown - p.a) / (p.b - p.a));
@@ -269,7 +269,8 @@ export function siteSVG(P, sp, plan, shown) {
       frame += box(P, -w, -w, edge, w, soffit, zs, faces);
     }
   }
-  return back + pit + above + frame + front;
+  // The yard (fence, container, spoil) sits under the machines; the rest above them.
+  return { yard: back, rest: pit + above + frame + front };
 }
 
 // Columns: the corners, and mid-side columns on a wider plan.

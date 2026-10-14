@@ -10,6 +10,7 @@ import {
   poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG,
 } from "./iso.js";
 import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
+import { crewSVG } from "./crew.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -106,11 +107,20 @@ export function ConstructionScene({ run, outcome }) {
       box(P, -3.4, -3.4, 3.4, 3.4, -0.5, 0, GRASS) +
       poly([P(-sp.hw - 0.95, -sp.hw - 0.95, 0.006), P(sp.hw + 0.95, -sp.hw - 0.95, 0.006), P(sp.hw + 0.95, sp.hw + 0.95, 0.006), P(-sp.hw - 0.95, sp.hw + 0.95, 0.006)], DIRT[0]) +
       [[-2.9, -1.6], [2.8, -2.9], [-2.4, -3.0], [2.9, 2.2]].map(([x, y]) => { const p = P(x, y, 0); return `<ellipse cx="${f(p[0])}" cy="${f(p[1] - 6)}" rx="9" ry="7" fill="#79b25a"/>`; }).join("");
+    const uid = ++sceneSerial;
+    // Machines are clipped to the plot (open upwards) so they drive in from beyond its edge.
+    const plot = [P(-3.4, 3.4, 0), P(3.4, 3.4, 0), P(3.4, -3.4, 0)];
+    root.firstChild.insertAdjacentHTML("beforeend", `<clipPath id="plot${uid}"><polygon points="${[...plot, [plot[2][0], -400], [plot[0][0], -400]].map((q) => q.map((v) => v.toFixed(1)).join(",")).join(" ")}"/></clipPath>`);
+    const yard = layer("yard");
+    const crewBack = layer("crew-back");
     const building = layer("site");
+    const crewFront = layer("crew-front");
+    crewBack.setAttribute("clip-path", `url(#plot${uid})`);
+    crewFront.setAttribute("clip-path", `url(#plot${uid})`);
     const fx = layer("fx");
     const caption = layer("caption");
     const plan = sitePlan(sp);
-    const uid = ++sceneSerial;
+    let crewKey = "";
     const parts = sceneParts(P, sp, seed, plan).map((p) => ({ ...p, el: building.appendChild(document.createElementNS(NS, "g")) }));
     let shown = 0,
       raf = 0,
@@ -152,6 +162,7 @@ export function ConstructionScene({ run, outcome }) {
       }
       if (mode === "collapse") {
         caption.innerHTML = "";
+        crewBack.innerHTML = crewFront.innerHTML = "";
         const tau = motionReduced ? 1.5 : (now - eventAt) / 1000;
         parts.forEach((p) => {
           if (!p.fall) return p.el.setAttribute("opacity", "0");
@@ -206,7 +217,9 @@ export function ConstructionScene({ run, outcome }) {
         } else if (p.kind === "site") {
           const key = shown.toFixed(3);
           if (key !== p.key) {
-            p.el.innerHTML = p.draw(shown);
+            const out = p.draw(shown);
+            yard.innerHTML = out.yard;
+            p.el.innerHTML = out.rest;
             p.key = key;
           }
         } else if (p.kind === "erect") {
@@ -266,6 +279,19 @@ export function ConstructionScene({ run, outcome }) {
           }
       }
       fx.innerHTML = effects;
+      // Machines and workers for the work under way (15 fps is plenty for them).
+      if (mode === "build") {
+        const key = `${Math.floor(time * 15)}|${shown.toFixed(3)}`;
+        if (key !== crewKey) {
+          const c = crewSVG(P, sp, plan, shown, time);
+          crewBack.innerHTML = c.behind;
+          crewFront.innerHTML = c.front;
+          crewKey = key;
+        }
+      } else if (crewKey) {
+        crewBack.innerHTML = crewFront.innerHTML = "";
+        crewKey = "";
+      }
       const label = mode === "done" ? "İskân alındı ✅" : phaseAt(plan, shown).label;
       const text = `${label}|${Math.round(shown * 100)}`;
       if (text !== caption.dataset.text) {
