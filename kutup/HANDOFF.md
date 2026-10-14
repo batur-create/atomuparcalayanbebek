@@ -102,11 +102,16 @@ Her paket kendi içinde teslim edilebilir. Her paket sunucu tarafında test (`te
 ### Paket 1 — Ortak köy altyapısı ve köyü öne çıkarmak
 
 **Uzun vadeli tasarım (burayı doğru kur, sonra her şey bunun üstüne gelecek):**
-- **Sabit arsalar.** Her binanın konumu veritabanında kalıcı olsun. `buildings`'e `plot_x`, `plot_y` (ızgara koordinatı) ekle; sunucu bina oluşurken o kişinin mahallesindeki ilk boş arsayı atar. Çizim kuralı değişse bile hiçbir bina yer değiştirmez. Göç, mevcut binalara `created` sırasıyla arsa atar.
+- **Sabit ama doğal konumlar.** Köy asla düzgün simetrik sıralar gibi görünmemeli; gerçek bir köy gibi organik dağılmalı. Batur bunu özellikle istedi.
+  - Her binanın konumu veritabanında kalıcı olsun: `buildings`'e `pos_x`, `pos_y` (dünya koordinatı, ondalıklı) ve `facing` (0 = sola bakar, 1 = sağa bakar; aynalı çizim) ekle. Çizim kuralı değişse bile hiçbir bina yer değiştirmez.
+  - **Konumu sunucu, bina oluşurken seçer.** Mahallenin içinde, mahalleye özel tohumla Poisson-disk benzeri örnekleme yapılır. En az mesafe bina türüne göre değişir (kule daha geniş yer ister); mevcut binalara, yollara ve mahalle sınırına çarpmayan ilk aday seçilir.
+  - Mahalle içinde hafif eğim ya da tepe, gölet, ağaç kümeleri gibi doğal öğeler tohumdan üretilsin. Boşluklar bahçe, çit, patika ve ağaçla dolsun.
+  - **Yollar düz ızgara değil, kıvrımlı olsun:** mahalle girişlerini meydana bağlayan yumuşak eğriler. Binaların kapısına giden patikalar yola bağlansın.
+  - Göç, mevcut binalara `created` sırasıyla aynı algoritmayla konum atar.
 - **Mahalleler (district).**
   - Her üyeye katılınca bir mahalle verilir (`districts` tablosu: id, group_id, member_id, dx, dy).
   - Mahalleler köy merkezinin (Paket 6'daki Milli Kütüphane anıtı) etrafında spiral düzende sıralanır. Merkez meydana yakın olanlar önce dolar.
-  - Mahalle 3×3 arsalık; dolunca aynı kişiye bitişik yeni bir mahalle açılır. Köy dışa doğru organik büyür, hiçbir şey kaymaz.
+  - Mahallenin bir kapasitesi var (ör. 9 bina); dolunca aynı kişiye bitişik yeni bir mahalle açılır. Köy dışa doğru organik büyür, hiçbir şey kaymaz. Mahalle sınırları görünmez kare değil, yumuşak ve düzensiz olsun.
   - Mahalle girişinde isim tabelası olur.
 - **Ayrılan üye:** bugünkü gibi binaları silinir (gizlilik). Mahallesi "boş arsa" olarak kalır, bir sonraki yeni üyeye verilebilir.
 - **Ölçek hesabı:** 10 kişi × günde 2 bina × 365 ≈ 7.300 bina/yıl. Bu yüzden köy haritası SVG DOM ile değil, **Canvas 2D** ile çizilmeli:
