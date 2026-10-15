@@ -240,7 +240,14 @@ export function siteSVG(P, sp, plan, shown) {
     cols.forEach(([x, y], j) => {
       const order = (j + 0.5) / cols.length;
       if (cp >= order) frame += box(P, x - 0.11, y - 0.11, x + 0.11, y + 0.11, z0, soffit, CONCRETE);
-      else if (cf >= order) frame += box(P, x - 0.15, y - 0.15, x + 0.15, y + 0.15, z0, soffit, PLY);
+      else if (cf >= order) {
+        // Column formwork held by steel clamps, kept plumb by a push-pull prop.
+        frame += box(P, x - 0.15, y - 0.15, x + 0.15, y + 0.15, z0, soffit, PLY);
+        for (let zc = z0 + 0.25; zc < soffit - 0.1; zc += 0.42)
+          frame += outline([P(x - 0.16, y - 0.16, zc), P(x + 0.16, y - 0.16, zc), P(x + 0.16, y + 0.16, zc), P(x - 0.16, y + 0.16, zc)], "#5b6168", 1.2);
+        const out = x + y > 0 ? 1 : -1;
+        frame += seg(P(x + out * 0.15, y, soffit - 0.45), P(x + out * 0.95, y, z0), "#6e7c8c", 1.1);
+      }
       else if (cr >= order) frame += cage(P, x, y, z0, soffit + 0.3, true);
     });
     // Deck: plywood panels, then rebar, then the slab poured from the back.

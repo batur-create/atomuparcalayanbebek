@@ -216,6 +216,24 @@ function windowList(P, sp) {
   }
   return list;
 }
+// Window and door openings in world terms: { face: "y" | "x", a, b, z0, z1 }.
+// Same layout as windowList() and doorSVG(), so masonry leaves the right holes.
+export function openingList(sp) {
+  const fh = sp.h / sp.floors,
+    list = [];
+  for (let k = 0; k < sp.floors; k++) {
+    const z0 = 0.3 + k * fh + fh * 0.36,
+      z1 = z0 + Math.min(0.85, fh * 0.4);
+    const front = sp.kind === "tower" ? (k ? [[-0.32, 0.32]] : []) : sp.kind === "house" ? [[-1.55, -0.95], [0.95, 1.55]] : [[0.55, 1.12]];
+    const side = sp.kind === "tower" ? [[-0.32, 0.32]] : sp.kind === "house" ? [[-1.4, -0.8], [0.8, 1.4]] : [[-0.9, -0.32]];
+    front.forEach(([a, b]) => list.push({ face: "y", a, b, z0, z1 }));
+    side.forEach(([a, b]) => list.push({ face: "x", a, b, z0, z1 }));
+  }
+  const d = sp.kind === "cottage" ? 0.36 : 0.45,
+    h = sp.kind === "tower" ? 2.1 : 1.85;
+  list.push({ face: "y", a: -d, b: d, z0: 0.3, z1: 0.3 + h });
+  return list;
+}
 export function windowsSVG(P, sp, lit, reveal = 1, detail = true) {
   const list = windowList(P, sp);
   return list

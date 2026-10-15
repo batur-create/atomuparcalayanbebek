@@ -2,7 +2,7 @@
 // edge of the plot at the start of its phase, works, and drives off at the end;
 // the scene clips this layer to the plot so they seem to arrive from beyond it.
 // Drawn every frame (things move), so every piece is a handful of shapes.
-import { box, seg } from "./iso.js";
+import { box, poly, seg } from "./iso.js";
 import { phaseAt } from "./construction.js";
 
 const YELLOW = ["#f6c945", "#dcae2c", "#c0951f"],
@@ -117,38 +117,110 @@ function dumpTruck(P, x, y, fill) {
   s += box(P, x + 0.93, y - 0.24, x + 0.96, y + 0.24, 0.6, 0.88, GLASS);
   return s;
 }
+// Truck parts shared by the mixer and the pump: rimmed wheels and a cab with
+// windscreen, side window, mirror, headlight and bumper (the cab faces +x).
+function tyre(P, x, y) {
+  const [cx, cy] = P(x, y, 0.17);
+  return `<circle cx="${n1(cx)}" cy="${n1(cy)}" r="5.6" fill="${TYRE}"/><circle cx="${n1(cx)}" cy="${n1(cy)}" r="3" fill="#a9b0b7"/><circle cx="${n1(cx)}" cy="${n1(cy)}" r="1.2" fill="#5b6168"/>`;
+}
+function cab(P, x0, x1, y, faces) {
+  let s = box(P, x0, y - 0.3, x1, y + 0.3, 0.22, 0.98, faces);
+  s += poly([P(x1 + 0.005, y - 0.23, 0.62), P(x1 + 0.005, y + 0.23, 0.62), P(x1 + 0.005, y + 0.23, 0.9), P(x1 + 0.005, y - 0.23, 0.9)], "#4f6f8c");
+  s += poly([P(x0 + 0.1, y + 0.305, 0.62), P(x1 - 0.08, y + 0.305, 0.62), P(x1 - 0.08, y + 0.305, 0.88), P(x0 + 0.1, y + 0.305, 0.88)], "#5b7a96");
+  s += box(P, x1, y - 0.3, x1 + 0.07, y + 0.3, 0.22, 0.36, ["#3c4146", "#2f3338", "#25292d"]);
+  const [lx, ly] = P(x1 + 0.075, y + 0.2, 0.42);
+  s += `<circle cx="${n1(lx)}" cy="${n1(ly)}" r="1.6" fill="#fff4c8"/>`;
+  s += seg(P(x1 - 0.05, y + 0.31, 0.86), P(x1 - 0.05, y + 0.45, 0.8), "#2f3338", 1) + box(P, x1 - 0.08, y + 0.44, x1 - 0.02, y + 0.48, 0.66, 0.82, ["#3c4146", "#2f3338", "#25292d"]);
+  return s;
+}
 function mixerTruck(P, x, y, time) {
-  let s = wheels(P, x - 0.55, y + 0.33, 3, 0.55);
-  s += box(P, x - 0.95, y - 0.3, x + 0.5, y + 0.3, 0.2, 0.36, STEEL);
-  // The drum: a fat tilted barrel with stripes that turn.
-  const a0 = P(x - 0.85, y, 0.85),
-    a1 = P(x + 0.35, y, 1.0);
-  s += `<line x1="${n1(a0[0])}" y1="${n1(a0[1])}" x2="${n1(a1[0])}" y2="${n1(a1[1])}" stroke="#e7e2d6" stroke-width="17" stroke-linecap="round"/>`;
-  for (let i = 0; i < 4; i++) {
-    const t = (time * 0.6 + i / 4) % 1,
-      p = P(x - 0.85 + 1.2 * t, y, 0.85 + 0.15 * t);
-    s += `<line x1="${n1(p[0] - 3)}" y1="${n1(p[1] - 8)}" x2="${n1(p[0] + 3)}" y2="${n1(p[1] + 8)}" stroke="#e08a2e" stroke-width="2.4"/>`;
+  let s = tyre(P, x - 0.78, y + 0.32) + tyre(P, x - 0.38, y + 0.32) + tyre(P, x + 0.78, y + 0.32);
+  s += box(P, x - 1.05, y - 0.27, x + 0.55, y + 0.27, 0.2, 0.34, ["#4a5058", "#3c4148", "#30353b"]);
+  s += box(P, x + 0.42, y - 0.2, x + 0.55, y + 0.2, 0.34, 0.78, STEEL); // water tank
+  s += cab(P, x + 0.56, x + 1.05, y, ["#f08b3c", "#d77428", "#bb601d"]);
+  // The drum: a tapered barrel rising towards the back, drawn in screen space
+  // around its axis, with spiral fins that turn while it mixes.
+  const c0 = P(x + 0.32, y, 0.86),
+    c1 = P(x - 0.92, y, 1.12),
+    unit = Math.hypot(...P(0, 0, 1).map((v, i) => v - P(0, 0, 0)[i]));
+  const r0 = 0.44 * unit,
+    r1 = 0.28 * unit;
+  const ax = c1[0] - c0[0],
+    ay = c1[1] - c0[1],
+    al = Math.hypot(ax, ay),
+    px = -ay / al,
+    py = ax / al;
+  const edge = (t, side) => {
+    const r = r0 + (r1 - r0) * t;
+    return [c0[0] + ax * t + px * r * side, c0[1] + ay * t + py * r * side];
+  };
+  const top = [0, 0.25, 0.5, 0.75, 1].map((t) => edge(t, -1)),
+    bottom = [1, 0.75, 0.5, 0.25, 0].map((t) => edge(t, 1));
+  s += `<polygon points="${[...top, ...bottom].map((q) => q.map(n1).join(",")).join(" ")}" fill="#ebe6da"/>`;
+  s += `<polygon points="${[0, 0.5, 1].map((t) => edge(t, 0.35)).concat([1, 0.5, 0].map((t) => edge(t, 1))).map((q) => q.map(n1).join(",")).join(" ")}" fill="#d4cdbd"/>`;
+  for (let i = 0; i < 5; i++) {
+    const t = (time * 0.25 + i / 5) % 1;
+    const a = edge(Math.max(0, t - 0.08), -1),
+      b = edge(Math.min(1, t + 0.08), 1);
+    s += `<line x1="${n1(a[0])}" y1="${n1(a[1])}" x2="${n1(b[0])}" y2="${n1(b[1])}" stroke="#e08a2e" stroke-width="2.6" stroke-linecap="round"/>`;
   }
-  s += box(P, x + 0.55, y - 0.3, x + 1.0, y + 0.3, 0.2, 0.95, ["#f08b3c", "#d77428", "#bb601d"]);
-  s += box(P, x + 0.98, y - 0.24, x + 1.01, y + 0.24, 0.6, 0.88, GLASS);
-  s += seg(P(x - 1.0, y, 0.7), P(x - 1.35, y - 0.25, 0.45), "#8a929b", 2.4);
+  s += `<ellipse cx="${n1(c0[0])}" cy="${n1(c0[1])}" rx="${n1(r0 * 0.35)}" ry="${n1(r0)}" transform="rotate(${n1((Math.atan2(ay, ax) * 180) / Math.PI)} ${n1(c0[0])} ${n1(c0[1])})" fill="#d9d2c3"/>`;
+  // Hopper, chute and the ladder at the back.
+  s += poly([P(x - 1.0, y - 0.18, 1.2), P(x - 1.0, y + 0.18, 1.2), P(x - 1.18, y + 0.26, 1.42), P(x - 1.18, y - 0.26, 1.42)], "#8a929b");
+  s += seg(P(x - 1.05, y, 0.92), P(x - 1.42, y - 0.3, 0.55), "#7f8994", 3) + seg(P(x - 1.42, y - 0.3, 0.55), P(x - 1.55, y - 0.36, 0.38), "#68727c", 2.6);
+  for (let z = 0.4; z < 1.25; z += 0.17) s += seg(P(x - 1.08, y + 0.2, z), P(x - 1.08, y + 0.32, z), "#9aa4ae", 0.9);
+  s += seg(P(x - 1.08, y + 0.2, 0.34), P(x - 1.08, y + 0.2, 1.3), "#9aa4ae", 0.9) + seg(P(x - 1.08, y + 0.32, 0.34), P(x - 1.08, y + 0.32, 1.3), "#9aa4ae", 0.9);
+  return s;
+}
+// One outrigger: a beam out from the chassis, a hydraulic jack, a pad on the ground.
+function outrigger(P, x, y, side) {
+  const fy = y + side * 1.05;
+  return seg(P(x, y + side * 0.28, 0.3), P(x, fy, 0.28), "#7f8994", 3.2) + seg(P(x, y + side * 0.28, 0.36), P(x, fy, 0.34), "#d9a930", 1) +
+    box(P, x - 0.05, fy - 0.05, x + 0.05, fy + 0.05, 0.04, 0.32, STEEL) + box(P, x - 0.14, fy - 0.14, x + 0.14, fy + 0.14, 0, 0.04, ["#5b6168", "#4a4f55", "#3c4146"]);
+}
+// A section of the boom: a tapered steel arm with its hydraulic cylinder.
+function boomSection(P, a, b, wa, wb, color) {
+  const pa = P(...a),
+    pb = P(...b);
+  const dx = pb[0] - pa[0],
+    dy = pb[1] - pa[1],
+    l = Math.hypot(dx, dy) || 1,
+    nx = -dy / l,
+    ny = dx / l;
+  const quad = [[pa[0] + nx * wa, pa[1] + ny * wa], [pb[0] + nx * wb, pb[1] + ny * wb], [pb[0] - nx * wb, pb[1] - ny * wb], [pa[0] - nx * wa, pa[1] - ny * wa]];
+  let s = `<polygon points="${quad.map((q) => q.map(n1).join(",")).join(" ")}" fill="${color}"/>`;
+  s += `<line x1="${n1(pa[0] + nx * (wa + 2.2))}" y1="${n1(pa[1] + ny * (wa + 2.2))}" x2="${n1(pa[0] + dx * 0.45 + nx * (wb + 2))}" y2="${n1(pa[1] + dy * 0.45 + ny * (wb + 2))}" stroke="#c8cdd2" stroke-width="1.6" stroke-linecap="round"/>`;
+  s += `<circle cx="${n1(pa[0])}" cy="${n1(pa[1])}" r="${n1(wa * 0.8)}" fill="#2b4a73"/>`;
   return s;
 }
 function pumpTruck(P, x, y, target, time) {
-  let s = wheels(P, x - 0.6, y + 0.35, 3, 0.6);
-  s += box(P, x - 1.0, y - 0.34, x + 0.5, y + 0.34, 0.2, 0.55, CAB);
-  s += box(P, x + 0.55, y - 0.32, x + 1.0, y + 0.32, 0.2, 0.95, ["#3f6fb0", "#325d97", "#284c7e"]);
-  // Outriggers down while pumping.
-  s += box(P, x - 0.9, y - 0.75, x - 0.8, y + 0.75, 0.05, 0.2, STEEL) + box(P, x + 0.3, y - 0.75, x + 0.4, y + 0.75, 0.05, 0.2, STEEL);
-  // A three-section boom from the turret to just above the pour point, then the hose.
-  const base = [x - 0.3, y, 0.75];
+  // Far-side outriggers, then the truck, then the near side.
+  let s = outrigger(P, x + 0.35, y, -1) + outrigger(P, x - 0.95, y, -1);
+  s += tyre(P, x - 0.9, y + 0.32) + tyre(P, x - 0.5, y + 0.32) + tyre(P, x + 0.8, y + 0.32);
+  s += box(P, x - 1.15, y - 0.28, x + 0.55, y + 0.28, 0.2, 0.42, ["#e9eef2", "#cdd5dc", "#b3bcc5"]);
+  s += box(P, x - 0.2, y - 0.22, x + 0.45, y + 0.22, 0.42, 0.6, STEEL); // hopper and pump
+  s += cab(P, x + 0.56, x + 1.05, y, ["#3f6fb0", "#325d97", "#284c7e"]);
+  s += outrigger(P, x + 0.35, y, 1) + outrigger(P, x - 0.95, y, 1);
+  // Turret and a four-section boom arching over to the pour point.
+  const base = [x - 0.65, y, 0.95];
+  s += box(P, x - 0.82, y - 0.17, x - 0.48, y + 0.17, 0.42, 0.95, ["#3f6fb0", "#325d97", "#284c7e"]);
   const [tx, ty, tz] = target;
-  const sway = 0.08 * Math.sin(time * 0.8);
-  const j1 = [base[0] + (tx - base[0]) * 0.3, base[1] + (ty - base[1]) * 0.3, tz + 2.4],
-    j2 = [base[0] + (tx - base[0]) * 0.75 + sway, base[1] + (ty - base[1]) * 0.75, tz + 2.0],
-    tip = [tx + sway, ty, tz + 1.1];
-  s += seg(P(...base), P(...j1), "#2f62a6", 4) + seg(P(...j1), P(...j2), "#3f74ba", 3.4) + seg(P(...j2), P(...tip), "#5687c6", 2.8);
-  s += seg(P(...tip), P(tx + sway, ty, tz + 0.15), "#2f3338", 2.4);
+  const sway = 0.06 * Math.sin(time * 0.8);
+  const at = (f, lift) => [base[0] + (tx - base[0]) * f + sway * f, base[1] + (ty - base[1]) * f, tz + lift];
+  const j1 = at(0.12, 2.5),
+    j2 = at(0.45, 2.9),
+    j3 = at(0.8, 2.2),
+    tip = [tx + sway, ty, tz + 1.15];
+  s += boomSection(P, base, j1, 4.2, 3.6, "#2f62a6") + boomSection(P, j1, j2, 3.6, 3.1, "#3a6fb5") + boomSection(P, j2, j3, 3.1, 2.6, "#4a7fc2") + boomSection(P, j3, tip, 2.6, 2.1, "#5a8bcc");
+  // End hose with concrete coming out at the pour front.
+  const [hx, hy] = P(...tip),
+    [fx, fy] = P(tx, ty, tz + 0.12);
+  s += `<path d="M${n1(hx)} ${n1(hy)} Q${n1(hx + 4)} ${n1((hy + fy) / 2)} ${n1(fx)} ${n1(fy)}" fill="none" stroke="#2f3338" stroke-width="3.4" stroke-linecap="round"/>`;
+  for (let i = 0; i < 3; i++) {
+    const t = (time * 2 + i / 3) % 1;
+    s += `<circle cx="${n1(fx + Math.sin(i * 2) * 1.5)}" cy="${n1(fy + 2 + t * 6)}" r="${n1(1.6 - t * 0.6)}" fill="#7a7e85"/>`;
+  }
+  s += `<ellipse cx="${n1(fx)}" cy="${n1(fy + 9)}" rx="9" ry="3.4" fill="#7a7e85"/><ellipse cx="${n1(fx - 2)}" cy="${n1(fy + 8)}" rx="4" ry="1.4" fill="#9a9ea4"/>`;
   return s;
 }
 

@@ -7,11 +7,12 @@ import { reducedMotion } from "./ui.jsx";
 import { kindFor } from "../shared/village.js";
 import {
   CRANE, DIRT, GRASS, STONE, WOOD, box, chimneySVG, doorSVG, f, flagSVG, foundationSVG, gardenSVG,
-  poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG,
+  poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG, openingList, faceX, faceY,
 } from "./iso.js";
 import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
 import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
+import { craneSVG } from "./crane.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -23,37 +24,26 @@ export { kindFor };
 // ---------- construction site ----------
 // The crane stands to the left with its arm across the screen, and always lowers
 // its load just above whatever is being built.
-function craneSVG(P, sp, time, shown, built, workZ) {
-  const zc = Math.max(topOf(sp) + 2.3, 4.6),
-    mast = [-3.0, 3.0],
-    end = [0.6, -0.6];
-  const u = 0.72 + 0.14 * Math.sin(time * 0.7),
-    x = mast[0] + (end[0] - mast[0]) * u,
-    y = mast[1] + (end[1] - mast[1]) * u,
-    z = Math.min(zc - 0.9, workZ + 0.9 + 0.2 * Math.sin(time * 1.4));
-  // Rebar bundles and formwork for the frame, blocks for the walls, then roof tiles.
-  const load = shown < FRAME_END ? ["#9a5a40", "#84492f", "#6f3c26"] : shown < 0.68 ? sp.wall.faces : [sp.roof[2], sp.roof[0], sp.roof[1]];
-  // Erected section by section, and taken down the same way.
-  const mastTop = zc * built;
-  let s = box(P, mast[0] - 0.16, mast[1] - 0.16, mast[0] + 0.16, mast[1] + 0.16, 0, mastTop, CRANE);
-  for (let k = 0.5; k < mastTop - 0.3; k += 0.55) s += seg(P(mast[0] - 0.16, mast[1] + 0.17, k), P(mast[0] + 0.16, mast[1] + 0.17, k + 0.5), "#c99622", 1);
-  if (built < 1) return s;
-  s += box(P, mast[0] - 0.3, mast[1] - 0.3, mast[0] + 0.3, mast[1] + 0.3, zc - 0.05, zc + 0.35, ["#5f6f86", "#4b5a70", "#3c4a5e"]);
-  s += seg(P(mast[0], mast[1], zc + 0.4), P(end[0], end[1], zc + 0.4), "#e4b031", 4) + seg(P(mast[0], mast[1], zc + 0.4), P(mast[0] - 1.1, mast[1] + 1.1, zc + 0.4), "#c99622", 4);
-  s += box(P, mast[0] - 1.35, mast[1] + 0.85, mast[0] - 0.85, mast[1] + 1.35, zc + 0.05, zc + 0.6, STONE);
-  s += seg(P(x, y, zc + 0.4), P(x, y, z + 0.38), "#5f5e5a", 1.1) + box(P, x - 0.38, y - 0.38, x + 0.38, y + 0.38, z, z + 0.38, load);
-  return s;
-}
+// Facade scaffold, built up lift by lift: base plates and standards, ledgers,
+// boards with toe boards, two guard rails per lift and diagonal braces.
 function scaffoldSVG(P, sp, built = 1) {
   const w = sp.hw + 0.45,
     top = (topOf(sp) + 0.2) * built,
-    pole = "#c79a5a",
-    plank = "#ad7f43";
+    pole = "#9aa4ae",
+    rail = "#f2c14e",
+    board = "#c79a5a";
+  const posts = [-w + 0.25, 0, w];
   let s = "";
-  [-w + 0.25, 0, w].forEach((y) => (s += seg(P(w, y, 0), P(w, y, top), pole, 2)));
-  [-w + 0.25, 0, w].forEach((x) => (s += seg(P(x, w, 0), P(x, w, top), pole, 2)));
-  for (let z = 1.2; z <= top; z += 1.2) s += seg(P(w, -w + 0.15, z), P(w, w, z), plank, 3.2) + seg(P(-w + 0.15, w, z), P(w, w, z), plank, 3.2);
-  s += seg(P(w, -w + 0.25, 0.1), P(w, 0, 1.2), pole, 1.2, 0.7) + seg(P(-w + 0.25, w, 0.1), P(0, w, 1.2), pole, 1.2, 0.7);
+  for (const t of posts) s += box(P, w - 0.07, t - 0.07, w + 0.07, t + 0.07, 0, 0.03, ["#68727c", "#555e67", "#454c54"]) + box(P, t - 0.07, w - 0.07, t + 0.07, w + 0.07, 0, 0.03, ["#68727c", "#555e67", "#454c54"]);
+  posts.forEach((y) => (s += seg(P(w, y, 0), P(w, y, top), pole, 1.8)));
+  posts.forEach((x) => (s += seg(P(x, w, 0), P(x, w, top), pole, 1.8)));
+  for (let z = 1.2, lift = 0; z <= top + 0.01; z += 1.2, lift++) {
+    s += box(P, w - 0.18, -w + 0.15, w + 0.04, w, z - 0.05, z, [board, "#ad7f43", "#946b38"]) + box(P, -w + 0.15, w - 0.18, w, w + 0.04, z - 0.05, z, [board, "#ad7f43", "#946b38"]);
+    s += seg(P(w + 0.05, -w + 0.15, z + 0.08), P(w + 0.05, w, z + 0.08), "#ad7f43", 1.6) + seg(P(-w + 0.15, w + 0.05, z + 0.08), P(w, w + 0.05, z + 0.08), "#ad7f43", 1.6);
+    for (const r of [0.45, 0.9]) s += seg(P(w + 0.06, -w + 0.15, z + r), P(w + 0.06, w, z + r), rail, 1) + seg(P(-w + 0.15, w + 0.06, z + r), P(w, w + 0.06, z + r), rail, 1);
+    const z0 = z - 1.2;
+    s += seg(P(w, lift % 2 ? -w + 0.25 : 0, z0), P(w, lift % 2 ? 0 : -w + 0.25, z), pole, 1, 0.8) + seg(P(lift % 2 ? -w + 0.25 : 0, w, z0), P(lift % 2 ? 0 : -w + 0.25, w, z), pole, 1, 0.8);
+  }
   return s;
 }
 // Infill walls are laid in aerated-concrete blocks, course by course; the
@@ -66,6 +56,14 @@ function masonrySVG(P, sp, t) {
     w = sp.hw,
     step = sp.h / courses;
   let s = done ? wallsSVG(P, { ...sp, wall: BLOCK }, done / courses) : "";
+  const laid = 0.3 + done * step;
+  for (const o of openingList(sp)) {
+    if (o.z0 >= laid) continue;
+    const face = (a, b, z0, z1) => (o.face === "y" ? faceY(P, w + 0.012, a, b, z0, z1) : faceX(P, w + 0.012, a, b, z0, z1));
+    s += poly(face(o.a, o.b, o.z0, Math.min(o.z1, laid)), "#57544e");
+    // A reinforced-concrete lintel bears on the blocks either side.
+    if (laid >= o.z1 + 0.14) s += poly(face(o.a - 0.16, o.b + 0.16, o.z1, o.z1 + 0.14), "#b9b6ae");
+  }
   if (part > 0 && done < courses) {
     const z0 = 0.3 + done * step,
       z1 = z0 + step,
@@ -101,7 +99,8 @@ function sceneParts(P, sp, seed, plan) {
     { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
     // Planting: the garden comes up out of the ground.
     { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) },
-    { a: 0.03, b: 0.84, kind: "erect", live: true, draw: (time, shown, built) => craneSVG(P, sp, time, shown, built, workHeight(plan, sp, shown)) },
+    // The tower crane goes up once its footing is cast, at the blinding, and comes down after the roof.
+    { a: plan.find((p) => p.key === "lean").a, b: 0.82, kind: "erect", live: true, draw: (time, shown, built) => craneSVG(P, sp, plan, time, shown, built, workHeight(plan, sp, shown)) },
   ];
 }
 
