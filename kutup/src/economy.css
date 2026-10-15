@@ -293,3 +293,25 @@
   font-size: 17px;
   line-height: 1;
 }
+
+/* Collection view: what you have built, silhouettes for the rest. */
+button.brick-pill {
+  border: 0;
+  cursor: pointer;
+}
+.brick-pill.on {
+  background: var(--accent);
+  color: #fff;
+}
+.catalog-effect {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #4d7e63;
+}
+.catalog-item.unseen .building-thumb svg {
+  filter: brightness(0) opacity(0.16);
+}
+.catalog-item.unseen b {
+  color: var(--muted);
+}

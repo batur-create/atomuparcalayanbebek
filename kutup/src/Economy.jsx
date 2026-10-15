@@ -23,8 +23,10 @@ export function BuildingThumb({ id, size = 92 }) {
 }
 
 /** "Ne inşa ediyorsun?": every building by size, with its price and what it pays. */
-export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0 }) {
-  const [wallet, setWallet] = useState(null);
+export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, start = "shop" }) {
+  const [wallet, setWallet] = useState(null),
+    [view, setView] = useState(start);
+  const collection = view === "collection";
   useEffect(() => {
     get("/wallet").then(setWallet).catch(() => {});
   }, []);
@@ -33,13 +35,19 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0 }) 
   return (
     <Modal
       wide
-      title="Ne inşa ediyorsun?"
-      subtitle="Malzemeyi başlarken ödersin; seans bitince maaşın yatar ve yapı köyüne eklenir."
+      title={collection ? "Koleksiyonun" : "Ne inşa ediyorsun?"}
+      subtitle={
+        collection
+          ? "Köyüne diktiğin her yapı burada. Siluetler henüz yapmadıkların."
+          : "Malzemeyi başlarken ödersin; seans bitince maaşın yatar ve yapı köyüne eklenir."
+      }
       close={close}
     >
       <div className="catalog-top">
         <span className="brick-pill">Kasanda <b>{bricks} 🧱</b></span>
-        <span className="brick-pill">Koleksiyon <b>{owned}/{CATALOG.length}</b></span>
+        <button type="button" className={`brick-pill ${collection ? "on" : ""}`} aria-pressed={collection} onClick={() => setView(collection ? "shop" : "collection")}>
+          Koleksiyon <b>{owned}/{CATALOG.length}</b> {collection ? "· kataloğa dön" : "· göster"}
+        </button>
       </div>
       {Object.entries(CLASSES).map(([key, cls]) => (
         <section key={key} className="catalog-class">
@@ -51,6 +59,18 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0 }) 
               const short = item.cost - bricks,
                 tooLong = maxMinutes > 0 && minutesOf(item) > maxMinutes,
                 net = wageFor(minutesOf(item)) - item.cost;
+              if (collection)
+                return (
+                  <div key={item.id} className={`catalog-item ${built[item.id] ? "" : "unseen"}`}>
+                    {built[item.id] ? <span className="catalog-owned">✓ {built[item.id]}</span> : null}
+                    <BuildingThumb id={item.id} />
+                    <b>
+                      {built[item.id] ? item.emoji : "❔"} {item.name}
+                    </b>
+                    <small>{built[item.id] ? item.blurb : `${cls.label} · ${item.cost ? `${item.cost} 🧱` : "bedava"}`}</small>
+                    {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
+                  </div>
+                );
               return (
                 <button
                   key={item.id}
@@ -71,6 +91,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0 }) 
                   <small>
                     {CATEGORIES[item.category]} · {item.blurb}
                   </small>
+                  {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
                   <span className="catalog-price">
                     <span>{item.cost ? `${item.cost} 🧱` : "Bedava"}</span>
                     <em className={net < 0 ? "minus" : ""} title="Maaş eksi malzeme">net {net >= 0 ? "+" : ""}{net}</em>
@@ -84,7 +105,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0 }) 
         </section>
       ))}
       <p className="catalog-rules">
-        Yarıda bırakırsan malzemenin yarısı hemen, %30'u enkazı bir sonraki seansın kaldırınca geri gelir; %20 gider.
+        İşlevsel yapılar köyünde durdukça her seansına yardım eder. Yarıda bırakırsan malzemenin yarısı hemen, %30'u enkazı bir sonraki seansın kaldırınca geri gelir; %20 gider.
         İlk 2 dakikada vazgeçmek bedava.
       </p>
     </Modal>

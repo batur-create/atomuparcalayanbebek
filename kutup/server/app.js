@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
 import { statsOf } from "./stats.js";
-import { BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
+import { BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -428,6 +428,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   ];
 
 
+  // Friends who focused alongside a session for at least half of it (finished
+  // sessions from the log, and sessions still under way).
+  async function imeceOf(groupId, memberId, start, end) {
+    const rows = await db.all(
+      `SELECT f.member_id AS id, f.created - f.minutes * 60000 AS a, f.created AS b FROM focus_log f JOIN members m ON m.id = f.member_id
+       WHERE m.group_id = ? AND f.member_id <> ? AND f.created > ? AND f.created - f.minutes * 60000 < ?
+       UNION ALL
+       SELECT id, focus_end - focus_minutes * 60000, focus_end FROM members
+       WHERE group_id = ? AND id <> ? AND focus_end > ? AND focus_end - focus_minutes * 60000 < ?`,
+      [groupId, memberId, start, end, groupId, memberId, start, end],
+    );
+    const half = (end - start) / 2;
+    return new Set(rows.filter((r) => Math.min(r.b, end) - Math.max(r.a, start) >= half).map((r) => r.id)).size;
+  }
+
   // Completed focus sessions are credited by whoever reads the state next, so
   // minutes count even if the owner closed the tab. Every write is pinned to the
   // exact session (member and end time) and retrying() pins the group revision,
@@ -457,12 +472,22 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const pay = [];
       if (finished) {
         // A session started within ten minutes of the last one's end continues its streak.
-        const chain = s.chainEnd > 0 && s.ends - s.minutes * 60000 - s.chainEnd <= CHAIN_GAP ? s.chain + 1 : 1;
+        const start = s.ends - s.minutes * 60000;
+        const chain = s.chainEnd > 0 && start - s.chainEnd <= CHAIN_GAP ? s.chain + 1 : 1;
         const wage = wageFor(s.minutes, !!s.strict);
+        // Workshops already standing in the member's village help every session.
+        const owned = new Set((await db.all("SELECT DISTINCT model FROM buildings WHERE member_id = ?", [s.id])).map((b) => b.model));
+        const pct = (v) => `+%${Math.round(v * 100)}`;
         pay.push([wage, "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat` : `${s.minutes} dk serbest çalışma (yarım maaş)`]);
-        if (streakBonus(chain)) pay.push([Math.round(wage * streakBonus(chain)), "streak", `Seri: art arda ${chain}. seans (+%${Math.round(streakBonus(chain) * 100)})`]);
+        const streak = streakBonus(chain) + (chain >= 2 && owned.has("kutuphane") ? 0.05 : 0);
+        if (streak) pay.push([Math.round(wage * streak), "streak", `Seri: art arda ${chain}. seans (${pct(streak)}${owned.has("kutuphane") ? ", kütüphanen sayesinde" : ""})`]);
+        const friends = await imeceOf(groupId, s.id, start, s.ends);
+        const imece = imeceBonus(friends, owned.has("kahve"));
+        if (imece) pay.push([Math.round(wage * imece), "imece", `İmece: ${friends} arkadaşınla aynı anda (${pct(imece)})`]);
+        if (owned.has("firin")) pay.push([Math.round(wage * 0.05), "effect", "Fırının: maaşa +%5"]);
+        if (owned.has("sahaf")) pay.push([3, "effect", "Sahafın: +3 🧱"]);
         s.chainNext = chain;
-        if (!s.earlier) pay.push([DAILY_BONUS, "bonus", "Günün ilk seansı"]);
+        if (!s.earlier) pay.push([DAILY_BONUS * (owned.has("degirmen") ? 2 : 1), "bonus", owned.has("degirmen") ? "Günün ilk seansı (değirmenin: iki katı)" : "Günün ilk seansı"]);
         if (s.ruinUntil > now && s.ruinRefund > 0) pay.push([s.ruinRefund, "ruin-refund", "Enkaz kaldırıldı: kalan %30"]);
         statements.push(
           [

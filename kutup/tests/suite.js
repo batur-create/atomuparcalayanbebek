@@ -345,48 +345,49 @@ export function defineSuite(target) {
     assert.deepEqual((await request("/village", { cookie: people.bob })).data.buildings[0].slice(9), [1, 0, "kulube"]);
     // A client that already has the village only gets what changed since then.
     assert.equal((await request(`/village?after=${seen.until + 6000}`, { cookie: people.alice })).data.buildings.length, 0);
-    // The cottage was free and paid its wage plus the day's first-session bonus.
+    // The cottage was free and paid its wage, the day's first-session bonus and
+    // +5% imece: Aylin's session ran alongside it.
     const wallet = (await request("/wallet", { cookie: people.bob })).data;
-    assert.equal(wallet.bricks, 35);
-    assert.deepEqual(wallet.log.map((r) => [r.reason, r.delta]).sort(), [["bonus", 10], ["wage", 25]]);
+    assert.equal(wallet.bricks, 36);
+    assert.deepEqual(wallet.log.map((r) => [r.reason, r.delta]).sort(), [["bonus", 10], ["imece", 1], ["wage", 25]]);
     assert.deepEqual(wallet.built, { kulube: 1 });
     const bricks = async () => member(await state("bob"), "Deniz").bricks;
     // A two-storey house needs 40 tuğla of materials, paid up front.
     const short = await request("/focus", { cookie: people.bob, body: { action: "start", model: "ev", strict: true } });
     assert.equal(short.status, 400);
-    assert.match(short.data.error, /5 tuğla eksik/);
+    assert.match(short.data.error, /4 tuğla eksik/);
     assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", model: "ev", minutes: 25, strict: true } })).status, 400);
     assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", model: "yok", strict: true } })).status, 400);
     const grant = await request(`/owner/members/${deniz.id}/bricks`, { owner: adminKey, body: { delta: 200, note: "test" } });
-    assert.equal(grant.data.bricks, 235);
+    assert.equal(grant.data.bricks, 236);
     assert.equal((await request(`/owner/members/${deniz.id}/bricks`, { owner: adminKey, body: { delta: -1000 } })).status, 400);
     assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", model: "ev", strict: true } })).status, 200);
     const house = member(await state("bob"), "Deniz");
-    assert.deepEqual([house.focusMinutes, house.focusModel, house.focusCost, house.bricks], [50, "ev", 40, 195]);
+    assert.deepEqual([house.focusMinutes, house.focusModel, house.focusCost, house.bricks], [50, "ev", 40, 196]);
     // Closed the app mid-session: no minutes, no building, a collapse on the
     // board, half the materials back and 30% waiting for the rubble.
     await request("/__test/expire", { body: { name: "Deniz", away: true } });
     const later = await state("alice"); // anyone's read settles it
     assert.equal(member(later, "Deniz").focusWeek, 25);
     assert.equal(member(later, "Deniz").buildings, 1);
-    assert.deepEqual([member(later, "Deniz").bricks, member(later, "Deniz").ruinRefund], [215, 12]);
+    assert.deepEqual([member(later, "Deniz").bricks, member(later, "Deniz").ruinRefund], [216, 12]);
     assert.ok(later.messages.some((m) => m.text.startsWith("inşaatı çöktü 🧱")));
     const ruin = (await request("/village", { cookie: people.alice })).data.ruins.find((r) => r[0] === deniz.id);
     assert.equal(ruin[1], "house", "the collapsed site stays as rubble");
     assert.ok(ruin[4] > Date.now() + 2 * 24 * 3600000);
     // Changing your mind in the first two minutes costs nothing and leaves no rubble.
     await request("/focus", { cookie: people.bob, body: { action: "start", model: "kule", strict: true } });
-    assert.equal(await bricks(), 125);
+    assert.equal(await bricks(), 126);
     const early = await request("/focus", { cookie: people.bob, body: { action: "cancel" } });
     assert.deepEqual([early.data.withered, early.data.refunded, early.data.pending], [false, 90, 0]);
-    assert.deepEqual([member(early.data.state, "Deniz").bricks, member(early.data.state, "Deniz").ruinRefund], [215, 12]);
+    assert.deepEqual([member(early.data.state, "Deniz").bricks, member(early.data.state, "Deniz").ruinRefund], [216, 12]);
     // Leaving the app later on (reported by the client) collapses it right away.
     await request("/focus", { cookie: people.bob, body: { action: "start", model: "kule", strict: true } });
     await request("/__test/age", { body: { name: "Deniz" } });
     const left = await request("/focus", { cookie: people.bob, body: { action: "wither" } });
     assert.deepEqual([left.data.withered, left.data.refunded, left.data.pending], [true, 45, 27]);
     assert.equal(member(left.data.state, "Deniz").focusEnd, 0);
-    assert.deepEqual([member(left.data.state, "Deniz").bricks, member(left.data.state, "Deniz").ruinRefund], [170, 27]);
+    assert.deepEqual([member(left.data.state, "Deniz").bricks, member(left.data.state, "Deniz").ruinRefund], [171, 27]);
     // A plain session builds nothing and pays half a wage, but it is a real
     // session: it clears the rubble and brings back the waiting 30%.
     await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 25 } });
@@ -394,9 +395,9 @@ export function defineSuite(target) {
     const plain = member(await state("bob"), "Deniz");
     assert.equal(plain.focusWeek, 50);
     assert.equal(plain.buildings, 1);
-    assert.deepEqual([plain.bricks, plain.ruinRefund, plain.ruinUntil], [210, 0, 0]);
-    const receipt = (await request("/wallet", { cookie: people.bob })).data.log.slice(0, 2).map((r) => [r.reason, r.delta]);
-    assert.deepEqual(receipt.sort(), [["ruin-refund", 27], ["wage", 13]]);
+    assert.deepEqual([plain.bricks, plain.ruinRefund, plain.ruinUntil], [212, 0, 0]);
+    const receipt = (await request("/wallet", { cookie: people.bob })).data.log.slice(0, 3).map((r) => [r.reason, r.delta]);
+    assert.deepEqual(receipt.sort(), [["imece", 1], ["ruin-refund", 27], ["wage", 13]]);
     assert.equal((await request("/village", { cookie: people.alice })).data.ruins.some((r) => r[0] === deniz.id), false);
     // The next building clears the rubble and never moves the first one.
     await request("/focus", { cookie: people.bob, body: { action: "start", minutes: 25, strict: true } });
@@ -408,7 +409,7 @@ export function defineSuite(target) {
     assert.deepEqual(grown.buildings.find((b) => b[0] === buildingId).slice(4, 7), [x, y, facing]);
     assert.equal(grown.ruins.some((r) => r[0] === deniz.id), false);
     // Started straight after the plain session: the second in a row, +10%.
-    assert.equal(await bricks(), 238);
+    assert.equal(await bricks(), 241);
     const streak = (await request("/wallet", { cookie: people.bob })).data.log.find((r) => r.reason === "streak");
     assert.equal(streak.delta, 3);
     assert.equal(member(await state("bob"), "Deniz").chain, 2);

@@ -19,15 +19,15 @@ export const CATALOG = [
   { id: "kulube", name: "Kulübe", emoji: "🏡", class: "small", kind: "cottage", category: "home", cost: 0, done: "kulübesini", blurb: "Her zaman bedava. Her köy bir kulübeyle başlar." },
   { id: "bostan", name: "Bostan Evi", emoji: "🥕", class: "small", kind: "cottage", category: "home", cost: 15, done: "bostan evini", blurb: "Ahşap ev, önünde sebze tarhları.", look: { wall: "wood", roof: 2, beds: true } },
   { id: "cicekci", name: "Çiçekçi", emoji: "💐", class: "small", kind: "cottage", category: "fancy", cost: 25, done: "çiçekçisini", blurb: "Çizgili tente, pencerelerde saksılar.", look: { wall: "sage", roof: 4, awning: "#e98aa8", boxes: true } },
-  { id: "kahve", name: "Kır Kahvesi", emoji: "☕", class: "small", kind: "cottage", category: "work", cost: 30, done: "kır kahvesini", blurb: "Önünde iki masa; mola burada verilir.", look: { wall: "cream", roof: 1, awning: "#c0533e", tables: true, sign: "KAHVE" } },
+  { id: "kahve", name: "Kır Kahvesi", emoji: "☕", class: "small", kind: "cottage", category: "work", cost: 30, done: "kır kahvesini", blurb: "Önünde iki masa; mola burada verilir.", effect: "İmecede arkadaş başına +%8 (normalde +%5)", look: { wall: "cream", roof: 1, awning: "#c0533e", tables: true, sign: "KAHVE" } },
   { id: "ev", name: "İki Katlı Ev", emoji: "🏠", class: "medium", kind: "house", category: "home", cost: 40, done: "iki katlı evini", blurb: "Bacası tüten, iki katlı aile evi." },
-  { id: "sahaf", name: "Sahaf", emoji: "📚", class: "medium", kind: "house", category: "work", cost: 60, done: "sahafını", blurb: "Eski kitaplar, mavi tente.", look: { wall: "wood", roof: 0, awning: "#4a76b0", sign: "SAHAF", shutters: "#345d93" } },
-  { id: "firin", name: "Fırın", emoji: "🥖", class: "medium", kind: "house", category: "work", cost: 70, done: "fırınını", blurb: "Taş fırının bacası hiç sönmez.", look: { wall: "brick", roof: 3, chimney: true, awning: "#d4a24c", sign: "FIRIN" } },
+  { id: "sahaf", name: "Sahaf", emoji: "📚", class: "medium", kind: "house", category: "work", cost: 60, done: "sahafını", blurb: "Eski kitaplar, mavi tente.", effect: "Her seansta +3 🧱", look: { wall: "wood", roof: 0, awning: "#4a76b0", sign: "SAHAF", shutters: "#345d93" } },
+  { id: "firin", name: "Fırın", emoji: "🥖", class: "medium", kind: "house", category: "work", cost: 70, done: "fırınını", blurb: "Taş fırının bacası hiç sönmez.", effect: "Her seansta maaşa +%5", look: { wall: "brick", roof: 3, chimney: true, awning: "#d4a24c", sign: "FIRIN" } },
   { id: "konak", name: "Konak", emoji: "🏘️", class: "medium", kind: "house", category: "home", cost: 80, done: "konağını", blurb: "Balkonlu, kepenkli beyaz konak.", look: { wall: "cream", roof: 5, balcony: true, shutters: "#4f9d8a", chimney: true } },
   { id: "kule", name: "Kule", emoji: "🏰", class: "large", kind: "tower", category: "home", cost: 90, done: "kulesini", blurb: "Bayraklı, üç katlı taş kule." },
-  { id: "degirmen", name: "Yel Değirmeni", emoji: "🌾", class: "large", kind: "tower", category: "work", cost: 120, done: "yel değirmenini", blurb: "Kanatları rüzgârla döner.", look: { wall: "cream", roof: 1, sails: true, flag: false } },
+  { id: "degirmen", name: "Yel Değirmeni", emoji: "🌾", class: "large", kind: "tower", category: "work", cost: 120, done: "yel değirmenini", blurb: "Kanatları rüzgârla döner.", effect: "Günün ilk seansı +20 🧱 (normalde +10)", look: { wall: "cream", roof: 1, sails: true, flag: false } },
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },
-  { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
+  { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
 ];
 export const BY_ID = Object.fromEntries(CATALOG.map((item) => [item.id, item]));
 export const DEFAULT_MODEL = { cottage: "kulube", house: "ev", tower: "kule" };
@@ -48,6 +48,11 @@ export const GRACE = 2 * 60000; // changing your mind in the first two minutes c
 export const RUIN_DAYS = 3; // rubble left uncleared this long takes its 30% with it
 export const CHAIN_GAP = 10.5 * 60000; // a break of up to ten minutes keeps a streak going
 
+// Imece: every friend focusing alongside you for at least half of your session.
+export const IMECE_EACH = 0.05;
+export const IMECE_MAX = 0.2;
+export const imeceBonus = (friends, cafe = false) => Math.round(Math.min(IMECE_MAX, friends * (cafe ? 0.08 : IMECE_EACH)) * 100) / 100;
+
 /** Streak bonus on the wage of the n-th session in a row: 2nd +10%, 3rd on +20%. */
 export const streakBonus = (n) => (n >= 3 ? 0.2 : n === 2 ? 0.1 : 0);
 
@@ -66,6 +71,8 @@ export const REASONS = {
   wage: "Maaş",
   bonus: "Günün ilk seansı",
   streak: "Seri",
+  imece: "İmece",
+  effect: "Yapı etkisi",
   cost: "Malzeme",
   refund: "İade",
   "ruin-refund": "Enkaz kaldırıldı",
