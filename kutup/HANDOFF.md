@@ -99,6 +99,11 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 14 Ekim 2026)
 
+- **Kara kalite revizyonu canlı:** `4c35d95e`, Worker `fce5c608-7e05-40fb-bba6-0b71b267fd92`. Atkı düğüm/iki kumaş ucu/kat/püskül ile yeniden çizildi; doğal duraklama, gecikmeli kumaş hareketi, sakin mırlama, hızlı göz kırpma ve pozuna dönen selam eklendi. 78 test + 30 tarayıcı kontrolü, canlı sağlık ve derleme hash kontrolü geçti. Ayrıntı ASTRA_RAPOR_2.md sonunda.
+
+- **Kara canlı — 15 Ekim 2026:** Batur statik görseli istemedi; adını Kara olarak değiştirdi, doğal kara kedi/kehribar göz fenotipini onayladı. `ca7c9ff9` ile bitmap kaldırıldı, parçalı SVG rig + bakış/kafa takibi, göz kırpma, kuyruk/kulak/atkı, dokunma/pati, uzun basma/mırlama, tekrar dokunma/ters bakış, kitap/uyku/uyanma eklendi. Gerçek odak durumunda kitap okur; 45 sn kendi hâlinde kalınca uyur. Tema ve azaltılmış hareket destekli; ekran dışında animasyonlar durur. `bc5f02d3` Claude inşaat güncellemesi aynen alındı. 78 test + 30 tarayıcı kontrolü geçti. Worker `383c3a7c-3946-4d42-9bf8-a084a54d3a0e`; canlı JS/CSS yerel testli derlemeyle aynı. Sonraki yayın için `astra/gorevler` dalını dahil et. Önceki Mürekkep/WebP notu tarihsel, artık geçerli tasarım değil.
+
+
 - **Astra 2. tur — 15 Ekim 2026, canlı:** Batur'un doğrudan yayın onayıyla 1A kalıcı bildirim kuyruğu (`35ba3adb`, göç 13) ve küçük Mürekkep tanışma kartı (`82b44941`) yayınlandı. Son Worker sürümü `2bcaa74b-fe63-4e14-beef-25541ef97f8f`. 78 test, 18 mevcut tarayıcı kontrolü ve 6 maskot kontrolü geçti; canlı sağlık/görsel/JS, şema 13, cron ve test hook kapalılığı doğrulandı. **Kod `astra/gorevler` dalında; sonraki platform yayını öncesi bu dalı birleştir, eski kodla geri alma.** Korunan köy/şantiye dosyaları değişmedi. Mürekkep şimdilik sabit mor atkılı WebP + etkileşimli kart; tam SVG/poz/rozet sistemi değil. 1B ve diğer görevler bekliyor. Ayrıntılar: [ASTRA_RAPOR_2.md](ASTRA_RAPOR_2.md).
 
 ### Astra denetimi (14 Ekim 2026)

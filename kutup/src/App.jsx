@@ -1194,7 +1194,7 @@ export default function App() {
                 )}
               </section>
               <div className="right-stack">
-                <MascotCard navigate={navigate} />
+                <MascotCard navigate={navigate} focusing={Boolean(me?.focus_end > now)} />
                 <CoffeeCard
                   requireMember={requireMember}
                   onCoffee={() => setModal("coffee")}

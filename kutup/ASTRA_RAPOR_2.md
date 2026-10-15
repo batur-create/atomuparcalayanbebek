@@ -36,3 +36,26 @@ Bu teslim, Batur'un hızlı görsel üretim isteğine göre **Görev 4'ün küç
 - 1A öncesi gizli yedek, depo dışında `/workspace/kutup-private-backups/2026-10-14-1a/`: SQL, doğrulanmış SQLite, manifest. Önceki turda integrity/foreign-key kontrolleri geçti; dosyaların mevcudiyeti bu turda doğrulandı. İçerikleri paylaşılmadı. Maskot yayını veritabanı göçü eklemedi; yayın öncesi Worker sürüm bilgisi `/tmp/kutup-pre-mascot-deployment.json` dosyasına kaydedildi.
 
 Onaylı kapsam bitti. 1B, rozetler, oyunlar ve tam maskot sistemi için yeni adım onayı beklenir.
+
+
+## Ek teslim — Kara, canlı SVG karakter (15 Ekim 2026)
+
+Batur bitmap kartını reddedip kodla yaşayan bir karakter istedi, ardından adı **Kara** ve doğal kara kedi fenotipini seçti. `ca7c9ff9` bu revizyonu uygular; eski WebP depodan kaldırıldı. `src/LiveMascot.jsx` parçalı SVG/tepki yaşam döngüsünü, `mascot.css` eklem animasyonlarını, `Mascot.jsx` üç hâli ve etkileşim metinlerini yönetir. `App.jsx` gerçek odak durumunu geçirir. Siyah/füme tüy ve kehribar gözler doğal renkler; fantastik desen yok. Atkı tema rengini izler.
+
+- İmleç/parmak hareketi sınırlı göz ve gecikmeli kafa yönüne aktarılır; pointer hareketi React render oluşturmaz.
+- Dokunma pati/kulak/atkı tepkisi; 550 ms basılı tutma görsel mırlama; art arda üç dokunma ters bakış. Ses çalınmaz.
+- Selam, kitap okuma ve şekerleme; uyku çıkışında 1,1 sn uyanma geçişi, ardından kitap açılması. Otomatik 45 sn uyku ve odak başlangıcında okuma.
+- Göz kırpma, kulak, kuyruk, nefes, atkı ve gözlük hareketleri farklı periyotlarda. IntersectionObserver ve sayfa görünürlüğü animasyonları durdurur; unmount dinleyici/zamanlayıcıları temizler. Azaltılmış hareket tüm döngüleri ve geçişleri kapatır, hâl değişimi korunur.
+- `tests/browser_smoke.py` artık **30 kontrol** içeriyor: SVG/bitmap yokluğu, uyanma, kitap, klavye, çoklu dokunma, uzun basma, reduced-motion, tercihin saklanması, bakış takibi, aktif animasyon, geçişli uyanma, tema, ekran dışında durma ve önceki uygulama kontrolleri. `npm run test:all` **78/78**. Ayrıca 375/1440 px görsel inceleme yapıldı. Gerçek telefonda FPS/pil ölçümü yapılmadı.
+- Upstream `bc5f02d3` inşaat iyileştirmeleri fast-forward ile korundu; korunan dosyalara yerel müdahale yok. Göç veya sunucu değişikliği yok.
+- Yayın sürümü **383c3a7c-3946-4d42-9bf8-a084a54d3a0e**; önceki sürüm `690ded05-ac46-4754-9481-ade12f651236` metadata yedeği `/tmp/kutup-pre-kara-deployment.json`. Mevcut DB/secret bağları doğrulandı, `--keep-vars` kullanıldı. Canlı sağlık ve JS/CSS hash eşitliği geçti; canlı JS bitmap referansı içermiyor.
+- Tam 9 poz, rozet, oyun veya köy entegrasyonu bu teslimde yok. İsim UI'da Kara; geçmiş tercihi kaybetmemek için CSS/storage içindeki murekkep adları korundu.
+
+
+## Kara kalite düzeltmesi — 15 Ekim 2026
+
+Batur'un atkı ve hareket doğallığı geri bildirimi üzerine yalnız `LiveMascot.jsx` ve `mascot.css` değiştirildi. Atkı boyna oturan kıvrımlı bir sarım, düğüm, iki bağımsız kumaş ucu, kat çizgileri ve püsküllerle yeniden çizildi. Tema renkleri korunuyor. Uçların hareketi düşük genlikli ve faz farkıyla çalışıyor; selam hareketine gecikmeli, sönümlenen tepki veriyor.
+
+Nefes/kuyruk hareketleri küçültüldü; kuyruk döngüsüne duraklamalar, göz kırpmaya hızlı kapanma/yavaş açılma ve çift kırpma eklendi. Gözlüğün kendi kendine zıplaması kaldırıldı. Mırlamadaki hızlı kafa titremesi yerini yavaş baş yaslamaya bıraktı. Selam kulak/kafa hazırlığından sonra patiye geçiyor; kitap okurken verilen tepki aynı dinlenme pozuna dönüyor. Kitabın yanlışlıkla koyu kalan sayfa dolgusu da düzeltildi. Bu bir SVG/keyframe animasyonu; kumaş fiziği simülasyonu değildir.
+
+Doğrulama: son kodda 78/78 test ve 30/30 tarayıcı kontrolü geçti. Mobil çizim incelendi. Commit `4c35d95e`; canlı sürüm `fce5c608-7e05-40fb-bba6-0b71b267fd92`. Canlı sağlık ve JS/CSS hash eşitliği doğrulandı. Yayın öncesi sürüm metadata yedeği `/tmp/kutup-before-scarf.json`.
