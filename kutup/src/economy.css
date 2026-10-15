@@ -408,3 +408,21 @@ button.brick-pill {
   border-color: #e3c26a;
   background: #fff8e6;
 }
+
+/* Build mode on a phone: is the screen being kept awake? */
+.awake-note {
+  margin: 6px 0 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+.awake-note.ok {
+  color: #cfe3b1;
+  background: rgba(214, 239, 158, 0.08);
+}
+.awake-note.warn {
+  color: #f6dc9a;
+  background: rgba(242, 193, 78, 0.16);
+}

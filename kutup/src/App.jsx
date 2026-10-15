@@ -32,8 +32,6 @@ import {
   Trash2,
   Trophy,
   Users,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
 import {
@@ -56,6 +54,7 @@ import {
   pushSupported,
   reducedMotion,
   releaseScreen,
+  screenAwake,
   storage,
   isIOS,
   standalone,
@@ -68,6 +67,7 @@ import { kindFor } from "./Village.jsx";
 import { BY_ID, CHAIN_GAP, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { MemberStats } from "./Stats.jsx";
+import { SoundMixer } from "./Sound.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
@@ -1323,7 +1323,7 @@ export default function App() {
                   session={session}
                   week={data.week}
                 />
-                <AmbientSound />
+                <SoundMixer focusing={!!me?.focusEnd && me.focusEnd > now} />
                 <WeekBoard members={data.members} me={me} />
                 <section className="panel">
                   <div className="section-heading">
@@ -1774,6 +1774,13 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           <p className="free-note">Serbest çalışma: yapı yok, risk yok, maaşın yarısı ({duration} dk → {wageFor(duration, false)} 🧱).</p>
         </>
       )}
+      {growing && !onComputer() && (
+        <p className={`awake-note ${screenAwake() ? "ok" : "warn"}`}>
+          {screenAwake()
+            ? "🔆 Ekran açık tutuluyor; telefonu önünde açık bırakabilirsin."
+            : "⚠️ Bu telefon ekranı kendi kapatabilir: pil tasarrufunu kapat ya da ekran zaman aşımını uzat. Ekran kararırsa 1 dakika içinde dokun."}
+        </p>
+      )}
       {streakLeft > 0 && streakNext > 0 && (
         <p className="streak-note">
           🔥 Seri {me.chain}: {Math.floor(streakLeft / 60000)}:{String(Math.floor((streakLeft % 60000) / 1000)).padStart(2, "0")} içinde başlarsan
@@ -1801,7 +1808,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
             <b>İnşaat modu {fidan ? "açık" : "kapalı"}</b>
             <small>
               {fidan
-                ? `${length} dk sonunda köyüne ${item.name.toLocaleLowerCase("tr")} eklenir ve tam maaşın yatar. ${onComputer() ? "Bilgisayarda sekme ve uygulama değiştirmek serbest; bu sekmeyi kapatırsan yıkılır. Telefonda da açık tutarsan telefonun bekçin olur." : "Ekran açık kalır; uygulamadan çıkarsan 1 dakika içinde dönmelisin, yoksa yıkılır."}`
+                ? `${length} dk sonunda köyüne ${item.name.toLocaleLowerCase("tr")} eklenir ve tam maaşın yatar. ${onComputer() ? "Bilgisayarda sekme ve uygulama değiştirmek serbest; bu sekmeyi kapatırsan yıkılır. Telefonda da açık tutarsan telefonun bekçin olur." : "Ekran açık kalır, telefonu kilitleme. Uygulamadan çıkarsan 1 dakika içinde dönmelisin, yoksa yıkılır."}`
                 : "Açınca katalogdan bir yapı seçersin: tam maaş ve köyüne bir bina. Kapalıyken serbest çalışırsın: yarım maaş."}
             </small>
           </span>
@@ -2600,65 +2607,6 @@ function MemberModal({ member, now, close, mutate }) {
         Davet ekip panosuna düşer; özel mesaj değildir.
       </p>
     </Modal>
-  );
-}
-function AmbientSound() {
-  const [playing, setPlaying] = useState(false),
-    audio = useRef(null);
-  useEffect(
-    () => () => {
-      audio.current?.close();
-    },
-    [],
-  );
-  const toggle = () => {
-    if (playing) {
-      audio.current?.close();
-      audio.current = null;
-      setPlaying(false);
-      return;
-    }
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const context = new AudioContext(),
-      buffer = context.createBuffer(
-        1,
-        context.sampleRate * 4,
-        context.sampleRate,
-      ),
-      output = buffer.getChannelData(0);
-    let last = 0;
-    for (let i = 0; i < output.length; i++) {
-      last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
-      output[i] = last * 3.5;
-    }
-    const source = context.createBufferSource(),
-      gain = context.createGain();
-    source.buffer = buffer;
-    source.loop = true;
-    gain.gain.value = 0.23;
-    source.connect(gain);
-    gain.connect(context.destination);
-    source.start();
-    audio.current = context;
-    setPlaying(true);
-  };
-  return (
-    <section className="ambient-card">
-      <span>🌧️</span>
-      <div>
-        <h3>Şehir biraz sussun.</h3>
-        <p>Yumuşak bir arka plan sesi.</p>
-      </div>
-      <button
-        aria-label={playing ? "Ortam sesini kapat" : "Ortam sesini aç"}
-        aria-pressed={playing}
-        className={`icon-button ${playing ? "playing" : ""}`}
-        onClick={toggle}
-      >
-        {playing ? <Volume2 size={21} /> : <VolumeX size={21} />}
-      </button>
-    </section>
   );
 }
 // Getting notifications working is the whole point of Kütüp, so the home screen

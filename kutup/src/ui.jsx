@@ -24,20 +24,65 @@ export const pushSupported =
   "Notification" in window &&
   "PushManager" in window &&
   "serviceWorker" in navigator;
-// Build mode keeps the screen awake so the phone does not lock itself mid-session.
-let wakeSentinel = null;
-export async function keepScreenOn() {
-  try {
-    if (!wakeSentinel || wakeSentinel.released)
-      wakeSentinel = await navigator.wakeLock?.request("screen");
-  } catch {
-    // Not supported or refused (battery saver): the session still works.
+// Build mode keeps the screen awake so the phone does not lock itself mid-session
+// (a screen that goes dark on its own looks exactly like leaving the app).
+// The Wake Lock API first; it is dropped whenever the page is hidden, and some
+// phones refuse it (battery saver), so it is asked for again on every return,
+// and a tiny, near-invisible playing video stands in when it is refused:
+// most phones do not dim the screen while a video plays.
+let wakeSentinel = null,
+  wakeVideo = null,
+  wakeWanted = false;
+export const screenAwake = () => !!(wakeSentinel && !wakeSentinel.released) || !!(wakeVideo && !wakeVideo.paused);
+function playKeepAwake() {
+  if (!wakeVideo) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 2;
+    const stream = canvas.captureStream?.(1);
+    if (!stream) return;
+    const paint = canvas.getContext("2d");
+    wakeVideo = document.createElement("video");
+    wakeVideo.muted = true;
+    wakeVideo.playsInline = true;
+    wakeVideo.setAttribute("playsinline", "");
+    wakeVideo.setAttribute("aria-hidden", "true");
+    wakeVideo.srcObject = stream;
+    Object.assign(wakeVideo.style, { position: "fixed", left: "0", bottom: "0", width: "2px", height: "2px", opacity: "0.01", pointerEvents: "none" });
+    document.body.appendChild(wakeVideo);
+    let frame = 0;
+    wakeVideo.dataset.timer = String(
+      setInterval(() => {
+        paint.fillStyle = frame++ % 2 ? "#000" : "#010101";
+        paint.fillRect(0, 0, 2, 2);
+      }, 1000),
+    );
   }
+  wakeVideo.play().catch(() => {});
+}
+export async function keepScreenOn() {
+  wakeWanted = true;
+  try {
+    if (!wakeSentinel || wakeSentinel.released) wakeSentinel = (await navigator.wakeLock?.request("screen")) || null;
+  } catch {
+    wakeSentinel = null; // not supported or refused (battery saver)
+  }
+  if (!(wakeSentinel && !wakeSentinel.released)) playKeepAwake();
 }
 export function releaseScreen() {
+  wakeWanted = false;
   wakeSentinel?.release().catch(() => {});
   wakeSentinel = null;
+  if (wakeVideo) {
+    clearInterval(Number(wakeVideo.dataset.timer));
+    wakeVideo.pause();
+    wakeVideo.srcObject = null;
+    wakeVideo.remove();
+    wakeVideo = null;
+  }
 }
+document.addEventListener("visibilitychange", () => {
+  if (wakeWanted && document.visibilityState === "visible") keepScreenOn();
+});
 // VAPID public key (base64url) → the byte array PushManager.subscribe wants.
 export function pushKey(base64url) {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
