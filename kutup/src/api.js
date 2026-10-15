@@ -58,7 +58,10 @@ export const AVATARS = [
   "🍵",
   "🎨",
   "🐝",
+  "🦉", "🐧", "🐙", "🦖", "🐢", "🦔", "🐳", "🌵", "🍀", "🍩", "🎸", "🧠",
 ];
+// Only the profile with the founder's badge may wear these.
+export const FOUNDER_AVATARS = ["✳", "🕳️", "🌌", "🛸", "🏗️"];
 export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
 export const COLOR_NAMES = {
   lilac: "Lavanta",

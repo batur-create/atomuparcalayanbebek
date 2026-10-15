@@ -11,7 +11,10 @@ import { BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, m
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
   "🐻", "🐼", "🦄", "🌙", "⭐", "🍓", "🌸", "🐸", "🧸", "🍵", "🎨", "🐝",
+  "🦉", "🐧", "🐙", "🦖", "🐢", "🦔", "🐳", "🌵", "🍀", "🍩", "🎸", "🧠",
 ];
+// Only the profile with the founder's badge may wear these.
+export const FOUNDER_AVATARS = ["✳", "🕳️", "🌌", "🛸", "🏗️"];
 export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
 const STATUSES = ["here", "coming", "break", "away"];
 const HOUR = 3600000;
@@ -79,10 +82,11 @@ function text(value, max, label, min = 0) {
     fail(`${label} ${min || 1}–${max} karakter olmalı.`);
   return clean;
 }
-function profile(body) {
+function profile(body, member = null) {
+  const founder = member?.badge === "dev" && FOUNDER_AVATARS.includes(body.avatar);
   return {
     name: text(body.name, 24, "İsim", 2),
-    avatar: AVATARS.includes(body.avatar) ? body.avatar : "🪐",
+    avatar: AVATARS.includes(body.avatar) || founder ? body.avatar : "🪐",
     color: COLORS.includes(body.color) ? body.color : "lilac",
     note: text(body.note || "", 70, "Masa notu"),
   };
@@ -968,7 +972,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   });
 
   route("POST", "/profile", async ({ member, body }) => {
-    const p = profile(body);
+    const p = profile(body, member);
     await retrying(async () => {
       const names = await db.all("SELECT name FROM members WHERE group_id = ? AND id <> ?", [
       member.group_id,

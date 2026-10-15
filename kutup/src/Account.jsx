@@ -1,7 +1,7 @@
 // Account entry, profile customization and moving between devices.
 import React, { useEffect, useState } from "react";
 import { ArrowRight, Check, KeyRound, LogOut, Plus, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
-import { api, AVATARS, COLORS, COLOR_NAMES, THEMES } from "./api.js";
+import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 const LOGIN_TABS = [["login", "Giriş"], ["reset", "Şifremi unuttum"], ["code", "Kodla"]];
@@ -39,7 +39,7 @@ function ProfileFields({ value, setValue }) {
       </label>
       <label className="field-label">Küçük alter egon</label>
       <div className="avatar-options">
-        {AVATARS.map((a) => (
+        {[...AVATARS, ...(value.badge === "dev" ? FOUNDER_AVATARS : [])].map((a) => (
           <button
             type="button"
             key={a}
@@ -527,6 +527,7 @@ export function ProfileModal({ me, username, onAccount, theme, setTheme, close, 
       avatar: me.avatar,
       color: me.color,
       note: me.note,
+      badge: me.badge,
     }),
     [busy, setBusy] = useState(false);
   const leave = async () => {
