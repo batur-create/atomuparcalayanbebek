@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
 import { statsOf } from "./stats.js";
-import { BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
+import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RARE, RUIN_DAYS, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -443,6 +443,26 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return new Set(rows.filter((r) => Math.min(r.b, end) - Math.max(r.a, start) >= half).map((r) => r.id)).size;
   }
 
+  // Which rare building's blueprint, if any, a finished session turns up.
+  async function blueprintFor(s, now) {
+    const [have, days] = await db.read([
+      ["SELECT model FROM unlocks WHERE member_id = ?", [s.id]],
+      [`SELECT DISTINCT (created + ${TR_OFFSET}) / ${DAY} AS d FROM focus_log WHERE member_id = ? ORDER BY d DESC LIMIT 40`, [s.id]],
+    ]);
+    const left = RARE.filter((item) => !have.some((h) => h.model === item.id));
+    if (!left.length) return null;
+    const random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+    const pick = () => left[Math.floor(random() * left.length)];
+    // The day streak this session makes, counted back from its own day.
+    const today = Math.floor((s.ends + TR_OFFSET) / DAY),
+      seen = new Set(days.map((r) => r.d).concat(today));
+    let streak = 0;
+    while (seen.has(today - streak)) streak++;
+    if (!s.earlier && BLUEPRINT_STREAKS.includes(streak)) return { item: pick(), source: "streak", days: streak };
+    if (random() < (config.testHooks ? 0 : BLUEPRINT_CHANCE)) return { item: pick(), source: "luck" };
+    return null;
+  }
+
   // Completed focus sessions are credited by whoever reads the state next, so
   // minutes count even if the owner closed the tab. Every write is pinned to the
   // exact session (member and end time) and retrying() pins the group revision,
@@ -488,6 +508,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (owned.has("sahaf")) pay.push([3, "effect", "Sahafın: +3 🧱"]);
         s.chainNext = chain;
         if (!s.earlier) pay.push([DAILY_BONUS * (owned.has("degirmen") ? 2 : 1), "bonus", owned.has("degirmen") ? "Günün ilk seansı (değirmenin: iki katı)" : "Günün ilk seansı"]);
+        // A blueprint for a rare building: by luck, or for a day streak of 7, 14 or 30.
+        const plan = await blueprintFor(s, now);
+        if (plan) {
+          pay.push([0, "blueprint", `🎁 Nadir plan: ${plan.item.name}${plan.source === "streak" ? ` (${plan.days} günlük seri ödülü)` : ""}`]);
+          statements.push([
+            "INSERT OR IGNORE INTO unlocks (member_id, model, source, created) SELECT id, ?, ?, ? FROM members WHERE id = ? AND focus_end = ?",
+            [plan.item.id, plan.source, now, s.id, s.ends],
+          ]);
+        }
         if (s.ruinUntil > now && s.ruinRefund > 0) pay.push([s.ruinRefund, "ruin-refund", "Enkaz kaldırıldı: kalan %30"]);
         statements.push(
           [
@@ -739,6 +768,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM achievements WHERE member_id = ?", [id]],
       ["DELETE FROM bricks_log WHERE member_id = ?", [id]],
       ["DELETE FROM activity WHERE member_id = ?", [id]],
+      ["DELETE FROM unlocks WHERE member_id = ?", [id]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
@@ -1287,6 +1317,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       end = now + minutes * 60000;
     }
     const cost = item?.cost || 0;
+    if (item?.rare === "founder" && m.badge !== "dev") fail("Bu yapı yalnız Kütüp'ün kurucusuna ait.");
+    if (item?.rare === true && !(await db.get("SELECT 1 AS ok FROM unlocks WHERE member_id = ? AND model = ?", [m.id, item.id])))
+      fail(`${item.name} nadir bir yapı: önce planını bulman lazım. Bitirdiğin her seansta şansın var.`);
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
     await retrying(async () => {
       const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);
@@ -1310,11 +1343,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // collection) and, with ?session=<end>, the receipt of that session.
   route("GET", "/wallet", async ({ member, url }) => {
     const session = Number(url.searchParams.get("session")) || 0;
-    const [me, log, built, receipt] = await db.read([
+    const [me, log, built, receipt, unlocks] = await db.read([
       ["SELECT bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund FROM members WHERE id = ?", [member.id]],
       ["SELECT delta, reason, ref, note, created FROM bricks_log WHERE member_id = ? ORDER BY created DESC, rowid DESC LIMIT 40", [member.id]],
       ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, count(*) AS n FROM buildings WHERE member_id = ? GROUP BY 1", [member.id]],
       ["SELECT delta, reason, note, created FROM bricks_log WHERE member_id = ? AND ref = ? ORDER BY rowid", [member.id, sessionRef(member.id, session)]],
+      ["SELECT model FROM unlocks WHERE member_id = ?", [member.id]],
     ]);
     return json({
       bricks: me[0]?.bricks || 0,
@@ -1322,6 +1356,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       log,
       built: Object.fromEntries(built.map((b) => [b.model, b.n])),
       receipt: session ? receipt : [],
+      unlocks: unlocks.map((u) => u.model),
     });
   });
 
@@ -1739,7 +1774,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {
@@ -1767,6 +1802,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         "UPDATE members SET focus_end = CASE WHEN focus_end > 0 THEN ? ELSE 0 END, focus_beat = CASE WHEN ? THEN 0 ELSE ? END, status_until = 0 WHERE name = ?",
         [Date.now() - 1000, body.away ? 1 : 0, Date.now() - 1000, body.name],
       );
+      return json({ ok: true });
+    }, false);
+
+  if (config.testHooks)
+    route("POST", "/__test/unlock", async ({ body }) => {
+      // Hands the named person a blueprint.
+      await db.run("INSERT OR IGNORE INTO unlocks (member_id, model, source, created) SELECT id, ?, 'test', ? FROM members WHERE name = ?", [body.model, Date.now(), body.name]);
       return json({ ok: true });
     }, false);
 

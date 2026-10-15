@@ -187,6 +187,10 @@ export const migrations = [
     "INSERT INTO activity (id, member_id, kind, detail, created) SELECT lower(hex(randomblob(16))), member_id, 'leave', NULL, created FROM messages WHERE kind = 'system' AND text LIKE 'bugünlük paydos%'",
     "INSERT INTO activity (id, member_id, kind, detail, created) SELECT lower(hex(randomblob(16))), member_id, 'collapse', NULL, created FROM messages WHERE kind = 'system' AND text LIKE 'inşaatı çöktü%'",
   ],
+  // 17 — blueprints: the rare buildings a member may build.
+  [
+    "CREATE TABLE unlocks (member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, model TEXT NOT NULL, source TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(member_id, model))",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

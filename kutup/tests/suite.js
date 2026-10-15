@@ -422,6 +422,16 @@ export function defineSuite(target) {
     assert.equal(stats.focus.streak.current, 1);
     assert.equal(stats.focus.last14.at(-1)[1], 75);
     assert.equal((await request(`/stats/${deniz.id}`, { cookie: people.charlie })).status, 404);
+    // Rare buildings need a blueprint; the observatory is the founder's alone.
+    const noPlan = await request("/focus", { cookie: people.bob, body: { action: "start", model: "sera", strict: true } });
+    assert.equal(noPlan.status, 400);
+    assert.match(noPlan.data.error, /planını/);
+    assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", model: "gozlemevi", strict: true } })).status, 400);
+    await request("/__test/unlock", { body: { name: "Deniz", model: "sera" } });
+    assert.deepEqual((await request("/wallet", { cookie: people.bob })).data.unlocks, ["sera"]);
+    assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", model: "sera", strict: true } })).status, 200);
+    assert.equal(member(await state("bob"), "Deniz").focusModel, "sera");
+    assert.equal((await request("/focus", { cookie: people.bob, body: { action: "cancel" } })).data.refunded, 45);
   });
 
   test(`[${target}] web push reaches friends, encrypted and signed, with an arrival cooldown`, async () => {

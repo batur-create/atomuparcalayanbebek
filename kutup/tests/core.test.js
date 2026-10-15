@@ -1,5 +1,5 @@
 import { statsOf } from "../server/stats.js";
-import { BY_ID, CATALOG, CATEGORIES, CLASSES, fits, imeceBonus, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
+import { BY_ID, CATALOG, CATEGORIES, CLASSES, RARE, fits, imeceBonus, modelOf, refundLater, refundNow, streakBonus, unlocked, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -146,6 +146,8 @@ test("the tuğla economy: wages grow with session length, refunds split 50/30/20
   assert.deepEqual([0, 1, 3, 9].map((n) => imeceBonus(n)), [0, 0.05, 0.15, 0.2]);
   assert.equal(imeceBonus(2, true), 0.16);
   for (const id of ["firin", "sahaf", "kahve", "kutuphane", "degirmen"]) assert.ok(BY_ID[id].effect, id);
+  assert.deepEqual(RARE.map((i) => i.id), ["fener", "sera"]);
+  assert.deepEqual([unlocked(BY_ID.sera), unlocked(BY_ID.sera, ["sera"]), unlocked(BY_ID.gozlemevi, ["gozlemevi"]), unlocked(BY_ID.gozlemevi, [], true), unlocked(BY_ID.ev)], [false, true, false, true, true]);
 });
 
 test("the shared village gives old buildings a stored spot, in the order they were built", async () => {

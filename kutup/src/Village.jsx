@@ -96,7 +96,7 @@ function sceneParts(P, sp, seed, plan) {
     { a: 0.78, b: 0.86, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
     { a: FRAME_END - 0.02, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
     // Roof: trusses one by one, purlins across, then tiles from the eaves up.
-    { a: 0.68, b: 0.73, kind: "grow", draw: (t) => trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t) },
+    { a: 0.68, b: 0.73, kind: "grow", draw: (t) => (sp.roofType === "dome" ? "" : trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t)) },
     { a: 0.72, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
     { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
     // Windmill sails go up blade by blade once the roof is on, then turn.

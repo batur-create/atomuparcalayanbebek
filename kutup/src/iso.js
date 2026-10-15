@@ -146,6 +146,7 @@ const WALLS = {
   wood: { faces: ["#e2b47e", "#cc965c", "#b07c46"], grain: "#b98249", pattern: "planks" },
   sage: { faces: ["#d7e6cc", "#bfd2b1", "#a5bb96"], grain: "#b2c7a3", pattern: "trim" },
   stone: { faces: ["#e0dacf", "#c8c0b2", "#aea596"], grain: "#b5ad9f", pattern: "blocks" },
+  glass: { faces: ["#e2f4f1", "#c4e6e1", "#a9d6d0"], grain: "#ffffff", pattern: "panes" },
 };
 const ROOFS = [
   ["#7a66d8", "#5c49b6", "#9d8ce6"],
@@ -190,13 +191,14 @@ export function spec(kind, seed, model) {
     model,
     look,
     wall: look.wall ? WALLS[look.wall] : base.wall,
-    roof: look.roof != null ? ROOFS[look.roof] : base.roof,
+    roof: look.roofColors || (look.roof != null ? ROOFS[look.roof] : base.roof),
+    roofType: look.dome ? "dome" : base.roofType,
     chimney: look.chimney ?? base.chimney,
     flag: look.flag === false ? null : base.flag,
   };
 }
 export const topOf = (sp) => 0.3 + sp.h;
-export const ridgeOf = (sp) => topOf(sp) + (sp.roofType === "pyramid" ? 2.4 : sp.hw * 0.85);
+export const ridgeOf = (sp) => topOf(sp) + (sp.roofType === "pyramid" ? 2.4 : sp.roofType === "dome" ? sp.hw + 0.25 : sp.hw * 0.85);
 
 // ---------- building pieces ----------
 export function shadowSVG(P, sp, t = 1) {
@@ -217,12 +219,24 @@ export function wallsSVG(P, sp, t = 1) {
     const step = sp.wall.pattern === "rows" ? 0.34 : 0.62;
     for (let z = 0.3 + step; z < z1 - 0.05; z += step)
       s += seg(P(-w, w + 0.01, z), P(w, w + 0.01, z), g, 1, 0.75) + seg(P(w + 0.01, -w, z), P(w + 0.01, w, z), g, 1, 0.6);
+  } else if (sp.wall.pattern === "panes") {
+    for (let x = -w + 0.5; x < w; x += 0.5) s += seg(P(x, w + 0.01, 0.3), P(x, w + 0.01, z1), g, 1.2, 0.9);
+    for (let y = -w + 0.5; y < w; y += 0.5) s += seg(P(w + 0.01, y, 0.3), P(w + 0.01, y, z1), g, 1.2, 0.8);
+    for (let z = 0.3 + 0.55; z < z1 - 0.05; z += 0.55) s += seg(P(-w, w + 0.01, z), P(w, w + 0.01, z), g, 1, 0.8) + seg(P(w + 0.01, -w, z), P(w + 0.01, w, z), g, 1, 0.7);
   } else if (sp.wall.pattern === "planks") {
     for (let x = -w + 0.4; x < w; x += 0.4) s += seg(P(x, w + 0.01, 0.3), P(x, w + 0.01, z1), g, 1, 0.55);
     for (let y = -w + 0.4; y < w; y += 0.4) s += seg(P(w + 0.01, y, 0.3), P(w + 0.01, y, z1), g, 1, 0.45);
   }
   if (sp.wall.pattern === "trim" || sp.kind === "house")
     s += seg(P(w + 0.01, w + 0.01, 0.3), P(w + 0.01, w + 0.01, z1), "#fffaf0", 1.6, 0.85);
+  // A lighthouse's painted bands, every other storey.
+  if (sp.look?.bands)
+    for (let k = 1; k < sp.floors; k += 2) {
+      const fh = sp.h / sp.floors,
+        a = 0.3 + k * fh,
+        b = Math.min(z1, a + fh);
+      if (a < z1) s += poly(faceY(P, w + 0.005, -w, w, a, b), sp.look.bands) + poly(faceX(P, w + 0.005, -w, w, a, b), sp.look.bands, 0.85);
+    }
   if (sp.floors > 1 && t > 0.55)
     for (let k = 1; k < sp.floors; k++) {
       const z = 0.3 + (sp.h / sp.floors) * k;
@@ -244,7 +258,7 @@ export function doorSVG(P, sp) {
 }
 // Window spans of floor k on the door wall (front) and the side wall.
 function spansOf(sp, k) {
-  if (sp.look?.clock && k === sp.floors - 1) return { front: [], side: [] };
+  if ((sp.look?.clock || sp.look?.lamp || sp.look?.dome) && k === sp.floors - 1) return { front: [], side: [] };
   return {
     front: sp.kind === "tower" ? (k ? [[-0.32, 0.32]] : []) : sp.kind === "house" ? [[-1.55, -0.95], [0.95, 1.55]] : [[0.55, 1.12]],
     side: sp.kind === "tower" ? [[-0.32, 0.32]] : sp.kind === "house" ? [[-1.4, -0.8], [0.8, 1.4]] : [[-0.9, -0.32]],
@@ -298,6 +312,7 @@ export function roofSVG(P, sp, detail = true) {
     top = topOf(sp),
     ridge = ridgeOf(sp),
     [front, back, light] = sp.roof;
+  if (sp.roofType === "dome") return domeSVG(P, sp, detail);
   if (sp.roofType === "pyramid") {
     const a = w + o,
       eave = top - 0.05,
@@ -330,6 +345,32 @@ export function roofSVG(P, sp, detail = true) {
     seg(P(-w - o, w + o, eave), P(w + o, w + o, eave), back, 2) +
     poly([P(w + o, w + o, eave), P(w + o, 0, ridge), P(w + o, 0, ridge - 0.14), P(w + o, w + o, eave - 0.14)], back)
   );
+}
+// An observatory dome on a drum, its shutter slit, and a little black hole
+// circling above it.
+function domeSVG(P, sp, detail = true) {
+  const w = sp.hw,
+    top = topOf(sp);
+  let s = box(P, -w - 0.1, -w - 0.1, w + 0.1, w + 0.1, top - 0.12, top + 0.05, STONE);
+  const [cx, cy] = P(0, 0, top + 0.05),
+    unit = Math.abs(P(0, 0, 1)[1] - P(0, 0, 0)[1]),
+    r = w + 0.05,
+    rx = r * unit * 1.2247,
+    ry = r * unit * 0.7071,
+    rz = r * unit * 1.05;
+  const arc = (from, to, n, f) => Array.from({ length: n + 1 }, (_, i) => f(from + ((to - from) * i) / n));
+  const outline = [...arc(Math.PI, 0, 18, (a) => [cx + rx * Math.cos(a), cy - rz * Math.sin(a)]), ...arc(0, Math.PI, 12, (a) => [cx + rx * Math.cos(a), cy + ry * Math.sin(a)])];
+  s += poly(outline, "#dfe3e8");
+  // The shaded right half.
+  s += poly([...arc(Math.PI / 2, 0, 9, (a) => [cx + rx * Math.cos(a), cy - rz * Math.sin(a)]), ...arc(0, Math.PI / 2, 6, (a) => [cx + rx * Math.cos(a), cy + ry * Math.sin(a)])], "#b9c0c8");
+  if (detail) {
+    s += poly([[cx - rx * 0.09, cy + ry * 0.98], [cx + rx * 0.09, cy + ry * 0.98], [cx + rx * 0.07, cy - rz * 0.99], [cx - rx * 0.07, cy - rz * 0.99]], "#3d4552");
+    for (const k of [0.35, 0.7]) s += seg([cx - rx * Math.sqrt(1 - k * k), cy - rz * k], [cx + rx * Math.sqrt(1 - k * k), cy - rz * k], "#c9cfd6", 1, 0.8);
+  }
+  // The black hole in orbit.
+  const hy = cy - rz - unit * 0.9;
+  s += ellipse(cx, hy, unit * 0.95, unit * 0.32, "#f2a65a", 0.85) + ellipse(cx, hy, unit * 0.6, unit * 0.2, "#ffd08a", 0.9) + circle(cx, hy, unit * 0.34, "#0b0b12");
+  return s;
 }
 export function chimneySVG(P, sp, t = 1) {
   if (!sp.chimney) return "";
@@ -551,6 +592,33 @@ function yardSignSVG(P, sp) {
   s += poly(faceY(P, y + 0.002, x0 + 0.05, x1 - 0.05, 0.56, 0.98), "#fffaf0");
   return s + wallText(P, [x0 + 0.08, y + 0.005, 0.77], [x1 - 0.08, y + 0.005, 0.77], sp.look.sign, 8, "#4a3a2c");
 }
+// A lighthouse's lamp room: a lit glass band under the roof with a gallery.
+function lampSVG(P, sp) {
+  const w = sp.hw,
+    top = topOf(sp),
+    z0 = top - 1.0,
+    z1 = top - 0.15;
+  // The gallery floor first; the walls above it stand in front of its far half.
+  let s = box(P, -w - 0.22, -w - 0.22, w + 0.22, w + 0.22, z0 - 0.12, z0, ["#4a4f55", "#3c4146", "#2f3338"]);
+  s += poly(faceY(P, w, -w, w, z0, top), sp.wall.faces[P.mirror ? 2 : 1]) + poly(faceX(P, w, -w, w, z0, top), sp.wall.faces[P.mirror ? 1 : 2]);
+  s += poly(faceY(P, w + 0.02, -w + 0.12, w - 0.12, z0 + 0.05, z1), LIT) + poly(faceX(P, w + 0.02, -w + 0.12, w - 0.12, z0 + 0.05, z1), "#ffc94a");
+  for (const t of [-0.5, 0, 0.5]) s += seg(P(t * w, w + 0.03, z0), P(t * w, w + 0.03, z1), "#4a4f55", 1.2) + seg(P(w + 0.03, t * w, z0), P(w + 0.03, t * w, z1), "#4a4f55", 1.2);
+  for (let t = -w - 0.2; t <= w + 0.21; t += 0.35) s += seg(P(t, w + 0.22, z0), P(t, w + 0.22, z0 + 0.38), "#4a4f55", 0.8) + seg(P(w + 0.22, t, z0), P(w + 0.22, t, z0 + 0.38), "#4a4f55", 0.8);
+  return s + seg(P(-w - 0.22, w + 0.22, z0 + 0.38), P(w + 0.22, w + 0.22, z0 + 0.38), "#4a4f55", 1) + seg(P(w + 0.22, -w - 0.22, z0 + 0.38), P(w + 0.22, w + 0.22, z0 + 0.38), "#4a4f55", 1);
+}
+// Plants behind a greenhouse's glass.
+function plantsSVG(P, sp) {
+  const w = sp.hw;
+  let s = "";
+  for (let i = 0; i < 6; i++) {
+    const t = -w + 0.35 + i * ((2 * w - 0.7) / 5);
+    const [ax, ay] = P(t, w - 0.05, 0.75 + (i % 2) * 0.25),
+      [bx, by] = P(w - 0.05, t, 0.7 + ((i + 1) % 2) * 0.3);
+    s += circle(ax, ay, 4.2, i % 3 ? "#5e9b4c" : "#73b05c", 0.85) + circle(bx, by, 3.8, i % 2 ? "#4f8a40" : "#6aa955", 0.8);
+    if (i % 2) s += circle(ax + 1.5, ay - 2.5, 1.4, "#e98aa8");
+  }
+  return s;
+}
 /** Fittings fixed to the walls and roof (drawn with the walls, before the roof). */
 export function wallFittingsSVG(P, sp, detail = 2) {
   const look = sp.look;
@@ -559,6 +627,8 @@ export function wallFittingsSVG(P, sp, detail = 2) {
   if (look.shutters && detail >= 2) s += shuttersSVG(P, sp);
   if (look.boxes) s += flowerBoxesSVG(P, sp, detail);
   if (look.clock) s += clockSVG(P, sp, detail);
+  if (look.lamp) s += lampSVG(P, sp);
+  if (look.plants && detail >= 2) s += plantsSVG(P, sp);
   if (look.balcony && detail >= 2) s += balconySVG(P, sp);
   if (look.awning) s += awningSVG(P, sp);
   return s;

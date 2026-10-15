@@ -315,3 +315,9 @@ button.brick-pill {
 .catalog-item.unseen b {
   color: var(--muted);
 }
+.catalog-item.locked .building-thumb svg {
+  filter: grayscale(0.6) opacity(0.6);
+}
+.catalog-class.rare h3 {
+  color: #8a5cc8;
+}

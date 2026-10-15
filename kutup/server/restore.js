@@ -10,7 +10,7 @@ import { sqliteAdapter } from "./sqlite.js";
 export const BACKUP_TABLES = [
   "groups", "members", "districts", "buildings", "building_likes", "focus_log",
   "messages", "reactions", "plans", "attendees", "feedback", "feedback_events",
-  "achievements", "bricks_log", "activity",
+  "achievements", "bricks_log", "activity", "unlocks",
 ];
 
 export async function restoreBackup(backup, sqlite) {

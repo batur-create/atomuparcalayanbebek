@@ -2,7 +2,7 @@
 // building portraits, and the receipt that comes after every session.
 import React, { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, minutesOf, wageFor } from "../shared/catalog.js";
+import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, minutesOf, unlocked, wageFor } from "../shared/catalog.js";
 import { buildingSVG, projector, spec } from "./iso.js";
 import { get } from "./api.js";
 import { Modal } from "./Modal.jsx";
@@ -23,15 +23,71 @@ export function BuildingThumb({ id, size = 92 }) {
 }
 
 /** "Ne inşa ediyorsun?": every building by size, with its price and what it pays. */
-export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, start = "shop" }) {
+export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, start = "shop", founder = false }) {
   const [wallet, setWallet] = useState(null),
     [view, setView] = useState(start);
   const collection = view === "collection";
   useEffect(() => {
     get("/wallet").then(setWallet).catch(() => {});
   }, []);
-  const built = wallet?.built || {};
-  const owned = CATALOG.filter((item) => built[item.id]).length;
+  const built = wallet?.built || {},
+    unlocks = wallet?.unlocks || [];
+  // The founder's own building only exists for the founder.
+  const shown = CATALOG.filter((item) => item.rare !== "founder" || founder);
+  const owned = shown.filter((item) => built[item.id]).length;
+  const card = (item) => {
+    const cls = CLASSES[item.class],
+      open = unlocked(item, unlocks, founder),
+      short = item.cost - bricks,
+      tooLong = maxMinutes > 0 && minutesOf(item) > maxMinutes,
+      net = wageFor(minutesOf(item)) - item.cost;
+    if (collection)
+      return (
+        <div key={item.id} className={`catalog-item ${built[item.id] ? "" : "unseen"}`}>
+          {built[item.id] ? <span className="catalog-owned">✓ {built[item.id]}</span> : null}
+          <BuildingThumb id={item.id} />
+          <b>
+            {built[item.id] ? item.emoji : "❔"} {item.name}
+          </b>
+          <small>{built[item.id] ? item.blurb : `${cls.label} · ${item.cost ? `${item.cost} 🧱` : "bedava"}${item.rare === true ? " · plan gerekir" : ""}`}</small>
+          {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
+        </div>
+      );
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={`catalog-item ${selected === item.id ? "active" : ""} ${open ? "" : "locked"}`}
+        disabled={!open || short > 0 || tooLong}
+        aria-pressed={selected === item.id}
+        onClick={() => {
+          pick(item.id);
+          close();
+        }}
+      >
+        {built[item.id] ? <span className="catalog-owned" title="Köyünde bu kadar var">✓ {built[item.id]}</span> : null}
+        <BuildingThumb id={item.id} />
+        <b>
+          {open ? item.emoji : "🔒"} {item.name}
+        </b>
+        <small>
+          {item.rare ? `${cls.label} · ${cls.minutes} dk · ` : `${CATEGORIES[item.category]} · `}
+          {item.blurb}
+        </small>
+        {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
+        <span className="catalog-price">
+          <span>{item.cost ? `${item.cost} 🧱` : "Bedava"}</span>
+          <em className={net < 0 ? "minus" : ""} title="Maaş eksi malzeme">
+            net {net >= 0 ? "+" : ""}
+            {net}
+          </em>
+        </span>
+        {!open && <span className="catalog-short">Planı gerekiyor: her bitirdiğin seansta %10 şans, 7/14/30 günlük seride garanti</span>}
+        {open && short > 0 && <span className="catalog-short">{short} 🧱 eksik</span>}
+        {open && tooLong && short <= 0 && <span className="catalog-short">Kalan süre yetmez</span>}
+      </button>
+    );
+  };
   return (
     <Modal
       wide
@@ -44,66 +100,31 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
       close={close}
     >
       <div className="catalog-top">
-        <span className="brick-pill">Kasanda <b>{bricks} 🧱</b></span>
+        <span className="brick-pill">
+          Kasanda <b>{bricks} 🧱</b>
+        </span>
         <button type="button" className={`brick-pill ${collection ? "on" : ""}`} aria-pressed={collection} onClick={() => setView(collection ? "shop" : "collection")}>
-          Koleksiyon <b>{owned}/{CATALOG.length}</b> {collection ? "· kataloğa dön" : "· göster"}
+          Koleksiyon <b>
+            {owned}/{shown.length}
+          </b>{" "}
+          {collection ? "· kataloğa dön" : "· göster"}
         </button>
+        {unlocks.length > 0 && <span className="brick-pill">🎁 {unlocks.length} nadir plan</span>}
       </div>
       {Object.entries(CLASSES).map(([key, cls]) => (
         <section key={key} className="catalog-class">
           <h3>
             {cls.label} · {cls.minutes} dk <small>maaş {wageFor(cls.minutes)} 🧱</small>
           </h3>
-          <div className="catalog-grid">
-            {CATALOG.filter((item) => item.class === key).map((item) => {
-              const short = item.cost - bricks,
-                tooLong = maxMinutes > 0 && minutesOf(item) > maxMinutes,
-                net = wageFor(minutesOf(item)) - item.cost;
-              if (collection)
-                return (
-                  <div key={item.id} className={`catalog-item ${built[item.id] ? "" : "unseen"}`}>
-                    {built[item.id] ? <span className="catalog-owned">✓ {built[item.id]}</span> : null}
-                    <BuildingThumb id={item.id} />
-                    <b>
-                      {built[item.id] ? item.emoji : "❔"} {item.name}
-                    </b>
-                    <small>{built[item.id] ? item.blurb : `${cls.label} · ${item.cost ? `${item.cost} 🧱` : "bedava"}`}</small>
-                    {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
-                  </div>
-                );
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`catalog-item ${selected === item.id ? "active" : ""}`}
-                  disabled={short > 0 || tooLong}
-                  aria-pressed={selected === item.id}
-                  onClick={() => {
-                    pick(item.id);
-                    close();
-                  }}
-                >
-                  {built[item.id] ? <span className="catalog-owned" title="Köyünde bu kadar var">✓ {built[item.id]}</span> : null}
-                  <BuildingThumb id={item.id} />
-                  <b>
-                    {item.emoji} {item.name}
-                  </b>
-                  <small>
-                    {CATEGORIES[item.category]} · {item.blurb}
-                  </small>
-                  {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
-                  <span className="catalog-price">
-                    <span>{item.cost ? `${item.cost} 🧱` : "Bedava"}</span>
-                    <em className={net < 0 ? "minus" : ""} title="Maaş eksi malzeme">net {net >= 0 ? "+" : ""}{net}</em>
-                  </span>
-                  {short > 0 && <span className="catalog-short">{short} 🧱 eksik</span>}
-                  {tooLong && short <= 0 && <span className="catalog-short">Kalan süre yetmez</span>}
-                </button>
-              );
-            })}
-          </div>
+          <div className="catalog-grid">{shown.filter((item) => item.class === key && !item.rare).map(card)}</div>
         </section>
       ))}
+      <section className="catalog-class rare">
+        <h3>
+          ✨ Nadir yapılar <small>plan bulunca açılır</small>
+        </h3>
+        <div className="catalog-grid">{shown.filter((item) => item.rare).map(card)}</div>
+      </section>
       <p className="catalog-rules">
         İşlevsel yapılar köyünde durdukça her seansına yardım eder. Yarıda bırakırsan malzemenin yarısı hemen, %30'u enkazı bir sonraki seansın kaldırınca geri gelir; %20 gider.
         İlk 2 dakikada vazgeçmek bedava.
@@ -152,10 +173,7 @@ export function ReceiptCard({ receipt, close, next = null, onContinue }) {
         {data.receipt.map((r, i) => (
           <li key={i}>
             <span>{r.note || REASONS[r.reason]}</span>
-            <b className={r.delta < 0 ? "minus" : ""}>
-              {r.delta > 0 ? "+" : ""}
-              {r.delta} 🧱
-            </b>
+            <b className={r.delta < 0 ? "minus" : ""}>{r.reason === "blueprint" ? "🎁" : `${r.delta > 0 ? "+" : ""}${r.delta} 🧱`}</b>
           </li>
         ))}
       </ul>

@@ -1752,7 +1752,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
         <p className="ruin-note">Köyünde enkaz var. Bir sonraki seansın onu kaldırır ve +{ruin} 🧱 geri gelir.</p>
       )}
       {picking && (
-        <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} />
+        <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} founder={me?.badge === "dev"} />
       )}
       {!compact && !running && !finishing && (
         <button

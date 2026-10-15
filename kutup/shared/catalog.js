@@ -29,7 +29,20 @@ export const CATALOG = [
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },
   { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
 ];
+// Rare buildings need a blueprint, found by focusing (rare: true); the
+// observatory is the founder's own (rare: "founder").
+CATALOG.push(
+  { id: "fener", name: "Deniz Feneri", emoji: "🗼", class: "large", kind: "tower", category: "fancy", cost: 160, rare: true, done: "deniz fenerini", blurb: "Kırmızı-beyaz bantlar, tepesinde ışık odası.", look: { wall: "cream", roof: 1, bands: "#c94a3c", lamp: true, flag: false } },
+  { id: "sera", name: "Cam Sera", emoji: "🪴", class: "small", kind: "cottage", category: "fancy", cost: 45, rare: true, done: "cam serasını", blurb: "Cam duvarların ardında yemyeşil bitkiler.", look: { wall: "glass", roofColors: ["#cdebe7", "#b1dcd6", "#e4f6f3"], plants: true, chimney: false } },
+  { id: "gozlemevi", name: "Olay Ufku Gözlemevi", emoji: "🔭", class: "large", kind: "tower", category: "fancy", cost: 100, rare: "founder", done: "olay ufku gözlemevini", blurb: "Kubbesinin üstünde minik bir kara delik döner. Yalnız kurucunun.", look: { wall: "stone", dome: true, flag: false } },
+);
 export const BY_ID = Object.fromEntries(CATALOG.map((item) => [item.id, item]));
+export const RARE = CATALOG.filter((item) => item.rare === true);
+/** Can this member build it? Blueprints for rare ones, the badge for the founder's. */
+export const unlocked = (item, unlocks = [], founder = false) =>
+  item.rare === "founder" ? founder : item.rare ? unlocks.includes(item.id) : true;
+export const BLUEPRINT_CHANCE = 0.1; // a finished session turns up a blueprint
+export const BLUEPRINT_STREAKS = [7, 14, 30]; // day streaks that always do
 export const DEFAULT_MODEL = { cottage: "kulube", house: "ev", tower: "kule" };
 
 /** The catalogue entry a building was built from (older buildings: by kind). */
@@ -73,6 +86,7 @@ export const REASONS = {
   streak: "Seri",
   imece: "İmece",
   effect: "Yapı etkisi",
+  blueprint: "Nadir plan",
   cost: "Malzeme",
   refund: "İade",
   "ruin-refund": "Enkaz kaldırıldı",
