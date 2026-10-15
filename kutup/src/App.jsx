@@ -544,11 +544,15 @@ export default function App() {
     [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed, me?.focusModel],
   );
   // Build mode: keep the screen on, report presence, and let the building collapse
-  // if the app is left for more than a few seconds (switching apps, closing the tab).
+  // when the session is abandoned. On a phone that means leaving the app for
+  // more than a minute (with a notification when you leave and at 30 seconds);
+  // on a computer other tabs and apps are part of studying, so only closing the
+  // tab or the computer going to sleep for a while brings it down.
   const strictEnd = me?.focusStrict && me.focusEnd > Date.now() ? me.focusEnd : 0;
   useEffect(() => {
     if (!strictEnd) return releaseScreen();
-    const GRACE = 10000;
+    const desk = onComputer();
+    const GRACE = desk ? 120000 : 60000;
     const epoch = sessionEpoch.current;
     const SEEN = "kutup-fidan";
     let hiddenAt = null,
@@ -582,20 +586,41 @@ export default function App() {
     } catch {}
     keepScreenOn();
     beat();
+    // On a computer the tab keeps reporting while hidden (browsers slow such
+    // timers to about once a minute, well inside the server's 90 seconds).
     const pulse = setInterval(() => {
-      if (document.visibilityState === "visible") beat();
+      if (desk || document.visibilityState === "visible") beat();
     }, 20000);
     // A local "still here" mark every few seconds, so a page reload is not
     // mistaken for leaving the app.
     const mark = setInterval(() => {
-      if (document.visibilityState === "visible") remember();
+      if (desk || document.visibilityState === "visible") remember();
     }, 3000);
+    // Phone: a notification the moment you leave, another at 30 seconds.
+    let reminder = 0;
+    const warn = (body) =>
+      navigator.serviceWorker?.getRegistration?.().then((r) =>
+        r?.showNotification("🏗️ Şantiyen seni bekliyor", { body, tag: "kutup-build", renotify: true, requireInteraction: true, data: { url: location.href } }),
+      ).catch(() => {});
+    const unwarn = () => {
+      clearTimeout(reminder);
+      navigator.serviceWorker?.getRegistration?.().then((r) => r?.getNotifications({ tag: "kutup-build" })).then((list) => list?.forEach((n) => n.close())).catch(() => {});
+    };
     const visibility = () => {
+      if (desk) {
+        if (document.visibilityState === "visible") beat();
+        return;
+      }
       if (document.visibilityState === "hidden") {
         hiddenAt = Date.now();
         remember();
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          warn("1 dakika içinde dönmezsen inşaatın yıkılır. Dokun, hemen dön.");
+          reminder = setTimeout(() => warn("Son 30 saniye! Dönmezsen inşaat yıkılacak."), 30000);
+        }
         return;
       }
+      unwarn();
       const away = hiddenAt ? Date.now() - hiddenAt : 0;
       hiddenAt = null;
       if (away > GRACE) return wither();
@@ -605,6 +630,7 @@ export default function App() {
     };
     document.addEventListener("visibilitychange", visibility);
     return () => {
+      unwarn();
       clearInterval(pulse);
       clearInterval(mark);
       document.removeEventListener("visibilitychange", visibility);
@@ -1592,6 +1618,9 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
     </button>
   );
 }
+// A computer (mouse or trackpad) rather than a phone or tablet: build mode is
+// gentler there, since other tabs and apps are where the studying happens.
+const onComputer = () => typeof matchMedia === "function" && !matchMedia("(pointer: coarse)").matches;
 // The building picked for the next build-mode session (kept on this device).
 const pickedModel = () => (BY_ID[storage.get("kutup-model")] ? storage.get("kutup-model") : "kulube");
 function FocusCard({ me, members, now, requireMember, mutate, compact }) {
@@ -1704,7 +1733,9 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           </b>
           <span>
             {growing
-              ? "🏗️ uygulamadan çıkma, yıkılır"
+              ? onComputer()
+                ? "🏗️ sekmeler serbest, bu sekmeyi kapatma"
+                : "🏗️ çıkarsan 1 dk içinde dön"
               : running
                 ? "sen, işin ve biraz sessizlik"
                 : "dakika sadece kendine"}
@@ -1769,7 +1800,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
             <b>İnşaat modu {fidan ? "açık" : "kapalı"}</b>
             <small>
               {fidan
-                ? `${length} dk sonunda köyüne ${item.name.toLocaleLowerCase("tr")} eklenir ve tam maaşın yatar. Ekran açık kalır; 10 saniyeden uzun çıkarsan yıkılır.`
+                ? `${length} dk sonunda köyüne ${item.name.toLocaleLowerCase("tr")} eklenir ve tam maaşın yatar. ${onComputer() ? "Bilgisayarda sekme ve uygulama değiştirmek serbest; bu sekmeyi kapatırsan yıkılır. Telefonda da açık tutarsan telefonun bekçin olur." : "Ekran açık kalır; uygulamadan çıkarsan 1 dakika içinde dönmelisin, yoksa yıkılır."}`
                 : "Açınca katalogdan bir yapı seçersin: tam maaş ve köyüne bir bina. Kapalıyken serbest çalışırsın: yarım maaş."}
             </small>
           </span>
