@@ -5,7 +5,7 @@ import {
   FOOTPRINT, LANE, PLAZA, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
-  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, ridgeOf, rng, seg, spec, vinesSVG,
+  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
 } from "./iso.js";
 
 export const GROUND = "#a4d078";
@@ -62,12 +62,15 @@ export function skyAt(now = Date.now()) {
   const night = Math.max(evening, morning);
   const warm = Math.max(0, 1 - Math.abs(hour - (sunset - 0.3)) / 1.1, 1 - Math.abs(hour - (sunrise + 0.3)) / 1.0);
   const q = (v) => Math.round(v * 8) / 8;
-  return { night: q(night), warm: q(warm * (1 - night)), lamps: night > 0.3, key: `${q(night)}|${q(warm)}` };
+  const month = local.getUTCMonth(),
+    season = month === 11 || month <= 1 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn";
+  return { night: q(night), warm: q(warm * (1 - night)), lamps: night > 0.3, season, key: `${q(night)}|${q(warm)}|${season}` };
 }
 const EMISSIVE = new Set([LIT, "#fff4c8", "#ffe9a8"]);
 export function tinter(sky) {
   const cache = new Map();
-  if (!sky.night && !sky.warm) return (c) => c;
+  const snow = sky.season === "winter";
+  if (!sky.night && !sky.warm && !snow) return (c) => c;
   return (color) => {
     if (EMISSIVE.has(color)) return color;
     let out = cache.get(color);
@@ -76,6 +79,13 @@ export function tinter(sky) {
     let r = (n >> 16) & 255,
       g = (n >> 8) & 255,
       b = n & 255;
+    if (snow && g > r + 12 && g > b + 8) {
+      // Grass and leaves under snow: a cool white that keeps a hint of the shade.
+      const s = 0.78;
+      r += (236 - r) * s;
+      g += (242 - g) * s;
+      b += (246 - b) * s;
+    }
     const w = sky.warm * 0.2;
     r += (255 - r) * w;
     g += (178 - g) * w;
@@ -151,22 +161,27 @@ const AUTUMN = [
   ["#bf9426", "#dcb33a", "#f1d270"],
 ];
 const PINE = ["#355f3e", "#46784d", "#5d9160"];
+const BLOSSOM = [
+  ["#d98aa3", "#ecaec2", "#f9d9e3"],
+  ["#d9c9cf", "#efe3e7", "#ffffff"],
+];
 const frac = (v) => v - Math.floor(v);
 function treeKind(tone) {
   const p = frac(tone * 997.31);
   return p < 0.2 ? "pine" : p < 0.34 ? "poplar" : "broad";
 }
-function treeColors(kind, tone, autumn) {
+function treeColors(kind, tone, season) {
   if (kind === "pine") return PINE;
-  if (autumn && frac(tone * 53.7) < (kind === "poplar" ? 0.7 : 0.42)) return AUTUMN[kind === "poplar" ? 1 : frac(tone * 7.1) < 0.5 ? 0 : 1];
+  if (season === "autumn" && frac(tone * 53.7) < (kind === "poplar" ? 0.7 : 0.42)) return AUTUMN[kind === "poplar" ? 1 : frac(tone * 7.1) < 0.5 ? 0 : 1];
+  if (season === "spring" && kind === "broad" && frac(tone * 41.3) < 0.5) return BLOSSOM[frac(tone * 9.7) < 0.55 ? 0 : 1];
   return LEAVES[tone < 0.5 ? 0 : 1];
 }
-function treeArt(view, x, y, size, tone, autumn) {
+function treeArt(view, x, y, size, tone, season) {
   const P = view.at(x, y);
   const s = view.s * size;
   const [bx, by] = P(0, 0, 0);
   const kind = treeKind(tone),
-    [dark, mid, light] = treeColors(kind, tone, autumn);
+    [dark, mid, light] = treeColors(kind, tone, season);
   // Soft shadow toward the lower right, like the buildings'.
   ellipse(bx + s * 0.32, by + s * 0.05, s * (kind === "poplar" ? 0.5 : 0.78), s * 0.24, "#3f5f2a", 0.2);
   if (view.detail === 0) {
@@ -354,8 +369,7 @@ function spotArt(v, s) {
 export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) {
   const people = new Map(members.map((m) => [m.id, m]));
   // September to November in Ankara: some leaves turn.
-  const month = new Date(Date.now() + 3 * 3600000).getUTCMonth(),
-    autumn = month >= 8 && month <= 10;
+  const season = (sky || skyAt()).season;
   const districts = village.districts.map((d) => ({ ...d, layout: cellLayout(groupKey, d.q, d.r) }));
   const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]));
   const linkSet = new Set(network.links);
@@ -477,7 +491,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       if (!t.wild && Math.hypot(t.x - cx, t.y - cy) > L.radiusAt(Math.atan2(t.y - cy, t.x - cx)) - 0.5) continue;
       if (t.wild && cellList.some((o) => o !== d && Math.abs(t.x - o.layout.center[0]) < 16 && Math.abs(t.y - o.layout.center[1]) < 16 && Math.hypot(t.x - o.layout.center[0], t.y - o.layout.center[1]) < o.layout.radiusAt(0) + 1)) continue;
       if (Math.hypot(t.x, t.y) < PLAZA + 1.2) continue;
-      add(standing, { type: "tree", depth: t.x + t.y, x: t.x, y: t.y, bbox: boxOf(t.x, t.y, 1.3 * t.size, 1.3 * t.size, 2.4 * t.size, 0.6), draw: (v) => treeArt(v, t.x, t.y, t.size, t.tone, autumn) });
+      add(standing, { type: "tree", depth: t.x + t.y, x: t.x, y: t.y, bbox: boxOf(t.x, t.y, 1.3 * t.size, 1.3 * t.size, 2.4 * t.size, 0.6), draw: (v) => treeArt(v, t.x, t.y, t.size, t.tone, season) });
     }
     // Landscaping on settled districts: grass and wildflowers on the meadow,
     // bushes along the edge and a few field stones, all from the district seed
@@ -588,6 +602,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
         const base = v.at(b.x, b.y);
         const P = b.facing ? mirrored(base) : base;
         buildingSVG(P, sp, b.seed, { lit: lit.has(b.id) || (sky.night > 0.5 && sp.lit), detail: v.detail, shadowP: base });
+        if (season === "winter" && v.detail >= 1) snowSVG(P, sp);
         // Five days without a finished session and the ivy creeps in; the next one clears it.
         if (v.detail === 2 && owner?.chainEnd && Date.now() - owner.chainEnd > 5 * 86400000) vinesSVG(P, sp, b.seed);
       },

@@ -14,6 +14,7 @@ import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./constructio
 import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 import { craneSVG } from "./crane.js";
+import { skyAt } from "./villageWorld.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -144,6 +145,9 @@ export function ConstructionScene({ run, outcome }) {
       root.appendChild(g);
       return g;
     };
+    // Daylight: a sky behind the site (sunset peach, night navy with stars)
+    // and a light wash over it, following the time of day in Türkiye.
+    const skyLayer = layer("sky");
     layer("ground").innerHTML = plotSVG(P, sp, seed);
     const uid = ++sceneSerial;
     // Machines are clipped to the plot (open upwards) so they drive in from beyond its edge.
@@ -157,6 +161,34 @@ export function ConstructionScene({ run, outcome }) {
     crewBack.setAttribute("clip-path", `url(#plot${uid})`);
     crewFront.setAttribute("clip-path", `url(#plot${uid})`);
     const fx = layer("fx");
+    const wash = layer("light");
+    let daylight = skyAt(),
+      skyKey = "";
+    const paintSky = () => {
+      daylight = skyAt();
+      if (daylight.key === skyKey) return;
+      skyKey = daylight.key;
+      const { night, warm } = daylight;
+      let sky = "",
+        light = "";
+      if (night > 0) {
+        sky += `<defs><linearGradient id="night${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151c38"/><stop offset="1" stop-color="#34406a"/></linearGradient></defs><rect width="680" height="400" fill="url(#night${uid})" opacity="${night.toFixed(2)}"/>`;
+        for (let i = 0; i < 34; i++) {
+          const x = (i * 197.3) % 680,
+            y = (i * 71.9) % 190;
+          sky += `<circle cx="${f(x)}" cy="${f(y)}" r="${i % 5 ? 0.9 : 1.5}" fill="#fff8e1" opacity="${(night * (0.35 + (i % 3) * 0.2)).toFixed(2)}"/>`;
+        }
+        light += `<rect width="680" height="400" fill="#20306e" opacity="${(0.3 * night).toFixed(2)}" style="mix-blend-mode:multiply" pointer-events="none"/>`;
+      }
+      if (warm > 0) {
+        sky += `<defs><linearGradient id="warm${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3a77a"/><stop offset="1" stop-color="#f7e2c8" stop-opacity="0"/></linearGradient></defs><rect width="680" height="400" fill="url(#warm${uid})" opacity="${warm.toFixed(2)}"/>`;
+        light += `<rect width="680" height="400" fill="#ff9145" opacity="${(0.13 * warm).toFixed(2)}" style="mix-blend-mode:multiply" pointer-events="none"/>`;
+      }
+      skyLayer.innerHTML = sky;
+      wash.innerHTML = light;
+    };
+    paintSky();
+    const skyTimer = setInterval(paintSky, 180000);
     const caption = layer("caption");
     const plan = sitePlan(sp);
     let crewKey = "";
@@ -245,7 +277,8 @@ export function ConstructionScene({ run, outcome }) {
         fx.innerHTML = (rubble ? `<g opacity="${clamp((fallT - 0.15) / 0.4).toFixed(2)}">${rubble}</g>` : "") + (fallT > 0 ? dust : "") + cracks;
         return;
       }
-      const lit = mode === "done";
+      // Lights on once finished, or at night as soon as the windows are in.
+      const lit = mode === "done" || (daylight.night > 0.5 && shown > 0.86);
       parts.forEach((p) => {
         const l = clamp((shown - p.a) / (p.b - p.a));
         let op = 1;
@@ -365,10 +398,11 @@ export function ConstructionScene({ run, outcome }) {
         crewKey = "";
       }
       const label = mode === "done" ? "Teslim edildi 🎉" : phaseAt(plan, shown).label;
-      const text = `${label}|${Math.round(shown * 100)}`;
+      const text = `${label}|${Math.round(shown * 100)}|${daylight.night > 0.4}`;
       if (text !== caption.dataset.text) {
         caption.dataset.text = text;
-        caption.innerHTML = `<text x="22" y="40" fill="#4f4a3f" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="#8a8170" font-size="20" font-family="DM Sans, sans-serif">Hakediş %${Math.round(shown * 100)}</text>`;
+        const dark = daylight.night > 0.4;
+        caption.innerHTML = `<text x="22" y="40" fill="${dark ? "#f1efe6" : "#4f4a3f"}" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="${dark ? "#b9bdd4" : "#8a8170"}" font-size="20" font-family="DM Sans, sans-serif">Hakediş %${Math.round(shown * 100)}</text>`;
       }
     };
     const loop = (now) => {
@@ -386,10 +420,16 @@ export function ConstructionScene({ run, outcome }) {
         if (live.current.run) shown = progressOf(live.current.run);
         draw(performance.now());
       }, 5000);
-      return () => clearInterval(timer);
+      return () => {
+        clearInterval(timer);
+        clearInterval(skyTimer);
+      };
     }
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearInterval(skyTimer);
+    };
     // The scene lives for one building; run/outcome are read live through the ref.
   }, [kind, seed, model]);
   return (

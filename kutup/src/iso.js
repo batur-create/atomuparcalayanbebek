@@ -653,6 +653,46 @@ export function yardFittingsSVG(P, sp, detail = 2) {
   return s;
 }
 
+/** Snow lying on the roof: the upper part of each slope we can see. */
+export function snowSVG(P, sp) {
+  const w = sp.hw,
+    o = 0.32,
+    top = topOf(sp),
+    ridge = ridgeOf(sp),
+    SNOW = "#f4f7fa",
+    SHADE = "#dde5ee";
+  const along = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  if (sp.roofType === "dome") {
+    const [cx, cy] = P(0, 0, ridge - 0.05),
+      unit = Math.abs(P(0, 0, 1)[1] - P(0, 0, 0)[1]);
+    return ellipse(cx, cy + unit * 0.35, unit * w * 0.85, unit * 0.45, SNOW, 0.95);
+  }
+  if (sp.roofType === "pyramid") {
+    const a = w + o,
+      eave = top - 0.05,
+      apex = [0, 0, ridge],
+      left = [[-a, a, eave], [a, a, eave]],
+      right = [[a, -a, eave], [a, a, eave]];
+    let s = "";
+    for (const [[p0, p1], fill] of [[left, SNOW], [right, SHADE]]) {
+      const q0 = along(apex, p0, 0.62),
+        q1 = along(apex, p1, 0.62);
+      s += poly([P(...apex), P(...q1), P(...along(q1, q0, 0.25)), P(...along(q0, q1, 0.25)), P(...q0)], fill, 0.95);
+    }
+    return s;
+  }
+  const eave = top - 0.1,
+    edge = (t) => [w + o, (w + o) * (1 - t), eave + (ridge - eave) * t];
+  // The front slope down to two thirds, with a soft wavy lower edge.
+  const lo = 0.38;
+  const wave = [];
+  for (let i = 0; i <= 8; i++) {
+    const x = -w - o + ((2 * (w + o)) * i) / 8,
+      t = lo + (i % 2 ? 0.05 : 0);
+    wave.push(P(x, (w + o) * (1 - t), eave + (ridge - eave) * t));
+  }
+  return poly([P(-w - o, 0, ridge), P(w + o, 0, ridge), ...wave.reverse()], SNOW, 0.95) + seg(P(-w - o, 0, ridge + 0.03), P(w + o, 0, ridge + 0.03), SHADE, 2.4) + poly([P(...edge(1)), P(...edge(lo)), P(w + o, (w + o) * (1 - lo), eave + (ridge - eave) * lo - 0.12), P(w + o, 0, ridge - 0.12)], SHADE, 0.9);
+}
 /** Ivy climbing the walls of a house left alone for days (drawn over it). */
 export function vinesSVG(P, sp, seed = 1) {
   const r = rng(seed + 23),
