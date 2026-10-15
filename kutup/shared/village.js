@@ -273,9 +273,10 @@ function facingFor(layout, p) {
   }
   return best.point[1] - p[1] >= best.point[0] - p[0] ? 0 : 1;
 }
-/** First free, natural-looking spot for `kind`, or null when the district is full. */
-export function placeIn(layout, existing, kind) {
-  if (layout.plaza) return null;
+// Every candidate spot for a footprint, best first, that is free of the edge,
+// the lanes, the pond, the sign and the buildings already standing.
+function* freeIn(layout, existing, kind) {
+  if (layout.plaza) return;
   const fp = FOOTPRINT[kind] || FOOTPRINT.cottage;
   const ideal = fp * 0.72 + LANE + 0.5;
   const ranked = candidates(layout)
@@ -289,9 +290,24 @@ export function placeIn(layout, existing, kind) {
     if (Math.hypot(x - layout.sign[0], y - layout.sign[1]) < fp + 0.9) continue;
     if (existing.some((b) => Math.hypot(x - b.x, y - b.y) < fp + (FOOTPRINT[b.kind] || 2.4) + 0.25)) continue;
     const round = (v) => Math.round(v * 100) / 100;
-    return { x: round(x), y: round(y), facing: facingFor(layout, c.p) };
+    yield { x: round(x), y: round(y), facing: facingFor(layout, c.p) };
   }
+}
+/** First free, natural-looking spot for `kind`, or null when the district is full. */
+export function placeIn(layout, existing, kind) {
+  for (const spot of freeIn(layout, existing, kind)) return spot;
   return null;
+}
+/** Up to `limit` free spots for `kind`, spread apart: where a building can be moved. */
+export function freeSpots(layout, existing, kind, limit = 6) {
+  const fp = FOOTPRINT[kind] || FOOTPRINT.cottage,
+    out = [];
+  for (const spot of freeIn(layout, existing, kind)) {
+    if (out.some((o) => Math.hypot(o.x - spot.x, o.y - spot.y) < fp * 1.6)) continue;
+    out.push(spot);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 // ---------- districts ----------

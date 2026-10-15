@@ -422,6 +422,15 @@ export function defineSuite(target) {
     assert.equal(stats.focus.streak.current, 1);
     assert.equal(stats.focus.last14.at(-1)[1], 75);
     assert.equal((await request(`/stats/${deniz.id}`, { cookie: people.charlie })).status, 404);
+    // An owner can move a building to another free plot in their own district.
+    const spots = (await request(`/buildings/${buildingId}/spots`, { cookie: people.bob })).data.spots;
+    assert.ok(spots.length >= 2, "free plots to move to");
+    assert.equal((await request(`/buildings/${buildingId}/spots`, { cookie: people.alice })).status, 404);
+    assert.equal((await request(`/buildings/${buildingId}/move`, { cookie: people.bob, body: { x: 999, y: 999 } })).status, 400);
+    const moved = await request(`/buildings/${buildingId}/move`, { cookie: people.bob, body: { x: spots[0][0], y: spots[0][1] } });
+    assert.equal(moved.status, 200);
+    const after = (await request("/village", { cookie: people.alice })).data.buildings.find((b) => b[0] === buildingId);
+    assert.deepEqual(after.slice(4, 7), spots[0]);
     // Rare buildings need a blueprint; the observatory is the founder's alone.
     const noPlan = await request("/focus", { cookie: people.bob, body: { action: "start", model: "sera", strict: true } });
     assert.equal(noPlan.status, 400);

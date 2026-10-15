@@ -317,7 +317,21 @@ function plazaArt(view) {
  * world: { items, bounds, query(x0,y0,x1,y1), districts, … }
  * members: state.members; me: my id; sky: skyAt().
  */
-export function buildWorld({ groupKey, village, members, me, sky }) {
+// A free plot while moving a building: a glowing footprint and a pin.
+function spotArt(v, s) {
+  const P = v.at(s.x, s.y),
+    r = 1.7,
+    unit = Math.abs(P(0, 0, 1)[1] - P(0, 0, 0)[1]);
+  const corners = [P(-r, -r, 0.03), P(r, -r, 0.03), P(r, r, 0.03), P(-r, r, 0.03)];
+  poly(corners, "#f2c14e", 0.4);
+  corners.forEach((a, i) => seg(a, corners[(i + 1) % 4], "#d99a1e", 1.6));
+  const [cx, cy] = P(0, 0, 0.03),
+    [px, py] = P(0, 0, 2.2);
+  seg([cx, cy], [px, py], "#8a5a12", 1.4);
+  circle(px, py, unit * 0.5, "#f2c14e");
+  circle(px, py, unit * 0.22, "#fffaf0");
+}
+export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) {
   const people = new Map(members.map((m) => [m.id, m]));
   // September to November in Ankara: some leaves turn.
   const month = new Date(Date.now() + 3 * 3600000).getUTCMonth(),
@@ -557,6 +571,14 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
       },
     });
   }
+  // Move mode: the free plots the picked building can go to.
+  spots.forEach((s, i) => {
+    add(standing, {
+      type: "building", id: `spot-${i}`, building: { spot: true, ...s }, sp: { hw: 1.7 }, depth: s.x + s.y + 0.01, x: s.x, y: s.y,
+      bbox: boxOf(s.x, s.y, 4, 4, 3.4, 2.6), hit: boxOf(s.x, s.y, 2.6, 2.6, 2.6, 1.8), top: 2.2,
+      draw: (v) => spotArt(v, s),
+    });
+  });
   for (const ruin of village.ruins) {
     if (ruin.until <= Date.now()) continue;
     let { x, y } = ruin;

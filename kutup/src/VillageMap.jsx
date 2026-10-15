@@ -7,6 +7,7 @@ import { Avatar } from "./ui.jsx";
 import { buildWorld, mergeVillage, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene, KINDS } from "./Village.jsx";
+import { modelOf } from "../shared/catalog.js";
 
 // ---------- data ----------
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
@@ -82,7 +83,7 @@ function useSky() {
 }
 
 /** World + sky for a village; rebuilt only when what is drawn actually changes. */
-export function useVillageWorld({ village, members, me, groupId }) {
+export function useVillageWorld({ village, members, me, groupId, spots }) {
   const sky = useSky();
   const [expiry, expire] = useState(0);
   useEffect(() => {
@@ -94,8 +95,8 @@ export function useVillageWorld({ village, members, me, groupId }) {
   const tint = useMemo(() => tinter(sky), [sky.key]);
   const people = members.map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}`).join("|");
   const world = useMemo(
-    () => (village ? buildWorld({ groupKey: groupId || "demo", village, members, me, sky }) : null),
-    [village, people, me, sky.key, groupId, expiry],
+    () => (village ? buildWorld({ groupKey: groupId || "demo", village, members, me, sky, spots }) : null),
+    [village, people, me, sky.key, groupId, expiry, spots],
   );
   return { world, sky, tint };
 }
@@ -169,9 +170,10 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
 }
 
 // ---------- building card ----------
-function BuildingCard({ building, owner, me, onLike, close, canLike }) {
+function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
   const [busy, setBusy] = useState(false);
-  const kind = KINDS[building.kind];
+  const item = modelOf(building.model, building.kind),
+    kind = { label: item.name, emoji: item.emoji };
   const mine = building.memberId === me;
   return (
     <div className="building-card" role="dialog" aria-label={`${kind.label} bilgisi`}>
@@ -209,19 +211,36 @@ function BuildingCard({ building, owner, me, onLike, close, canLike }) {
         <Heart size={15} fill={building.mine ? "currentColor" : "none"} />
         {building.likes ? `${building.likes} kalp` : mine ? "Henüz kalp yok" : "Kalp at"}
       </button>
+      {mine && onMove && (
+        <button className="text-button building-move" onClick={() => onMove(building)}>
+          Taşı · mahallende başka bir arsaya
+        </button>
+      )}
     </div>
   );
 }
 
 // ---------- the Köy tab ----------
 export function VillagePanel({ me, members, groupId, village, like, run, outcome, notify, session, error, retry }) {
-  const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId });
+  const [moving, setMoving] = useState(null); // { building, spots } while moving one's own building
+  const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId, spots: moving?.spots });
   const [picked, setPicked] = useState(null),
     [full, setFull] = useState(false),
     [listOpen, setListOpen] = useState(false),
     [buildingPage, setBuildingPage] = useState(0),
     [, tick] = useState(0);
   const map = useRef(null);
+  const moveTo = async (spot) => {
+    try {
+      await api(`/buildings/${moving.building.id}/move`, { x: spot.x, y: spot.y });
+      setMoving(null);
+      retry();
+      navigator.vibrate?.(30);
+      notify("Taşındı! Yeni yeri hayırlı olsun. 🏡");
+    } catch (e) {
+      notify(e.message);
+    }
+  };
   // Keep the finished scene on screen for a moment, then show the village.
   useEffect(() => {
     if (!outcome) return;
@@ -267,7 +286,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
               ? "Odaklandıkça yükseliyor. Uygulamadan çıkarsan yıkılır."
               : outcome?.type === "built"
                 ? "Bitti! Mahallene taşınıyor."
-                : "İnşaat çöktü. Enkazı bir gün mahallende kalacak; sonraki bina temizler."}
+                : "İnşaat çöktü. Enkaz 3 gün mahallende kalır; bir sonraki seansın onu kaldırır ve malzemenin %30'u geri gelir."}
           </p>
 
         </>
@@ -291,7 +310,10 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 interactive
                 viewRef={map}
                 label={`Kütüp köyü: ${settled} mahalle, ${count} bina`}
-                onPick={(b) => setPicked(b ? b.id : null)}
+                onPick={(b) => {
+                  if (!moving) return setPicked(b ? b.id : null);
+                  if (b?.spot) moveTo(b);
+                }}
               />
             )}
             <div className="village-controls">
@@ -315,7 +337,15 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
               </button>
             </div>
             {full && <span className="village-full-title">Kütüp köyü · {count} bina</span>}
-            {building && (
+            {moving && (
+              <div className="move-banner" role="status">
+                <span>Parlayan bir arsaya dokun, {modelOf(moving.building.model, moving.building.kind).name.toLocaleLowerCase("tr")} oraya taşınsın.</span>
+                <button className="text-button" onClick={() => setMoving(null)}>
+                  Vazgeç
+                </button>
+              </div>
+            )}
+            {building && !moving && (
               <BuildingCard
                 building={building}
                 owner={owner}
@@ -324,6 +354,18 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 close={() => {
                   setPicked(null);
                   map.current?.view.select(null);
+                }}
+                onMove={async (b) => {
+                  try {
+                    const r = await get(`/buildings/${b.id}/spots`);
+                    if (!r.spots.length) return notify("Mahallende şu an boş arsa yok. Yeni bir bina yeni mahalle açar.");
+                    setPicked(null);
+                    map.current?.view.select(null);
+                    setMoving({ building: b, spots: r.spots.map(([x, y, facing]) => ({ x, y, facing })) });
+                    map.current?.view.flyTo({ x: (b.x - b.y) * 0.866, y: (b.x + b.y) * 0.5, s: 11 }, 500);
+                  } catch (e) {
+                    notify(e.message);
+                  }
                 }}
                 onLike={async (b) => {
                   try {
@@ -356,7 +398,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                   }}>
                     <option value="">Bina seç…</option>
                     {village.buildings.slice(buildingPage * 20, (buildingPage + 1) * 20).map((b) => (
-                      <option value={b.id} key={b.id}>{members.find((m) => m.id === b.memberId)?.name || "Komşun"} · {KINDS[b.kind].label} · {dateLabel(b.created)}</option>
+                      <option value={b.id} key={b.id}>{members.find((m) => m.id === b.memberId)?.name || "Komşun"} · {modelOf(b.model, b.kind).name} · {dateLabel(b.created)}</option>
                     ))}
                   </select>
                 </label>

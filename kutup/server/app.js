@@ -5,7 +5,7 @@ import { SCHEMA_VERSION, migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
-import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
+import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { statsOf } from "./stats.js";
 import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RARE, RUIN_DAYS, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 
@@ -1563,6 +1563,52 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     });
   });
 
+  // Moving one's own building to a free plot in one's own districts (never
+  // into someone else's, never into a district that is already full).
+  async function spotsFor(member, building) {
+    const [districts, inside] = await db.read([
+      ["SELECT id, dx AS q, dy AS r, buildings AS n FROM districts WHERE group_id = ? AND member_id = ? ORDER BY created, id", [member.group_id, member.id]],
+      [
+        "SELECT b.id, b.kind, b.pos_x AS x, b.pos_y AS y, b.district_id AS districtId FROM buildings b JOIN districts d ON d.id = b.district_id WHERE d.member_id = ? AND b.pos_x IS NOT NULL",
+        [member.id],
+      ],
+    ]);
+    const spots = [];
+    for (const d of districts) {
+      if (d.id !== building.district_id && d.n >= CAPACITY) continue;
+      const others = inside.filter((b) => b.districtId === d.id && b.id !== building.id);
+      for (const s of freeSpots(cellLayout(member.group_id, d.q, d.r), others, building.kind, 6))
+        if (Math.hypot(s.x - building.pos_x, s.y - building.pos_y) > 1) spots.push({ ...s, district: d.id });
+    }
+    return spots.slice(0, 10);
+  }
+  const ownBuilding = async (m, id) => {
+    const building = await db.get("SELECT * FROM buildings WHERE id = ? AND member_id = ? AND pos_x IS NOT NULL", [id, m.id]);
+    if (!building) fail("Bu bina senin değil ya da bulunamadı.", 404);
+    return building;
+  };
+  route("GET", "/buildings/:id/spots", async ({ member: m, params }) => {
+    const spots = await spotsFor(m, await ownBuilding(m, params.id));
+    return json({ spots: spots.map((s) => [s.x, s.y, s.facing]) });
+  });
+  route("POST", "/buildings/:id/move", async ({ member: m, params, body }) => {
+    const building = await ownBuilding(m, params.id);
+    const spot = (await spotsFor(m, building)).find((s) => Math.abs(s.x - Number(body.x)) < 0.01 && Math.abs(s.y - Number(body.y)) < 0.01);
+    if (!spot) fail("Bu arsa artık boş değil. Başka birini seç.");
+    await db.batch([
+      ["UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ?, touched = ? WHERE id = ?", [spot.x, spot.y, spot.facing, spot.district, Date.now(), building.id]],
+      ...(spot.district !== building.district_id
+        ? [
+            ["UPDATE districts SET buildings = buildings - 1 WHERE id = ?", [building.district_id]],
+            ["UPDATE districts SET buildings = buildings + 1 WHERE id = ?", [spot.district]],
+          ]
+        : []),
+      bumpVillage(m.group_id),
+    ]);
+    onChange(m.group_id);
+    return json({ ok: true, x: spot.x, y: spot.y, facing: spot.facing });
+  });
+
   route("POST", "/buildings/:id/like", async ({ member: m, params }) => {
     const building = await db.get("SELECT id, member_id FROM buildings WHERE id = ? AND group_id = ?", [
       params.id,
@@ -1858,7 +1904,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         }
         const joining = /^\/(groups|join|transfer\/claim|owner\/claim)$/.test(path);
         // Test-only clock controls are not real traffic.
-        if (!(config.testHooks && path.startsWith("/__test/"))) limit(`${ip}:${joining ? "join" : "write"}`, joining ? 15 : 120);
+        // Test runs (one IP, hundreds of writes) get more room; real traffic does not.
+        if (!(config.testHooks && path.startsWith("/__test/"))) limit(`${ip}:${joining ? "join" : "write"}`, joining ? 15 : config.testHooks ? 400 : 120);
       }
       const match = routes
         .map((r) => ({ r, m: r.method === method && path.match(r.pattern) }))

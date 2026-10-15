@@ -321,3 +321,31 @@ button.brick-pill {
 .catalog-class.rare h3 {
   color: #8a5cc8;
 }
+
+/* Moving a building: the hint over the map. */
+.move-banner {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  left: 12px;
+  right: 64px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(52, 58, 50, 0.92);
+  color: #f5f2e8;
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px #18171233;
+}
+.move-banner .text-button {
+  flex: none;
+  color: #d6ef9e;
+  font-weight: 700;
+}
+.building-move {
+  margin-top: 8px;
+  font-size: 12.5px;
+}
