@@ -53,7 +53,15 @@ const before = await call("/owner/groups", { owner: true });
 check("owner panel reachable with key", before.status === 200);
 const realTeams = (before.data || []).map((g) => ({ id: g.id, members: g.members.length }));
 console.log("     teams before:", JSON.stringify(realTeams.map((t) => t.members)));
-const schema = d1("SELECT value FROM settings WHERE key = 'schema'")[0]?.value;
+// Right after a deploy the old version can still answer for a few seconds; the
+// new one migrates on its first request, so wake it and give it a moment.
+let schema;
+for (let attempt = 0; attempt < 6; attempt++) {
+  await call("/health");
+  schema = d1("SELECT value FROM settings WHERE key = 'schema'")[0]?.value;
+  if (schema === String(SCHEMA_VERSION)) break;
+  await new Promise((r) => setTimeout(r, 4000));
+}
 check(`live D1 schema is ${SCHEMA_VERSION}`, schema === String(SCHEMA_VERSION), `schema ${schema}`);
 
 // 1. New team requires an account; with one it works.
