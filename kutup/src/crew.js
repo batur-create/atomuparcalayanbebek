@@ -93,10 +93,10 @@ function barrow(P, from, to, z, time, load) {
     `<line x1="${n1(bx - 6 * dir)}" y1="${n1(by - 6)}" x2="${n1(bx - 11 * dir)}" y2="${n1(by - 9)}" stroke="#6b7480" stroke-width="1.2"/>`;
   return tub + worker(P, x - (go ? 0.35 : -0.35), y, z, time * 1.4, 0.7, "#f6d24a", "none");
 }
-function excavator(P, x, y, time) {
-  // Crawler tracks with links and sprockets, the upper structure with its
-  // counterweight and glazed cab, then boom → stick → toothed bucket, each with
-  // its hydraulic cylinder, digging into the pit and swinging out to dump.
+const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+// The excavator digs where it is told and swings the bucket to where it is
+// told: the caller drives the bucket (pit ↔ truck bed), the arm follows.
+function excavator(P, x, y, wrist, { full = false, dumping = false, time = 0, side = -1 } = {}) {
   let s = "";
   for (const side of [-1, 1]) {
     const ty = y + side * 0.32;
@@ -113,19 +113,114 @@ function excavator(P, x, y, time) {
   s += box(P, x - 0.42, y - 0.36, x - 0.02, y + 0.02, 0.68, 1.1, YELLOW);
   s += poly([P(x - 0.425, y - 0.3, 0.74), P(x - 0.425, y - 0.02, 0.74), P(x - 0.425, y - 0.02, 1.04), P(x - 0.425, y - 0.3, 1.04)], "#4f6f8c");
   s += poly([P(x - 0.38, y + 0.025, 0.74), P(x - 0.06, y + 0.025, 0.74), P(x - 0.06, y + 0.025, 1.04), P(x - 0.38, y + 0.025, 1.04)], "#5b7a96");
-  const swing = Math.sin(time * 0.9),
-    dig = Math.max(0, swing),
-    reach = 1.15 + 0.25 * swing,
-    lift = 0.95 + 0.5 * dig;
-  const shoulder = [x - 0.4, y + 0.2, 0.62],
-    elbow = [x - 0.4 - reach * 0.7, y + 0.05, 0.62 + lift],
-    wrist = [x - 0.4 - reach * 1.3, y - 0.05, 0.15 + 0.65 * dig];
+  // Boom from the front of the house, elbow raised over the reach, stick down to the bucket.
+  const shoulder = [x - 0.1, y + side * 0.3, 0.62];
+  const mid = lerp3(shoulder, wrist, 0.5);
+  const elbow = [mid[0], mid[1], Math.max(shoulder[2], wrist[2]) + 0.95];
   s += seg(P(...shoulder), P(...elbow), YELLOW[1], 5) + seg(P(...elbow), P(...wrist), YELLOW[2], 3.8);
-  s += seg(P(x - 0.25, y + 0.2, 0.7), P(elbow[0] * 0.55 + shoulder[0] * 0.45, y + 0.12, elbow[2] * 0.6 + shoulder[2] * 0.4), "#c8cdd2", 1.8);
-  s += seg(P(elbow[0] + 0.1, y + 0.05, elbow[2] + 0.12), P(wrist[0] * 0.4 + elbow[0] * 0.6, y, wrist[2] * 0.4 + elbow[2] * 0.6 + 0.1), "#c8cdd2", 1.6);
+  s += seg(P(...lerp3(shoulder, elbow, 0.1)), P(...lerp3(shoulder, elbow, 0.6)), "#c8cdd2", 1.8);
+  s += seg(P(...lerp3(elbow, wrist, 0.05)), P(...lerp3(elbow, wrist, 0.5)), "#c8cdd2", 1.6);
   const [bx, by] = P(...wrist);
-  s += `<path d="M${n1(bx - 6)} ${n1(by - 4)} q6 -4 11 1 l-1 7 l-2 -2 l-1 3 l-2 -2 l-1 3 l-2 -2 l-1 3 z" fill="#555b62"/>`;
-  if (dig > 0.6) s += `<ellipse cx="${n1(bx)}" cy="${n1(by - 3)}" rx="5" ry="2" fill="#8a6a48"/>`;
+  if (dumping) {
+    // Bucket curled open over the bed, spoil falling.
+    s += `<path d="M${n1(bx - 6)} ${n1(by - 2)} q6 6 11 -1 l-1 -6 l-9 2 z" fill="#555b62"/>`;
+    for (let i = 0; i < 4; i++) {
+      const t = (time * 2.5 + i / 4) % 1;
+      s += `<circle cx="${n1(bx + Math.sin(i * 1.7) * 3)}" cy="${n1(by + 2 + t * 12)}" r="${n1(2.2 - t)}" fill="#8a6a48"/>`;
+    }
+  } else {
+    s += `<path d="M${n1(bx - 6)} ${n1(by - 4)} q6 -4 11 1 l-1 7 l-2 -2 l-1 3 l-2 -2 l-1 3 l-2 -2 l-1 3 z" fill="#555b62"/>`;
+    if (full) s += `<ellipse cx="${n1(bx)}" cy="${n1(by - 3)}" rx="5.5" ry="2.4" fill="#8a6a48"/>`;
+  }
+  return s;
+}
+function cab(P, x0, x1, y, faces, front = true) {
+  let s = box(P, x0, y - 0.3, x1, y + 0.3, 0.22, 0.98, faces);
+  if (front) {
+    s += poly([P(x1 + 0.005, y - 0.23, 0.62), P(x1 + 0.005, y + 0.23, 0.62), P(x1 + 0.005, y + 0.23, 0.9), P(x1 + 0.005, y - 0.23, 0.9)], "#4f6f8c");
+    s += box(P, x1, y - 0.3, x1 + 0.07, y + 0.3, 0.22, 0.36, ["#3c4146", "#2f3338", "#25292d"]);
+    const [lx, ly] = P(x1 + 0.075, y + 0.2, 0.42);
+    s += `<circle cx="${n1(lx)}" cy="${n1(ly)}" r="1.6" fill="#fff4c8"/>`;
+  }
+  s += poly([P(x0 + 0.1, y + 0.305, 0.62), P(x1 - 0.08, y + 0.305, 0.62), P(x1 - 0.08, y + 0.305, 0.88), P(x0 + 0.1, y + 0.305, 0.88)], "#5b7a96");
+  const mx = front ? x1 - 0.05 : x0 + 0.05;
+  s += seg(P(mx, y + 0.31, 0.86), P(mx, y + 0.45, 0.8), "#2f3338", 1) + box(P, mx - 0.03, y + 0.44, mx + 0.03, y + 0.48, 0.66, 0.82, ["#3c4146", "#2f3338", "#25292d"]);
+  return s;
+}
+// The truck mixer. facing 1: cab towards +x; -1: reversed up to something on
+// its +x side. chuteTo: a world point the discharge chute pours into.
+function mixerTruck(P, x, y, time, facing = 1, chuteTo = null) {
+  const X = (lx) => x + facing * lx;
+  const B = (l0, y0, l1, y1, z0, z1, c) => box(P, Math.min(X(l0), X(l1)), y0, Math.max(X(l0), X(l1)), y1, z0, z1, c);
+  let s = tyre(P, X(-0.78), y + 0.32) + tyre(P, X(-0.38), y + 0.32) + tyre(P, X(0.78), y + 0.32);
+  s += B(-1.05, y - 0.27, 0.55, y + 0.27, 0.2, 0.34, ["#4a5058", "#3c4148", "#30353b"]);
+  s += B(0.42, y - 0.2, 0.55, y + 0.2, 0.34, 0.78, STEEL); // water tank
+  s += cab(P, Math.min(X(0.56), X(1.05)), Math.max(X(0.56), X(1.05)), y, ["#f08b3c", "#d77428", "#bb601d"], facing > 0);
+  // The drum: a tapered barrel rising towards the back, drawn in screen space
+  // around its axis, with spiral fins that turn while it mixes (or discharges).
+  const c0 = P(X(0.32), y, 0.86),
+    c1 = P(X(-0.92), y, 1.12),
+    unit = Math.hypot(...P(0, 0, 1).map((v, i) => v - P(0, 0, 0)[i]));
+  const r0 = 0.44 * unit,
+    r1 = 0.28 * unit;
+  const ax = c1[0] - c0[0],
+    ay = c1[1] - c0[1],
+    al = Math.hypot(ax, ay),
+    px = -ay / al,
+    py = ax / al;
+  const edge = (t, side) => {
+    const r = r0 + (r1 - r0) * t;
+    return [c0[0] + ax * t + px * r * side, c0[1] + ay * t + py * r * side];
+  };
+  const top = [0, 0.25, 0.5, 0.75, 1].map((t) => edge(t, -1)),
+    bottom = [1, 0.75, 0.5, 0.25, 0].map((t) => edge(t, 1));
+  s += `<polygon points="${[...top, ...bottom].map((q) => q.map(n1).join(",")).join(" ")}" fill="#ebe6da"/>`;
+  s += `<polygon points="${[0, 0.5, 1].map((t) => edge(t, 0.35)).concat([1, 0.5, 0].map((t) => edge(t, 1))).map((q) => q.map(n1).join(",")).join(" ")}" fill="#d4cdbd"/>`;
+  const spin = chuteTo ? -0.4 : 0.25; // reversing drum while it discharges
+  for (let i = 0; i < 5; i++) {
+    const t = (((time * spin + i / 5) % 1) + 1) % 1;
+    const a = edge(Math.max(0, t - 0.08), -1),
+      b = edge(Math.min(1, t + 0.08), 1);
+    s += `<line x1="${n1(a[0])}" y1="${n1(a[1])}" x2="${n1(b[0])}" y2="${n1(b[1])}" stroke="#e08a2e" stroke-width="2.6" stroke-linecap="round"/>`;
+  }
+  s += `<ellipse cx="${n1(c0[0])}" cy="${n1(c0[1])}" rx="${n1(r0 * 0.35)}" ry="${n1(r0)}" transform="rotate(${n1((Math.atan2(ay, ax) * 180) / Math.PI)} ${n1(c0[0])} ${n1(c0[1])})" fill="#d9d2c3"/>`;
+  // Hopper, chute and the ladder at the back.
+  s += poly([P(X(-1.0), y - 0.18, 1.2), P(X(-1.0), y + 0.18, 1.2), P(X(-1.18), y + 0.26, 1.42), P(X(-1.18), y - 0.26, 1.42)], "#8a929b");
+  if (chuteTo) {
+    const start = [X(-1.08), y, 0.92];
+    const end = chuteTo;
+    s += seg(P(...start), P(...end), "#7f8994", 3.6) + seg(P(...start), P(...end), "#9aa4ae", 1.2);
+    // Concrete running down the chute into the hopper.
+    for (let i = 0; i < 4; i++) {
+      const t = (time * 1.6 + i / 4) % 1,
+        q = P(...lerp3(start, end, t));
+      s += `<circle cx="${n1(q[0])}" cy="${n1(q[1] - 1.5)}" r="1.7" fill="#7a7e85"/>`;
+    }
+  } else s += seg(P(X(-1.05), y, 0.92), P(X(-1.42), y - 0.3, 0.55), "#7f8994", 3) + seg(P(X(-1.42), y - 0.3, 0.55), P(X(-1.55), y - 0.36, 0.38), "#68727c", 2.6);
+  for (let z = 0.4; z < 1.25; z += 0.17) s += seg(P(X(-1.08), y + 0.2, z), P(X(-1.08), y + 0.32, z), "#9aa4ae", 0.9);
+  s += seg(P(X(-1.08), y + 0.2, 0.34), P(X(-1.08), y + 0.2, 1.3), "#9aa4ae", 0.9) + seg(P(X(-1.08), y + 0.32, 0.34), P(X(-1.08), y + 0.32, 1.3), "#9aa4ae", 0.9);
+  return s;
+}
+function flatbed(P, x, y, kind, amount, sp) {
+  let s = tyre(P, x - 0.7, y + 0.32) + tyre(P, x - 0.3, y + 0.32) + tyre(P, x + 0.78, y + 0.32);
+  s += box(P, x - 1.05, y - 0.27, x + 0.4, y + 0.27, 0.16, 0.22, ["#4a5058", "#3c4148", "#30353b"]);
+  s += box(P, x - 1.08, y - 0.31, x + 0.4, y + 0.31, 0.22, 0.32, ["#c9a26b", "#ae8752", "#946f42"]);
+  // The load, going down as it is unloaded.
+  const n = Math.ceil(4 * amount);
+  for (let i = 0; i < n; i++) {
+    if (kind === "rebar") {
+      const z = 0.32 + Math.floor(i / 2) * 0.12,
+        yy = y - 0.17 + (i % 2) * 0.26;
+      s += box(P, x - 1.0, yy - 0.1, x + 0.2, yy + 0.1, z, z + 0.12, ["#9a5a40", "#84492f", "#6f3c26"]);
+    } else {
+      const xx = x - 0.98 + i * 0.32;
+      s += box(P, xx, y - 0.24, xx + 0.28, y + 0.24, 0.32, 0.38, ["#c7a06a", "#ad8754", "#946f42"]) + box(P, xx + 0.02, y - 0.21, xx + 0.26, y + 0.21, 0.38, 0.66, [sp.roof[2], sp.roof[0], sp.roof[1]]);
+    }
+  }
+  // Loader crane folded behind the cab, then the cab.
+  s += box(P, x + 0.26, y - 0.12, x + 0.42, y + 0.12, 0.32, 0.98, YELLOW);
+  s += seg(P(x + 0.34, y, 0.98), P(x - 0.5, y, 1.2), YELLOW[1], 3) + seg(P(x - 0.5, y, 1.2), P(x - 0.25, y, 0.72), YELLOW[2], 2.4);
+  s += cab(P, x + 0.45, x + 0.95, y, ["#f4f2ea", "#dcd8cc", "#c4bfb1"]);
   return s;
 }
 function dumpTruck(P, x, y, fill) {
@@ -147,55 +242,6 @@ function dumpTruck(P, x, y, fill) {
 function tyre(P, x, y) {
   const [cx, cy] = P(x, y, 0.17);
   return `<circle cx="${n1(cx)}" cy="${n1(cy)}" r="5.6" fill="${TYRE}"/><circle cx="${n1(cx)}" cy="${n1(cy)}" r="3" fill="#a9b0b7"/><circle cx="${n1(cx)}" cy="${n1(cy)}" r="1.2" fill="#5b6168"/>`;
-}
-function cab(P, x0, x1, y, faces) {
-  let s = box(P, x0, y - 0.3, x1, y + 0.3, 0.22, 0.98, faces);
-  s += poly([P(x1 + 0.005, y - 0.23, 0.62), P(x1 + 0.005, y + 0.23, 0.62), P(x1 + 0.005, y + 0.23, 0.9), P(x1 + 0.005, y - 0.23, 0.9)], "#4f6f8c");
-  s += poly([P(x0 + 0.1, y + 0.305, 0.62), P(x1 - 0.08, y + 0.305, 0.62), P(x1 - 0.08, y + 0.305, 0.88), P(x0 + 0.1, y + 0.305, 0.88)], "#5b7a96");
-  s += box(P, x1, y - 0.3, x1 + 0.07, y + 0.3, 0.22, 0.36, ["#3c4146", "#2f3338", "#25292d"]);
-  const [lx, ly] = P(x1 + 0.075, y + 0.2, 0.42);
-  s += `<circle cx="${n1(lx)}" cy="${n1(ly)}" r="1.6" fill="#fff4c8"/>`;
-  s += seg(P(x1 - 0.05, y + 0.31, 0.86), P(x1 - 0.05, y + 0.45, 0.8), "#2f3338", 1) + box(P, x1 - 0.08, y + 0.44, x1 - 0.02, y + 0.48, 0.66, 0.82, ["#3c4146", "#2f3338", "#25292d"]);
-  return s;
-}
-function mixerTruck(P, x, y, time) {
-  let s = tyre(P, x - 0.78, y + 0.32) + tyre(P, x - 0.38, y + 0.32) + tyre(P, x + 0.78, y + 0.32);
-  s += box(P, x - 1.05, y - 0.27, x + 0.55, y + 0.27, 0.2, 0.34, ["#4a5058", "#3c4148", "#30353b"]);
-  s += box(P, x + 0.42, y - 0.2, x + 0.55, y + 0.2, 0.34, 0.78, STEEL); // water tank
-  s += cab(P, x + 0.56, x + 1.05, y, ["#f08b3c", "#d77428", "#bb601d"]);
-  // The drum: a tapered barrel rising towards the back, drawn in screen space
-  // around its axis, with spiral fins that turn while it mixes.
-  const c0 = P(x + 0.32, y, 0.86),
-    c1 = P(x - 0.92, y, 1.12),
-    unit = Math.hypot(...P(0, 0, 1).map((v, i) => v - P(0, 0, 0)[i]));
-  const r0 = 0.44 * unit,
-    r1 = 0.28 * unit;
-  const ax = c1[0] - c0[0],
-    ay = c1[1] - c0[1],
-    al = Math.hypot(ax, ay),
-    px = -ay / al,
-    py = ax / al;
-  const edge = (t, side) => {
-    const r = r0 + (r1 - r0) * t;
-    return [c0[0] + ax * t + px * r * side, c0[1] + ay * t + py * r * side];
-  };
-  const top = [0, 0.25, 0.5, 0.75, 1].map((t) => edge(t, -1)),
-    bottom = [1, 0.75, 0.5, 0.25, 0].map((t) => edge(t, 1));
-  s += `<polygon points="${[...top, ...bottom].map((q) => q.map(n1).join(",")).join(" ")}" fill="#ebe6da"/>`;
-  s += `<polygon points="${[0, 0.5, 1].map((t) => edge(t, 0.35)).concat([1, 0.5, 0].map((t) => edge(t, 1))).map((q) => q.map(n1).join(",")).join(" ")}" fill="#d4cdbd"/>`;
-  for (let i = 0; i < 5; i++) {
-    const t = (time * 0.25 + i / 5) % 1;
-    const a = edge(Math.max(0, t - 0.08), -1),
-      b = edge(Math.min(1, t + 0.08), 1);
-    s += `<line x1="${n1(a[0])}" y1="${n1(a[1])}" x2="${n1(b[0])}" y2="${n1(b[1])}" stroke="#e08a2e" stroke-width="2.6" stroke-linecap="round"/>`;
-  }
-  s += `<ellipse cx="${n1(c0[0])}" cy="${n1(c0[1])}" rx="${n1(r0 * 0.35)}" ry="${n1(r0)}" transform="rotate(${n1((Math.atan2(ay, ax) * 180) / Math.PI)} ${n1(c0[0])} ${n1(c0[1])})" fill="#d9d2c3"/>`;
-  // Hopper, chute and the ladder at the back.
-  s += poly([P(x - 1.0, y - 0.18, 1.2), P(x - 1.0, y + 0.18, 1.2), P(x - 1.18, y + 0.26, 1.42), P(x - 1.18, y - 0.26, 1.42)], "#8a929b");
-  s += seg(P(x - 1.05, y, 0.92), P(x - 1.42, y - 0.3, 0.55), "#7f8994", 3) + seg(P(x - 1.42, y - 0.3, 0.55), P(x - 1.55, y - 0.36, 0.38), "#68727c", 2.6);
-  for (let z = 0.4; z < 1.25; z += 0.17) s += seg(P(x - 1.08, y + 0.2, z), P(x - 1.08, y + 0.32, z), "#9aa4ae", 0.9);
-  s += seg(P(x - 1.08, y + 0.2, 0.34), P(x - 1.08, y + 0.2, 1.3), "#9aa4ae", 0.9) + seg(P(x - 1.08, y + 0.32, 0.34), P(x - 1.08, y + 0.32, 1.3), "#9aa4ae", 0.9);
-  return s;
 }
 // One outrigger: a beam out from the chassis, a hydraulic jack, a pad on the ground.
 function outrigger(P, x, y, side) {
@@ -223,7 +269,9 @@ function pumpTruck(P, x, y, target, time) {
   let s = outrigger(P, x + 0.35, y, -1) + outrigger(P, x - 0.95, y, -1);
   s += tyre(P, x - 0.9, y + 0.32) + tyre(P, x - 0.5, y + 0.32) + tyre(P, x + 0.8, y + 0.32);
   s += box(P, x - 1.15, y - 0.28, x + 0.55, y + 0.28, 0.2, 0.42, ["#e9eef2", "#cdd5dc", "#b3bcc5"]);
-  s += box(P, x - 0.2, y - 0.22, x + 0.45, y + 0.22, 0.42, 0.6, STEEL); // hopper and pump
+  s += box(P, x - 0.2, y - 0.22, x + 0.45, y + 0.22, 0.42, 0.6, STEEL); // pump unit
+  s += box(P, x - 1.2, y - 0.24, x - 0.92, y + 0.24, 0.3, 0.72, ["#5b6168", "#4a4f55", "#3c4146"]); // rear hopper
+  s += poly([P(x - 1.18, y - 0.2, 0.721), P(x - 0.94, y - 0.2, 0.721), P(x - 0.94, y + 0.2, 0.721), P(x - 1.18, y + 0.2, 0.721)], "#7a7e85");
   s += cab(P, x + 0.56, x + 1.05, y, ["#3f6fb0", "#325d97", "#284c7e"]);
   s += outrigger(P, x + 0.35, y, 1) + outrigger(P, x - 0.95, y, 1);
   // Turret and a four-section boom arching over to the pour point.
@@ -262,19 +310,66 @@ export function crewSVG(P, sp, plan, shown, time) {
   let extra = "";
   const top = 0.3 + sp.h;
   const strip = w + 0.2 + (2.9 - (w + 0.2)) / 2;
+  // Deliveries: a flatbed with a loader crane brings rebar and plywood before
+  // the foundation and the roof tiles before the roof; its load goes down as
+  // the stockpile goes up.
+  const window = (from, to) => (shown > from && shown < to ? (shown - from) / (to - from) : -1);
+  const d1 = window(0.055, 0.1),
+    d2 = window(0.6, 0.665);
+  if (d1 >= 0) behind += flatbed(P, 1.05 + (1 - ease(arrival(d1))) * 4.5, -w - 0.66, "rebar", 1 - clamp((d1 - 0.2) / 0.6), sp);
+  if (d2 >= 0) machines += flatbed(P, 1.3 + (1 - ease(arrival(d2))) * 4.5, w + 1.0, "tiles", 1 - clamp((d2 - 0.2) / 0.6), sp);
   if (p.key === "dig") {
-    // Trucks shuttle the spoil away: in, filled bucket by bucket, out again.
-    const cycle = (time / 9) % 1;
-    const out = cycle < 0.2 ? 1 - cycle / 0.2 : cycle > 0.85 ? (cycle - 0.85) / 0.15 : 0;
-    behind += dumpTruck(P, 1.2 + (out + away) * 4.5, -w - 0.65, cycle < 0.2 ? 0 : Math.min(1, (cycle - 0.2) / 0.6));
-    machines += excavator(P, w + 1.1 + away * 4, w + 0.6, time);
-    crew.push([-w - 0.9, w + 0.9, 0, "shovel"], [-w - 0.6, -w - 0.6, 0, "survey"]);
+    // The excavator loads the truck: dig, swing over the bed, dump, swing back.
+    // Four buckets fill a truck; it drives off and an empty one pulls in.
+    const lane = w + 0.2 + 0.25 + 0.55;
+    const T = 28,
+      tc = time % T;
+    const loading = tc >= 2 && tc < 26,
+      bucket = loading ? Math.floor((tc - 2) / 6) : 0,
+      bc = loading ? ((tc - 2) % 6) / 6 : 0;
+    const drive = tc < 2 ? 1 - tc / 2 : tc >= 26 ? (tc - 26) / 2 : 0;
+    const truckX = 1.55 + (ease(drive) + away) * 4.5;
+    const fill = loading ? (bucket + (bc >= 0.62 ? 1 : 0)) / 4 : tc >= 26 ? 1 : 0;
+    const depth = 0.6 * k;
+    const digAt = [-0.75 + 0.25 * Math.sin(time * 0.37), w * 0.35, -depth + 0.18],
+      dumpAt = [truckX - 0.25, lane, 1.4];
+    let wrist = [...digAt],
+      full = false,
+      dumping = false;
+    if (!loading) wrist[2] += 0.25 * Math.abs(Math.sin(time * 1.1));
+    else if (bc < 0.35) {
+      wrist[2] += 0.3 * (1 - bc / 0.35);
+      full = bc > 0.22;
+    } else if (bc < 0.55) {
+      const u = ease((bc - 0.35) / 0.2);
+      wrist = lerp3(digAt, dumpAt, u);
+      wrist[2] += 0.7 * Math.sin(Math.PI * u);
+      full = true;
+    } else if (bc < 0.7) {
+      wrist = dumpAt;
+      dumping = true;
+    } else {
+      const u = ease((bc - 0.7) / 0.3);
+      wrist = lerp3(dumpAt, digAt, u);
+      wrist[2] += 0.7 * Math.sin(Math.PI * u);
+    }
+    machines += dumpTruck(P, truckX, lane, fill);
+    machines += excavator(P, -0.95 + away * 4.5, lane, wrist, { full, dumping, time });
+    crew.push([-w - 0.6, -w - 0.6, 0, "survey"], [w + 0.6, -0.4, 0, "shovel"]);
   } else if (["lean", "footPour", "colPour", "deckPour"].includes(p.key)) {
-    behind += mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time);
-    if (p.key === "footPour" || p.key === "deckPour") {
+    const pumped = p.key === "footPour" || p.key === "deckPour";
+    // Blinding goes straight down an extended chute into the pit.
+    const parked = away < 0.02;
+    if (p.key === "lean") machines += mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time, 1, parked ? [0.25, -w + 0.55, -0.42] : null);
+    else if (!pumped) behind += mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time);
+    if (pumped) {
       const z = p.key === "footPour" ? 0.3 : 0.3 + (p.floor + 1) * hf;
       const edge = p.key === "deckPour" ? -w + 2 * w * Math.min(1, k / 0.85) : 0;
-      machines += pumpTruck(P, 0.9 + away * 4.5, w + 1.0, [edge, 0.2 * Math.sin(time * 0.5), z], time);
+      const pumpX = 0.9 + away * 4.5,
+        lane = w + 1.0;
+      // The mixer backs up to the pump's rear hopper and discharges into it.
+      machines += mixerTruck(P, pumpX - 2.6 - away * 1.5, lane, time, -1, parked ? [pumpX - 1.06, lane, 0.78] : null);
+      machines += pumpTruck(P, pumpX, lane, [edge, 0.2 * Math.sin(time * 0.5), z], time);
       // Hose man, vibrator man and a screeder at the pour front.
       crew.push([edge - 0.35, 0.6, z, "hose"], [edge + 0.15, -0.7, z, "shovel"], [edge - 0.8, -0.2, z, "trowel"]);
     } else if (p.key === "lean") crew.push([-w + 0.4, w + 0.5, -0.5, "shovel"], [w - 0.2, -w + 0.3, -0.5, "trowel"]);
@@ -284,6 +379,17 @@ export function crewSVG(P, sp, plan, shown, time) {
   else if (p.key === "footRebar") crew.push([-w + 0.3, w + 0.4, -0.4, "tie"], [w + 0.4, -w + 0.2, 0, "bar"], [0.2, 0.1, -0.4, "tie"]);
   else if (p.key === "footForm") crew.push([-w + 0.3, w + 0.4, 0, "hammer"], [w + 0.4, -w + 0.2, 0, "carry"]);
   else if (p.floor >= 0) {
+    // Backfill: the excavator pushes the spoil heap back round the foundation.
+    // It works from the back lane: bucket into the windrow on the right, then
+    // along the trench at the back of the foundation.
+    if (p.key === "colRebar" && p.floor === 0 && k < 0.75) {
+      const left = Math.sqrt(Math.max(0, 1 - k / 0.75));
+      const heap = [3.06, -2.1 + 0.95 * left, 0.1 + 0.3 * left],
+        trench = [0.9 + 0.6 * Math.sin(time * 0.37), -w - 0.25, 0.08];
+      const c = (time / 5) % 1;
+      const wrist = c < 0.5 ? lerp3(heap, trench, ease(c / 0.5)) : lerp3(trench, heap, ease((c - 0.5) / 0.5));
+      behind += excavator(P, 1.9 + (1 - ease(arrival(k / 0.75))) * 4.5, -w - 0.62, wrist, { full: c < 0.5, time, side: 1 });
+    }
     // Fixers and carpenters on the storey under way.
     const z = 0.3 + p.floor * hf;
     const tools = { colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"] }[p.key] || ["hammer", "none"];

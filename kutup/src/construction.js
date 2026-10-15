@@ -82,6 +82,24 @@ const mixAll = (a, b, t) => a.map((c, i) => mix(c, b[i], t));
 
 let clipSerial = 0;
 
+function windrow(P, x0, x1, y0, y1, h) {
+  const xc = (x0 + x1) / 2,
+    r = Math.min(0.3, (y1 - y0) / 2);
+  const a = P(xc, y0 + r, h),
+    b = P(xc, y1 - r, h);
+  let s = poly([P(x0, y0, 0), P(x0, y1, 0), b, a], "#b8946a");
+  s += poly([P(x0, y1, 0), P(x1, y1, 0), b], "#8f6d4a");
+  s += poly([P(x1, y0, 0), P(x1, y1, 0), b, a], "#a07e58");
+  s += `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="#c4a27a" stroke-width="1.2" stroke-linecap="round"/>`;
+  // A few clods on the slope.
+  for (let i = 1; i < 6; i++) {
+    const t = i / 6,
+      [cx, cy] = P(xc + 0.12 + 0.08 * (i % 2), y0 + (y1 - y0) * t, h * 0.45);
+    s += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.3" fill="#7d5d3e"/>`;
+  }
+  return s;
+}
+
 /** SVG for everything up to the finished frame, at progress `shown` (0…1): { yard, rest, front }. */
 export function siteSVG(P, sp, plan, shown) {
   const k = {};
@@ -197,13 +215,10 @@ export function siteSVG(P, sp, plan, shown) {
     }
     pit += "</g>";
   }
-  const spoil = Math.max(0, k.dig - (k.footPour > 0.8 ? (k.footPour - 0.8) * 5 : 0));
-  if (spoil > 0 && !backfilled) {
-    const [sx, sy] = P(-2.3, 2.2, 0);
-    const r = 34 * Math.sqrt(spoil);
-    back += `<ellipse cx="${sx.toFixed(1)}" cy="${(sy - r * 0.18).toFixed(1)}" rx="${r.toFixed(1)}" ry="${(r * 0.42).toFixed(1)}" fill="#a07e58"/>`;
-    back += `<ellipse cx="${(sx - r * 0.15).toFixed(1)}" cy="${(sy - r * 0.32).toFixed(1)}" rx="${(r * 0.55).toFixed(1)}" ry="${(r * 0.28).toFixed(1)}" fill="#b38f66"/>`;
-  }
+  const spoil = Math.max(0, k.dig - (k.colRebar0 || 0) / 0.75);
+  // The spoil kept for backfill lies in a windrow along the right-hand edge,
+  // clear of the crane, the stockpiles and both truck lanes.
+  if (spoil > 0) back += windrow(P, 2.76, 3.36, -2.1, -2.1 + 1.9 * Math.sqrt(spoil), 0.42 * Math.sqrt(spoil));
 
   // Above ground: starter bars, the back of the formwork, the top mesh, the
   // concrete as it rises (wet grey curing to pale), then the front formwork.
