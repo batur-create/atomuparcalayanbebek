@@ -318,6 +318,18 @@ test("the week: Haftanın Ustası is crowned once, and the shared monument pays 
   assert.ok(done.messages.some((m) => m.text.startsWith("haftanın ortak anıtını tamamladı 🏛️")));
 });
 
+test("sessions that end together get one board line, rewritten as more settle", async () => {
+  const { sqlite, app, headers } = await auditFixture();
+  const invite = sqlite.prepare("SELECT invite FROM groups").get().invite;
+  const second = await call(app, "/join", { method: "POST", body: { invite, name: "İkinci", username: "ikinci", password: "test123" } });
+  assert.equal(second.status, 201);
+  const end = Date.now() - 1000;
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_minutes = 25, focus_strict = 0, focus_beat = ?").run(end, end);
+  const s = (await call(app, "/state", { headers })).data;
+  const line = s.messages.find((m) => m.id.startsWith("together-"));
+  assert.ok(line && / ile birlikte 25 dk çalıştı 🤝$/.test(line.text), line?.text);
+});
+
 test("an expired presence changes the revision seen by idle polling clients", async () => {
   const { sqlite, app, headers } = await auditFixture();
   const here = await call(app, "/presence", { method: "POST", headers, body: { status: "here" } });

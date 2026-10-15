@@ -391,6 +391,26 @@ export function hush() {
   setTimeout(() => !layers.size && ctx.state === "running" && ctx.suspend().catch(() => {}), 2500);
 }
 
+/** A soft two-note chime for a message or a call (straight to the speakers). */
+export function chime() {
+  const c = audio();
+  if (!c) return;
+  const t = c.currentTime;
+  for (const [f, d, g] of [[1318.5, 0, 0.12], [1760, 0.13, 0.09]]) {
+    const o = c.createOscillator(),
+      v = c.createGain();
+    o.type = "sine";
+    o.frequency.value = f;
+    v.gain.setValueAtTime(0, t + d);
+    v.gain.linearRampToValueAtTime(g, t + d + 0.01);
+    v.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.9);
+    o.connect(v);
+    v.connect(c.destination);
+    o.start(t + d);
+    o.stop(t + d + 1);
+  }
+}
+
 /** What is playing and how loud (RMS and peak of the output), for checks. */
 export function soundState() {
   if (!meter) return { state: "off", layers: [] };

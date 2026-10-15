@@ -1,0 +1,156 @@
+/* ---------- Studying together, messages that get seen ---------- */
+.desk-mates {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: #c9ccbb;
+}
+.desk-avatars {
+  display: inline-flex;
+}
+.desk-avatars .avatar + .avatar {
+  margin-left: -6px;
+}
+.desk-mates.dark {
+  color: #b9bca9;
+}
+.join-banner,
+.message-banner {
+  position: fixed;
+  z-index: 160;
+  left: 50%;
+  top: max(14px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(520px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border: 1px solid #e3dcc8;
+  border-radius: 16px;
+  background: #fffaf0;
+  box-shadow: 0 16px 50px #18171230;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  animation: banner-in 0.35s var(--ease-spring, ease-out);
+}
+.join-banner > span,
+.message-banner > span {
+  flex: 1;
+  min-width: 0;
+}
+.message-banner > span {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+}
+.call-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 170;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 22, 18, 0.55);
+  backdrop-filter: blur(4px);
+}
+.call-card {
+  width: min(400px, 100%);
+  padding: 26px 22px 18px;
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 30px 90px #0006;
+  text-align: center;
+  animation: banner-in 0.35s var(--ease-spring, ease-out);
+}
+.call-card .avatar {
+  margin: 0 auto 10px;
+  animation: call-ring 1.4s ease-in-out infinite;
+}
+@keyframes call-ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  10%,
+  30% {
+    transform: rotate(-8deg);
+  }
+  20%,
+  40% {
+    transform: rotate(8deg);
+  }
+}
+.call-card h3 {
+  font-size: 17px;
+}
+.call-card p {
+  margin: 6px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.call-actions {
+  display: grid;
+  gap: 8px;
+}
+.call-actions .btn {
+  justify-content: center;
+}
+.call-card .text-button {
+  margin-top: 10px;
+  font-size: 12.5px;
+}
+.seen-by {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.reply-quote {
+  margin-bottom: 3px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.invite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: #c4577a;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+@media (prefers-reduced-motion: reduce) {
+  .call-card .avatar {
+    animation: none;
+  }
+}
+
+.ios-steps {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+}

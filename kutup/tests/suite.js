@@ -471,6 +471,19 @@ export function defineSuite(target) {
     assert.equal(quit.data.withered, true, "after a break, giving up is no longer free");
   });
 
+  test(`[${target}] a coffee call for one person, its reply, and who has seen the board`, async () => {
+    const deniz = member(await state("bob"), "Deniz");
+    const call = await request("/messages", { cookie: people.alice, body: { text: "Deniz, kahve?", kind: "coffee", to: deniz.id } });
+    assert.equal(call.status, 201);
+    const msg = (await state("bob")).messages.find((m) => m.id === call.data.id);
+    assert.equal(msg.toMember, deniz.id);
+    const reply = await request("/messages", { cookie: people.bob, body: { text: "Geliyorum ☕", replyTo: call.data.id } });
+    assert.equal((await state("alice")).messages.find((m) => m.id === reply.data.id).replyTo, call.data.id);
+    assert.ok(member(await state("alice"), "Deniz").boardSeen >= msg.created, "writing means having read");
+    await request("/seen", { cookie: people.alice, body: { at: Date.now() } });
+    assert.ok(member(await state("bob"), "Aylin").boardSeen >= reply.data.state.messages.at(-1).created);
+  });
+
   test(`[${target}] web push reaches friends, encrypted and signed, with an arrival cooldown`, async () => {
     const receiver = pushReceiver();
     const endpoint = push.url("/push/deniz");

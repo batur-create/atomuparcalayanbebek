@@ -551,7 +551,7 @@ export function OwnerPage() {
                             {m.seen ? `${dateLabel(m.seen)} ${shortTime(m.seen)}` : "—"}
                           </small>
                           <small>
-                            {m.devices} cihaz · {Math.round((m.minutes || 0) / 60)} sa odak · {m.builds} bina · {m.bricks || 0} 🧱
+                            {m.devices} cihaz · {m.pushes ? `🔔 ${m.pushes} cihazda bildirim` : "🔕 bildirim kapalı"} · {Math.round((m.minutes || 0) / 60)} sa odak · {m.builds} bina · {m.bricks || 0} 🧱
                             {m.badge === "dev" && " · ✦ bu ekipteki profilin"}
                           </small>
                         </div>

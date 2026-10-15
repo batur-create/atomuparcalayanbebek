@@ -284,7 +284,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, board_seen AS boardSeen, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly] =
       await db.read([
@@ -297,9 +297,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [dayStart(now), groupId, weekStart(now)],
         ],
         [
-          `SELECT * FROM (SELECT id, member_id AS memberId, text, kind, created FROM messages WHERE group_id = ? AND kind <> 'system' ORDER BY created DESC LIMIT ${MESSAGE_LIMIT})
+          `SELECT * FROM (SELECT id, member_id AS memberId, text, kind, created, to_member AS toMember, reply_to AS replyTo FROM messages WHERE group_id = ? AND kind <> 'system' ORDER BY created DESC LIMIT ${MESSAGE_LIMIT})
            UNION ALL
-           SELECT * FROM (SELECT id, member_id AS memberId, text, kind, created FROM messages WHERE group_id = ? AND kind = 'system' ORDER BY created DESC LIMIT ${ACTIVITY_LIMIT})`,
+           SELECT * FROM (SELECT id, member_id AS memberId, text, kind, created, to_member AS toMember, reply_to AS replyTo FROM messages WHERE group_id = ? AND kind = 'system' ORDER BY created DESC LIMIT ${ACTIVITY_LIMIT})`,
           [groupId, groupId],
         ],
         [
@@ -650,6 +650,23 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     if (planner) statements.push(bumpVillage(groupId));
     const finishing = sessions.filter((s) => s.minutes > 0 && (!s.strict || s.beat >= s.ends - BEAT_GRACE));
+    // Sessions that ended at the same moment were done together: one board line,
+    // rewritten as more of them settle ("A ve B ile birlikte 50 dk çalıştı").
+    for (const end of new Set(finishing.map((s) => s.ends))) {
+      const here = finishing.filter((s) => s.ends === end).map((s) => s.id);
+      const earlier = await db.all("SELECT f.member_id AS id FROM focus_log f JOIN members m ON m.id = f.member_id WHERE m.group_id = ? AND f.created = ?", [groupId, end]);
+      const ids = [...new Set([...earlier.map((e) => e.id), ...here])];
+      if (ids.length < 2) continue;
+      const names = await db.all(`SELECT id, name FROM members WHERE id IN (${ids.map(() => "?").join(",")})`, ids);
+      const me = here.at(-1),
+        others = names.filter((n) => n.id !== me).map((n) => n.name),
+        list = others.length > 1 ? `${others.slice(0, -1).join(", ")} ve ${others.at(-1)}` : others[0];
+      const minutes = finishing.find((s) => s.id === me).minutes;
+      statements.push([
+        "INSERT OR REPLACE INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, 'system', ?)",
+        [`together-${groupId}-${end}`, groupId, me, `${list} ile birlikte ${minutes} dk çalıştı 🤝`, end],
+      ]);
+    }
     if (finishing.length)
       statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.minutes, 0), finishing.at(-1).id)));
     statements.push(
@@ -1233,16 +1250,34 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const value = text(body.text, 280, "Mesaj", 1);
     const kind = body.kind === "coffee" ? "coffee" : "message";
     const id = crypto.randomUUID();
+    // A coffee call may be for one person; a reply may answer one.
+    const to = body.to ? await db.get("SELECT id FROM members WHERE id = ? AND group_id = ? AND id <> ?", [String(body.to), m.group_id, m.id]) : null;
+    const answered = body.replyTo ? await db.get("SELECT id, member_id AS memberId, kind FROM messages WHERE id = ? AND group_id = ?", [String(body.replyTo), m.group_id]) : null;
+    const now = Date.now();
     await db.batch([
       [
-        "INSERT INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, ?, ?)",
-        [id, m.group_id, m.id, value, kind, Date.now()],
+        "INSERT INTO messages (id, group_id, member_id, text, kind, created, to_member, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, m.group_id, m.id, value, kind, now, to?.id ?? null, answered?.id ?? null],
       ],
+      // Writing on the board means having read it.
+      ["UPDATE members SET board_seen = ? WHERE id = ? AND board_seen < ?", [now, m.id, now]],
       bump(m.group_id),
     ]);
-    if (kind === "coffee")
-      await notify(ctx, m.group_id, m.id, { title: `${m.name}: mola? ☕`, body: value, url: "/?tab=board" });
+    if (kind === "coffee" && to)
+      await notifyMember(ctx, to.id, { title: `${m.name} seni kahveye çağırıyor ☕`, body: value, url: "/?tab=board", sticky: true, tag: `call-${id}` });
+    else if (kind === "coffee") await notify(ctx, m.group_id, m.id, { title: `${m.name}: mola? ☕`, body: value, url: "/?tab=board" });
+    // Board messages reach phones too; one notification per board, replaced by the next.
+    else if (!answered) await notify(ctx, m.group_id, m.id, { title: `${m.name} panoya yazdı 💬`, body: value, url: "/?tab=board", tag: `board-${m.group_id}` });
+    if (answered && answered.memberId !== m.id)
+      await notifyMember(ctx, answered.memberId, { title: `${m.name}: ${value}`, body: answered.kind === "coffee" ? "Kahve çağrına cevap" : "Mesajına cevap", url: "/?tab=board" });
     return changed(m, { id }, 201);
+  });
+
+  // How far the member has read the board, so friends see who saw what.
+  route("POST", "/seen", async ({ member: m, body }) => {
+    const at = Math.min(Date.now(), Math.floor(Number(body.at) || 0));
+    if (at > (m.board_seen || 0)) await db.batch([["UPDATE members SET board_seen = ? WHERE id = ? AND board_seen < ?", [at, m.id, at]], bump(m.group_id)]);
+    return json({ ok: true });
   });
 
   route("POST", "/messages/:id/react", async ({ member: m, params }) => {
@@ -1333,7 +1368,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return changed(m);
   });
 
-  route("POST", "/focus", async ({ member: m, body }) => {
+  route("POST", "/focus", async ({ member: m, body, ctx }) => {
     const action = body.action,
       now = Date.now();
     if (action === "finish") {
@@ -1472,6 +1507,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       bump(m.group_id),
       ];
     }, m.group_id);
+    // "Ekibi çağır": everyone gets a tap-to-join for the same end time.
+    if (body.invite === true && minutes >= 10) {
+      try {
+        limit(`${m.id}:invite`, 3);
+        await notify(
+          ctx,
+          m.group_id,
+          m.id,
+          { title: `${m.name} ${minutes} dk odakta 🎧`, body: "Katıl, aynı anda bitirelim. Her arkadaş +%5 imece.", url: `/?join=${m.id}`, tag: `invite-${m.id}` },
+          { urgency: "high", ttl: minutes * 60 },
+        );
+      } catch {}
+    }
     return changed(m);
   });
 
@@ -1876,7 +1924,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         `SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username, m.badge,
            MAX(s.seen) AS seen, count(s.token) AS devices,
            (SELECT COALESCE(SUM(minutes), 0) FROM focus_log f WHERE f.member_id = m.id) AS minutes,
-           (SELECT count(*) FROM buildings b WHERE b.member_id = m.id) AS builds, m.bricks
+           (SELECT count(*) FROM buildings b WHERE b.member_id = m.id) AS builds, m.bricks,
+           (SELECT count(*) FROM subscriptions p WHERE p.member_id = m.id) AS pushes
          FROM members m LEFT JOIN sessions s ON s.member_id = m.id GROUP BY m.id ORDER BY m.joined`,
         [],
       ],

@@ -70,6 +70,7 @@ import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { MemberStats } from "./Stats.jsx";
 import { SoundButton, SoundMixer, useSoundFollowsFocus } from "./Sound.jsx";
 import { FocusScreen, enterFullscreen } from "./FocusScreen.jsx";
+import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Together.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
@@ -295,6 +296,11 @@ export default function App() {
   const [buildOutcome, setBuildOutcome] = useState(null);
   const [receipt, setReceipt] = useState(null);
   const [focusScreen, setFocusScreen] = useState(false);
+  // An invite notification opens "/?join=<friend>": offer to join their session.
+  const [joinAsk, setJoinAsk] = useState(() => startParams.get("join"));
+  const togetherRef = useRef(false),
+    seenSent = useRef(0),
+    friendsBefore = useRef(new Map());
   // Friends who just switched to "Kütüpte" get a short glow on their card.
   const [arrived, setArrived] = useState([]);
   const lastStatus = useRef(null);
@@ -533,7 +539,7 @@ export default function App() {
       );
       navigator.vibrate?.([120, 80, 120]);
       // The receipt waits for the handover ceremony to get going.
-      setReceipt({ end: done.end, type: done.strict ? "built" : "plain", delay: done.strict ? 2600 : 600, at: Date.now() });
+      setReceipt({ end: done.end, type: done.strict ? "built" : "plain", delay: done.strict ? 2600 : 600, at: Date.now(), together: togetherRef.current });
     } else if (done.strict) {
       outcome("collapsed");
       notify("İnşaat çöktü 🧱 Bu sefer telefon kazandı.");
@@ -684,8 +690,49 @@ export default function App() {
   const navigate = (id) => {
     setTab(id);
     setMobileMenu(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (id !== "board") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  // Joining a friend's timer builds the picked building if it fits, a cottage otherwise.
+  const joinFriend = (m) =>
+    m &&
+    requireMember(async () => {
+      const strict = storage.get("kutup-fidan-on") !== "0",
+        picked = BY_ID[pickedModel()];
+      if (strict) keepScreenOn();
+      await mutate(
+        "/focus",
+        { action: "start", joinMember: m.id, strict, model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
+        "Aynı ritimdesiniz. İyi çalışmalar! 🤝",
+      );
+      setJoinAsk(null);
+    });
+  // Unread board messages, and telling friends how far I have read.
+  const unread = me ? data.messages.filter((m) => m.kind !== "system" && m.memberId !== me.id && m.created > (me.boardSeen || 0)).length : 0;
+  useEffect(() => {
+    if (tab !== "board" || !me || document.visibilityState !== "visible") return;
+    const latest = Math.max(0, ...data.messages.filter((m) => m.kind !== "system").map((m) => m.created));
+    if (latest > (me.boardSeen || 0) && latest > seenSent.current) {
+      seenSent.current = latest;
+      api("/seen", { at: latest }).catch(() => {});
+    }
+  }, [tab, data.messages, me?.boardSeen]);
+  // While I focus, a friend finishing, giving up or sitting down is worth a word.
+  if (me?.focusEnd > 0) togetherRef.current = data.members.some((o) => o.id !== me.id && o.focusEnd === me.focusEnd);
+  useEffect(() => {
+    const before = friendsBefore.current,
+      next = new Map(),
+      focusing = me?.focusEnd > Date.now();
+    for (const m of data.members) {
+      if (m.id === me?.id) continue;
+      next.set(m.id, { end: m.focusEnd, strict: m.focusStrict });
+      const was = before.get(m.id);
+      if (!was || !focusing) continue;
+      if (was.end > 0 && !m.focusEnd)
+        notify(was.end <= Date.now() + 5000 ? `🎉 ${m.name} seansını bitirdi` : was.strict ? `🧱 ${m.name}: inşaat çöktü` : `${m.name} seansı bıraktı`, 3500);
+      else if (!was.end && m.focusEnd > Date.now()) notify(`🎧 ${m.name} masaya oturdu · ${Math.ceil((m.focusEnd - Date.now()) / 60000)} dk`, 3500);
+    }
+    friendsBefore.current = next;
+  }, [data.members]);
   const joinSuccess = (d, welcome = "Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨") => {
     sessionEpoch.current++;
     setSession({
@@ -893,6 +940,7 @@ export default function App() {
               {item.id === "plans" && data.plans.length > 0 && (
                 <b>{data.plans.length}</b>
               )}
+              {item.id === "board" && unread > 0 && <b className="nav-count" aria-label={`${unread} okunmamış mesaj`}>{unread}</b>}
               {item.id === "focus" && focusMembers.length > 0 && (
                 <span className="nav-dot" />
               )}
@@ -1359,24 +1407,7 @@ export default function App() {
                         {m.id !== me?.id && !me?.focusEnd && (
                           <button
                             className="btn small-btn"
-                            onClick={() =>
-                              requireMember(() =>
-                                mutate(
-                                  "/focus",
-                                  {
-                                    action: "start",
-                                    joinMember: m.id,
-                                    strict: storage.get("kutup-fidan-on") !== "0",
-                                    model:
-                                      fits(BY_ID[pickedModel()], Math.floor((m.focusEnd - now) / 60000)) &&
-                                      BY_ID[pickedModel()].cost <= (me?.bricks || 0)
-                                        ? pickedModel()
-                                        : "kulube",
-                                  },
-                                  "Aynı ritimdesiniz. İyi çalışmalar!",
-                                ),
-                              )
-                            }
+                            onClick={() => joinFriend(m)}
                           >
                             Katıl
                           </button>
@@ -1453,6 +1484,7 @@ export default function App() {
           >
             <Icon name={item.icon} />
             <span>{item.short}</span>
+            {item.id === "board" && unread > 0 && <i className="nav-badge" aria-hidden="true" />}
           </button>
         ))}
         <button
@@ -1521,7 +1553,30 @@ export default function App() {
           mutate={mutate}
         />
       )}
-      {focusScreen && <FocusScreen me={me} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
+      {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
+      <JoinBanner
+        friend={data.members.find((x) => x.id === joinAsk)}
+        me={me}
+        now={now}
+        join={() => joinFriend(data.members.find((x) => x.id === joinAsk))}
+        close={() => {
+          setJoinAsk(null);
+          history.replaceState(null, "", location.pathname);
+        }}
+      />
+      <CallOverlay data={data} me={me} reply={(call, text) => mutate("/messages", { text, replyTo: call.id }, "Cevabın gitti ☕")} seen={(at) => api("/seen", { at }).catch(() => {})} />
+      {me && (
+        <MessageBanner
+          data={data}
+          me={me}
+          onBoard={tab === "board"}
+          focusScreen={focusScreen}
+          open={() => {
+            setFocusScreen(false);
+            navigate("board");
+          }}
+        />
+      )}
       {receipt && (
         <ReceiptCard
           key={receipt.at}
@@ -1538,7 +1593,7 @@ export default function App() {
             setReceipt(null);
             await mutate(
               "/focus",
-              { action: "start", minutes: 25, strict, ...(strict ? { model } : {}) },
+              { action: "start", minutes: 25, strict, ...(strict ? { model } : {}), ...(receipt.together ? { invite: true } : {}) },
               strict ? `Seri sürüyor 🔥 ${BY_ID[model].name} için temel atıldı.` : "Seri sürüyor 🔥 25 dakika daha.",
             );
           }}
@@ -1647,7 +1702,8 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
     [model, setModel] = useState(pickedModel),
-    [picking, setPicking] = useState(false);
+    [picking, setPicking] = useState(false),
+    [invite, setInvite] = useState(() => storage.get("kutup-invite") === "1");
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
   // Build mode: the building sets the length. Free focus: you pick it. Under
@@ -1699,7 +1755,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
     setBusy(true);
     await mutate(
       "/focus",
-      running ? { action: "cancel" } : { action: "start", minutes: length, strict: fidan, rhythm: !!round, ...(fidan ? { model: item.id } : {}) },
+      running ? { action: "cancel" } : { action: "start", minutes: length, strict: fidan, rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
       running
         ? growing
           ? early
@@ -1912,7 +1968,22 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
                 ? `Temeli at ${item.emoji}`
                 : "Hadi odaklanalım"}
       </Busy>
+      <DeskMates me={me} members={members} now={now} />
       <div className="focus-tools">
+        {!running && !finishing && (
+          <button
+            type="button"
+            className={`sound-pill invite-chip ${invite ? "on" : ""}`}
+            aria-pressed={invite}
+            title="Başlayınca ekibe 'Katıl' bildirimi gider"
+            onClick={() => {
+              setInvite(!invite);
+              storage.set("kutup-invite", invite ? "0" : "1");
+            }}
+          >
+            📣 <span>Ekibi çağır</span>
+          </button>
+        )}
         <SoundButton />
         {onScreen && (
           <button
@@ -1990,6 +2061,29 @@ function PlanMini({ plan, members, onClick }) {
 function Board({ data, me, requireMember, mutate, compact }) {
   const [text, setText] = useState(""),
     [busy, setBusy] = useState(false);
+  const form = useRef(null),
+    list = useRef(null),
+    count = useRef(0);
+  // The board opens at its newest message, and follows new ones while you are near the end.
+  useEffect(() => {
+    if (compact) return;
+    // The messages scroll in their own box: its end is the newest message.
+    const box = list.current;
+    const near = !box || box.scrollHeight - box.scrollTop - box.clientHeight < 220;
+    const toEnd = (behavior) => {
+      if (list.current) list.current.scrollTo({ top: list.current.scrollHeight, behavior });
+      form.current?.scrollIntoView({ block: "center", behavior });
+    };
+    if (count.current === 0) {
+      // The page is still filling in when the board opens: land on the end, and stay there.
+      const timers = [0, 250, 700, 1500].map((ms) => setTimeout(() => toEnd("auto"), ms));
+      count.current = data.messages.length || -1;
+      return () => timers.forEach(clearTimeout);
+    }
+    if (near) requestAnimationFrame(() => toEnd("smooth"));
+    count.current = data.messages.length;
+  }, [data.messages.length]);
+  const lastSix = new Set(data.messages.filter((m) => m.kind !== "system").slice(-6).map((m) => m.id));
   const messages = compact
     ? data.messages.filter((m) => m.kind !== "system").slice(-3)
     : data.messages;
@@ -2012,7 +2106,7 @@ function Board({ data, me, requireMember, mutate, compact }) {
           <Users size={13} /> Sadece bizim ekip
         </span>
       </div>
-      <div className="messages">
+      <div className="messages" ref={list}>
         {messages.map((msg) => {
           const m = data.members.find((x) => x.id === msg.memberId);
           return msg.kind === "system" ? (
@@ -2034,9 +2128,24 @@ function Board({ data, me, requireMember, mutate, compact }) {
                   <strong>{m?.name}</strong>
                   {m?.badge === "dev" && <span className="dev-mark" title="Geliştirici">✦</span>}
                   <time>{shortTime(msg.created)}</time>
-                  {msg.kind === "coffee" && <span>mola daveti ☕</span>}
+                  {msg.kind === "coffee" && <span>{msg.toMember ? `kahve çağrısı → ${data.members.find((x) => x.id === msg.toMember)?.name || "?"} ☕` : "mola daveti ☕"}</span>}
                 </div>
+                {msg.replyTo &&
+                  (() => {
+                    const original = data.messages.find((x) => x.id === msg.replyTo);
+                    return original ? (
+                      <div className="reply-quote">
+                        ↪ {data.members.find((x) => x.id === original.memberId)?.name}: {original.text.slice(0, 60)}
+                      </div>
+                    ) : null;
+                  })()}
                 <p>{msg.text}</p>
+                {!compact &&
+                  lastSix.has(msg.id) &&
+                  (() => {
+                    const seen = seenBy(data, msg);
+                    return seen.length ? <div className="seen-by">👀 {seen.length >= data.members.length - 1 ? "herkes gördü" : `${seen.map((x) => x.name).join(", ")} gördü`}</div> : null;
+                  })()}
                 <button
                   className={`reaction ${msg.reactions.includes(me?.id) ? "reacted" : ""}`}
                   aria-label={`${m?.name} mesajına kalp ${msg.reactions.includes(me?.id) ? "kaldır" : "bırak"}`}
@@ -2062,7 +2171,7 @@ function Board({ data, me, requireMember, mutate, compact }) {
           </Empty>
         )}
       </div>
-      <form className="message-form" onSubmit={send}>
+      <form className="message-form" onSubmit={send} ref={form}>
         <Avatar member={me} size="tiny" />
         <input
           aria-label="Panoya mesaj"
@@ -2683,6 +2792,7 @@ function MemberModal({ member, now, close, mutate }) {
               {
                 text: `${member.name}, bir kahve molası verelim mi? ☕`,
                 kind: "coffee",
+                to: member.id,
               },
               "Kahve davetin panoda!",
             )
@@ -2701,9 +2811,12 @@ function MemberModal({ member, now, close, mutate }) {
 // Getting notifications working is the whole point of Kütüp, so the home screen
 // walks people through it until they turn it on (or hide the card).
 function SetupCard({ enable, busy }) {
-  const [hidden, setHidden] = useState(storage.get("kutup-setup-hidden") === "1");
-  if (hidden || (!pushSupported && !isIOS)) return null;
   const needsHomeScreen = isIOS && !standalone;
+  // On an iPhone notifications only work from the home screen: the guide comes back every three days.
+  const [hidden, setHidden] = useState(
+    () => storage.get("kutup-setup-hidden") === "1" && !(needsHomeScreen && Date.now() - Number(storage.get("kutup-setup-hidden-at") || 0) > 3 * 86400000),
+  );
+  if (hidden || (!pushSupported && !isIOS)) return null;
   return (
     <section className="setup-card">
       <span className="setup-emoji">{needsHomeScreen ? "📲" : "🔔"}</span>
@@ -2716,8 +2829,21 @@ function SetupCard({ enable, busy }) {
         <p>
           {needsHomeScreen ? (
             <>
-              Safari’de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>. Sonra Kütüp’ü
-              ana ekrandan aç, kullanıcı adınla giriş yap ve 🔔’a bas.
+              Apple, bildirimleri sadece ana ekrandaki uygulamaya gönderiyor. Bir kere yapman yeter:
+              <ol className="ios-steps">
+                <li>
+                  Safari’nin altındaki <b>Paylaş</b> düğmesine dokun <span aria-hidden="true">(⬆️ kutu ve ok)</span>.
+                </li>
+                <li>
+                  Listeyi kaydırıp <b>Ana Ekrana Ekle</b>’yi seç, sonra <b>Ekle</b>.
+                </li>
+                <li>
+                  Ana ekrandaki <b>Kütüp</b> simgesinden aç, kullanıcı adın ve şifrenle gir.
+                </li>
+                <li>
+                  🔔 <b>Bildirimleri aç</b>’a bas ve <b>İzin Ver</b> de.
+                </li>
+              </ol>
             </>
           ) : (
             "Arkadaşın gelince, kahveye çağırınca ya da plan yapınca telefonuna düşsün."
@@ -2734,6 +2860,7 @@ function SetupCard({ enable, busy }) {
         aria-label="Bu kartı gizle"
         onClick={() => {
           storage.set("kutup-setup-hidden", "1");
+          storage.set("kutup-setup-hidden-at", String(Date.now()));
           setHidden(true);
         }}
       >

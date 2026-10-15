@@ -6,7 +6,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Expand, Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
 import { ConstructionScene } from "./Village.jsx";
-import { keepScreenOn, releaseScreen, storage } from "./ui.jsx";
+import { isIOS, keepScreenOn, releaseScreen, storage } from "./ui.jsx";
+import { DeskMates } from "./Together.jsx";
 import { SoundButton, SoundPanel } from "./Sound.jsx";
 import { modelOf } from "../shared/catalog.js";
 import { kindFor } from "../shared/village.js";
@@ -183,7 +184,7 @@ function FlipClock({ parts }) {
   );
 }
 
-export function FocusScreen({ me, now, run, outcome, close }) {
+export function FocusScreen({ me, members = [], now, run, outcome, close }) {
   const [pref, setPref] = useState(prefs),
     [controls, setControls] = useState(true),
     [sounds, setSounds] = useState(false),
@@ -283,6 +284,7 @@ export function FocusScreen({ me, now, run, outcome, close }) {
             {done ? "Bitti! Köyüne eklendi 🎉" : caption}
             {item && mode !== "clock" ? ` · ${item.emoji} ${item.name} · hakediş %${Math.round(progress * 100)}` : ""}
           </div>
+          <DeskMates me={me} members={members} now={now} dark />
           {session && !landscape && (
             <div className="fs-progress" aria-hidden="true">
               <i style={{ width: `${progress * 100}%` }} />
@@ -338,9 +340,11 @@ export function FocusScreen({ me, now, run, outcome, close }) {
           <button className={`fs-icon ${sounds ? "on" : ""}`} aria-label="Odak sesleri" aria-expanded={sounds} onClick={() => setSounds(!sounds)}>
             <Headphones size={19} />
           </button>
-          <button className="fs-icon" aria-label={full ? "Tam ekrandan çık" : "Tam ekran"} onClick={() => (full ? leaveFullscreen() : enterFullscreen())}>
-            {full ? <Shrink size={19} /> : <Expand size={19} />}
-          </button>
+          {!isIOS && (
+            <button className="fs-icon" aria-label={full ? "Tam ekrandan çık" : "Tam ekran"} onClick={() => (full ? leaveFullscreen() : enterFullscreen())}>
+              {full ? <Shrink size={19} /> : <Expand size={19} />}
+            </button>
+          )}
         </div>
         <div className="fs-foot">
           <SoundButton />

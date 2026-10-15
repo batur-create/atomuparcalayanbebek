@@ -204,6 +204,13 @@ export const migrations = [
     "ALTER TABLE members ADD COLUMN focus_paused_at INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE members ADD COLUMN focus_pause_used INTEGER NOT NULL DEFAULT 0",
   ],
+  // 20 — messages that get seen: how far each member has read the board, a
+  // coffee call addressed to one person, and replies to it.
+  [
+    "ALTER TABLE members ADD COLUMN board_seen INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE messages ADD COLUMN to_member TEXT",
+    "ALTER TABLE messages ADD COLUMN reply_to TEXT",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;
