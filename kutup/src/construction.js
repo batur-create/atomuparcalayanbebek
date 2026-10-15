@@ -4,6 +4,7 @@
 // props and deck → slab rebar → slab pour. Everything is drawn straight from the
 // session's progress: pieces are placed, laid or poured, never faded in.
 import { STONE, WOOD, box, outline, poly, seg } from "./iso.js";
+import { materialsSVG } from "./sitedetail.js";
 
 // Share of the session for the substructure and the frame; the rest is walls,
 // roof, openings, finishes and handover (drawn by the scene's later parts).
@@ -81,7 +82,7 @@ const mixAll = (a, b, t) => a.map((c, i) => mix(c, b[i], t));
 
 let clipSerial = 0;
 
-/** SVG for everything up to the finished frame, at progress `shown` (0…1): { yard, rest }. */
+/** SVG for everything up to the finished frame, at progress `shown` (0…1): { yard, rest, front }. */
 export function siteSVG(P, sp, plan, shown) {
   const k = {};
   for (const p of plan) k[p.floor >= 0 ? `${p.key}${p.floor}` : p.key] = clamp((shown - p.a) / (p.b - p.a));
@@ -270,7 +271,8 @@ export function siteSVG(P, sp, plan, shown) {
     }
   }
   // The yard (fence, container, spoil) sits under the machines; the rest above them.
-  return { yard: back, rest: pit + above + frame + front };
+  const stock = materialsSVG(P, sp, k, shown);
+  return { yard: back + stock.back, rest: pit + above + frame, front: front + stock.front };
 }
 
 // Columns: the corners, and mid-side columns on a wider plan.

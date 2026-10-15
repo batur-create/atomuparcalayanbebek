@@ -11,6 +11,7 @@ import {
 } from "./iso.js";
 import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
 import { crewSVG, fleeSVG } from "./crew.js";
+import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -94,7 +95,9 @@ function sceneParts(P, sp, seed, plan) {
     { a: 0.8, b: 0.84, kind: "reveal", fit: true, draw: () => doorSVG(P, sp) },
     { a: 0.78, b: 0.86, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
     { a: FRAME_END - 0.02, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
-    { a: 0.68, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
+    // Roof: trusses one by one, purlins across, then tiles from the eaves up.
+    { a: 0.68, b: 0.73, kind: "grow", draw: (t) => trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t) },
+    { a: 0.72, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
     { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
     // Planting: the garden comes up out of the ground.
     { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) },
@@ -134,10 +137,7 @@ export function ConstructionScene({ run, outcome }) {
       root.appendChild(g);
       return g;
     };
-    layer("ground").innerHTML =
-      box(P, -3.4, -3.4, 3.4, 3.4, -0.5, 0, GRASS) +
-      poly([P(-sp.hw - 0.95, -sp.hw - 0.95, 0.006), P(sp.hw + 0.95, -sp.hw - 0.95, 0.006), P(sp.hw + 0.95, sp.hw + 0.95, 0.006), P(-sp.hw - 0.95, sp.hw + 0.95, 0.006)], DIRT[0]) +
-      [[-2.9, -1.6], [2.8, -2.9], [-2.4, -3.0], [2.9, 2.2]].map(([x, y]) => { const p = P(x, y, 0); return `<ellipse cx="${f(p[0])}" cy="${f(p[1] - 6)}" rx="9" ry="7" fill="#79b25a"/>`; }).join("");
+    layer("ground").innerHTML = plotSVG(P, sp, seed);
     const uid = ++sceneSerial;
     // Machines are clipped to the plot (open upwards) so they drive in from beyond its edge.
     const plot = [P(-3.4, 3.4, 0), P(3.4, 3.4, 0), P(3.4, -3.4, 0)];
@@ -145,6 +145,7 @@ export function ConstructionScene({ run, outcome }) {
     const yard = layer("yard");
     const crewBack = layer("crew-back");
     const building = layer("site");
+    const frontYard = layer("front-yard");
     const crewFront = layer("crew-front");
     crewBack.setAttribute("clip-path", `url(#plot${uid})`);
     crewFront.setAttribute("clip-path", `url(#plot${uid})`);
@@ -275,6 +276,7 @@ export function ConstructionScene({ run, outcome }) {
             const out = p.draw(shown);
             yard.innerHTML = out.yard;
             p.el.innerHTML = out.rest;
+            frontYard.innerHTML = out.front;
             p.key = key;
           }
         } else if (p.kind === "erect") {
@@ -319,7 +321,9 @@ export function ConstructionScene({ run, outcome }) {
         });
       }
       if (mode === "done") {
-        const dt = (now - eventAt) / 1000,
+        const dt = (now - eventAt) / 1000;
+        effects += handoverSVG(P, sp, motionReduced ? 3 : dt);
+        const
           base = P(0, 0, 0),
           bounce = motionReduced ? 1 : 1 + 0.06 * Math.exp(-dt * 5) * Math.cos(dt * 14);
         building.setAttribute("transform", `translate(${f(base[0])} ${f(base[1])}) scale(${bounce.toFixed(4)}) translate(${f(-base[0])} ${f(-base[1])})`);
@@ -353,7 +357,7 @@ export function ConstructionScene({ run, outcome }) {
         crewBack.innerHTML = crewFront.innerHTML = "";
         crewKey = "";
       }
-      const label = mode === "done" ? "İskân alındı ✅" : phaseAt(plan, shown).label;
+      const label = mode === "done" ? "Teslim edildi 🎉" : phaseAt(plan, shown).label;
       const text = `${label}|${Math.round(shown * 100)}`;
       if (text !== caption.dataset.text) {
         caption.dataset.text = text;

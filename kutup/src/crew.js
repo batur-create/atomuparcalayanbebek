@@ -24,18 +24,74 @@ function wheels(P, x, y, n, gap) {
   }
   return s;
 }
-// A worker: helmet, hi-vis vest, a small bob while working (hammering, tying, raking).
-function worker(P, x, y, z, time, phase, helmet) {
-  const bob = Math.sin(time * 5 + phase) * 1.4;
+// A worker: helmet, hi-vis vest, and the tool of the trade, moving with the work.
+// tool: hammer | shovel | bar (rebar on the shoulder) | tie | hose | trowel |
+// roller | survey | carry (a plank) | none.
+function worker(P, x, y, z, time, phase, helmet, tool = "none") {
+  const beat = time * 5 + phase;
+  const bob = Math.sin(beat) * (tool === "survey" ? 0.3 : 1.2);
   const [fx, fy] = P(x, y, z);
   const top = fy - 22 + bob;
+  const shoulder = [fx + 3, top + 6];
+  let hand = [fx + 6, top + 13],
+    gear = "";
+  const swing = Math.sin(beat * 1.6);
+  if (tool === "hammer") {
+    const a = -1.9 + 1.2 * (0.5 + 0.5 * swing);
+    hand = [shoulder[0] + Math.cos(a) * 7, shoulder[1] + Math.sin(a) * 7];
+    gear = `<line x1="${n1(hand[0])}" y1="${n1(hand[1])}" x2="${n1(hand[0] + Math.cos(a + 1.4) * 4)}" y2="${n1(hand[1] + Math.sin(a + 1.4) * 4)}" stroke="#7a828c" stroke-width="2.6" stroke-linecap="round"/>`;
+  } else if (tool === "shovel") {
+    const dip = 2.5 * (0.5 + 0.5 * swing);
+    hand = [fx + 5, top + 12 + dip];
+    gear = `<line x1="${n1(fx + 1)}" y1="${n1(top + 7 + dip)}" x2="${n1(fx + 10)}" y2="${n1(top + 21 + dip)}" stroke="#8b5e36" stroke-width="1.4"/><path d="M${n1(fx + 8.5)} ${n1(top + 20 + dip)} l4 -1 l1 4 l-4 1 z" fill="#7a828c"/>`;
+  } else if (tool === "bar") {
+    hand = [fx + 4, top + 6];
+    gear = `<line x1="${n1(fx - 12)}" y1="${n1(top + 5)}" x2="${n1(fx + 14)}" y2="${n1(top + 3)}" stroke="#8a4b33" stroke-width="1.6"/>`;
+  } else if (tool === "carry") {
+    hand = [fx + 4, top + 6];
+    gear = `<rect x="${n1(fx - 11)}" y="${n1(top + 1.5)}" width="24" height="3" fill="#d9a364"/>`;
+  } else if (tool === "tie") {
+    hand = [fx + 5 + swing, top + 15];
+  } else if (tool === "hose") {
+    hand = [fx + 6, top + 14];
+    gear = `<path d="M${n1(fx + 6)} ${n1(top + 14)} q4 8 0 12" fill="none" stroke="#2f3338" stroke-width="2.4"/>`;
+  } else if (tool === "trowel") {
+    hand = [fx + 7, top + 9 + swing * 2];
+    gear = `<path d="M${n1(hand[0])} ${n1(hand[1])} l4 -1 l-1 3 z" fill="#9aa4ae"/>`;
+  } else if (tool === "roller") {
+    hand = [fx + 6, top + 4 + swing * 4];
+    gear = `<line x1="${n1(hand[0])}" y1="${n1(hand[1])}" x2="${n1(hand[0] + 4)}" y2="${n1(hand[1] - 9)}" stroke="#6b7480" stroke-width="1.2"/><rect x="${n1(hand[0] + 1)}" y="${n1(hand[1] - 13)}" width="7" height="3.5" rx="1.5" fill="#f4f2ea"/>`;
+  } else if (tool === "survey") {
+    hand = [fx + 5, top + 8];
+    gear = `<rect x="${n1(fx + 4)}" y="${n1(top + 6)}" width="5" height="6" rx="1" fill="#f4f2ea" stroke="#6b7480" stroke-width="0.6"/>`;
+  }
+  const step = tool === "none" ? 0 : Math.sin(beat) * 1.2;
   return `<ellipse cx="${n1(fx)}" cy="${n1(fy)}" rx="5" ry="2" fill="#2d3a1f" opacity="0.25"/>` +
-    `<rect x="${n1(fx - 2.6)}" y="${n1(top + 12)}" width="2.2" height="${n1(10 - bob)}" fill="#3d4e6b"/>` +
-    `<rect x="${n1(fx + 0.4)}" y="${n1(top + 12)}" width="2.2" height="${n1(10 - bob)}" fill="#34445e"/>` +
+    `<rect x="${n1(fx - 2.6 + step * 0.3)}" y="${n1(top + 12)}" width="2.2" height="${n1(10 - bob)}" fill="#3d4e6b"/>` +
+    `<rect x="${n1(fx + 0.4 - step * 0.3)}" y="${n1(top + 12)}" width="2.2" height="${n1(10 - bob)}" fill="#34445e"/>` +
+    `<rect x="${n1(fx - 3.4)}" y="${n1(fy - 1.4)}" width="3" height="1.6" rx="0.6" fill="#4a3a2c"/><rect x="${n1(fx + 0.4)}" y="${n1(fy - 1.4)}" width="3" height="1.6" rx="0.6" fill="#4a3a2c"/>` +
+    `<line x1="${n1(fx - 3)}" y1="${n1(top + 6)}" x2="${n1(fx - 4.5)}" y2="${n1(top + 12)}" stroke="#f28b2c" stroke-width="2" stroke-linecap="round"/>` +
     `<rect x="${n1(fx - 3.6)}" y="${n1(top + 4)}" width="7.2" height="9" rx="2" fill="#f28b2c"/>` +
     `<rect x="${n1(fx - 3.6)}" y="${n1(top + 8)}" width="7.2" height="1.4" fill="#f5e9a8"/>` +
+    `<line x1="${n1(shoulder[0])}" y1="${n1(shoulder[1])}" x2="${n1(hand[0])}" y2="${n1(hand[1])}" stroke="#e8822a" stroke-width="2" stroke-linecap="round"/>` +
+    `<circle cx="${n1(hand[0])}" cy="${n1(hand[1])}" r="1.1" fill="#e7b99a"/>` + gear +
     `<circle cx="${n1(fx)}" cy="${n1(top + 1.5)}" r="3" fill="#e7b99a"/>` +
-    `<path d="M${n1(fx - 3.6)} ${n1(top + 0.6)} a3.6 3.2 0 0 1 7.2 0 z" fill="${helmet}"/>`;
+    `<path d="M${n1(fx - 3.8)} ${n1(top + 0.8)} a3.8 3.4 0 0 1 7.6 0 h1 v0.8 h-9.6 z" fill="${helmet}"/>`;
+}
+// A labourer pushing a wheelbarrow between two points, there and back.
+function barrow(P, from, to, z, time, load) {
+  const t = (time / 7) % 1,
+    go = t < 0.5,
+    u = go ? t * 2 : 2 - t * 2;
+  const x = from[0] + (to[0] - from[0]) * u,
+    y = from[1] + (to[1] - from[1]) * u;
+  const [bx, by] = P(x + (go ? 0.35 : -0.35), y, z);
+  const dir = go ? 1 : -1;
+  const tub = `<path d="M${n1(bx - 6)} ${n1(by - 9)} h12 l-2 5 h-8 z" fill="#3f6fb0"/>` +
+    (go && load ? `<path d="M${n1(bx - 5)} ${n1(by - 9)} q5 -4 10 0 z" fill="${load}"/>` : "") +
+    `<circle cx="${n1(bx + 5 * dir)}" cy="${n1(by - 2.5)}" r="2.6" fill="#2f3338"/>` +
+    `<line x1="${n1(bx - 6 * dir)}" y1="${n1(by - 6)}" x2="${n1(bx - 11 * dir)}" y2="${n1(by - 9)}" stroke="#6b7480" stroke-width="1.2"/>`;
+  return tub + worker(P, x - (go ? 0.35 : -0.35), y, z, time * 1.4, 0.7, "#f6d24a", "none");
 }
 function excavator(P, x, y, time) {
   // Tracks, turntable, cab, then boom → arm → bucket swinging into the pit.
@@ -106,34 +162,46 @@ export function crewSVG(P, sp, plan, shown, time) {
   let behind = "",
     machines = "";
   const crew = [];
+  let extra = "";
+  const top = 0.3 + sp.h;
+  const strip = w + 0.2 + (2.9 - (w + 0.2)) / 2;
   if (p.key === "dig") {
     // Trucks shuttle the spoil away: in, filled bucket by bucket, out again.
     const cycle = (time / 9) % 1;
     const out = cycle < 0.2 ? 1 - cycle / 0.2 : cycle > 0.85 ? (cycle - 0.85) / 0.15 : 0;
     behind += dumpTruck(P, 1.2 + (out + away) * 4.5, -w - 0.65, cycle < 0.2 ? 0 : Math.min(1, (cycle - 0.2) / 0.6));
     machines += excavator(P, w + 1.1 + away * 4, w + 0.6, time);
-    crew.push([-w - 0.9, w + 0.9, 0]);
+    crew.push([-w - 0.9, w + 0.9, 0, "shovel"], [-w - 0.6, -w - 0.6, 0, "survey"]);
   } else if (["lean", "footPour", "colPour", "deckPour"].includes(p.key)) {
     behind += mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time);
     if (p.key === "footPour" || p.key === "deckPour") {
       const z = p.key === "footPour" ? 0.3 : 0.3 + (p.floor + 1) * hf;
       const edge = p.key === "deckPour" ? -w + 2 * w * Math.min(1, k / 0.85) : 0;
       machines += pumpTruck(P, 0.9 + away * 4.5, w + 1.0, [edge, 0.2 * Math.sin(time * 0.5), z], time);
-      // Hose man and vibrator man at the pour front.
-      crew.push([edge - 0.35, 0.6, z], [edge + 0.15, -0.7, z]);
-    } else crew.push([-w + 0.4, w + 0.5, p.floor >= 0 ? 0.3 + p.floor * hf : 0]);
-  } else if (p.key === "mobilize") crew.push([1.8, 2.2, 0], [-1.6, 1.9, 0]);
-  else if (p.key === "layout") crew.push([w + 1.0, -w - 0.2, 0], [-w - 0.7, w + 0.6, 0]);
-  else if (p.key === "footRebar" || p.key === "footForm") crew.push([-w + 0.3, w + 0.4, 0], [w + 0.4, -w + 0.2, 0]);
+      // Hose man, vibrator man and a screeder at the pour front.
+      crew.push([edge - 0.35, 0.6, z, "hose"], [edge + 0.15, -0.7, z, "shovel"], [edge - 0.8, -0.2, z, "trowel"]);
+    } else if (p.key === "lean") crew.push([-w + 0.4, w + 0.5, -0.5, "shovel"], [w - 0.2, -w + 0.3, -0.5, "trowel"]);
+    else crew.push([-w + 0.4, w + 0.5, 0.3 + p.floor * hf, "hammer"], [w - 0.4, w - 0.4, 0.3 + p.floor * hf, "hose"]);
+  } else if (p.key === "mobilize") crew.push([1.8, 2.2, 0, "carry"], [-1.6, 1.9, 0, "hammer"]);
+  else if (p.key === "layout") crew.push([w + 1.0, -w - 0.2, 0, "survey"], [-w - 0.7, w + 0.6, 0, "hammer"]);
+  else if (p.key === "footRebar") crew.push([-w + 0.3, w + 0.4, -0.4, "tie"], [w + 0.4, -w + 0.2, 0, "bar"], [0.2, 0.1, -0.4, "tie"]);
+  else if (p.key === "footForm") crew.push([-w + 0.3, w + 0.4, 0, "hammer"], [w + 0.4, -w + 0.2, 0, "carry"]);
   else if (p.floor >= 0) {
     // Fixers and carpenters on the storey under way.
     const z = 0.3 + p.floor * hf;
-    crew.push([-w + 0.6, w - 0.3, z], [w - 0.5, -w + 0.7, z]);
-  } else if (p.key === "walls" || p.key === "openings" || p.key === "finish") crew.push([w + 0.7, w * 0.3, 0], [-w * 0.3, w + 0.7, 0]);
-  else if (p.key === "handover") crew.push([w + 1.0, w + 1.2, 0]);
+    const tools = { colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"] }[p.key] || ["hammer", "none"];
+    crew.push([-w + 0.6, w - 0.3, p.key === "deckRebar" ? z + hf - 0.14 : z, tools[0]], [w - 0.5, -w + 0.7, z, tools[1]]);
+  } else if (p.key === "walls") {
+    // Masons on the courses; a labourer brings blocks from the pallets.
+    crew.push([w + 0.35, w * 0.2, 0, "trowel"], [-w * 0.3, w + 0.35, 0, "trowel"]);
+    extra += barrow(P, [-1.4, strip], [w + 0.5, w + 0.5], 0, time, "#e4e2db");
+  } else if (p.key === "roof") crew.push([0.4, 0.2, top + 0.1, "hammer"], [-0.6, -0.4, top + 0.1, "carry"]);
+  else if (p.key === "openings") crew.push([w + 0.7, w * 0.3, 0, "carry"], [-w * 0.3, w + 0.7, 0, "hammer"]);
+  else if (p.key === "finish") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45, "roller"], [-w * 0.4, w + 0.6, 1.25, "trowel"]);
+  else if (p.key === "handover") crew.push([w + 1.0, w + 1.2, 0, "shovel"]);
   let people = "";
-  crew.forEach(([x, y, z], i) => (people += worker(P, x, y, z, time, i * 1.7, i % 2 ? "#f4f2ea" : "#f6d24a")));
-  return { behind, front: machines + people };
+  crew.forEach(([x, y, z, tool], i) => (people += worker(P, x, y, z, time, i * 1.7, i % 2 ? "#f4f2ea" : "#f6d24a", tool)));
+  return { behind, front: machines + people + extra };
 }
 
 // When a build collapses the crew runs clear of it.
