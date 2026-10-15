@@ -98,7 +98,7 @@ const TITLES = {
   collapsed: "Yarım kalan inşaat",
 };
 /** The receipt of one session (materials, wage, bonuses, refunds), shown once it is settled. */
-export function ReceiptCard({ receipt, close }) {
+export function ReceiptCard({ receipt, close, next = null, onContinue }) {
   const [data, setData] = useState(null);
   useEffect(() => {
     let alive = true,
@@ -149,6 +149,11 @@ export function ReceiptCard({ receipt, close }) {
         Kasada {data.bricks} 🧱
         {data.ruin ? ` · Enkazını bir sonraki seansın kaldırınca +${data.ruin.refund} 🧱 daha gelir.` : ""}
       </p>
+      {next != null && onContinue && (
+        <button type="button" className="btn receipt-continue" onClick={onContinue}>
+          🔥 +25 dk devam{next > 0 ? ` · seri +%${Math.round(next * 100)}` : ""}
+        </button>
+      )}
     </aside>
   );
 }

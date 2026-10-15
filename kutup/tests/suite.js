@@ -407,7 +407,11 @@ export function defineSuite(target) {
     assert.equal(grown.buildings.length, 2);
     assert.deepEqual(grown.buildings.find((b) => b[0] === buildingId).slice(4, 7), [x, y, facing]);
     assert.equal(grown.ruins.some((r) => r[0] === deniz.id), false);
-    assert.equal(await bricks(), 235);
+    // Started straight after the plain session: the second in a row, +10%.
+    assert.equal(await bricks(), 238);
+    const streak = (await request("/wallet", { cookie: people.bob })).data.log.find((r) => r.reason === "streak");
+    assert.equal(streak.delta, 3);
+    assert.equal(member(await state("bob"), "Deniz").chain, 2);
     const [, , , , x2, y2] = grown.buildings.find((b) => b[0] !== buildingId);
     assert.ok(Math.hypot(x2 - x, y2 - y) > 4, "buildings keep their distance");
   });

@@ -173,6 +173,11 @@ export const migrations = [
     "UPDATE members SET bricks = (SELECT COALESCE(SUM(minutes), 0) FROM focus_log WHERE member_id = members.id)",
     "INSERT INTO bricks_log (id, member_id, delta, reason, note, created) SELECT lower(hex(randomblob(16))), id, bricks, 'opening', 'Her odak dakikan için 1 tuğla', CAST(strftime('%s', 'now') AS INTEGER) * 1000 FROM members WHERE bricks > 0",
   ],
+  // 15 — streaks: sessions in a row (short breaks allowed) and when the last one ended.
+  [
+    "ALTER TABLE members ADD COLUMN chain INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN chain_end INTEGER NOT NULL DEFAULT 0",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

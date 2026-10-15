@@ -65,7 +65,7 @@ import { OwnerPage } from "./Owner.jsx";
 import { MascotCard } from "./Mascot.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "./Village.jsx";
-import { BY_ID, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, wageFor } from "../shared/catalog.js";
+import { BY_ID, CHAIN_GAP, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
@@ -1478,7 +1478,28 @@ export default function App() {
           mutate={mutate}
         />
       )}
-      {receipt && <ReceiptCard key={receipt.at} receipt={receipt} close={() => setReceipt(null)} />}
+      {receipt && (
+        <ReceiptCard
+          key={receipt.at}
+          receipt={receipt}
+          close={() => setReceipt(null)}
+          next={receipt.type === "built" || receipt.type === "plain" ? streakBonus((me?.chain || 0) + 1) : null}
+          onContinue={async () => {
+            // Keep the streak going: 25 more minutes, building the picked small
+            // building if it is affordable, a cottage otherwise.
+            const strict = storage.get("kutup-fidan-on") !== "0",
+              picked = BY_ID[pickedModel()],
+              model = picked.class === "small" && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube";
+            if (strict) keepScreenOn();
+            setReceipt(null);
+            await mutate(
+              "/focus",
+              { action: "start", minutes: 25, strict, ...(strict ? { model } : {}) },
+              strict ? `Seri sürüyor 🔥 ${BY_ID[model].name} için temel atıldı.` : "Seri sürüyor 🔥 25 dakika daha.",
+            );
+          }}
+        />
+      )}
       {toast && (
         <div role="status" className="toast">
           <span>✦</span>
@@ -1587,6 +1608,9 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
     short = fidan && !running ? Math.max(0, item.cost - bricks) : 0;
   const early = growing && now - (me.focusEnd - me.focusMinutes * 60000) < GRACE;
   const ruin = me?.ruinUntil > now && me?.ruinRefund > 0 ? me.ruinRefund : 0;
+  // A streak stays open for ten minutes after a finished session.
+  const streakLeft = !running && !finishing && me?.chainEnd ? CHAIN_GAP - (now - me.chainEnd) : 0,
+    streakNext = streakBonus((me?.chain || 0) + 1);
   const pick = (id) => {
     setModel(id);
     storage.set("kutup-model", id);
@@ -1713,6 +1737,12 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           </div>
           <p className="free-note">Serbest çalışma: yapı yok, risk yok, maaşın yarısı ({duration} dk → {wageFor(duration, false)} 🧱).</p>
         </>
+      )}
+      {streakLeft > 0 && streakNext > 0 && (
+        <p className="streak-note">
+          🔥 Seri {me.chain}: {Math.floor(streakLeft / 60000)}:{String(Math.floor((streakLeft % 60000) / 1000)).padStart(2, "0")} içinde başlarsan
+          bu seans +%{Math.round(streakNext * 100)} maaş getirir.
+        </p>
       )}
       {!running && !finishing && ruin > 0 && (
         <p className="ruin-note">Köyünde enkaz var. Bir sonraki seansın onu kaldırır ve +{ruin} 🧱 geri gelir.</p>

@@ -252,6 +252,24 @@
   line-height: 1.45;
   color: var(--muted);
 }
+.streak-note {
+  margin: 8px 0 2px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(242, 193, 78, 0.14);
+  color: #f6dc9a;
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-continue {
+  width: 100%;
+  margin-top: 10px;
+  justify-content: center;
+  background: #343a32;
+  color: #f5f2e8;
+}
 @media (max-width: 760px) {
   .receipt-card {
     left: 50%;

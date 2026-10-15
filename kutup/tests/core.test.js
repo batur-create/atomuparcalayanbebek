@@ -1,4 +1,4 @@
-import { BY_ID, CATALOG, CATEGORIES, CLASSES, fits, modelOf, refundLater, refundNow, wageFor } from "../shared/catalog.js";
+import { BY_ID, CATALOG, CATEGORIES, CLASSES, fits, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -104,6 +104,7 @@ test("the tuğla economy: wages grow with session length, refunds split 50/30/20
   assert.equal(modelOf("firin", "cottage").id, "firin");
   assert.equal(fits(BY_ID.kule, 60), false);
   assert.equal(fits(BY_ID.ev, 60), true);
+  assert.deepEqual([1, 2, 3, 7].map(streakBonus), [0, 0.1, 0.2, 0.2]);
 });
 
 test("the shared village gives old buildings a stored spot, in the order they were built", async () => {

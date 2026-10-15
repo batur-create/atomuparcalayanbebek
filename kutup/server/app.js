@@ -6,7 +6,7 @@ import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
-import { BY_ID, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, minutesOf, modelOf, refundLater, refundNow, wageFor } from "../shared/catalog.js";
+import { BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -279,7 +279,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages] =
       await db.read([
@@ -432,7 +432,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const day = `(focus_end + ${TR_OFFSET}) / ${DAY} * ${DAY} - ${TR_OFFSET}`;
     const sessions = await db.all(
       `SELECT id, focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_model AS model,
-              focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund,
+              focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd,
               EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
        FROM members WHERE ${due}`,
       args,
@@ -446,7 +446,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const finished = s.minutes > 0 && (!s.strict || s.beat >= s.ends - BEAT_GRACE);
       const pay = [];
       if (finished) {
-        pay.push([wageFor(s.minutes, !!s.strict), "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat` : `${s.minutes} dk serbest çalışma (yarım maaş)`]);
+        // A session started within ten minutes of the last one's end continues its streak.
+        const chain = s.chainEnd > 0 && s.ends - s.minutes * 60000 - s.chainEnd <= CHAIN_GAP ? s.chain + 1 : 1;
+        const wage = wageFor(s.minutes, !!s.strict);
+        pay.push([wage, "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat` : `${s.minutes} dk serbest çalışma (yarım maaş)`]);
+        if (streakBonus(chain)) pay.push([Math.round(wage * streakBonus(chain)), "streak", `Seri: art arda ${chain}. seans (+%${Math.round(streakBonus(chain) * 100)})`]);
+        s.chainNext = chain;
         if (!s.earlier) pay.push([DAILY_BONUS, "bonus", "Günün ilk seansı"]);
         if (s.ruinUntil > now && s.ruinRefund > 0) pay.push([s.ruinRefund, "ruin-refund", "Enkaz kaldırıldı: kalan %30"]);
         statements.push(
@@ -455,8 +460,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             [randomHex(16), s.id, s.ends],
           ],
           [
-            "UPDATE members SET bricks = bricks + ?, ruin_until = 0, ruin_refund = 0 WHERE id = ? AND focus_end = ?",
-            [pay.reduce((t, [delta]) => t + delta, 0), s.id, s.ends],
+            "UPDATE members SET bricks = bricks + ?, ruin_until = 0, ruin_refund = 0, chain = ?, chain_end = focus_end WHERE id = ? AND focus_end = ?",
+            [pay.reduce((t, [delta]) => t + delta, 0), s.chainNext, s.id, s.ends],
           ],
         );
         if (s.strict) {
@@ -482,7 +487,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         const spot = planner.place(s.id, item.kind, newDistrictId, { allocate: false });
         statements.push(
           [
-            `UPDATE members SET bricks = bricks + ?, ruin_until = focus_end + ${RUIN_TIME}, ruin_kind = ?, ruin_x = ?, ruin_y = ?, ruin_refund = ? WHERE id = ? AND focus_end = ?`,
+            `UPDATE members SET bricks = bricks + ?, ruin_until = focus_end + ${RUIN_TIME}, ruin_kind = ?, ruin_x = ?, ruin_y = ?, ruin_refund = ?, chain = 0, chain_end = 0 WHERE id = ? AND focus_end = ?`,
             [back, item.kind, spot?.x ?? null, spot?.y ?? null, refundLater(s.cost), s.id, s.ends],
           ],
           [
@@ -506,7 +511,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const kind = modelOf(member.focus_model, kindFor(member.focus_minutes)).kind;
     const spot = (await loadPlanner(member.group_id)).place(member.id, kind, newDistrictId, { allocate: false });
     return [
-      "UPDATE members SET ruin_until = ?, ruin_kind = ?, ruin_x = ?, ruin_y = ?, ruin_refund = ? WHERE id = ?",
+      "UPDATE members SET ruin_until = ?, ruin_kind = ?, ruin_x = ?, ruin_y = ?, ruin_refund = ?, chain = 0, chain_end = 0 WHERE id = ?",
       [now + RUIN_TIME, kind, spot?.x ?? null, spot?.y ?? null, refund, member.id],
     ];
   }

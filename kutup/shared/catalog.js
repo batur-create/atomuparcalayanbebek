@@ -46,6 +46,10 @@ export const REFUND_NOW = 0.5; // an abandoned build: half the materials back at
 export const REFUND_LATER = 0.3; // …30% more once the rubble is cleared; 20% is lost
 export const GRACE = 2 * 60000; // changing your mind in the first two minutes costs nothing
 export const RUIN_DAYS = 3; // rubble left uncleared this long takes its 30% with it
+export const CHAIN_GAP = 10.5 * 60000; // a break of up to ten minutes keeps a streak going
+
+/** Streak bonus on the wage of the n-th session in a row: 2nd +10%, 3rd on +20%. */
+export const streakBonus = (n) => (n >= 3 ? 0.2 : n === 2 ? 0.1 : 0);
 
 /** Wage for a session: longer sessions pay more per minute (25 → 25, 50 → 55, 75 → 90). */
 export function wageFor(minutes, strict = true) {
@@ -61,6 +65,7 @@ export const REASONS = {
   opening: "Açılış: geçmiş çalışmaların",
   wage: "Maaş",
   bonus: "Günün ilk seansı",
+  streak: "Seri",
   cost: "Malzeme",
   refund: "İade",
   "ruin-refund": "Enkaz kaldırıldı",
