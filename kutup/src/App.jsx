@@ -237,12 +237,11 @@ export default function App() {
     const timer = setTimeout(() => setIntro(false), 2600);
     return () => clearTimeout(timer);
   }, []);
-  // Batur's door: seven quick taps on a ✳ with the last one held, or typing
-  // "batur" anywhere outside a text field, opens a black hole. It only shows
+  // Batur's door: holding a ✳ for a moment, or typing "batur" anywhere
+  // outside a text field, opens a black hole. It only shows
   // the door; the panel still asks for the key (or the remembered owner cookie).
   useEffect(() => {
-    let taps = [],
-      hold = 0,
+    let hold = 0,
       note = 0,
       typed = "";
     const open = () => {
@@ -257,10 +256,8 @@ export default function App() {
           notify("Batur’dan gizli not: Bunu sizin için yaptım. Aynı masada olmasak da aynı yoldayız. Bir sonraki kahve benden. ☕✳", 9000);
         }, 700);
       if (!e.target.closest?.("[data-door]")) return;
-      const now = Date.now();
-      taps = taps.filter((t) => now - t < 4000);
-      if (taps.length >= 6) hold = setTimeout(open, 650);
-      taps.push(now);
+      clearTimeout(hold);
+      hold = setTimeout(open, 1200);
     };
     const up = () => {
       clearTimeout(hold);
@@ -889,6 +886,12 @@ export default function App() {
           <Settings2 size={19} />
           <span>Benim köşem</span>
         </button>
+        {me?.badge === "dev" && (
+          <a className="nav-item" href="/batur">
+            <span aria-hidden="true" className="nav-door">✳</span>
+            <span>Komuta merkezi</span>
+          </a>
+        )}
         <div className="sidebar-bottom">
           <div className="library-note">
             <BookOpen size={24} />
