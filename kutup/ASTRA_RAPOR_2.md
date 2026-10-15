@@ -50,3 +50,10 @@ Batur bitmap kartını reddedip kodla yaşayan bir karakter istedi, ardından ad
 - Upstream `bc5f02d3` inşaat iyileştirmeleri fast-forward ile korundu; korunan dosyalara yerel müdahale yok. Göç veya sunucu değişikliği yok.
 - Yayın sürümü **383c3a7c-3946-4d42-9bf8-a084a54d3a0e**; önceki sürüm `690ded05-ac46-4754-9481-ade12f651236` metadata yedeği `/tmp/kutup-pre-kara-deployment.json`. Mevcut DB/secret bağları doğrulandı, `--keep-vars` kullanıldı. Canlı sağlık ve JS/CSS hash eşitliği geçti; canlı JS bitmap referansı içermiyor.
 - Tam 9 poz, rozet, oyun veya köy entegrasyonu bu teslimde yok. İsim UI'da Kara; geçmiş tercihi kaybetmemek için CSS/storage içindeki murekkep adları korundu.
+
+
+## Kara kalite düzeltmesi — 15 Ekim 2026
+
+Batur'un atkı ve hareket doğallığı geri bildirimi üzerine yalnız `LiveMascot.jsx` ve `mascot.css` değiştirildi. Atkı boyna oturan kıvrımlı bir sarım, düğüm, iki bağımsız kumaş ucu, kat çizgileri ve püsküllerle yeniden çizildi. Tema renkleri korunuyor. Uçların hareketi düşük genlikli ve faz farkıyla çalışıyor; selam hareketine gecikmeli, sönümlenen tepki veriyor.
+
+Nefes/kuyruk hareketleri küçültüldü; kuyruk döngüsüne duraklamalar, göz kırpmaya hızlı kapanma/yavaş açılma ve çift kırpma eklendi. Gözlüğün kendi kendine zıplaması kaldırıldı. Mırlamadaki hızlı kafa titremesi yerini yavaş baş yaslamaya bıraktı. Selam kulak/kafa hazırlığından sonra patiye geçiyor; kitap okurken verilen tepki aynı dinlenme pozuna dönüyor. Kitabın yanlışlıkla koyu kalan sayfa dolgusu da düzeltildi. Bu bir SVG/keyframe animasyonu; kumaş fiziği simülasyonu değildir.

@@ -28,7 +28,7 @@
 .murekkep-start{width:100%;justify-content:center}
 @media(prefers-reduced-motion:reduce){.murekkep-pet{transition:none}.murekkep-pet:hover,.murekkep-pet:active{transform:none}}
 /* Articulated vector character. Each transform has its own joint. */
-.cat-rig{display:block;max-width:100%;padding:0;margin:auto;background:none;border:0;border-radius:35%;color:var(--ink);touch-action:pan-y;-webkit-user-select:none;user-select:none;--look-x:0px;--look-y:0px;--head-turn:0deg}
+.cat-rig{display:block;max-width:100%;padding:0;margin:auto;background:none;border:0;border-radius:35%;color:var(--ink);touch-action:pan-y;-webkit-user-select:none;user-select:none;--look-x:0px;--look-y:0px;--head-turn:0deg;--rest-head:translateY(0) rotate(0deg);--rest-paw:rotate(-36deg) translate(4px,5px)}
 .cat-rig svg{display:block;width:100%;height:auto;overflow:visible}
 .cat-head-tilt{transform-origin:150px 165px;transform:rotate(var(--head-turn));transition:transform .5s cubic-bezier(.2,.8,.2,1)}
 .cat-head{transform-origin:150px 160px;transition:transform .8s cubic-bezier(.34,1.4,.4,1)}
@@ -36,10 +36,10 @@
 .cat-body{transform-origin:150px 247px;animation:cat-breathe 5.8s ease-in-out infinite}
 .cat-tail{transform-origin:204px 225px;animation:cat-tail 6.7s ease-in-out infinite}
 .cat-ear{transition:transform .4s}.cat-ear.left{transform-origin:112px 90px;animation:cat-ear 9.3s ease-in-out infinite}.cat-ear.right{transform-origin:192px 90px;animation:cat-ear 11.7s ease-in-out infinite reverse}
-.cat-eyes{transform-origin:150px 112px;animation:cat-blink 6.1s infinite}
+.cat-eyes{transform-origin:150px 112px;animation:cat-blink 11.3s infinite}
 .cat-closed{visibility:hidden}
-.cat-glasses{transform-origin:150px 115px;animation:cat-glasses 17s ease-in-out infinite}
-.cat-scarf-end{transform-origin:180px 178px;animation:cat-scarf 5.8s ease-in-out infinite}
+.cat-glasses{transform-origin:150px 115px;transition:transform .45s ease-out}
+.cat-scarf-end{transform-origin:181px 178px;animation:cat-scarf 5.8s ease-in-out -.7s infinite}
 .cat-paw{transform-origin:103px 193px;transform:rotate(-36deg) translate(4px,5px);transition:transform .6s cubic-bezier(.34,1.5,.4,1)}
 .cat-book{transform-origin:150px 246px;transform:translateY(8px) scaleY(0);transition:transform .7s cubic-bezier(.2,.8,.2,1)}
 .cat-page{transform-origin:151px 220px;animation:cat-page 7s ease-in-out infinite}
@@ -59,11 +59,11 @@
 .cat-rig[data-reaction="wave"] .cat-paw{animation:cat-wave 1.6s both}
 .cat-rig[data-reaction="wave"] .cat-ear.left{animation:cat-listen .5s both}
 .cat-rig[data-reaction="wave"] .cat-scarf-end{animation:cat-flutter 1.6s both}
-.cat-rig[data-reaction="purr"] .cat-head{animation:cat-purr .22s ease-in-out infinite alternate}
+.cat-rig[data-reaction="purr"] .cat-head{animation:cat-purr 1.7s ease-in-out infinite alternate}
 .cat-rig[data-reaction="purr"] .cat-hearts{visibility:visible;animation:cat-love 1.2s ease-in-out infinite alternate}
 .cat-rig[data-reaction="sass"] .cat-head{transform:rotate(-12deg)}
 .cat-rig[data-reaction="sass"] .cat-eyes{animation:none;transform:scaleY(.5)}
-.cat-rig[data-reaction="sass"] .cat-tail{animation-duration:.7s}
+.cat-rig[data-reaction="sass"] .cat-tail{animation-duration:2.3s}
 .cat-rig[data-paused="true"] *, .cat-rig[data-paused="true"]{animation-play-state:paused!important}
 .murekkep-modes{display:flex;gap:5px;justify-content:center;margin:2px 0 16px}
 .murekkep-modes button{min-height:44px;border-radius:12px;padding:8px 12px;background:transparent;color:var(--muted);font-size:12px}
@@ -71,18 +71,28 @@
 .murekkep-hint{text-align:center;font-size:11px;color:var(--muted);margin:0 0 6px}
 .murekkep-scene{height:250px}
 .murekkep-peek .cat-rig{flex-shrink:0;margin:0}
-@keyframes cat-breathe{50%{transform:scale(1.012,1.025)}}
-@keyframes cat-tail{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(9deg)}}
+@keyframes cat-breathe{0%,100%{transform:scale(1,1)}42%{transform:scale(1.006,1.012)}65%{transform:scale(1.004,1.008)}}
+@keyframes cat-tail{0%,30%,100%{transform:rotate(-2deg)}47%{transform:rotate(5deg)}61%{transform:rotate(1deg)}76%{transform:rotate(3deg)}}
 @keyframes cat-ear{0%,71%,79%,100%{transform:rotate(0)}74%{transform:rotate(-12deg)}77%{transform:rotate(5deg)}}
-@keyframes cat-blink{0%,42%,46%,76%,80%,100%{transform:scaleY(1)}44%,78%{transform:scaleY(.06)}}
+@keyframes cat-blink{0%,28%,30.4%,71%,73.4%,76%,78.4%,100%{transform:scaleY(1)}28.7%,71.7%,76.7%{transform:scaleY(.07)}29.3%,72.3%,77.3%{transform:scaleY(.4)}}
 @keyframes cat-glasses{0%,89%,100%{transform:translateY(0)}93%{transform:translateY(3px) rotate(2deg)}96%{transform:translateY(-2px)}}
-@keyframes cat-scarf{50%{transform:rotate(-5deg)}}
+@keyframes cat-scarf{0%,100%{transform:rotate(0)}45%{transform:rotate(-1.5deg)}68%{transform:rotate(.6deg)}}
 @keyframes cat-page{0%,65%,100%{transform:scaleX(1)}78%{transform:scaleX(-.85)}86%{transform:scaleX(1)}}
 @keyframes cat-dream{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(4deg)}}
 @keyframes cat-wake{0%{transform:translate(3px,19px) rotate(13deg)}45%{transform:translateY(-9px) rotate(-7deg)}75%{transform:translateY(2px) rotate(3deg)}100%{transform:translateY(0)}}
-@keyframes cat-wave{0%{transform:rotate(-36deg)}22%{transform:rotate(14deg)}36%,62%{transform:rotate(-8deg)}48%,74%{transform:rotate(18deg)}100%{transform:rotate(-36deg)}}
+@keyframes cat-wave{0%,12%{transform:var(--rest-paw)}23%{transform:rotate(-42deg)}44%{transform:rotate(9deg)}58%{transform:rotate(-7deg)}71%{transform:rotate(5deg)}90%{transform:rotate(-38deg)}100%{transform:var(--rest-paw)}}
 @keyframes cat-listen{50%{transform:rotate(-18deg)}}
-@keyframes cat-flutter{25%{transform:rotate(-16deg)}55%{transform:rotate(10deg)}80%{transform:rotate(-4deg)}}
-@keyframes cat-purr{from{transform:translateY(2px) rotate(-3deg)}to{transform:translateY(0) rotate(-1deg)}}
+@keyframes cat-flutter{0%,23%{transform:rotate(0)}46%{transform:rotate(-7deg)}65%{transform:rotate(3deg)}83%{transform:rotate(-1.3deg)}100%{transform:rotate(0)}}
+@keyframes cat-purr{from{transform:translate(0,1px) rotate(-3deg)}to{transform:translate(-1px,0) rotate(-4deg)}}
 @keyframes cat-love{to{transform:translateY(-8px) scale(1.06)}}
 @media(prefers-reduced-motion:reduce){.cat-rig *{animation:none!important;transition:none!important}.cat-head-tilt,.cat-pupils{transform:none}.cat-rig[data-waking="true"] .cat-book{transform:scaleY(1)}}
+
+.cat-scarf-back{transform-origin:181px 178px;animation:cat-scarf 5.8s ease-in-out -1.2s infinite reverse}
+.cat-rig[data-reaction="wave"] .cat-head{animation:cat-greet 1.6s both}
+.cat-rig[data-reaction="wave"] .cat-glasses{transform:translateY(.7px)}
+.cat-rig[data-reaction="wave"] .cat-scarf-back{animation:cat-flutter 1.6s .08s both reverse}
+.cat-rig[data-pose="sleep"] .cat-ear{animation:none;transform:rotate(-3deg)}
+.cat-rig[data-pose="sleep"] .cat-scarf-end,.cat-rig[data-pose="sleep"] .cat-scarf-back{animation-duration:8s}
+@keyframes cat-greet{0%,100%{transform:var(--rest-head)}18%{transform:translateY(-1px) rotate(-4deg)}48%{transform:translateY(-2px) rotate(-2deg)}78%{transform:translateY(.5px) rotate(1deg)}}
+
+.cat-rig[data-pose="read"]{--rest-head:translateY(8px) rotate(4deg);--rest-paw:translate(27px,15px) rotate(-48deg)}

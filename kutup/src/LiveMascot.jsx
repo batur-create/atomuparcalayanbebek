@@ -89,8 +89,24 @@ export function LiveMascot({ pose = "hello", size = 250, interactive = false, on
         <path d="M151 144V148M151 148Q141 156 135 149M151 148Q161 156 168 147" stroke="#25242d" strokeWidth="2.5" strokeLinecap="round"/>
         <g stroke="#82796e" strokeWidth="1.5" strokeLinecap="round"><path d="M109 140L72 134M108 147L75 151M192 140L230 134M194 147L227 153"/></g>
       </g></g>
-      <g className="cat-scarf"><path d="M111 158Q148 181 192 156L190 175Q148 193 109 176Z" fill="var(--accent)" stroke="#25242d" strokeWidth="3"/><path className="cat-scarf-end" d="M170 177L190 174L204 212L188 222L178 214Z" fill="var(--accent)" stroke="#25242d" strokeWidth="3"/><path d="M118 168Q145 181 176 169" stroke="var(--paper)" strokeWidth="2" opacity=".5"/></g>
-      <g className="cat-book"><path d="M102 210Q128 202 151 215Q177 201 202 209L195 242Q171 237 151 247Q130 237 107 241Z" fill="var(--accent)" stroke="#25242d" strokeWidth="3"/><path d="M108 205Q130 201 151 213Q173 200 195 204L190 234Q170 232 151 241Q133 231 113 235Z" fill="#48434d" stroke="#25242d" strokeWidth="2"/><path d="M151 213V241M118 214L139 218M119 222L138 226M163 218L185 212M163 226L183 220" stroke="#b6a58a" strokeWidth="2"/><path className="cat-page" d="M151 213Q170 199 190 201L187 230Q170 229 151 241Z" fill="#f2e5cb" stroke="#b6a58a" strokeWidth="1.5"/></g>
+      <g className="cat-scarf">
+        <path d="M109 159Q148 181 191 157L193 174Q150 193 108 175Q105 167 109 159Z" fill="var(--accent)" stroke="#25242d" strokeWidth="2.5" strokeLinejoin="round" />
+        <path d="M110 169Q145 187 189 167L192 175Q150 194 110 178Z" fill="var(--accent-deep)" />
+        <path d="M114 161Q143 177 174 167" stroke="var(--accent-soft)" strokeWidth="2" strokeLinecap="round" opacity=".65" />
+        <g className="cat-scarf-back">
+          <path d="M177 176C173 188 171 201 174 214Q182 218 190 214C185 200 192 189 189 178Z" fill="var(--accent-deep)" stroke="#25242d" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M177 214L177 219M182 215V220M187 214L188 218" stroke="var(--accent-deep)" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+        <g className="cat-scarf-end">
+          <path d="M183 176C197 181 190 195 199 207Q196 216 185 218C173 202 183 189 176 181Z" fill="var(--accent)" stroke="#25242d" strokeWidth="2.5" strokeLinejoin="round" />
+          <path d="M184 183C189 193 182 199 190 210" stroke="var(--accent-soft)" strokeWidth="2" strokeLinecap="round" opacity=".55" />
+          <path d="M184 210Q191 211 196 207" stroke="var(--accent-deep)" strokeWidth="1.5" />
+          <path d="M185 217L187 222M190 216L192 221M195 213L198 217" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+        <path d="M176 166Q185 161 192 168L189 180Q182 185 175 178Q173 172 176 166Z" fill="var(--accent)" stroke="#25242d" strokeWidth="2" />
+        <path d="M179 169Q183 171 186 169M178 176L184 178" stroke="var(--accent-deep)" strokeWidth="1.5" strokeLinecap="round" />
+      </g>
+      <g className="cat-book"><path d="M102 210Q128 202 151 215Q177 201 202 209L195 242Q171 237 151 247Q130 237 107 241Z" fill="var(--accent)" stroke="#25242d" strokeWidth="3"/><path d="M108 205Q130 201 151 213Q173 200 195 204L190 234Q170 232 151 241Q133 231 113 235Z" fill="#fff5e3" stroke="#25242d" strokeWidth="2"/><path d="M151 213V241M118 214L139 218M119 222L138 226M163 218L185 212M163 226L183 220" stroke="#b6a58a" strokeWidth="2"/><path className="cat-page" d="M151 213Q170 199 190 201L187 230Q170 229 151 241Z" fill="#f2e5cb" stroke="#b6a58a" strokeWidth="1.5"/></g>
       <g className="cat-paw"><path d="M103 183Q82 175 76 154Q69 142 60 151Q48 170 66 195Q79 214 108 207" fill="#34333d" stroke="#25242d" strokeWidth="4" strokeLinecap="round"/><path d="M61 151Q48 165 61 182Q69 182 71 175Q80 178 80 170L76 154Q70 141 61 151" fill="#34333d"/><ellipse cx="66" cy="162" rx="6" ry="7" fill="#8c697b"/><circle cx="60" cy="153" r="2.5" fill="#8c697b"/><circle cx="69" cy="150" r="2.5" fill="#8c697b"/></g>
       <g className="cat-zzz" fill="var(--accent)" fontFamily="monospace" fontWeight="bold"><text x="223" y="90" fontSize="18">z</text><text x="243" y="69" fontSize="25">z</text></g>
       <g className="cat-hearts" fill="var(--accent)"><path d="M65 107C48 95 60 83 65 92C72 80 85 95 65 107Z"/><path d="M228 109C215 98 225 89 230 96C238 88 247 100 228 109Z"/></g>
