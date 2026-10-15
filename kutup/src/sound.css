@@ -140,3 +140,44 @@ section.ambient-card .ambient-head > div + .icon-button {
 .sound-auto span {
   flex: 1;
 }
+
+/* The small play/pause pill (focus card, focus screen). */
+.sound-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e0e2d7;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sound-pill.on {
+  border-color: #d6ef9e;
+  color: #d6ef9e;
+}
+.ambient-mixer.dark {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.ambient-mixer.dark .sound-tile {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+.ambient-mixer.dark .sound-tile > button,
+.ambient-mixer.dark .sound-master,
+.ambient-mixer.dark .sound-auto {
+  color: #e8e6dc;
+}
+.ambient-mixer.dark .sound-tile small,
+.ambient-mixer.dark .sound-note {
+  color: #a9ab9f;
+}
+.ambient-mixer.dark .sound-tile.on {
+  border-color: #d6ef9e;
+  background: rgba(214, 239, 158, 0.1);
+  box-shadow: none;
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
+  Expand,
   ArrowRight,
   Bell,
   BellRing,
@@ -67,7 +68,8 @@ import { kindFor } from "./Village.jsx";
 import { BY_ID, CHAIN_GAP, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { MemberStats } from "./Stats.jsx";
-import { SoundMixer } from "./Sound.jsx";
+import { SoundButton, SoundMixer, useSoundFollowsFocus } from "./Sound.jsx";
+import { FocusScreen, enterFullscreen } from "./FocusScreen.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
@@ -292,6 +294,7 @@ export default function App() {
   // The last build-mode session's ending, replayed on the construction site.
   const [buildOutcome, setBuildOutcome] = useState(null);
   const [receipt, setReceipt] = useState(null);
+  const [focusScreen, setFocusScreen] = useState(false);
   // Friends who just switched to "Kütüpte" get a short glow on their card.
   const [arrived, setArrived] = useState([]);
   const lastStatus = useRef(null);
@@ -315,6 +318,7 @@ export default function App() {
   }, [data, session]);
   const me = data.members.find((m) => m.id === session?.memberId);
   const { village, like, error: villageError, retry: retryVillage } = useVillage(session, data.group.villageRev);
+  useSoundFollowsFocus(!!me?.focusEnd && me.focusEnd > now);
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
   const toastTimer = useRef(),
@@ -1168,6 +1172,7 @@ export default function App() {
                 requireMember={requireMember}
                 mutate={mutate}
                 compact
+                onScreen={() => setFocusScreen(true)}
               />
               <section className="members-section">
                 <div className="section-heading">
@@ -1307,6 +1312,7 @@ export default function App() {
                 now={now}
                 requireMember={requireMember}
                 mutate={mutate}
+                onScreen={() => setFocusScreen(true)}
               />
               <div className="focus-side">
                 <VillagePanel
@@ -1323,7 +1329,7 @@ export default function App() {
                   session={session}
                   week={data.week}
                 />
-                <SoundMixer focusing={!!me?.focusEnd && me.focusEnd > now} />
+                <SoundMixer />
                 <WeekBoard members={data.members} me={me} />
                 <section className="panel">
                   <div className="section-heading">
@@ -1509,6 +1515,7 @@ export default function App() {
           mutate={mutate}
         />
       )}
+      {focusScreen && <FocusScreen me={me} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
       {receipt && (
         <ReceiptCard
           key={receipt.at}
@@ -1624,7 +1631,7 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
 const onComputer = () => typeof matchMedia === "function" && !matchMedia("(pointer: coarse)").matches;
 // The building picked for the next build-mode session (kept on this device).
 const pickedModel = () => (BY_ID[storage.get("kutup-model")] ? storage.get("kutup-model") : "kulube");
-function FocusCard({ me, members, now, requireMember, mutate, compact }) {
+function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
@@ -1839,6 +1846,22 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
                 ? `Temeli at ${item.emoji}`
                 : "Hadi odaklanalım"}
       </Busy>
+      <div className="focus-tools">
+        <SoundButton />
+        {onScreen && (
+          <button
+            type="button"
+            className="sound-pill"
+            onClick={() => {
+              enterFullscreen(); // inside the tap, or browsers refuse
+              onScreen();
+            }}
+          >
+            <Expand size={14} />
+            <span>Odak ekranı</span>
+          </button>
+        )}
+      </div>
       <p className="focus-bottom">
         {members.length ? (
           <>

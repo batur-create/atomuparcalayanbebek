@@ -199,7 +199,7 @@
 }
 .receipt-card {
   position: fixed;
-  z-index: 60;
+  z-index: 140;
   bottom: 84px;
   left: calc(50% + 100px);
   transform: translateX(-50%);
@@ -425,4 +425,13 @@ button.brick-pill {
 .awake-note.warn {
   color: #f6dc9a;
   background: rgba(242, 193, 78, 0.16);
+}
+
+/* Sound and the focus screen, under the focus card's button. */
+.focus-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
 }

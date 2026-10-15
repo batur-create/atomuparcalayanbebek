@@ -405,7 +405,9 @@ export function soundState() {
   return { state: ctx.state, layers: [...layers.keys()], rms: Math.sqrt(sum / data.length), peak };
 }
 
-// ---------- the card ----------
+// ---------- shared state: one mix for the whole app ----------
+// The card, the focus screen and the little "playing" pill all show and change
+// the same sounds, so they live in one store rather than in each component.
 const KEY = "kutup-sound";
 const DEFAULTS = { layers: { rain: 0.7 }, master: 0.7, auto: false };
 const loadSettings = () => {
@@ -416,42 +418,110 @@ const loadSettings = () => {
     return DEFAULTS;
   }
 };
-
-export function SoundMixer({ focusing = false }) {
-  const [cfg, setCfg] = useState(loadSettings),
-    [playing, setPlaying] = useState(false),
-    [open, setOpen] = useState(false);
+const store = { cfg: loadSettings(), playing: false };
+const listeners = new Set();
+/** Changes the mix (and plays or stops it); call it from a tap where possible. */
+export function setSound(patch) {
+  const next = typeof patch === "function" ? patch(store) : patch;
+  Object.assign(store, next);
+  storage.set(KEY, JSON.stringify(store.cfg));
+  if (store.playing) mix(store.cfg.layers, store.cfg.master);
+  else hush();
+  listeners.forEach((f) => f());
+}
+export function useSound() {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const f = () => tick((n) => n + 1);
+    listeners.add(f);
+    return () => listeners.delete(f);
+  }, []);
+  return store;
+}
+/** "Odak seansıyla": start with a session, stop when it ends (used once, by the app). */
+export function useSoundFollowsFocus(focusing) {
   const was = useRef(focusing);
   useEffect(() => {
-    storage.set(KEY, JSON.stringify(cfg));
-  }, [cfg]);
-  useEffect(() => {
-    if (playing) mix(cfg.layers, cfg.master);
-    else hush();
-  }, [playing, cfg]);
-  // "Odak seansıyla": start with a session, stop when it ends.
-  useEffect(() => {
-    if (cfg.auto && focusing && !was.current) setPlaying(true);
-    if (cfg.auto && !focusing && was.current) setPlaying(false);
+    if (store.cfg.auto && focusing && !was.current) setSound({ playing: true });
+    if (store.cfg.auto && !focusing && was.current) setSound({ playing: false });
     was.current = focusing;
-  }, [focusing, cfg.auto]);
-  useEffect(() => () => hush(), []);
-  const active = SOUNDS.filter((s) => cfg.layers[s.id] > 0);
-  const play = () => {
-    audio(); // inside the tap, so phones allow the sound
-    if (!active.length) setCfg((c) => ({ ...c, layers: { rain: 0.7 } }));
-    setPlaying(!playing);
-  };
-  const toggle = (id) => {
-    audio();
-    setCfg((c) => {
-      const next = { ...c.layers };
-      if (next[id] > 0) delete next[id];
-      else next[id] = 0.7;
-      return { ...c, layers: next };
-    });
-    if (!playing && !(cfg.layers[id] > 0)) setPlaying(true);
-  };
+  }, [focusing]);
+}
+const activeOf = (cfg) => SOUNDS.filter((s) => cfg.layers[s.id] > 0);
+const play = () => {
+  audio(); // inside the tap, so phones allow the sound
+  setSound((s) => ({ playing: !s.playing, cfg: activeOf(s.cfg).length ? s.cfg : { ...s.cfg, layers: { rain: 0.7 } } }));
+};
+const toggle = (id) => {
+  audio();
+  setSound((s) => {
+    const layers = { ...s.cfg.layers };
+    const on = layers[id] > 0;
+    if (on) delete layers[id];
+    else layers[id] = 0.7;
+    return { cfg: { ...s.cfg, layers }, playing: on ? s.playing : true };
+  });
+};
+
+/** The sound tiles, master volume and the follow-focus switch. */
+export function SoundPanel({ dark = false }) {
+  const { cfg } = useSound();
+  return (
+    <div className={`ambient-mixer ${dark ? "dark" : ""}`}>
+      <div className="sound-grid">
+        {SOUNDS.map((s) => {
+          const on = cfg.layers[s.id] > 0;
+          return (
+            <div key={s.id} className={`sound-tile ${on ? "on" : ""} ${s.id === "blackhole" ? "deep" : ""}`}>
+              <button type="button" aria-pressed={on} onClick={() => toggle(s.id)}>
+                <span aria-hidden="true">{s.emoji}</span>
+                <b>{s.name}</b>
+                <small>{s.hint}</small>
+              </button>
+              {on && (
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1"
+                  step="0.01"
+                  value={cfg.layers[s.id]}
+                  aria-label={`${s.name} ses düzeyi`}
+                  onChange={(e) => setSound((st) => ({ cfg: { ...st.cfg, layers: { ...st.cfg.layers, [s.id]: Number(e.target.value) } } }))}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <label className="sound-master">
+        <span>🔊 Genel ses</span>
+        <input type="range" min="0" max="1" step="0.01" value={cfg.master} aria-label="Genel ses düzeyi" onChange={(e) => setSound((st) => ({ cfg: { ...st.cfg, master: Number(e.target.value) } }))} />
+      </label>
+      <label className="sound-auto">
+        <input type="checkbox" checked={cfg.auto} onChange={(e) => setSound((st) => ({ cfg: { ...st.cfg, auto: e.target.checked } }))} />
+        <span>Odak seansı başlayınca kendiliğinden çalsın, bitince sussun</span>
+      </label>
+      <p className="sound-note">Sesler cihazında üretilir, internet harcamaz. Başka sekmede ders çalışırken de çalmaya devam eder.</p>
+    </div>
+  );
+}
+
+/** Play/pause with what is playing, for small places (the focus card, the focus screen). */
+export function SoundButton({ label = true }) {
+  const { cfg, playing } = useSound();
+  const active = activeOf(cfg);
+  return (
+    <button type="button" className={`sound-pill ${playing ? "on" : ""}`} aria-pressed={playing} onClick={play}>
+      {playing ? <Pause size={14} /> : <Play size={14} />}
+      {label && <span>{playing ? `${active.map((s) => s.emoji).join(" ")} çalıyor` : "Odak sesi"}</span>}
+    </button>
+  );
+}
+
+export function SoundMixer() {
+  const { cfg, playing } = useSound();
+  const [open, setOpen] = useState(false);
+  const active = activeOf(cfg);
   return (
     <section className={`ambient-card ${open ? "open" : ""} ${playing ? "on" : ""}`}>
       <div className="ambient-head">
@@ -469,44 +539,7 @@ export function SoundMixer({ focusing = false }) {
           {playing ? <Pause size={20} /> : <Play size={20} />}
         </button>
       </div>
-      {open && (
-        <div className="ambient-mixer">
-          <div className="sound-grid">
-            {SOUNDS.map((s) => {
-              const on = cfg.layers[s.id] > 0;
-              return (
-                <div key={s.id} className={`sound-tile ${on ? "on" : ""} ${s.id === "blackhole" ? "deep" : ""}`}>
-                  <button type="button" aria-pressed={on} onClick={() => toggle(s.id)}>
-                    <span aria-hidden="true">{s.emoji}</span>
-                    <b>{s.name}</b>
-                    <small>{s.hint}</small>
-                  </button>
-                  {on && (
-                    <input
-                      type="range"
-                      min="0.05"
-                      max="1"
-                      step="0.01"
-                      value={cfg.layers[s.id]}
-                      aria-label={`${s.name} ses düzeyi`}
-                      onChange={(e) => setCfg((c) => ({ ...c, layers: { ...c.layers, [s.id]: Number(e.target.value) } }))}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <label className="sound-master">
-            <span>🔊 Genel ses</span>
-            <input type="range" min="0" max="1" step="0.01" value={cfg.master} aria-label="Genel ses düzeyi" onChange={(e) => setCfg((c) => ({ ...c, master: Number(e.target.value) }))} />
-          </label>
-          <label className="sound-auto">
-            <input type="checkbox" checked={cfg.auto} onChange={(e) => setCfg((c) => ({ ...c, auto: e.target.checked }))} />
-            <span>Odak seansı başlayınca kendiliğinden çalsın, bitince sussun</span>
-          </label>
-          <p className="sound-note">Sesler cihazında üretilir, internet harcamaz. Başka sekmede ders çalışırken de çalmaya devam eder.</p>
-        </div>
-      )}
+      {open && <SoundPanel />}
     </section>
   );
 }
