@@ -6,8 +6,8 @@ import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
-import { statsOf } from "./stats.js";
-import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RARE, RUIN_DAYS, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
+import { dayStreak, statsOf } from "./stats.js";
+import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, stateOf, streakBonus, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -449,15 +449,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["SELECT model FROM unlocks WHERE member_id = ?", [s.id]],
       [`SELECT DISTINCT (created + ${TR_OFFSET}) / ${DAY} AS d FROM focus_log WHERE member_id = ? ORDER BY d DESC LIMIT 40`, [s.id]],
     ]);
-    const left = RARE.filter((item) => !have.some((h) => h.model === item.id));
+    const left = blueprintPool(now).filter((item) => !have.some((h) => h.model === item.id));
     if (!left.length) return null;
     const random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
     const pick = () => left[Math.floor(random() * left.length)];
     // The day streak this session makes, counted back from its own day.
-    const today = Math.floor((s.ends + TR_OFFSET) / DAY),
-      seen = new Set(days.map((r) => r.d).concat(today));
-    let streak = 0;
-    while (seen.has(today - streak)) streak++;
+    const today = Math.floor((s.ends + TR_OFFSET) / DAY);
+    const streak = dayStreak(new Set(days.map((r) => r.d).concat(today)), today).count;
     if (!s.earlier && BLUEPRINT_STREAKS.includes(streak)) return { item: pick(), source: "streak", days: streak };
     if (random() < (config.testHooks ? 0 : BLUEPRINT_CHANCE)) return { item: pick(), source: "luck" };
     return null;
@@ -1317,9 +1315,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       end = now + minutes * 60000;
     }
     const cost = item?.cost || 0;
-    if (item?.rare === "founder" && m.badge !== "dev") fail("Bu yapı yalnız Kütüp'ün kurucusuna ait.");
-    if (item?.rare === true && !(await db.get("SELECT 1 AS ok FROM unlocks WHERE member_id = ? AND model = ?", [m.id, item.id])))
-      fail(`${item.name} nadir bir yapı: önce planını bulman lazım. Bitirdiğin her seansta şansın var.`);
+    if (item && (item.rare || item.since)) {
+      const plans = (await db.all("SELECT model FROM unlocks WHERE member_id = ?", [m.id])).map((u) => u.model);
+      const state = stateOf(item, now, plans, m.badge === "dev");
+      if (state === "hidden") fail("Bu yapı yalnız Kütüp'ün kurucusuna ait.");
+      if (state === "soon") fail(`${item.name} henüz gelmedi; pazartesi katalogda.`);
+      if (state === "locked") fail(`${item.name} nadir bir yapı: önce planını bulman lazım. Bitirdiğin her seansta şansın var.`);
+    }
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
     await retrying(async () => {
       const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);

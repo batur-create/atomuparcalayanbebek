@@ -349,3 +349,16 @@ button.brick-pill {
   margin-top: 8px;
   font-size: 12.5px;
 }
+
+/* This week's building. */
+.catalog-class.weekly h3 {
+  color: #b9772a;
+}
+.catalog-new {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b9772a;
+}
+.catalog-owned.soon {
+  background: #b9772a;
+}

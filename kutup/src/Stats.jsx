@@ -41,7 +41,10 @@ export function MemberStats({ memberId }) {
         </div>
         <div>
           <b>{f.streak.current} gün</b>
-          <span>seri · en iyi {f.streak.best}</span>
+          <span>
+            seri · en iyi {f.streak.best}
+            {f.streak.frozen ? ` · ${f.streak.frozen} ❄️` : ""}
+          </span>
         </div>
         <div>
           <b>{hours(f.month)}</b>

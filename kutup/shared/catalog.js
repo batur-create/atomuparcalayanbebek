@@ -29,6 +29,13 @@ export const CATALOG = [
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },
   { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
 ];
+// Weekly buildings: each arrives on a Monday (since, Türkiye midnight), is
+// sold for two weeks, and after that only comes with a blueprint.
+const mondayTR = (y, m, d) => Date.UTC(y, m - 1, d) - 3 * 3600000;
+CATALOG.push(
+  { id: "postane", name: "Köy Postanesi", emoji: "📮", class: "small", kind: "cottage", category: "work", cost: 35, since: mondayTR(2026, 10, 12), done: "köy postanesini", blurb: "Sarı tente, kapıda POSTA tabelası.", look: { wall: "brick", roof: 5, awning: "#f2c14e", sign: "POSTA", chimney: false } },
+  { id: "cay", name: "Çay Ocağı", emoji: "🫖", class: "small", kind: "cottage", category: "work", cost: 35, since: mondayTR(2026, 10, 19), done: "çay ocağını", blurb: "Yeşil tente, önünde çay masaları.", look: { wall: "wood", roof: 2, awning: "#4f9d8a", tables: true, sign: "ÇAY" } },
+);
 // Rare buildings need a blueprint, found by focusing (rare: true); the
 // observatory is the founder's own (rare: "founder").
 CATALOG.push(
@@ -38,9 +45,27 @@ CATALOG.push(
 );
 export const BY_ID = Object.fromEntries(CATALOG.map((item) => [item.id, item]));
 export const RARE = CATALOG.filter((item) => item.rare === true);
-/** Can this member build it? Blueprints for rare ones, the badge for the founder's. */
-export const unlocked = (item, unlocks = [], founder = false) =>
-  item.rare === "founder" ? founder : item.rare ? unlocks.includes(item.id) : true;
+export const WEEKLY_DAYS = 14;
+const DAY_MS = 24 * 3600000;
+/**
+ * Where a building stands for a member right now: "open" (buildable), "new"
+ * (this fortnight's weekly building), "soon" (next week's), "locked" (needs a
+ * blueprint) or "hidden" (the founder's own, for everyone else).
+ */
+export function stateOf(item, now, unlocks = [], founder = false) {
+  if (item.rare === "founder") return founder ? "open" : "hidden";
+  if (item.since) {
+    if (now < item.since) return "soon";
+    if (now < item.since + WEEKLY_DAYS * DAY_MS) return "new";
+    return unlocks.includes(item.id) ? "open" : "locked";
+  }
+  if (item.rare) return unlocks.includes(item.id) ? "open" : "locked";
+  return "open";
+}
+/** Can this member build it now? */
+export const unlocked = (item, unlocks = [], founder = false, now = Date.now()) => ["open", "new"].includes(stateOf(item, now, unlocks, founder));
+/** Blueprints can turn up for rare buildings and for weekly ones whose fortnight is over. */
+export const blueprintPool = (now) => CATALOG.filter((item) => item.rare === true || (item.since && now >= item.since + WEEKLY_DAYS * DAY_MS));
 export const BLUEPRINT_CHANCE = 0.1; // a finished session turns up a blueprint
 export const BLUEPRINT_STREAKS = [7, 14, 30]; // day streaks that always do
 export const DEFAULT_MODEL = { cottage: "kulube", house: "ev", tower: "kule" };

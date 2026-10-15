@@ -93,7 +93,7 @@ export function useVillageWorld({ village, members, me, groupId, spots }) {
     return () => clearTimeout(timer);
   }, [village?.ruins, expiry]);
   const tint = useMemo(() => tinter(sky), [sky.key]);
-  const people = members.map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}`).join("|");
+  const people = members.map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}:${m.chainEnd || 0}`).join("|");
   const world = useMemo(
     () => (village ? buildWorld({ groupKey: groupId || "demo", village, members, me, sky, spots }) : null),
     [village, people, me, sky.key, groupId, expiry, spots],

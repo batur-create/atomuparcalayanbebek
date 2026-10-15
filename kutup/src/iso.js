@@ -653,6 +653,26 @@ export function yardFittingsSVG(P, sp, detail = 2) {
   return s;
 }
 
+/** Ivy climbing the walls of a house left alone for days (drawn over it). */
+export function vinesSVG(P, sp, seed = 1) {
+  const r = rng(seed + 23),
+    w = sp.hw,
+    top = 0.3 + sp.h * 0.75;
+  let s = poly(faceY(P, w + 0.03, -w, w, 0.3, 0.3 + sp.h), "#7d7466", 0.12) + poly(faceX(P, w + 0.03, -w, w, 0.3, 0.3 + sp.h), "#7d7466", 0.16);
+  for (let i = 0; i < 5; i++) {
+    const side = i % 2,
+      t = -w + 0.3 + r() * (2 * w - 0.6),
+      at = (z, dt) => (side ? P(w + 0.04, t + dt, z) : P(t + dt, w + 0.04, z));
+    let prev = at(0.3, 0);
+    for (let z = 0.6; z < top * (0.6 + 0.4 * r()); z += 0.3) {
+      const next = at(z, Math.sin(z * 3 + i) * 0.12);
+      s += seg(prev, next, "#4f7a3a", 1.2);
+      s += circle(next[0] + (i % 3) - 1, next[1], 1.6, "#5e9b4c");
+      prev = next;
+    }
+  }
+  return s;
+}
 /** A finished building. `detail` 2 = full, 1 = simple (far away), 0 = a block. */
 export function buildingSVG(P, sp, seed, { lit = sp.lit, detail = 2, shadowP = P } = {}) {
   if (detail === 0) return box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + roofSVG(P, sp, false);

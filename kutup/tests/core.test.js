@@ -1,5 +1,5 @@
-import { statsOf } from "../server/stats.js";
-import { BY_ID, CATALOG, CATEGORIES, CLASSES, RARE, fits, imeceBonus, modelOf, refundLater, refundNow, streakBonus, unlocked, wageFor } from "../shared/catalog.js";
+import { dayStreak, statsOf } from "../server/stats.js";
+import { BY_ID, CATALOG, CATEGORIES, CLASSES, RARE, blueprintPool, fits, imeceBonus, modelOf, refundLater, refundNow, stateOf, streakBonus, unlocked, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -91,6 +91,19 @@ test("finished Fidan modu sessions turn into village buildings on upgrade", asyn
   assert.throws(() => sqlite.exec("UPDATE members SET bricks = -1 WHERE id = 'm'"), /CHECK/);
 });
 
+test("day streaks: one missed day a week is bridged by a freeze", () => {
+  // A Monday: weeks start on the days where (day + 3) % 7 is 0.
+  const mon = 20454 - ((20454 + 3) % 7);
+  const days = (...list) => new Set(list.map((d) => mon + d));
+  assert.deepEqual(dayStreak(days(0, 1, 2), mon + 2), { count: 3, frozen: 0 });
+  assert.deepEqual(dayStreak(days(0, 2, 3), mon + 3), { count: 3, frozen: 1 }, "Tuesday missed, bridged");
+  assert.deepEqual(dayStreak(days(0, 2, 4), mon + 4).count, 2, "two misses in one week break it");
+  assert.deepEqual(dayStreak(days(0, 2, 3, 4, 5, 6, 8, 9), mon + 9), { count: 8, frozen: 2 }, "one freeze in each week");
+  assert.equal(dayStreak(days(0, 1), mon + 2).count, 2, "today can still be empty");
+  assert.deepEqual(dayStreak(days(0, 1), mon + 3), { count: 2, frozen: 1 }, "yesterday missed: still alive");
+  assert.equal(dayStreak(days(0, 1), mon + 4).count, 0, "two missed days end it");
+});
+
 test("statistics: day streaks, the best day, library visits and the usual arrival", () => {
   const day = 86400000,
     at = (d, h, m = 0) => Date.UTC(2026, 9, d, h - 3, m); // Türkiye local time
@@ -116,7 +129,7 @@ test("statistics: day streaks, the best day, library visits and the usual arriva
     bricks: 160,
   });
   assert.deepEqual([s.focus.total, s.focus.sessions, s.focus.longest], [225, 5, 75]);
-  assert.deepEqual(s.focus.streak, { current: 4, best: 4 });
+  assert.deepEqual(s.focus.streak, { current: 4, best: 4, frozen: 0 });
   assert.equal(s.focus.bestDay.minutes, 100);
   assert.equal(s.focus.last14.length, 14);
   assert.equal(s.focus.today, 50);
@@ -147,6 +160,12 @@ test("the tuğla economy: wages grow with session length, refunds split 50/30/20
   assert.equal(imeceBonus(2, true), 0.16);
   for (const id of ["firin", "sahaf", "kahve", "kutuphane", "degirmen"]) assert.ok(BY_ID[id].effect, id);
   assert.deepEqual(RARE.map((i) => i.id), ["fener", "sera"]);
+  // Weekly buildings: on sale for a fortnight from their Monday, then by blueprint only.
+  const post = BY_ID.postane, DAY = 86400000;
+  assert.deepEqual([post.since - 1, post.since, post.since + 13 * DAY, post.since + 14 * DAY].map((t) => stateOf(post, t)), ["soon", "new", "new", "locked"]);
+  assert.equal(stateOf(post, post.since + 20 * DAY, ["postane"]), "open");
+  assert.ok(!blueprintPool(post.since).includes(post) && blueprintPool(post.since + 15 * DAY).includes(post));
+  assert.equal(stateOf(BY_ID.gozlemevi, 0), "hidden");
   assert.deepEqual([unlocked(BY_ID.sera), unlocked(BY_ID.sera, ["sera"]), unlocked(BY_ID.gozlemevi, ["gozlemevi"]), unlocked(BY_ID.gozlemevi, [], true), unlocked(BY_ID.ev)], [false, true, false, true, true]);
 });
 

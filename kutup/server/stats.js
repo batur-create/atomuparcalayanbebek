@@ -13,6 +13,30 @@ const median = (list) => {
   const s = [...list].sort((a, b) => a - b);
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
 };
+/**
+ * Days in a row with a finished session, counted back from `today` (today
+ * itself may still be empty). One missed day a week (Monday to Sunday) is
+ * bridged by a freeze, so a single slip never wipes out a long streak.
+ */
+export function dayStreak(days, today) {
+  let d = days.has(today) ? today : today - 1,
+    count = 0;
+  const frozen = new Set();
+  for (;;) {
+    if (days.has(d)) {
+      count++;
+      d--;
+      continue;
+    }
+    const week = Math.floor((d + 3) / 7); // day 0 (1 Jan 1970) was a Thursday
+    if (!frozen.has(week) && days.has(d - 1)) {
+      frozen.add(week);
+      d--;
+      continue;
+    }
+    return { count, frozen: frozen.size };
+  }
+}
 // A visit lasts until leaving, the next arrival or the 8 hours a check-in holds.
 const VISIT_CAP = 8 * HOUR;
 
@@ -34,16 +58,10 @@ export function statsOf({ focus, activity, built, ledger, social, bricks, now })
   // Day streaks: days in a row with at least one finished session; today
   // still counts as "kept" until it is over.
   const days = [...perDay.keys()].sort((a, b) => a - b);
-  let best = 0,
-    run = 0,
-    prev = null;
-  for (const d of days) {
-    run = prev !== null && d === prev + 1 ? run + 1 : 1;
-    best = Math.max(best, run);
-    prev = d;
-  }
-  let current = 0;
-  for (let d = perDay.has(today) ? today : today - 1; perDay.has(d); d--) current++;
+  const daySet = new Set(days);
+  const now_ = dayStreak(daySet, today);
+  const current = now_.count;
+  const best = days.reduce((b, d) => Math.max(b, dayStreak(daySet, d).count), 0);
   const bestDay = days.reduce((b, d) => (b === null || perDay.get(d) > perDay.get(b) ? d : b), null);
   const since = (n) => days.filter((d) => d > today - n).reduce((t, d) => t + perDay.get(d), 0);
 
@@ -75,7 +93,7 @@ export function statsOf({ focus, activity, built, ledger, social, bricks, now })
       }),
       bestDay: bestDay === null ? null : { at: bestDay * DAY - TR, minutes: perDay.get(bestDay) },
       peakHour: total ? hours.indexOf(Math.max(...hours)) : null,
-      streak: { current, best },
+      streak: { current, best, frozen: now_.frozen },
     },
     builds: {
       total: built.reduce((t, b) => t + b.n, 0),

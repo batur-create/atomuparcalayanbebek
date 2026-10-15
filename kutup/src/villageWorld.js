@@ -5,7 +5,7 @@ import {
   FOOTPRINT, LANE, PLAZA, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
-  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, ridgeOf, rng, seg, spec,
+  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, ridgeOf, rng, seg, spec, vinesSVG,
 } from "./iso.js";
 
 export const GROUND = "#a4d078";
@@ -568,6 +568,8 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
         const base = v.at(b.x, b.y);
         const P = b.facing ? mirrored(base) : base;
         buildingSVG(P, sp, b.seed, { lit: lit.has(b.id) || (sky.night > 0.5 && sp.lit), detail: v.detail, shadowP: base });
+        // Five days without a finished session and the ivy creeps in; the next one clears it.
+        if (v.detail === 2 && owner?.chainEnd && Date.now() - owner.chainEnd > 5 * 86400000) vinesSVG(P, sp, b.seed);
       },
     });
   }

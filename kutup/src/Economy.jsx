@@ -2,7 +2,7 @@
 // building portraits, and the receipt that comes after every session.
 import React, { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, minutesOf, unlocked, wageFor } from "../shared/catalog.js";
+import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, WEEKLY_DAYS, minutesOf, stateOf, wageFor } from "../shared/catalog.js";
 import { buildingSVG, projector, spec } from "./iso.js";
 import { get } from "./api.js";
 import { Modal } from "./Modal.jsx";
@@ -32,15 +32,29 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
   }, []);
   const built = wallet?.built || {},
     unlocks = wallet?.unlocks || [];
-  // The founder's own building only exists for the founder.
-  const shown = CATALOG.filter((item) => item.rare !== "founder" || founder);
+  // Where each building stands for this member today.
+  const now = Date.now(),
+    state = (item) => stateOf(item, now, unlocks, founder);
+  const shown = CATALOG.filter((item) => !["hidden", "soon"].includes(state(item)));
+  const weekly = CATALOG.filter((item) => ["new", "soon"].includes(state(item)));
+  const daysLeft = (item) => Math.max(1, Math.ceil((item.since + WEEKLY_DAYS * 86400000 - now) / 86400000));
   const owned = shown.filter((item) => built[item.id]).length;
   const card = (item) => {
     const cls = CLASSES[item.class],
-      open = unlocked(item, unlocks, founder),
+      open = ["open", "new"].includes(state(item)),
+      soon = state(item) === "soon",
       short = item.cost - bricks,
       tooLong = maxMinutes > 0 && minutesOf(item) > maxMinutes,
       net = wageFor(minutesOf(item)) - item.cost;
+    if (soon)
+      return (
+        <div key={item.id} className="catalog-item unseen">
+          <span className="catalog-owned soon">Pazartesi</span>
+          <BuildingThumb id={item.id} />
+          <b>❔ {item.name}</b>
+          <small>Gelecek haftanın yapısı · {cls.label} · {item.cost} 🧱</small>
+        </div>
+      );
     if (collection)
       return (
         <div key={item.id} className={`catalog-item ${built[item.id] ? "" : "unseen"}`}>
@@ -71,7 +85,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
           {open ? item.emoji : "🔒"} {item.name}
         </b>
         <small>
-          {item.rare ? `${cls.label} · ${cls.minutes} dk · ` : `${CATEGORIES[item.category]} · `}
+          {item.rare || item.since ? `${cls.label} · ${cls.minutes} dk · ` : `${CATEGORIES[item.category]} · `}
           {item.blurb}
         </small>
         {item.effect && <span className="catalog-effect">⚙️ {item.effect}</span>}
@@ -83,6 +97,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
           </em>
         </span>
         {!open && <span className="catalog-short">Planı gerekiyor: her bitirdiğin seansta %10 şans, 7/14/30 günlük seride garanti</span>}
+        {state(item) === "new" && <span className="catalog-new">Yeni! {daysLeft(item)} gün daha katalogda, sonra yalnız planla</span>}
         {open && short > 0 && <span className="catalog-short">{short} 🧱 eksik</span>}
         {open && tooLong && short <= 0 && <span className="catalog-short">Kalan süre yetmez</span>}
       </button>
@@ -111,19 +126,27 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
         </button>
         {unlocks.length > 0 && <span className="brick-pill">🎁 {unlocks.length} nadir plan</span>}
       </div>
+      {!collection && weekly.length > 0 && (
+        <section className="catalog-class weekly">
+          <h3>
+            🗓️ Bu haftanın yapısı <small>her pazartesi yeni bir yapı</small>
+          </h3>
+          <div className="catalog-grid">{weekly.map(card)}</div>
+        </section>
+      )}
       {Object.entries(CLASSES).map(([key, cls]) => (
         <section key={key} className="catalog-class">
           <h3>
             {cls.label} · {cls.minutes} dk <small>maaş {wageFor(cls.minutes)} 🧱</small>
           </h3>
-          <div className="catalog-grid">{shown.filter((item) => item.class === key && !item.rare).map(card)}</div>
+          <div className="catalog-grid">{shown.filter((item) => item.class === key && !item.rare && !item.since).map(card)}</div>
         </section>
       ))}
       <section className="catalog-class rare">
         <h3>
           ✨ Nadir yapılar <small>plan bulunca açılır</small>
         </h3>
-        <div className="catalog-grid">{shown.filter((item) => item.rare).map(card)}</div>
+        <div className="catalog-grid">{shown.filter((item) => item.rare || (item.since && (collection || state(item) !== "new"))).map(card)}</div>
       </section>
       <p className="catalog-rules">
         İşlevsel yapılar köyünde durdukça her seansına yardım eder. Yarıda bırakırsan malzemenin yarısı hemen, %30'u enkazı bir sonraki seansın kaldırınca geri gelir; %20 gider.
