@@ -97,7 +97,19 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 4. **Mini oyunlar** sadece molada açılır (durum "Molada" ya da seans yeni bitmiş). İnşaat sırasında kapalıdır.
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. Paket 5 ve 6).
 
-## 6b. Durum (son güncelleme 14 Ekim 2026)
+## 6b. Durum (son güncelleme 15 Ekim 2026)
+
+> **İş akışı panosu:**
+> - Adres: https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX ("Kütüp İş Akışı").
+> - Batur yapılan, yapılmakta olan ve sıradaki işleri buradan izliyor.
+> - Her iş başlayınca ve bitince `ArtifactData` ile güncelle:
+>   - `tasks` koleksiyonu: `status` (done | doing | next), `title`, `detail`, `area`, `order`, `at`, `commit`.
+>   - `meta/board` belgesi: `updated`, `note`.
+>
+> **Astra ile çalışma:**
+> - Astra `astra/gorevler` dalında çalışıyor ve kendi başına yayınlayabiliyor.
+> - Her yayından önce iki dalı birleştir (`git fetch` ve `git merge origin/astra/gorevler`); aksi hâlde birinin işi geri gider.
+> - Göç numaraları sırayla, en son yayınlananın arkasına eklenir.
 
 ### Öncelikli devir: Kara yön değişikliği ve duraklama — 15 Ekim 2026
 
