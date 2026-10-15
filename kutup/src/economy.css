@@ -435,3 +435,59 @@ button.brick-pill {
   gap: 8px;
   margin-top: 12px;
 }
+
+/* The team rhythm and the tea break, on the dark focus card. */
+.rhythm-note,
+.tea-note {
+  margin: 8px 0 2px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(143, 155, 196, 0.16);
+  color: #d9dcef;
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.tea-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(214, 239, 158, 0.1);
+  color: #e3edcb;
+}
+.rhythm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 2px;
+  font-size: 11.5px;
+  color: #b9bca9;
+}
+.rhythm-chips button {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 99px;
+  background: none;
+  color: #e0e2d7;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.rhythm-chips button.on {
+  border-color: #d6ef9e;
+  color: #d6ef9e;
+  background: rgba(214, 239, 158, 0.1);
+}
+.tea-button {
+  width: 100%;
+  margin: 8px 0 2px;
+  padding: 8px 10px;
+  border: 1px dashed rgba(214, 239, 158, 0.5);
+  border-radius: 12px;
+  background: none;
+  color: #d6ef9e;
+  font-size: 12.5px;
+  font-weight: 600;
+}

@@ -101,7 +101,7 @@ export function FocusScreen({ me, now, run, outcome, close }) {
     [drift, setDrift] = useState([0, 0]);
   const opened = useRef(Date.now()),
     hide = useRef(0);
-  const session = me?.focusEnd > now ? { end: me.focusEnd, total: me.focusMinutes * 60000 } : null;
+  const session = me?.focusEnd > now ? { end: me.focusEnd, total: me.focusMinutes * 60000, at: me.focusPausedAt || now } : null;
   const item = session && me.focusStrict ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : null;
   const showScene = !!(run || outcome) && pref.scene !== "hidden";
   const set = (patch) =>
@@ -155,13 +155,13 @@ export function FocusScreen({ me, now, run, outcome, close }) {
     parts = timeParts(now);
     caption = session ? `Seansın bitmesine ${Math.ceil((session.end - now) / 60000)} dk` : "Saat";
   } else if (mode === "down") {
-    parts = clockParts(session.end - now);
-    caption = "kalan";
+    parts = clockParts(session.end - session.at);
+    caption = me.focusPausedAt ? "☕ çay molası: sayaç bekliyor" : "kalan";
   } else {
-    parts = clockParts(session ? now - (session.end - session.total) : now - opened.current);
+    parts = clockParts(session ? session.at - (session.end - session.total) : now - opened.current);
     caption = session ? "geçen" : "kronometre";
   }
-  const progress = session ? Math.min(1, Math.max(0, 1 - (session.end - now) / session.total)) : 0;
+  const progress = session ? Math.min(1, Math.max(0, 1 - (session.end - session.at) / session.total)) : 0;
   const done = !session && outcome?.type === "built";
 
   return (

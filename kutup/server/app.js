@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { dayStreak, statsOf } from "./stats.js";
-import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, stateOf, streakBonus, wageFor } from "../shared/catalog.js";
+import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -284,11 +284,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly] =
       await db.read([
-        ["SELECT id, name, invite, rev, village_rev AS villageRev FROM groups WHERE id = ?", [groupId]],
+        ["SELECT id, name, invite, rev, village_rev AS villageRev, rhythm FROM groups WHERE id = ?", [groupId]],
         [`SELECT ${memberColumns} FROM members WHERE group_id = ? ORDER BY joined`, [groupId]],
         [
           `SELECT f.member_id AS id, SUM(CASE WHEN f.created >= ? THEN f.minutes ELSE 0 END) AS today, SUM(f.minutes) AS week, SUM(f.strict) AS builds
@@ -347,7 +347,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         goal: monumentGoal(members.length),
         monument: monument ? { by: monument.memberId, at: monument.week } : null,
       },
-      expiredFocus: members.some((m) => m.focusEnd > 0 && m.focusEnd <= now),
+      expiredFocus: members.some((m) => m.focusEnd > 0 && m.focusEnd <= now && !m.focusPausedAt),
+      expiredPause: members.some((m) => m.focusPausedAt > 0 && now - m.focusPausedAt >= teaBreakFor(m.focusMinutes)),
       expiredPresence: members.some((m) => m.status !== "away" && m.status_until <= now),
       members: members.map(({ status_until, ...m }) => {
         const expired = m.status !== "away" && status_until < now;
@@ -553,7 +554,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // and half of its materials come back. A finished session pays its wage, the
   // day's first-session bonus, and clears any rubble, paying its remaining 30%.
   async function settleFocus(groupId, now, memberId) {
-    const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ?`;
+    const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ? AND focus_paused_at = 0`;
     const args = [memberId || groupId, now];
     const day = `(focus_end + ${TR_OFFSET}) / ${DAY} * ${DAY} - ${TR_OFFSET}`;
     const sessions = await db.all(
@@ -652,7 +653,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (finishing.length)
       statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.minutes, 0), finishing.at(-1).id)));
     statements.push(
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0, focus_pause_used = 0 WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
@@ -705,6 +706,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   async function snapshot(groupId) {
     const now = Date.now();
     let state = await readSnapshot(groupId, now);
+    // A tea break that ran out continues the session by itself.
+    if (state?.expiredPause) {
+      const pause = "CASE WHEN focus_minutes >= 70 THEN 600000 WHEN focus_minutes >= 40 THEN 300000 ELSE 0 END";
+      await db.batch([
+        [`UPDATE members SET focus_end = focus_end + ${pause}, focus_beat = focus_paused_at + ${pause}, focus_paused_at = 0 WHERE group_id = ? AND focus_paused_at > 0 AND ? - focus_paused_at >= ${pause}`, [groupId, now]],
+        bump(groupId),
+      ]);
+      state = await readSnapshot(groupId, now);
+    }
     if (state?.expiredFocus) {
       await retrying(() => settleFocus(groupId, now), groupId);
       state = await readSnapshot(groupId, now);
@@ -722,6 +732,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     if (!state) return null;
     delete state.expiredFocus;
+    delete state.expiredPause;
     delete state.expiredPresence;
     delete state.crownDue;
     return { ...state, serverTime: now };
@@ -1334,6 +1345,31 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const withered = !!before?.strict && before.beat < before.ends - BEAT_GRACE;
       return changed(m, { credited: withered ? 0 : before?.minutes || 0, withered });
     }
+    // Çay molası: a build-mode session stops for a few minutes, once; the end
+    // moves on by the time taken (and the session's ledger rows follow it).
+    if (action === "pause" || action === "resume") {
+      const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
+      if (!current?.focus_strict || current.focus_end <= now) fail("Duraklatılacak bir inşaat yok.");
+      if (action === "pause") {
+        if (current.focus_paused_at) fail("Zaten moladasın.");
+        if (current.focus_pause_used) fail("Bu inşaatın çay molası kullanıldı.");
+        if (!teaBreakFor(current.focus_minutes)) fail("25 dakikalık yapılarda çay molası yok.");
+        await db.batch([
+          ["UPDATE members SET focus_paused_at = ?, focus_pause_used = 1 WHERE id = ? AND focus_end = ?", [now, m.id, current.focus_end]],
+          bump(m.group_id),
+        ]);
+        return changed(m, { paused: true });
+      }
+      if (!current.focus_paused_at) fail("Şu an mola yok.");
+      const taken = Math.min(now - current.focus_paused_at, teaBreakFor(current.focus_minutes)),
+        end = current.focus_end + taken;
+      await db.batch([
+        ["UPDATE bricks_log SET ref = ? WHERE member_id = ? AND ref = ?", [sessionRef(m.id, end), m.id, sessionRef(m.id, current.focus_end)]],
+        ["UPDATE members SET focus_end = ?, focus_paused_at = 0, focus_beat = ? WHERE id = ? AND focus_paused_at > 0", [end, now, m.id]],
+        bump(m.group_id),
+      ]);
+      return changed(m, { resumed: true });
+    }
     // Build mode: the app reports it is still on screen.
     if (action === "beat") {
       await db.run(
@@ -1351,7 +1387,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
         if (!current || current.focus_end !== m.focus_end) fail("Odak oturumu değişti. Sayfayı yenile.", 409);
         const strictRunning = current.focus_strict === 1 && current.focus_end > now;
-        const early = strictRunning && now - (current.focus_end - current.focus_minutes * 60000) < GRACE;
+        const early = strictRunning && !current.focus_pause_used && now - (current.focus_end - current.focus_minutes * 60000) < GRACE;
         const cost = strictRunning ? current.focus_cost || 0 : 0;
         const item = modelOf(current.focus_model, kindFor(current.focus_minutes));
         outcome = {
@@ -1370,7 +1406,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
                 ledgerRow(m.id, outcome.refunded, "refund", ref, early ? `${item.name}: ilk 2 dakikada vazgeçildi, tam iade` : `${item.name} yarım kaldı: %50 iade`, now),
               ]
             : []),
-          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0 WHERE id = ?", [m.id]],
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0 WHERE id = ?", [m.id]],
           bump(m.group_id),
         ];
       }, m.group_id);
@@ -1388,7 +1424,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     let minutes = item && body.minutes == null && !body.joinMember ? minutesOf(item) : Number(body.minutes),
       end;
-    if (body.joinMember) {
+    const rhythm = body.rhythm === true && !body.joinMember ? (await db.get("SELECT rhythm FROM groups WHERE id = ?", [m.group_id]))?.rhythm : null;
+    if (rhythm && RHYTHMS[rhythm]) {
+      // The team's rhythm: this round ends at its shared break.
+      end = rhythmEnd(rhythm, now);
+      minutes = Math.floor((end - now) / 60000);
+      if (strict && item && !fits(item, minutes)) fail(`Bu tura ${minutes} dk kaldı; ${item.name} sığmaz. Daha küçük bir yapı seç.`);
+      if (strict && !item) item = BY_ID.kulube;
+    } else if (body.joinMember) {
       const other = await db.get("SELECT focus_end FROM members WHERE id = ? AND group_id = ?", [
         String(body.joinMember),
         m.group_id,
@@ -1451,6 +1494,18 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       receipt: session ? receipt : [],
       unlocks: unlocks.map((u) => u.model),
     });
+  });
+
+  // The team's rhythm: anyone may set it; the board says who did.
+  route("POST", "/rhythm", async ({ member: m, body }) => {
+    const rhythm = body.rhythm == null ? null : String(body.rhythm);
+    if (rhythm && !RHYTHMS[rhythm]) fail("Bu ritim yok.");
+    await db.batch([
+      ["UPDATE groups SET rhythm = ?, rhythm_at = 0 WHERE id = ?", [rhythm, m.group_id]],
+      systemMessage(m.group_id, m.id, rhythm ? `masa ritmini ${RHYTHMS[rhythm].label} yaptı 🕐 Molalar artık ortak.` : "masa ritmini kapattı."),
+      bump(m.group_id),
+    ]);
+    return changed(m);
   });
 
   // A member's statistics, for anyone in the same team.
@@ -2043,5 +2098,31 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
   }
 
-  return { fetch: handle, authenticate, snapshot, ready: ensureReady, drainPushOutbox, live };
+  // Every minute: at the start of a shared break and of a new round, tell the
+  // people in the library (each boundary is announced once, whoever ticks first).
+  async function tick(waitUntil = (p) => p) {
+    await ensureReady();
+    const now = Date.now();
+    const groups = await db.all("SELECT id, rhythm, rhythm_at AS at FROM groups WHERE rhythm IS NOT NULL AND rhythm <> ''");
+    for (const g of groups) {
+      const r = rhythmAt(g.rhythm, now);
+      if (!r) continue;
+      const boundary = r.inBreak ? r.workEnd : r.roundStart;
+      if (now - boundary > 90000 || g.at >= boundary) continue;
+      const won = await db.run("UPDATE groups SET rhythm_at = ? WHERE id = ? AND rhythm_at < ?", [boundary, g.id, boundary]);
+      if (!won?.changes) continue;
+      const subs = await db.all(
+        `SELECT s.endpoint, s.subscription, s.member_id, s.session_token FROM subscriptions s JOIN members m ON m.id = s.member_id
+         JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id
+         WHERE m.group_id = ? AND m.status IN ('here', 'break') AND m.status_until > ? AND a.created > ?`,
+        [g.id, now, now - SESSION_AGE],
+      );
+      const message = r.inBreak
+        ? { title: "☕ Ortak mola!", body: `${r.rest} dakika: kahve, su, biraz hava. İnşaatlar bekliyor.` }
+        : { title: "📚 Yeni tur başladı", body: `${r.work} dakika birlikte. Masaya dönüyoruz.` };
+      await deliver({ origin: config.publicOrigin || "https://kutup.app", waitUntil }, subs, { tag: `rhythm-${g.id}`, url: "/", ...message }, "subscriptions", { urgency: "high", ttl: 600 });
+    }
+  }
+
+  return { fetch: handle, authenticate, snapshot, ready: ensureReady, drainPushOutbox, tick, live };
 }

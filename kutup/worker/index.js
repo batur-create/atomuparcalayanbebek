@@ -46,7 +46,8 @@ function getApp(env) {
 }
 export default {
   async scheduled(_event, env, ctx) {
-    ctx.waitUntil(getApp(env).drainPushOutbox());
+    const app = getApp(env);
+    ctx.waitUntil(Promise.all([app.drainPushOutbox(), app.tick((p) => ctx.waitUntil(p)).catch(() => {})]));
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);

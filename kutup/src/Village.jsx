@@ -202,7 +202,8 @@ export function ConstructionScene({ run, outcome }) {
       puff = null,
       rubble = "";
     const start = performance.now();
-    const progressOf = (r) => clamp(1 - (r.endsAt - Date.now()) / (r.minutes * 60000));
+    // A tea break freezes the site where it stood.
+    const progressOf = (r) => clamp(1 - (r.endsAt - (r.pausedAt || Date.now())) / (r.minutes * 60000));
     const draw = (now) => {
       const time = motionReduced ? 0 : (now - start) / 1000;
       const { run: r, outcome: out } = live.current;
@@ -385,7 +386,8 @@ export function ConstructionScene({ run, outcome }) {
       }
       fx.innerHTML = effects;
       // Machines and workers for the work under way (15 fps is plenty for them).
-      if (mode === "build") {
+      const resting = mode === "build" && !!live.current.run?.pausedAt;
+      if (mode === "build" && !resting) {
         const key = `${Math.floor(time * 15)}|${shown.toFixed(3)}`;
         if (key !== crewKey) {
           const c = crewSVG(P, sp, plan, shown, time);
@@ -397,7 +399,7 @@ export function ConstructionScene({ run, outcome }) {
         crewBack.innerHTML = crewFront.innerHTML = "";
         crewKey = "";
       }
-      const label = mode === "done" ? "Teslim edildi 🎉" : phaseAt(plan, shown).label;
+      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : phaseAt(plan, shown).label;
       const text = `${label}|${Math.round(shown * 100)}|${daylight.night > 0.4}`;
       if (text !== caption.dataset.text) {
         caption.dataset.text = text;

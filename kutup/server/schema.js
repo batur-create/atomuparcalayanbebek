@@ -196,6 +196,14 @@ export const migrations = [
   [
     "CREATE TABLE weekly (group_id TEXT NOT NULL, week INTEGER NOT NULL, kind TEXT NOT NULL, member_id TEXT, minutes INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, PRIMARY KEY(group_id, week, kind))",
   ],
+  // 19 — studying together: the team's rhythm (and the last boundary announced)
+  // and the tea break of a build-mode session.
+  [
+    "ALTER TABLE groups ADD COLUMN rhythm TEXT",
+    "ALTER TABLE groups ADD COLUMN rhythm_at INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_paused_at INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_pause_used INTEGER NOT NULL DEFAULT 0",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

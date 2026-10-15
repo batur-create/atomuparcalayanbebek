@@ -65,7 +65,7 @@ import { OwnerPage } from "./Owner.jsx";
 import { MascotCard } from "./Mascot.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "./Village.jsx";
-import { BY_ID, CHAIN_GAP, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
+import { BY_ID, CHAIN_GAP, CLASSES, GRACE, RHYTHMS, fits, minutesOf, modelOf, refundLater, refundNow, rhythmAt, rhythmEnd, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { MemberStats } from "./Stats.jsx";
 import { SoundButton, SoundMixer, useSoundFollowsFocus } from "./Sound.jsx";
@@ -543,9 +543,9 @@ export default function App() {
   const buildRun = useMemo(
     () =>
       me?.focusStrict && me.focusEnd > Date.now()
-        ? { endsAt: me.focusEnd, minutes: me.focusMinutes, ...(({ kind, id }) => ({ kind, model: id }))(modelOf(me.focusModel, kindFor(me.focusMinutes))), seed: me.focusSeed }
+        ? { endsAt: me.focusEnd, minutes: me.focusMinutes, pausedAt: me.focusPausedAt || 0, ...(({ kind, id }) => ({ kind, model: id }))(modelOf(me.focusModel, kindFor(me.focusMinutes))), seed: me.focusSeed }
         : null,
-    [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed, me?.focusModel],
+    [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed, me?.focusModel, me?.focusPausedAt],
   );
   // Build mode: keep the screen on, report presence, and let the building collapse
   // when the session is abandoned. On a phone that means leaving the app for
@@ -553,6 +553,9 @@ export default function App() {
   // on a computer other tabs and apps are part of studying, so only closing the
   // tab or the computer going to sleep for a while brings it down.
   const strictEnd = me?.focusStrict && me.focusEnd > Date.now() ? me.focusEnd : 0;
+  // While on a tea break (and until it would have ended) leaving the app is fine.
+  const pauseUntil = useRef(0);
+  pauseUntil.current = me?.focusPausedAt ? me.focusPausedAt + teaBreakFor(me.focusMinutes) : pauseUntil.current;
   useEffect(() => {
     if (!strictEnd) return releaseScreen();
     const desk = onComputer();
@@ -618,6 +621,7 @@ export default function App() {
       if (document.visibilityState === "hidden") {
         hiddenAt = Date.now();
         remember();
+        if (pauseUntil.current > Date.now()) return;
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           warn("1 dakika içinde dönmezsen inşaatın yıkılır. Dokun, hemen dön.");
           reminder = setTimeout(() => warn("Son 30 saniye! Dönmezsen inşaat yıkılacak."), 30000);
@@ -625,7 +629,7 @@ export default function App() {
         return;
       }
       unwarn();
-      const away = hiddenAt ? Date.now() - hiddenAt : 0;
+      const away = hiddenAt ? Date.now() - Math.max(hiddenAt, pauseUntil.current) : 0;
       hiddenAt = null;
       if (away > GRACE) return wither();
       if (away > 1500) notify("Az kalsın! Şantiye seni bekledi 🏗️");
@@ -641,7 +645,7 @@ export default function App() {
       releaseScreen();
     };
   }, [strictEnd]);
-  const focusLeft = me?.focusEnd > now ? Math.ceil((me.focusEnd - now) / 1000) : 0;
+  const focusLeft = me?.focusEnd > now ? Math.ceil((me.focusEnd - (me.focusPausedAt || now)) / 1000) : 0;
   useEffect(() => {
     document.title = focusLeft
       ? `${String(Math.floor(focusLeft / 60)).padStart(2, "0")}:${String(focusLeft % 60).padStart(2, "0")} · odakta · Kütüp`
@@ -1173,6 +1177,7 @@ export default function App() {
                 mutate={mutate}
                 compact
                 onScreen={() => setFocusScreen(true)}
+                rhythm={data.group.rhythm}
               />
               <section className="members-section">
                 <div className="section-heading">
@@ -1313,6 +1318,7 @@ export default function App() {
                 requireMember={requireMember}
                 mutate={mutate}
                 onScreen={() => setFocusScreen(true)}
+                rhythm={data.group.rhythm}
               />
               <div className="focus-side">
                 <VillagePanel
@@ -1631,7 +1637,12 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
 const onComputer = () => typeof matchMedia === "function" && !matchMedia("(pointer: coarse)").matches;
 // The building picked for the next build-mode session (kept on this device).
 const pickedModel = () => (BY_ID[storage.get("kutup-model")] ? storage.get("kutup-model") : "kulube");
-function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen }) {
+const clockTR = (t) => {
+  const d = new Date(t + 3 * 3600000);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+};
+const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
+function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
@@ -1639,15 +1650,22 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
     [picking, setPicking] = useState(false);
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
-  // Build mode: the building sets the length. Free focus: you pick it.
+  // Build mode: the building sets the length. Free focus: you pick it. Under
+  // the team rhythm the round does: the session ends at the shared break.
   const item = running ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : BY_ID[model];
-  const length = fidan ? minutesOf(item) : duration;
-  const seconds = running ? Math.max(0, Math.ceil((me.focusEnd - now) / 1000)) : length * 60;
+  const round = rhythm && RHYTHMS[rhythm] ? rhythmAt(rhythm, now) : null,
+    roundMinutes = round ? Math.floor((rhythmEnd(rhythm, now) - now) / 60000) : 0;
+  const length = round ? roundMinutes : fidan ? minutesOf(item) : duration;
+  const tooBig = !!round && fidan && !running && !fits(item, roundMinutes);
+  const pausedAt = running ? me.focusPausedAt || 0 : 0,
+    teaMax = running ? teaBreakFor(me.focusMinutes) : 0,
+    teaLeft = pausedAt ? Math.max(0, pausedAt + teaMax - now) : 0;
+  const seconds = running ? Math.max(0, Math.ceil((me.focusEnd - (pausedAt || now)) / 1000)) : length * 60;
   const progress = running ? 1 - seconds / ((me.focusMinutes || length) * 60) : 0;
   const growing = running && !!me?.focusStrict;
   const bricks = me?.bricks || 0,
     short = fidan && !running ? Math.max(0, item.cost - bricks) : 0;
-  const early = growing && now - (me.focusEnd - me.focusMinutes * 60000) < GRACE;
+  const early = growing && !me.focusPauseUsed && now - (me.focusEnd - me.focusMinutes * 60000) < GRACE;
   const ruin = me?.ruinUntil > now && me?.ruinRefund > 0 ? me.ruinRefund : 0;
   // A streak stays open for ten minutes after a finished session.
   const streakLeft = !running && !finishing && me?.chainEnd ? CHAIN_GAP - (now - me.chainEnd) : 0,
@@ -1656,6 +1674,16 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
     setModel(id);
     storage.set("kutup-model", id);
   };
+  const tea = (action) =>
+    mutate("/focus", { action }, action === "pause" ? `Çay molası ☕ İnşaat ${teaMax / 60000} dakika bekliyor; uygulamadan çıkabilirsin.` : "Molaya son, işçiler sahada! 🏗️");
+  // The break runs out: back to work by itself.
+  const resumed = useRef(0);
+  useEffect(() => {
+    if (pausedAt && teaLeft === 0 && resumed.current !== pausedAt) {
+      resumed.current = pausedAt;
+      tea("resume");
+    }
+  }, [pausedAt, teaLeft === 0]);
   const control = async () => {
     if (growing) {
       const cost = me.focusCost || 0,
@@ -1671,7 +1699,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
     setBusy(true);
     await mutate(
       "/focus",
-      running ? { action: "cancel" } : { action: "start", minutes: length, strict: fidan, ...(fidan ? { model: item.id } : {}) },
+      running ? { action: "cancel" } : { action: "start", minutes: length, strict: fidan, rhythm: !!round, ...(fidan ? { model: item.id } : {}) },
       running
         ? growing
           ? early
@@ -1781,6 +1809,42 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
           <p className="free-note">Serbest çalışma: yapı yok, risk yok, maaşın yarısı ({duration} dk → {wageFor(duration, false)} 🧱).</p>
         </>
       )}
+      {round && !running && !finishing && (
+        <p className="rhythm-note">
+          {round.inBreak
+            ? `☕ Ortak mola · yeni tur ${mmss(round.nextRound - now)} sonra (${round.label})`
+            : `🕐 ${round.label} ritmi · bu turun bitişi ${clockTR(round.workEnd)} · şimdi başlarsan ${roundMinutes} dk`}
+        </p>
+      )}
+      {!compact && !running && !finishing && (
+        <div className="rhythm-chips" role="group" aria-label="Masa ritmi">
+          <span>Masa ritmi</span>
+          {[[null, "Kapalı"], ...Object.entries(RHYTHMS).map(([id, r]) => [id, r.label])].map(([id, label]) => (
+            <button
+              key={label}
+              type="button"
+              className={(rhythm || null) === id ? "on" : ""}
+              aria-pressed={(rhythm || null) === id}
+              onClick={() => requireMember(() => mutate("/rhythm", { rhythm: id }, id ? `Masa ritmi ${label}: molalar artık ortak. ☕` : "Masa ritmi kapandı."))}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {growing && !pausedAt && !me.focusPauseUsed && teaMax > 0 && (
+        <button type="button" className="tea-button" onClick={() => tea("pause")}>
+          ☕ Çay molası ver ({teaMax / 60000} dk, bir kez)
+        </button>
+      )}
+      {growing && pausedAt > 0 && (
+        <div className="tea-note">
+          <span>☕ Çay molası · {mmss(teaLeft)} kaldı. Uygulamadan çıkabilirsin; inşaat yerinde bekliyor.</span>
+          <button type="button" className="sound-pill on" onClick={() => tea("resume")}>
+            Devam et
+          </button>
+        </div>
+      )}
       {growing && !onComputer() && (
         <p className={`awake-note ${screenAwake() ? "ok" : "warn"}`}>
           {screenAwake()
@@ -1798,7 +1862,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
         <p className="ruin-note">Köyünde enkaz var. Bir sonraki seansın onu kaldırır ve +{ruin} 🧱 geri gelir.</p>
       )}
       {picking && (
-        <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} founder={me?.badge === "dev"} />
+        <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} founder={me?.badge === "dev"} maxMinutes={round ? roundMinutes : 0} />
       )}
       {!compact && !running && !finishing && (
         <button
@@ -1823,7 +1887,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
       )}
       <Busy
         loading={busy || finishing}
-        disabled={short > 0}
+        disabled={short > 0 || tooBig}
         className="btn focus-start"
         onClick={() => requireMember(control)}
       >
@@ -1840,7 +1904,9 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen 
                 ? "Vazgeç (bedava)"
                 : "Pes et (bina yıkılır)"
               : "Seansı durdur"
-            : short > 0
+            : tooBig
+              ? `Bu tura ${roundMinutes} dk kaldı · daha küçük yapı seç`
+              : short > 0
               ? `${short} 🧱 eksik · başka yapı seç`
               : fidan
                 ? `Temeli at ${item.emoji}`

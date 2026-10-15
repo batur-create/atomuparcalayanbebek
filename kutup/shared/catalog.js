@@ -100,6 +100,31 @@ export const MASTER_PRIZE = 50;
 export const MONUMENT_PRIZE = 50;
 export const monumentGoal = (members) => Math.max(600, 250 * members);
 
+// ---------- studying together ----------
+// A team rhythm aligns everyone's rounds to the clock, so breaks are shared:
+// 50+10 runs from every full hour, 25+5 from every half hour.
+export const RHYTHMS = {
+  "50-10": { work: 50, rest: 10, label: "50+10" },
+  "25-5": { work: 25, rest: 5, label: "25+5" },
+};
+export function rhythmAt(id, now) {
+  const r = RHYTHMS[id];
+  if (!r) return null;
+  const cycle = (r.work + r.rest) * 60000,
+    start = Math.floor(now / cycle) * cycle, // Türkiye is a whole number of hours from UTC
+    workEnd = start + r.work * 60000;
+  return { ...r, id, cycle, roundStart: start, workEnd, nextRound: start + cycle, inBreak: now >= workEnd };
+}
+/** When a session started now ends under the rhythm: with this round's work, or
+ *  the next round's when less than 12 minutes are left (or it is break time). */
+export function rhythmEnd(id, now) {
+  const r = rhythmAt(id, now);
+  if (!r) return null;
+  return !r.inBreak && r.workEnd - now >= 12 * 60000 ? r.workEnd : r.nextRound + r.work * 60000;
+}
+/** Çay molası: one pause a build-mode session may take without collapsing. */
+export const teaBreakFor = (minutes) => (minutes >= 70 ? 10 : minutes >= 40 ? 5 : 0) * 60000;
+
 /** Wage for a session: longer sessions pay more per minute (25 → 25, 50 → 55, 75 → 90). */
 export function wageFor(minutes, strict = true) {
   const rate = 1 + 0.2 * Math.min(1, Math.max(0, (minutes - 25) / 50));

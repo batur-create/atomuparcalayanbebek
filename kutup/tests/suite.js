@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fakePushService, freePort, pushReceiver, verifyVapid, waitFor } from "./helpers.js";
+import { rhythmEnd } from "../shared/catalog.js";
 
 const root = resolve(import.meta.dirname, "..");
 
@@ -441,6 +442,33 @@ export function defineSuite(target) {
     assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", model: "sera", strict: true } })).status, 200);
     assert.equal(member(await state("bob"), "Deniz").focusModel, "sera");
     assert.equal((await request("/focus", { cookie: people.bob, body: { action: "cancel" } })).data.refunded, 45);
+  });
+
+  test(`[${target}] a team rhythm aligns rounds, and a tea break pauses a build once`, async () => {
+    assert.equal((await request("/rhythm", { cookie: people.alice, body: { rhythm: "nope" } })).status, 400);
+    const set = await request("/rhythm", { cookie: people.alice, body: { rhythm: "50-10" } });
+    assert.equal(set.data.state.group.rhythm, "50-10");
+    assert.ok(set.data.state.messages.some((m) => m.text.startsWith("masa ritmini 50+10 yaptı")));
+    const t0 = Date.now();
+    const round = await request("/focus", { cookie: people.alice, body: { action: "start", rhythm: true, minutes: 25 } });
+    assert.equal(round.status, 200);
+    assert.ok([rhythmEnd("50-10", t0), rhythmEnd("50-10", Date.now())].includes(member(round.data.state, "Aylin").focusEnd), "the round ends at the shared break");
+    await request("/focus", { cookie: people.alice, body: { action: "cancel" } });
+    await request("/rhythm", { cookie: people.alice, body: { rhythm: null } });
+    // Çay molası: a two-storey house may stop once for up to five minutes.
+    const house = await request("/focus", { cookie: people.bob, body: { action: "start", model: "ev", strict: true } });
+    assert.equal(house.status, 200);
+    const end = member(house.data.state, "Deniz").focusEnd;
+    const paused = await request("/focus", { cookie: people.bob, body: { action: "pause" } });
+    assert.equal(paused.data.paused, true);
+    assert.ok(member(paused.data.state, "Deniz").focusPausedAt > 0);
+    assert.equal((await request("/focus", { cookie: people.bob, body: { action: "pause" } })).status, 400);
+    const resumed = member((await request("/focus", { cookie: people.bob, body: { action: "resume" } })).data.state, "Deniz");
+    assert.equal(resumed.focusPausedAt, 0);
+    assert.ok(resumed.focusEnd >= end && resumed.focusEnd < end + 60000, "the end moves on by the break");
+    assert.equal((await request("/focus", { cookie: people.bob, body: { action: "pause" } })).status, 400, "only once");
+    const quit = await request("/focus", { cookie: people.bob, body: { action: "cancel" } });
+    assert.equal(quit.data.withered, true, "after a break, giving up is no longer free");
   });
 
   test(`[${target}] web push reaches friends, encrypted and signed, with an arrival cooldown`, async () => {

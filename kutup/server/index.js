@@ -242,9 +242,10 @@ setInterval(() => {
 let pushDrain;
 const pushTimer = setInterval(() => {
   if (pushDrain) return;
-  pushDrain = app.drainPushOutbox()
-    .catch(() => console.error("Kütüp push queue: scheduled retry deferred."))
-    .finally(() => { pushDrain = null; });
+  pushDrain = Promise.all([
+    app.drainPushOutbox().catch(() => console.error("Kütüp push queue: scheduled retry deferred.")),
+    app.tick().catch(() => {}),
+  ]).finally(() => { pushDrain = null; });
 }, 60000).unref();
 
 function stop() {
