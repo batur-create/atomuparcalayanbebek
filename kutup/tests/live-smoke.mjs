@@ -92,6 +92,14 @@ try {
   check("board message", msg.status === 201, `status ${msg.status}`);
   const village = await call("/village", { cookie: A1 });
   check("village endpoint", village.status === 200, `status ${village.status}`);
+  // Tuğla: a newcomer starts at 0, a free cottage starts and is given up for free.
+  const wallet = await call("/wallet", { cookie: A1 });
+  check("wallet", wallet.status === 200 && wallet.data?.bricks === 0, `status ${wallet.status} bricks ${wallet.data?.bricks}`);
+  const pricey = await call("/focus", { cookie: A1, body: { action: "start", model: "kule", strict: true } });
+  check("materials must be paid", pricey.status === 400 && /tuğla eksik/.test(pricey.data?.error || ""), `status ${pricey.status}`);
+  const free = await call("/focus", { cookie: A1, body: { action: "start", model: "kulube", strict: true } });
+  const quit = await call("/focus", { cookie: A1, body: { action: "cancel" } });
+  check("free cottage, free change of mind", free.status === 200 && quit.status === 200 && quit.data?.withered === false, `status ${free.status}/${quit.status}`);
 
   // 4. Login on a second device keeps the first one.
   const wrong = await call("/login", { body: { username: userA, password: "yanlis-sifre" } });

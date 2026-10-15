@@ -158,6 +158,21 @@ export const migrations = [
     "CREATE TRIGGER subscriptions_outbox_rebind AFTER UPDATE ON subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.member_id IS NOT NEW.member_id OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint; END",
     "CREATE TRIGGER owner_subscriptions_outbox_rebind AFTER UPDATE ON owner_subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.key_hash IS NOT NEW.key_hash OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'owner_subscriptions' AND endpoint = OLD.endpoint; END",
   ],
+  // 14 — tuğla: a balance that can never go negative, a ledger of every
+  // movement, the catalogue model of each building and of the session under way,
+  // and the 30% of an abandoned build waiting for its rubble to be cleared.
+  // Everyone opens with one tuğla for every minute they have already focused.
+  [
+    "ALTER TABLE members ADD COLUMN bricks INTEGER NOT NULL DEFAULT 0 CHECK(bricks >= 0)",
+    "ALTER TABLE members ADD COLUMN focus_model TEXT",
+    "ALTER TABLE members ADD COLUMN focus_cost INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN ruin_refund INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE buildings ADD COLUMN model TEXT",
+    "CREATE TABLE bricks_log (id TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, delta INTEGER NOT NULL, reason TEXT NOT NULL, ref TEXT, note TEXT, created INTEGER NOT NULL)",
+    "CREATE INDEX bricks_log_member ON bricks_log(member_id, created)",
+    "UPDATE members SET bricks = (SELECT COALESCE(SUM(minutes), 0) FROM focus_log WHERE member_id = members.id)",
+    "INSERT INTO bricks_log (id, member_id, delta, reason, note, created) SELECT lower(hex(randomblob(16))), id, bricks, 'opening', 'Her odak dakikan için 1 tuğla', CAST(strftime('%s', 'now') AS INTEGER) * 1000 FROM members WHERE bricks > 0",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

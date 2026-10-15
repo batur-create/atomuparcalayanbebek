@@ -25,8 +25,8 @@ export const MEMBER_COLORS = {
 };
 
 // ---------- data ----------
-const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine]) => ({
-  id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine: !!mine,
+const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine, model]) => ({
+  id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine: !!mine, model: model || null,
 });
 /** Merges an /api/village answer into what we already have (it may be partial). */
 export function mergeVillage(prev, raw) {
@@ -530,7 +530,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
 
   // Buildings, each with a stepping-stone path from its door to the nearest lane.
   for (const b of homes) {
-    const sp = spec(b.kind, b.seed);
+    const sp = spec(b.kind, b.seed, b.model);
     const owner = people.get(b.memberId);
     const door = b.facing ? [b.x + sp.hw + 0.7, b.y] : [b.x, b.y + sp.hw + 0.7];
     let best = { d: Infinity, point: door };
@@ -599,7 +599,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
   // Live things: who is in the library, on a break, or on the way.
   const anchorOf = (memberId) => {
     const home = newest.get(memberId);
-    if (home && home.x !== null) return { x: home.x, y: home.y, z: ridgeOf(spec(home.kind, home.seed)) + 1.2, building: home };
+    if (home && home.x !== null) return { x: home.x, y: home.y, z: ridgeOf(spec(home.kind, home.seed, home.model)) + 1.2, building: home };
     const d = districts.find((dd) => dd.memberId === memberId);
     return d ? { x: d.layout.sign[0], y: d.layout.sign[1], z: 2.4 } : null;
   };
@@ -612,7 +612,7 @@ export function buildWorld({ groupKey, village, members, me, sky }) {
       if (!a) continue;
       balloons.push({ member: m, ...a });
       if (m.status === "here" && a.building) {
-        const sp = spec(a.building.kind, a.building.seed);
+        const sp = spec(a.building.kind, a.building.seed, a.building.model);
         if (sp.chimney) {
           const [cx, cy, cz] = chimneyTop(sp);
           const [wx, wy] = a.building.facing ? [cy, cx] : [cx, cy];

@@ -551,10 +551,23 @@ export function OwnerPage() {
                             {m.seen ? `${dateLabel(m.seen)} ${shortTime(m.seen)}` : "—"}
                           </small>
                           <small>
-                            {m.devices} cihaz · {Math.round((m.minutes || 0) / 60)} sa odak · {m.builds} bina
+                            {m.devices} cihaz · {Math.round((m.minutes || 0) / 60)} sa odak · {m.builds} bina · {m.bricks || 0} 🧱
                             {m.badge === "dev" && " · ✦ bu ekipteki profilin"}
                           </small>
                         </div>
+                        <button
+                          className="icon-button"
+                          aria-label={`${m.name}: tuğla ver ya da düzelt`}
+                          title="Tuğla ver / düzelt (eksi de yazılabilir)"
+                          onClick={() => {
+                            const value = prompt(`${m.name} için kaç tuğla? (eksi yazarsan düşer)`, "50");
+                            if (!value) return;
+                            const note = prompt("Kısa bir not (fişte görünür)", "Batur'dan hediye") || "";
+                            act(() => api(`/owner/members/${m.id}/bricks`, { delta: Number(value), note }));
+                          }}
+                        >
+                          🧱
+                        </button>
                         <button
                           className={`icon-button dev-pick ${m.badge === "dev" ? "on" : ""}`}
                           aria-pressed={m.badge === "dev"}

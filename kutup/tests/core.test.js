@@ -1,3 +1,4 @@
+import { BY_ID, CATALOG, CATEGORIES, CLASSES, fits, modelOf, refundLater, refundNow, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -83,6 +84,26 @@ test("finished Fidan modu sessions turn into village buildings on upgrade", asyn
   const rows = sqlite.prepare("SELECT kind, minutes FROM buildings ORDER BY created").all();
   assert.deepEqual(rows.map((r) => [r.kind, r.minutes]), [["cottage", 25], ["tower", 75]]);
   assert.equal(sqlite.prepare("SELECT value FROM settings WHERE key = 'schema'").get().value, String(SCHEMA_VERSION));
+  // Tuğla open at one per minute already focused, build mode or not.
+  assert.equal(sqlite.prepare("SELECT bricks FROM members WHERE id = 'm'").get().bricks, 150);
+  assert.deepEqual({ ...sqlite.prepare("SELECT delta, reason FROM bricks_log WHERE member_id = 'm'").get() }, { delta: 150, reason: "opening" });
+  assert.throws(() => sqlite.exec("UPDATE members SET bricks = -1 WHERE id = 'm'"), /CHECK/);
+});
+
+test("the tuğla economy: wages grow with session length, refunds split 50/30/20", () => {
+  assert.deepEqual([25, 50, 75].map((m) => wageFor(m)), [25, 55, 90]);
+  assert.deepEqual([25, 50, 75].map((m) => wageFor(m, false)), [13, 28, 45]);
+  for (const item of CATALOG) {
+    assert.ok(BY_ID[item.id] === item && CLASSES[item.class] && CATEGORIES[item.category] && ["cottage", "house", "tower"].includes(item.kind), item.id);
+    assert.ok(Number.isInteger(item.cost) && item.cost >= 0 && item.done && item.name, item.id);
+    // Every building leaves 20% of its materials behind when abandoned.
+    if (item.cost) assert.ok(Math.abs(item.cost - refundNow(item.cost) - refundLater(item.cost) - item.cost * 0.2) <= 1, item.id);
+  }
+  assert.equal(BY_ID.kulube.cost, 0, "a cottage is always free");
+  assert.equal(modelOf(null, "house").id, "ev");
+  assert.equal(modelOf("firin", "cottage").id, "firin");
+  assert.equal(fits(BY_ID.kule, 60), false);
+  assert.equal(fits(BY_ID.ev, 60), true);
 });
 
 test("the shared village gives old buildings a stored spot, in the order they were built", async () => {

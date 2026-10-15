@@ -8,6 +8,7 @@ import { kindFor } from "../shared/village.js";
 import {
   CRANE, DIRT, GRASS, STONE, WOOD, box, chimneySVG, doorSVG, f, flagSVG, foundationSVG, gardenSVG,
   poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG, openingList, faceX, faceY,
+  porticoSVG, sailsSVG, wallFittingsSVG, yardFittingsSVG,
 } from "./iso.js";
 import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
 import { crewSVG, fleeSVG } from "./crew.js";
@@ -83,7 +84,8 @@ function facadeSVG(P, sp, t) {
 }
 
 function sceneParts(P, sp, seed, plan) {
-  const w = sp.hw;
+  const w = sp.hw,
+    look = sp.look || {};
   return [
     { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
     { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
@@ -97,8 +99,13 @@ function sceneParts(P, sp, seed, plan) {
     { a: 0.68, b: 0.73, kind: "grow", draw: (t) => trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t) },
     { a: 0.72, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
     { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
-    // Planting: the garden comes up out of the ground.
-    { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) },
+    // Windmill sails go up blade by blade once the roof is on, then turn.
+    ...(look.sails ? [{ a: 0.79, b: 0.82, kind: "grow", live: true, draw: (t, lit, time) => sailsSVG(P, sp, t >= 1 ? 0.4 + time * 0.9 : 0.4, 2, Math.ceil(t * 4)) }] : []),
+    // Once the scaffold is down: the shop front (awning, shutters, window
+    // boxes, balcony, clock) and the columned porch.
+    ...(sp.look ? [{ a: 0.93, b: 0.955, kind: "reveal", fit: true, draw: () => wallFittingsSVG(P, sp) + (look.columns ? porticoSVG(P, sp) : "") }] : []),
+    // Planting: the garden comes up out of the ground, with the yard's tables, beds and sign.
+    { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) + yardFittingsSVG(P, sp) },
     // The tower crane goes up once its footing is cast, at the blinding, and comes down after the roof.
     { a: plan.find((p) => p.key === "lean").a, b: 0.82, kind: "erect", live: true, draw: (time, shown, built) => craneSVG(P, sp, plan, time, shown, built, workHeight(plan, sp, shown)) },
   ];
@@ -121,11 +128,12 @@ export function ConstructionScene({ run, outcome }) {
   live.current = { run, outcome };
   const subject = run || outcome;
   const kind = subject?.kind || "cottage",
-    seed = subject?.seed || 1;
+    seed = subject?.seed || 1,
+    model = subject?.model || null;
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    const sp = spec(kind, seed);
+    const sp = spec(kind, seed, model);
     const motionReduced = reducedMotion();
     const s = { cottage: 31, house: 28, tower: 23.5 }[kind];
     const P = projector({ cx: 350, cy: 268, s });
@@ -383,7 +391,7 @@ export function ConstructionScene({ run, outcome }) {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // The scene lives for one building; run/outcome are read live through the ref.
-  }, [kind, seed]);
+  }, [kind, seed, model]);
   return (
     <svg className="village-scene" viewBox="0 0 680 400" role="img" aria-label={`${KINDS[kind].label} inşaatı`}>
       <g ref={ref} />

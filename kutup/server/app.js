@@ -6,6 +6,7 @@ import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
+import { BY_ID, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, minutesOf, modelOf, refundLater, refundNow, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -34,7 +35,7 @@ const ACHIEVEMENTS = ["black-hole"];
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
-const RUIN_TIME = 24 * 3600000; // a collapsed site stays as rubble for a day
+const RUIN_TIME = RUIN_DAYS * 24 * 3600000; // rubble waits this long for the next session to clear it
 
 class HttpError extends Error {
   constructor(message, status = 400) {
@@ -278,7 +279,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages] =
       await db.read([
@@ -404,81 +405,109 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
   }
 
+  // A ledger row; with `openEnd`, written only while that session is still open.
+  const ledgerRow = (memberId, delta, reason, ref, note, now, openEnd = null) =>
+    openEnd
+      ? [
+          "INSERT INTO bricks_log (id, member_id, delta, reason, ref, note, created) SELECT ?, id, ?, ?, ?, ?, ? FROM members WHERE id = ? AND focus_end = ?",
+          [randomHex(16), delta, reason, ref, note, now, memberId, openEnd],
+        ]
+      : [
+          "INSERT INTO bricks_log (id, member_id, delta, reason, ref, note, created) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [randomHex(16), memberId, delta, reason, ref, note, now],
+        ];
+  const sessionRef = (memberId, end) => `${memberId}:${end}`;
+
   // Completed focus sessions are credited by whoever reads the state next, so
-  // minutes count even if the owner closed the tab. The conditional SQL makes it
-  // safe to run concurrently: only one transaction can move a session to the log.
+  // minutes count even if the owner closed the tab. Every write is pinned to the
+  // exact session (member and end time) and retrying() pins the group revision,
+  // so only one transaction can settle a session.
   // A build-mode session only leaves a building if the app was open near the end
-  // (the client beats every 20 seconds while visible); otherwise it leaves rubble.
+  // (the client beats every 20 seconds while visible); otherwise it leaves rubble
+  // and half of its materials come back. A finished session pays its wage, the
+  // day's first-session bonus, and clears any rubble, paying its remaining 30%.
   async function settleFocus(groupId, now, memberId) {
     const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ?`;
     const args = [memberId || groupId, now];
-    const present = `focus_beat >= focus_end - ${BEAT_GRACE}`;
-    const event = (text, condition) => [
-      `INSERT INTO messages (id, group_id, member_id, text, kind, created)
-       SELECT lower(hex(randomblob(16))), group_id, id, ${text}, 'system', focus_end FROM members
-       WHERE ${due} AND ${condition}`,
-      args,
-    ];
-    const statements = [
-      [
-        `INSERT INTO focus_log (id, member_id, minutes, created, strict)
-         SELECT lower(hex(randomblob(16))), id, focus_minutes, focus_end, focus_strict FROM members
-         WHERE ${due} AND focus_minutes > 0 AND (focus_strict = 0 OR ${present})`,
-        args,
-      ],
-    ];
-    const builders = await db.all(
-      `SELECT id, focus_minutes AS minutes, focus_beat AS beat, focus_end AS ends FROM members WHERE ${due} AND focus_strict = 1 AND focus_minutes > 0`,
+    const day = `(focus_end + ${TR_OFFSET}) / ${DAY} * ${DAY} - ${TR_OFFSET}`;
+    const sessions = await db.all(
+      `SELECT id, focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_model AS model,
+              focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund,
+              EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
+       FROM members WHERE ${due}`,
       args,
     );
-    if (builders.length) {
-      const planner = await loadPlanner(groupId);
-      for (const b of builders) {
-        const kind = kindFor(b.minutes);
-        const built = b.beat >= b.ends - BEAT_GRACE;
-        const guard = [
-          `EXISTS (SELECT 1 FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ? AND focus_strict = 1 AND focus_minutes > 0 AND ${built ? "" : "NOT "}(${present}))`,
-          [b.id, now],
-        ];
-        const spot = planner.place(b.id, kind, newDistrictId, { allocate: built });
-        if (built)
+    if (!sessions.length) return [];
+    const statements = [];
+    const planner = sessions.some((s) => s.strict) ? await loadPlanner(groupId) : null;
+    for (const s of sessions) {
+      const item = modelOf(s.model, kindFor(s.minutes));
+      const ref = sessionRef(s.id, s.ends);
+      const finished = s.minutes > 0 && (!s.strict || s.beat >= s.ends - BEAT_GRACE);
+      const pay = [];
+      if (finished) {
+        pay.push([wageFor(s.minutes, !!s.strict), "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat` : `${s.minutes} dk serbest çalışma (yarım maaş)`]);
+        if (!s.earlier) pay.push([DAILY_BONUS, "bonus", "Günün ilk seansı"]);
+        if (s.ruinUntil > now && s.ruinRefund > 0) pay.push([s.ruinRefund, "ruin-refund", "Enkaz kaldırıldı: kalan %30"]);
+        statements.push(
+          [
+            "INSERT INTO focus_log (id, member_id, minutes, created, strict) SELECT ?, id, focus_minutes, focus_end, focus_strict FROM members WHERE id = ? AND focus_end = ?",
+            [randomHex(16), s.id, s.ends],
+          ],
+          [
+            "UPDATE members SET bricks = bricks + ?, ruin_until = 0, ruin_refund = 0 WHERE id = ? AND focus_end = ?",
+            [pay.reduce((t, [delta]) => t + delta, 0), s.id, s.ends],
+          ],
+        );
+        if (s.strict) {
+          const guard = ["EXISTS (SELECT 1 FROM members WHERE id = ? AND focus_end = ?)", [s.id, s.ends]];
+          const spot = planner.place(s.id, item.kind, newDistrictId);
           statements.push(
             ...districtChanges(groupId, spot?.changes, guard),
             [
-              `INSERT INTO buildings (id, member_id, group_id, kind, minutes, seed, created, touched, pos_x, pos_y, facing, district_id)
-               SELECT ?, id, group_id, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ? FROM members WHERE id = ? AND ${guard[0]}`,
-              [randomHex(16), kind, now, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, b.id, ...guard[1]],
+              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id)
+               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ? FROM members WHERE id = ? AND focus_end = ?`,
+              [randomHex(16), item.kind, item.id, now, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, s.id, s.ends],
             ],
             [`UPDATE districts SET buildings = buildings + 1 WHERE id = ? AND ${guard[0]}`, [spot?.district.id ?? null, ...guard[1]]],
-            // A finished building clears the last collapse's rubble.
-            [`UPDATE members SET ruin_until = 0 WHERE id = ? AND ${guard[0]}`, [b.id, ...guard[1]]],
+            [
+              "INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, group_id, id, ?, 'system', focus_end FROM members WHERE id = ? AND focus_end = ?",
+              [crypto.randomUUID(), `${item.done} bitirdi ${item.emoji} ${s.minutes} dakika telefona dokunmadan!`, s.id, s.ends],
+            ],
           );
-        else
-          statements.push([
-            `UPDATE members SET ruin_until = focus_end + ${RUIN_TIME}, ruin_kind = ?, ruin_x = ?, ruin_y = ? WHERE id = ? AND ${guard[0]}`,
-            [kind, spot?.x ?? null, spot?.y ?? null, b.id, ...guard[1]],
-          ]);
+        }
+      } else if (s.strict) {
+        const back = refundNow(s.cost);
+        if (back) pay.push([back, "refund", `${item.name} yarım kaldı: %50 iade`]);
+        const spot = planner.place(s.id, item.kind, newDistrictId, { allocate: false });
+        statements.push(
+          [
+            `UPDATE members SET bricks = bricks + ?, ruin_until = focus_end + ${RUIN_TIME}, ruin_kind = ?, ruin_x = ?, ruin_y = ?, ruin_refund = ? WHERE id = ? AND focus_end = ?`,
+            [back, item.kind, spot?.x ?? null, spot?.y ?? null, refundLater(s.cost), s.id, s.ends],
+          ],
+          [
+            "INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, group_id, id, ?, 'system', focus_end FROM members WHERE id = ? AND focus_end = ?",
+            [crypto.randomUUID(), WITHERED, s.id, s.ends],
+          ],
+        );
       }
-      statements.push(bumpVillage(groupId));
+      for (const [delta, reason, note] of pay) statements.push(ledgerRow(s.id, delta, reason, ref, note, now, s.ends));
     }
+    if (planner) statements.push(bumpVillage(groupId));
     statements.push(
-      event(
-        "CASE WHEN focus_minutes >= 70 THEN 'kulesini bitirdi 🏰' WHEN focus_minutes >= 40 THEN 'iki katlı evini bitirdi 🏠' ELSE 'kulübesini bitirdi 🏡' END || ' ' || focus_minutes || ' dakika telefona dokunmadan!'",
-        `focus_strict = 1 AND focus_minutes > 0 AND ${present}`,
-      ),
-      event(`'${WITHERED}'`, `focus_strict = 1 AND NOT (${present})`),
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0 WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
   }
-  // Rubble for a session that was given up or abandoned half-way.
-  async function ruinStatement(member, now) {
-    const kind = kindFor(member.focus_minutes);
+  // Rubble for a session that was given up or abandoned half-way; `refund` is
+  // what clearing it will pay back.
+  async function ruinStatement(member, now, refund) {
+    const kind = modelOf(member.focus_model, kindFor(member.focus_minutes)).kind;
     const spot = (await loadPlanner(member.group_id)).place(member.id, kind, newDistrictId, { allocate: false });
     return [
-      "UPDATE members SET ruin_until = ?, ruin_kind = ?, ruin_x = ?, ruin_y = ? WHERE id = ?",
-      [now + RUIN_TIME, kind, spot?.x ?? null, spot?.y ?? null, member.id],
+      "UPDATE members SET ruin_until = ?, ruin_kind = ?, ruin_x = ?, ruin_y = ?, ruin_refund = ? WHERE id = ?",
+      [now + RUIN_TIME, kind, spot?.x ?? null, spot?.y ?? null, refund, member.id],
     ];
   }
   // Start-up: every member gets a district and every older building a spot, in
@@ -664,6 +693,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM feedback_events WHERE feedback_id IN (SELECT id FROM feedback WHERE member_id = ?)", [id]],
       ["DELETE FROM feedback WHERE member_id = ?", [id]],
       ["DELETE FROM achievements WHERE member_id = ?", [id]],
+      ["DELETE FROM bricks_log WHERE member_id = ?", [id]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
@@ -1146,25 +1176,50 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       return json({ ok: true });
     }
     // Giving up, or leaving the app in build mode, ends the session without minutes.
+    // In the first two minutes it costs nothing; after that the site collapses,
+    // half of the materials come back now and 30% when the rubble is cleared.
     if (action === "cancel" || action === "wither") {
-      let strictRunning = false;
+      let outcome = { withered: false, refunded: 0, pending: 0 };
       await retrying(async () => {
         const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
         if (!current || current.focus_end !== m.focus_end) fail("Odak oturumu değişti. Sayfayı yenile.", 409);
-        strictRunning = current.focus_strict === 1 && current.focus_end > now;
+        const strictRunning = current.focus_strict === 1 && current.focus_end > now;
+        const early = strictRunning && now - (current.focus_end - current.focus_minutes * 60000) < GRACE;
+        const cost = strictRunning ? current.focus_cost || 0 : 0;
+        const item = modelOf(current.focus_model, kindFor(current.focus_minutes));
+        outcome = {
+          withered: strictRunning && !early,
+          refunded: early ? cost : refundNow(cost),
+          pending: strictRunning && !early ? refundLater(cost) : 0,
+        };
+        const ref = sessionRef(m.id, current.focus_end);
         return [
-        ...(strictRunning
-          ? [await ruinStatement(m, now), systemMessage(m.group_id, m.id, WITHERED), bumpVillage(m.group_id)]
-          : []),
-        ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0 WHERE id = ?", [m.id]],
-        bump(m.group_id),
+          ...(outcome.withered
+            ? [await ruinStatement(current, now, outcome.pending), systemMessage(m.group_id, m.id, WITHERED), bumpVillage(m.group_id)]
+            : []),
+          ...(outcome.refunded
+            ? [
+                ["UPDATE members SET bricks = bricks + ? WHERE id = ?", [outcome.refunded, m.id]],
+                ledgerRow(m.id, outcome.refunded, "refund", ref, early ? `${item.name}: ilk 2 dakikada vazgeçildi, tam iade` : `${item.name} yarım kaldı: %50 iade`, now),
+              ]
+            : []),
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0 WHERE id = ?", [m.id]],
+          bump(m.group_id),
         ];
       }, m.group_id);
-      return changed(m, { withered: strictRunning });
+      return changed(m, outcome);
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
     if (m.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
-    let minutes = Number(body.minutes),
+    // Build mode builds something from the catalogue; its materials are paid now.
+    // Older apps send only minutes: they get the plain building of that size.
+    const strict = body.strict === true;
+    let item = null;
+    if (strict && body.model != null) {
+      item = BY_ID[body.model];
+      if (!item) fail("Bu yapı katalogda yok.");
+    }
+    let minutes = item && body.minutes == null && !body.joinMember ? minutesOf(item) : Number(body.minutes),
       end;
     if (body.joinMember) {
       const other = await db.get("SELECT focus_end FROM members WHERE id = ? AND group_id = ?", [
@@ -1175,24 +1230,51 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         fail("Bu odak oturumu sona ermek üzere. Yeni oturum başlat.");
       end = other.focus_end;
       minutes = Math.floor((end - now) / 60000);
+      if (strict && item && !fits(item, minutes)) fail("Kalan süre bu yapıya yetmez. Daha küçük bir yapı seç.");
+      if (strict && !item) item = BY_ID.kulube;
     } else {
       if (![25, 50, 75].includes(minutes)) fail("25, 50 veya 75 dakika seç.");
+      if (item && minutesOf(item) !== minutes) fail(`${item.name} ${minutesOf(item)} dakikalık bir yapı.`);
+      if (strict && !item) item = BY_ID[DEFAULT_MODEL[kindFor(minutes)]];
       end = now + minutes * 60000;
     }
+    const cost = item?.cost || 0;
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
     await retrying(async () => {
-      const current = await db.get("SELECT focus_end FROM members WHERE id = ?", [m.id]);
+      const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);
       if (!current || current.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
+      if (cost > current.bricks) fail(`${item.name} için ${cost - current.bricks} tuğla eksik.`);
       return [
       // An expired, uncredited session is settled before the new one starts.
       ...(await settleFocus(m.group_id, now, m.id)),
       [
-        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ? WHERE id = ?",
-        [end, minutes, body.strict === true ? 1 : 0, now, seed, m.id],
+        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ? WHERE id = ?",
+        [end, minutes, strict ? 1 : 0, now, seed, item?.id ?? null, cost, cost, m.id],
       ],
+      ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
+      bump(m.group_id),
       ];
     }, m.group_id);
     return changed(m);
+  });
+
+  // The member's own tuğla: balance, recent movements, what they have built (the
+  // collection) and, with ?session=<end>, the receipt of that session.
+  route("GET", "/wallet", async ({ member, url }) => {
+    const session = Number(url.searchParams.get("session")) || 0;
+    const [me, log, built, receipt] = await db.read([
+      ["SELECT bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund FROM members WHERE id = ?", [member.id]],
+      ["SELECT delta, reason, ref, note, created FROM bricks_log WHERE member_id = ? ORDER BY created DESC, rowid DESC LIMIT 40", [member.id]],
+      ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, count(*) AS n FROM buildings WHERE member_id = ? GROUP BY 1", [member.id]],
+      ["SELECT delta, reason, note, created FROM bricks_log WHERE member_id = ? AND ref = ? ORDER BY rowid", [member.id, sessionRef(member.id, session)]],
+    ]);
+    return json({
+      bricks: me[0]?.bricks || 0,
+      ruin: me[0]?.ruinUntil > Date.now() ? { until: me[0].ruinUntil, refund: me[0].ruinRefund } : null,
+      log,
+      built: Object.fromEntries(built.map((b) => [b.model, b.n])),
+      receipt: session ? receipt : [],
+    });
   });
 
   route("POST", "/push", async ({ member, body, ctx }) => {
@@ -1359,7 +1441,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [districts, buildings, liked, ruins] = await db.read([
       ["SELECT id, member_id AS memberId, dx, dy, seed FROM districts WHERE group_id = ? ORDER BY created, id", [gid]],
       [
-        `SELECT id, member_id AS memberId, kind, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched
+        `SELECT id, member_id AS memberId, kind, model, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched
          FROM buildings WHERE group_id = ? AND touched > ? AND pos_x IS NOT NULL${range} ORDER BY touched`,
         [gid, since, ...rangeArgs],
       ],
@@ -1375,7 +1457,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       partial: !!after,
       until: buildings.reduce((t, b) => Math.max(t, b.touched), after),
       districts: districts.map((d) => [d.id, d.memberId, d.dx, d.dy, d.seed]),
-      buildings: buildings.map((b) => [b.id, b.memberId, b.kind, b.seed, b.x, b.y, b.facing, b.minutes, b.created, b.likes, mine.has(b.id) ? 1 : 0]),
+      buildings: buildings.map((b) => [b.id, b.memberId, b.kind, b.seed, b.x, b.y, b.facing, b.minutes, b.created, b.likes, mine.has(b.id) ? 1 : 0, b.model]),
       ruins: ruins.map((r) => [r.id, r.kind, r.x, r.y, r.until]),
     });
   });
@@ -1497,7 +1579,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         `SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username, m.badge,
            MAX(s.seen) AS seen, count(s.token) AS devices,
            (SELECT COALESCE(SUM(minutes), 0) FROM focus_log f WHERE f.member_id = m.id) AS minutes,
-           (SELECT count(*) FROM buildings b WHERE b.member_id = m.id) AS builds
+           (SELECT count(*) FROM buildings b WHERE b.member_id = m.id) AS builds, m.bricks
          FROM members m LEFT JOIN sessions s ON s.member_id = m.id GROUP BY m.id ORDER BY m.joined`,
         [],
       ],
@@ -1569,11 +1651,29 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, dev: body.dev === true });
   }, false);
 
+  // Batur can correct a balance (or hand out a prize); it is logged like any other movement.
+  route("POST", "/owner/members/:id/bricks", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const member = await db.get("SELECT id, group_id, bricks FROM members WHERE id = ?", [params.id]);
+    if (!member) fail("Kişi bulunamadı.", 404);
+    const delta = Math.trunc(Number(body.delta));
+    if (!delta || Math.abs(delta) > 100000) fail("Geçerli bir miktar yaz.");
+    if (member.bricks + delta < 0) fail("Bakiye eksiye düşemez.");
+    const note = text(body.note || "", 60, "Not");
+    await db.batch([
+      ["UPDATE members SET bricks = bricks + ? WHERE id = ?", [delta, member.id]],
+      ledgerRow(member.id, delta, "grant", null, note || null, Date.now()),
+      bump(member.group_id),
+    ]);
+    onChange(member.group_id);
+    return json({ ok: true, bricks: member.bricks + delta });
+  }, false);
+
   // Everything, as JSON: a copy Batur can keep. Secrets that open accounts or
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {
@@ -1601,6 +1701,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         "UPDATE members SET focus_end = CASE WHEN focus_end > 0 THEN ? ELSE 0 END, focus_beat = CASE WHEN ? THEN 0 ELSE ? END, status_until = 0 WHERE name = ?",
         [Date.now() - 1000, body.away ? 1 : 0, Date.now() - 1000, body.name],
       );
+      return json({ ok: true });
+    }, false);
+
+  if (config.testHooks)
+    route("POST", "/__test/age", async ({ body }) => {
+      // The named person's session started long ago and is still running.
+      await db.run("UPDATE members SET focus_end = ?, focus_beat = ? WHERE name = ? AND focus_end > 0", [Date.now() + 5 * 60000, Date.now(), body.name]);
       return json({ ok: true });
     }, false);
 
@@ -1642,7 +1749,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           if (!allowed) fail("Bu kaynaktan işlem yapılamaz.", 403);
         }
         const joining = /^\/(groups|join|transfer\/claim|owner\/claim)$/.test(path);
-        limit(`${ip}:${joining ? "join" : "write"}`, joining ? 15 : 120);
+        // Test-only clock controls are not real traffic.
+        if (!(config.testHooks && path.startsWith("/__test/"))) limit(`${ip}:${joining ? "join" : "write"}`, joining ? 15 : 120);
       }
       const match = routes
         .map((r) => ({ r, m: r.method === method && path.match(r.pattern) }))

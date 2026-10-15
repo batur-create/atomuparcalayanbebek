@@ -4,6 +4,8 @@
 // Because `a() + b()` evaluates left to right, the same drawing code paints in
 // the same order on both backends.
 
+import { BY_ID } from "../shared/catalog.js";
+
 export const COS = 0.866,
   SIN = 0.5;
 export const projector = (o) => (x, y, z) => [
@@ -85,6 +87,30 @@ export function ellipse(cx, cy, rx, ry, fill, opacity = 1) {
   return "";
 }
 export const circle = (cx, cy, r, fill, opacity = 1) => ellipse(cx, cy, r, r, fill, opacity);
+/** Text painted along a wall between world points a and b: sheared onto the
+ *  face, sized to fit, and never mirrored. */
+export function wallText(P, a, b, label, maxSize, fill) {
+  let p = P(...a),
+    q = P(...b);
+  if (q[0] < p[0]) [p, q] = [q, p];
+  const span = Math.max(0.01, q[0] - p[0]),
+    k = (q[1] - p[1]) / span,
+    size = Math.min(maxSize, span / (0.66 * label.length));
+  if (size < 2.6) return "";
+  const mx = (p[0] + q[0]) / 2,
+    my = (p[1] + q[1]) / 2;
+  if (!CTX)
+    return `<text transform="matrix(1 ${k.toFixed(3)} 0 1 ${f(mx)} ${f(my)})" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-weight="800" font-size="${f(size)}" fill="${fill}">${label}</text>`;
+  CTX.save();
+  CTX.transform(1, k, 0, 1, mx, my);
+  CTX.font = `800 ${size}px system-ui, sans-serif`;
+  CTX.textAlign = "center";
+  CTX.textBaseline = "middle";
+  CTX.fillStyle = TINT(fill);
+  CTX.fillText(label, 0, 0);
+  CTX.restore();
+  return "";
+}
 export function rect(x, y, w, h, fill, radius = 0) {
   if (!CTX) return `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" rx="${radius}" fill="${fill}"/>`;
   CTX.beginPath();
@@ -143,7 +169,7 @@ export function rng(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-export function spec(kind, seed) {
+function baseSpec(kind, seed) {
   const r = rng(seed + 11);
   const roof = ROOFS[Math.floor(r() * ROOFS.length)];
   const pick = (list) => WALLS[list[Math.floor(r() * list.length)]];
@@ -152,6 +178,22 @@ export function spec(kind, seed) {
   if (kind === "house")
     return { kind, hw: 2, h: 3.7, floors: 2, roofType: "gable", roof, wall: pick(["brick", "cream", "sage", "wood"]), chimney: r() < 0.85, lit: r() < 0.35 };
   return { kind: "cottage", hw: 1.6, h: 2.2, floors: 1, roofType: "gable", roof, wall: pick(["brick", "wood", "cream", "sage"]), chimney: r() < 0.75, lit: r() < 0.35 };
+}
+/** Everything needed to draw a building. `model`: its catalogue entry, which
+ *  fixes the wall, roof colour and fittings; the seed varies the rest. */
+export function spec(kind, seed, model) {
+  const base = baseSpec(kind, seed);
+  const look = BY_ID[model]?.look;
+  if (!look) return base;
+  return {
+    ...base,
+    model,
+    look,
+    wall: look.wall ? WALLS[look.wall] : base.wall,
+    roof: look.roof != null ? ROOFS[look.roof] : base.roof,
+    chimney: look.chimney ?? base.chimney,
+    flag: look.flag === false ? null : base.flag,
+  };
 }
 export const topOf = (sp) => 0.3 + sp.h;
 export const ridgeOf = (sp) => topOf(sp) + (sp.roofType === "pyramid" ? 2.4 : sp.hw * 0.85);
@@ -200,6 +242,14 @@ export function doorSVG(P, sp) {
     poly(faceY(P, w + 0.03, d - 0.22, d - 0.1, 0.3 + h * 0.48, 0.3 + h * 0.48 + 0.12), "#f2c14e")
   );
 }
+// Window spans of floor k on the door wall (front) and the side wall.
+function spansOf(sp, k) {
+  if (sp.look?.clock && k === sp.floors - 1) return { front: [], side: [] };
+  return {
+    front: sp.kind === "tower" ? (k ? [[-0.32, 0.32]] : []) : sp.kind === "house" ? [[-1.55, -0.95], [0.95, 1.55]] : [[0.55, 1.12]],
+    side: sp.kind === "tower" ? [[-0.32, 0.32]] : sp.kind === "house" ? [[-1.4, -0.8], [0.8, 1.4]] : [[-0.9, -0.32]],
+  };
+}
 // Every window of the building, ordered bottom to top so they light up in turn.
 function windowList(P, sp) {
   const w = sp.hw,
@@ -208,9 +258,7 @@ function windowList(P, sp) {
   for (let k = 0; k < sp.floors; k++) {
     const z0 = 0.3 + k * fh + fh * 0.36,
       z1 = z0 + Math.min(0.85, fh * 0.4);
-    const front =
-      sp.kind === "tower" ? (k ? [[-0.32, 0.32]] : []) : sp.kind === "house" ? [[-1.55, -0.95], [0.95, 1.55]] : [[0.55, 1.12]];
-    const side = sp.kind === "tower" ? [[-0.32, 0.32]] : sp.kind === "house" ? [[-1.4, -0.8], [0.8, 1.4]] : [[-0.9, -0.32]];
+    const { front, side } = spansOf(sp, k);
     front.forEach(([a, b]) => list.push({ face: faceY(P, w + 0.02, a, b, z0, z1), frame: faceY(P, w + 0.015, a - 0.08, b + 0.08, z0 - 0.08, z1 + 0.08), sill: [P(a - 0.14, w + 0.05, z0 - 0.1), P(b + 0.14, w + 0.05, z0 - 0.1)], cross: [[P((a + b) / 2, w + 0.03, z0), P((a + b) / 2, w + 0.03, z1)], [P(a, w + 0.03, (z0 + z1) / 2), P(b, w + 0.03, (z0 + z1) / 2)]] }));
     side.forEach(([a, b]) => list.push({ face: faceX(P, w + 0.02, a, b, z0, z1), frame: faceX(P, w + 0.015, a - 0.08, b + 0.08, z0 - 0.08, z1 + 0.08), sill: [P(w + 0.05, a - 0.14, z0 - 0.1), P(w + 0.05, b + 0.14, z0 - 0.1)], cross: [[P(w + 0.03, (a + b) / 2, z0), P(w + 0.03, (a + b) / 2, z1)], [P(w + 0.03, a, (z0 + z1) / 2), P(w + 0.03, b, (z0 + z1) / 2)]] }));
   }
@@ -224,8 +272,7 @@ export function openingList(sp) {
   for (let k = 0; k < sp.floors; k++) {
     const z0 = 0.3 + k * fh + fh * 0.36,
       z1 = z0 + Math.min(0.85, fh * 0.4);
-    const front = sp.kind === "tower" ? (k ? [[-0.32, 0.32]] : []) : sp.kind === "house" ? [[-1.55, -0.95], [0.95, 1.55]] : [[0.55, 1.12]];
-    const side = sp.kind === "tower" ? [[-0.32, 0.32]] : sp.kind === "house" ? [[-1.4, -0.8], [0.8, 1.4]] : [[-0.9, -0.32]];
+    const { front, side } = spansOf(sp, k);
     front.forEach(([a, b]) => list.push({ face: "y", a, b, z0, z1 }));
     side.forEach(([a, b]) => list.push({ face: "x", a, b, z0, z1 }));
   }
@@ -293,6 +340,7 @@ export function chimneySVG(P, sp, t = 1) {
 // Where smoke leaves the chimney, in building coordinates.
 export const chimneyTop = (sp) => [sp.hw + 0.18, 0, ridgeOf(sp) + 0.6];
 export function flagSVG(P, sp, t = 1, wave = 0) {
+  if (!sp.flag) return "";
   const apex = ridgeOf(sp),
     top = apex + 1.3 * t;
   const a = P(0, 0, top),
@@ -313,7 +361,7 @@ export function gardenSVG(P, sp, seed = 1) {
     const y = w + 0.62 + i * 0.5;
     s += poly([P(-0.24, y - 0.17, 0.012), P(0.24, y - 0.17, 0.012), P(0.24, y + 0.17, 0.012), P(-0.24, y + 0.17, 0.012)], "#e3d8c2");
   }
-  s += bush(-w - 0.1, w + 0.75, Math.abs(size) * 0.42, "#5e9b4c") + bush(-w + 0.5, w + 0.9, Math.abs(size) * 0.3, "#73b05c");
+  if (!sp.look?.tables && !sp.look?.beds) s += bush(-w - 0.1, w + 0.75, Math.abs(size) * 0.42, "#5e9b4c") + bush(-w + 0.5, w + 0.9, Math.abs(size) * 0.3, "#73b05c");
   if (r() < 0.8) s += bush(w + 0.75, w - 0.2, Math.abs(size) * 0.36, "#5e9b4c");
   const flowers = ["#e98aa8", "#ffd36e", "#ffffff", "#b39ddb"];
   for (let i = 0; i < 5; i++) {
@@ -322,10 +370,226 @@ export function gardenSVG(P, sp, seed = 1) {
   }
   return s;
 }
+// ---------- fittings: what makes a catalogue building itself ----------
+const doorTop = (sp) => 0.3 + (sp.kind === "tower" ? 2.1 : 1.85);
+const doorHalf = (sp) => (sp.kind === "cottage" ? 0.36 : 0.45);
+// A striped canopy over the door, with a scalloped front edge.
+function awningSVG(P, sp) {
+  const w = sp.hw,
+    color = sp.look.awning,
+    x0 = -doorHalf(sp) - 0.55,
+    x1 = doorHalf(sp) + 0.55,
+    zt = doorTop(sp) + 0.32,
+    zb = zt - 0.36,
+    out = 0.62,
+    n = 6;
+  let s = "";
+  for (let i = 0; i < n; i++) {
+    const a = x0 + ((x1 - x0) * i) / n,
+      b = x0 + ((x1 - x0) * (i + 1)) / n;
+    s += poly([P(a, w + 0.01, zt), P(b, w + 0.01, zt), P(b, w + out, zb), P(a, w + out, zb)], i % 2 ? "#fbf5ea" : color);
+    s += poly([P(a, w + out, zb), P(b, w + out, zb), P((a + b) / 2, w + out, zb - 0.13)], i % 2 ? "#e9dfcd" : color);
+  }
+  return s + seg(P(x0, w + out, zb), P(x1, w + out, zb), "#00000033", 0.8);
+}
+// Window boxes with flowers under every window.
+function flowerBoxesSVG(P, sp, detail) {
+  const w = sp.hw,
+    colors = ["#e98aa8", "#ffd36e", "#ffffff", "#c4577a"];
+  let s = "";
+  openingList(sp).forEach((o, i) => {
+    if (o.z0 <= 0.3) return; // the door
+    const z0 = o.z0 - 0.2,
+      z1 = o.z0 - 0.07;
+    s += o.face === "y" ? box(P, o.a - 0.06, w, o.b + 0.06, w + 0.17, z0, z1, WOOD) : box(P, w, o.a - 0.06, w + 0.17, o.b + 0.06, z0, z1, WOOD);
+    if (detail < 2) return;
+    for (let j = 0; j < 3; j++) {
+      const t = o.a + ((o.b - o.a) * (j + 0.5)) / 3;
+      const [cx, cy] = o.face === "y" ? P(t, w + 0.09, z1 + 0.06) : P(w + 0.09, t, z1 + 0.06);
+      s += circle(cx, cy, 1.6, "#5e9b4c") + circle(cx, cy - 1.2, 1.2, colors[(i + j) % colors.length]);
+    }
+  });
+  return s;
+}
+// Louvred shutters either side of every window.
+function shuttersSVG(P, sp) {
+  const w = sp.hw,
+    c = sp.look.shutters;
+  let s = "";
+  for (const o of openingList(sp)) {
+    if (o.z0 <= 0.3) continue; // the door
+    for (const [a, b] of [[o.a - 0.3, o.a - 0.06], [o.b + 0.06, o.b + 0.3]]) {
+      s += poly(o.face === "y" ? faceY(P, w + 0.025, a, b, o.z0 - 0.04, o.z1 + 0.04) : faceX(P, w + 0.025, a, b, o.z0 - 0.04, o.z1 + 0.04), c);
+      for (let z = o.z0 + 0.1; z < o.z1; z += 0.14)
+        s += o.face === "y" ? seg(P(a + 0.03, w + 0.03, z), P(b - 0.03, w + 0.03, z), "#00000030", 0.7) : seg(P(w + 0.03, a + 0.03, z), P(w + 0.03, b - 0.03, z), "#00000030", 0.7);
+    }
+  }
+  return s;
+}
+// A first-floor balcony on the door wall: slab, French door, railing.
+function balconySVG(P, sp) {
+  const w = sp.hw,
+    z = 0.3 + sp.h / sp.floors;
+  let s = poly(faceY(P, w + 0.015, -0.32, 0.32, z, z + 1.25), FRAME) + poly(faceY(P, w + 0.02, -0.26, 0.26, z + 0.04, z + 1.2), GLASS);
+  s += seg(P(0, w + 0.03, z + 0.05), P(0, w + 0.03, z + 1.2), FRAME, 1);
+  s += box(P, -0.95, w, 0.95, w + 0.52, z - 0.08, z + 0.02, STONE);
+  for (let x = -0.9; x <= 0.91; x += 0.3) s += seg(P(x, w + 0.5, z + 0.02), P(x, w + 0.5, z + 0.5), "#3c4146", 1);
+  s += seg(P(0.92, w + 0.05, z + 0.5), P(0.92, w + 0.5, z + 0.5), "#3c4146", 1.4);
+  return s + seg(P(-0.92, w + 0.5, z + 0.5), P(0.92, w + 0.5, z + 0.5), "#3c4146", 1.4);
+}
+// Clock faces on both visible walls of the top floor.
+function clockSVG(P, sp, detail) {
+  const w = sp.hw,
+    fh = sp.h / sp.floors,
+    zc = 0.3 + fh * (sp.floors - 0.5),
+    r = Math.min(0.62, fh * 0.36);
+  const ring = (face, rad) =>
+    Array.from({ length: 16 }, (_, i) => {
+      const a = (i / 16) * Math.PI * 2,
+        u = Math.cos(a) * rad,
+        v = zc + Math.sin(a) * rad;
+      return face === "y" ? P(u, w + 0.03, v) : P(w + 0.03, u, v);
+    });
+  let s = "";
+  for (const face of ["y", "x"]) {
+    s += poly(ring(face, r + 0.09), "#4a4f55") + poly(ring(face, r), "#fbf5ea");
+    if (detail < 2) continue;
+    const at = (u, v) => (face === "y" ? P(u, w + 0.04, zc + v) : P(w + 0.04, u, zc + v));
+    for (let i = 0; i < 12; i += 3) s += seg(at(Math.cos((i / 12) * Math.PI * 2) * r * 0.8, Math.sin((i / 12) * Math.PI * 2) * r * 0.8), at(Math.cos((i / 12) * Math.PI * 2) * r * 0.92, Math.sin((i / 12) * Math.PI * 2) * r * 0.92), "#4a4f55", 1);
+    s += seg(at(0, 0), at(0, r * 0.7), "#2f3338", 1.4) + seg(at(0, 0), at(r * 0.5, -r * 0.1), "#2f3338", 1.4);
+  }
+  return s;
+}
+// Windmill sails on an axle from the door wall, turning with `angle`.
+export function sailsSVG(P, sp, angle = 0.4, detail = 2, blades = 4) {
+  const w = sp.hw,
+    zc = 0.3 + sp.h - 0.55,
+    y = w + 0.6,
+    L = 3.1,
+    W = 0.62;
+  let s = box(P, -0.12, w, 0.12, y, zc - 0.12, zc + 0.12, WOOD);
+  for (let i = 0; i < blades; i++) {
+    const a = angle + (i * Math.PI) / 2,
+      dx = Math.cos(a),
+      dz = Math.sin(a),
+      nx = -dz,
+      nz = dx;
+    const at = (t, o) => P(dx * t + nx * o, y, zc + dz * t + nz * o);
+    s += poly([at(0.5, 0.04), at(L, 0.04), at(L, W), at(0.5, W)], "#fffaf0", 0.95);
+    if (detail >= 2) {
+      for (let t = 0.85; t < L; t += 0.37) s += seg(at(t, 0.04), at(t, W), "#8a6a48", 0.8);
+      s += seg(at(0.5, W), at(L, W), "#8a6a48", 1);
+    }
+    s += seg(at(0.12, 0), at(L + 0.1, 0), "#6b4f34", 2.2);
+  }
+  const [hx, hy] = P(0, y + 0.02, zc);
+  return s + circle(hx, hy, 2.4, "#6b4f34");
+}
+// A columned porch the height of the ground floor, its name on the entablature.
+export function porticoSVG(P, sp, detail = 2) {
+  const w = sp.hw,
+    z1 = 0.3 + sp.h / sp.floors,
+    depth = 0.95;
+  const MARBLE = ["#fbf8f1", "#e6dfd0", "#cfc5b2"];
+  // The porch floor and its steps; the wall behind the columns lies in shade.
+  let s = box(P, -1.8, w, 1.8, w + depth + 0.2, 0, 0.15, STONE) + box(P, -1.7, w, 1.7, w + depth, 0.15, 0.3, STONE);
+  s += poly(faceY(P, w + 0.012, -1.7, 1.7, 0.3, z1), "#8f877a", 0.55);
+  for (const x of [-1.5, -0.82, 0.82, 1.5]) {
+    s += box(P, x - 0.17, w + depth - 0.42, x + 0.17, w + depth - 0.08, 0.3, 0.42, MARBLE);
+    s += box(P, x - 0.13, w + depth - 0.38, x + 0.13, w + depth - 0.12, 0.42, z1 - 0.1, MARBLE);
+    s += box(P, x - 0.18, w + depth - 0.43, x + 0.18, w + depth - 0.07, z1 - 0.1, z1, MARBLE);
+    if (detail >= 2)
+      for (const o of [-0.06, 0.05]) s += seg(P(x + o, w + depth - 0.115, 0.45), P(x + o, w + depth - 0.115, z1 - 0.12), "#d3cab8", 0.6);
+  }
+  // Entablature with the name, and a pediment above it.
+  s += box(P, -1.85, w, 1.85, w + depth, z1, z1 + 0.34, MARBLE);
+  s += poly([P(-1.85, w + depth, z1 + 0.34), P(1.85, w + depth, z1 + 0.34), P(0, w + depth, z1 + 0.95)], MARBLE[1]);
+  s += poly([P(-1.85, w, z1 + 0.34), P(-1.85, w + depth, z1 + 0.34), P(0, w + depth, z1 + 0.95), P(0, w, z1 + 0.95)], MARBLE[0]);
+  s += poly([P(0, w, z1 + 0.95), P(0, w + depth, z1 + 0.95), P(1.85, w + depth, z1 + 0.34), P(1.85, w, z1 + 0.34)], MARBLE[2]);
+  if (detail >= 2 && sp.look.sign) s += wallText(P, [-1.7, w + depth + 0.01, z1 + 0.17], [1.7, w + depth + 0.01, z1 + 0.17], sp.look.sign, 10, "#5c5246");
+  return s;
+}
+// Two café tables with parasols where the garden would be.
+function tablesSVG(P, sp) {
+  const w = sp.hw;
+  let s = "";
+  for (const [x, y] of [[-w + 0.15, w + 1.2], [-w + 0.95, w + 0.75]]) {
+    for (const [cx, cy] of [[x - 0.32, y], [x + 0.32, y]]) s += box(P, cx - 0.09, cy - 0.09, cx + 0.09, cy + 0.09, 0, 0.32, WOOD);
+    const top = Array.from({ length: 10 }, (_, i) => P(x + Math.cos((i / 10) * Math.PI * 2) * 0.24, y + Math.sin((i / 10) * Math.PI * 2) * 0.24, 0.5));
+    s += seg(P(x, y, 0), P(x, y, 0.5), "#6b5e52", 1.2) + poly(top, "#f7ecd6");
+    s += seg(P(x, y, 0.5), P(x, y, 1.45), "#6b5e52", 0.9);
+    const rim = Array.from({ length: 8 }, (_, i) => [x + Math.cos((i / 8) * Math.PI * 2) * 0.55, y + Math.sin((i / 8) * Math.PI * 2) * 0.55]);
+    rim.forEach(([ax, ay], i) => {
+      const [bx, by] = rim[(i + 1) % 8];
+      s += poly([P(ax, ay, 1.22), P(bx, by, 1.22), P(x, y, 1.52)], i % 2 ? "#fbf5ea" : sp.look.awning);
+    });
+  }
+  return s;
+}
+// Raised vegetable beds in front, sprouting in rows.
+function bedsSVG(P, sp) {
+  const w = sp.hw;
+  let s = "";
+  for (let i = 0; i < 3; i++) {
+    const y = w + 0.55 + i * 0.42;
+    s += box(P, -w - 0.25, y, -0.42, y + 0.3, 0, 0.14, WOOD) + poly([P(-w - 0.2, y + 0.04, 0.141), P(-0.47, y + 0.04, 0.141), P(-0.47, y + 0.26, 0.141), P(-w - 0.2, y + 0.26, 0.141)], "#7a5a3c");
+    for (let x = -w - 0.08; x < -0.5; x += 0.24) {
+      const [cx, cy] = P(x, y + 0.15, 0.2);
+      s += circle(cx, cy, 1.5, i === 1 ? "#e07a3a" : "#6fae4f") + circle(cx - 0.8, cy - 1.2, 1.1, "#8ccf6a");
+    }
+  }
+  return s;
+}
+// A painted board on two posts in the front yard.
+function yardSignSVG(P, sp) {
+  const w = sp.hw,
+    x0 = w * 0.62 - 0.62,
+    x1 = w * 0.62 + 0.62,
+    y = w + 1.15;
+  let s = seg(P(x0 + 0.1, y, 0), P(x0 + 0.1, y, 0.95), "#6b4f34", 1.6) + seg(P(x1 - 0.1, y, 0), P(x1 - 0.1, y, 0.95), "#6b4f34", 1.6);
+  s += box(P, x0, y - 0.04, x1, y, 0.52, 1.02, ["#f7ecd6", "#ead9b8", "#d8c5a1"]);
+  s += poly(faceY(P, y + 0.002, x0 + 0.05, x1 - 0.05, 0.56, 0.98), "#fffaf0");
+  return s + wallText(P, [x0 + 0.08, y + 0.005, 0.77], [x1 - 0.08, y + 0.005, 0.77], sp.look.sign, 8, "#4a3a2c");
+}
+/** Fittings fixed to the walls and roof (drawn with the walls, before the roof). */
+export function wallFittingsSVG(P, sp, detail = 2) {
+  const look = sp.look;
+  if (!look || !detail) return "";
+  let s = "";
+  if (look.shutters && detail >= 2) s += shuttersSVG(P, sp);
+  if (look.boxes) s += flowerBoxesSVG(P, sp, detail);
+  if (look.clock) s += clockSVG(P, sp, detail);
+  if (look.balcony && detail >= 2) s += balconySVG(P, sp);
+  if (look.awning) s += awningSVG(P, sp);
+  return s;
+}
+/** Fittings standing in front of the building (drawn after the roof). */
+export function frontFittingsSVG(P, sp, detail = 2, angle = 0.4) {
+  const look = sp.look;
+  if (!look || !detail) return "";
+  let s = "";
+  if (look.sails) s += sailsSVG(P, sp, angle, detail);
+  if (look.columns) s += porticoSVG(P, sp, detail);
+  return s;
+}
+/** Fittings in the yard (with the garden). */
+export function yardFittingsSVG(P, sp, detail = 2) {
+  const look = sp.look;
+  if (!look || detail < 2) return "";
+  let s = "";
+  if (look.beds) s += bedsSVG(P, sp);
+  if (look.tables) s += tablesSVG(P, sp);
+  if (look.sign && !look.columns) s += yardSignSVG(P, sp);
+  return s;
+}
+
 /** A finished building. `detail` 2 = full, 1 = simple (far away), 0 = a block. */
 export function buildingSVG(P, sp, seed, { lit = sp.lit, detail = 2, shadowP = P } = {}) {
   if (detail === 0) return box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + roofSVG(P, sp, false);
   if (detail === 1)
-    return shadowSVG(shadowP, sp) + box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + windowsSVG(P, sp, lit, 1, false) + roofSVG(P, sp, false);
-  return shadowSVG(shadowP, sp) + foundationSVG(P, sp) + wallsSVG(P, sp) + doorSVG(P, sp) + windowsSVG(P, sp, lit) + roofSVG(P, sp) + (sp.roofType === "pyramid" ? flagSVG(P, sp) : chimneySVG(P, sp)) + gardenSVG(P, sp, seed);
+    return shadowSVG(shadowP, sp) + box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + windowsSVG(P, sp, lit, 1, false) + wallFittingsSVG(P, sp, 1) + roofSVG(P, sp, false) + frontFittingsSVG(P, sp, 1, seed);
+  return (
+    shadowSVG(shadowP, sp) + foundationSVG(P, sp) + wallsSVG(P, sp) + doorSVG(P, sp) + windowsSVG(P, sp, lit) + wallFittingsSVG(P, sp) +
+    roofSVG(P, sp) + (sp.roofType === "pyramid" ? flagSVG(P, sp) : chimneySVG(P, sp)) + frontFittingsSVG(P, sp, 2, seed) + gardenSVG(P, sp, seed) + yardFittingsSVG(P, sp)
+  );
 }

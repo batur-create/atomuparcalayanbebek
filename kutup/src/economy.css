@@ -1,0 +1,263 @@
+/* ---------- Tuğla: balance, building picker, catalogue, receipt ---------- */
+.brick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #f3e6c8;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.building-thumb {
+  display: block;
+  flex: none;
+  aspect-ratio: 6 / 5;
+}
+.building-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The building chosen for the next session, inside the dark focus card. */
+.build-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 10px 0 4px;
+  padding: 8px 12px 8px 6px;
+  border: 1px solid rgba(214, 239, 158, 0.45);
+  border-radius: 14px;
+  background: rgba(214, 239, 158, 0.08);
+  color: #f5f2e8;
+  text-align: left;
+}
+.build-pick .building-thumb {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 10px;
+}
+.build-pick > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.build-pick b {
+  display: block;
+  font-size: 13.5px;
+}
+.build-pick small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #c9ccbb;
+}
+.build-pick-change {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #d6ef9e;
+}
+.free-note,
+.ruin-note {
+  margin: 8px 0 2px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #c9ccbb;
+}
+.ruin-note {
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(224, 122, 95, 0.14);
+  color: #f2cdbf;
+  text-align: left;
+}
+
+/* Catalogue (light modal). */
+.catalog-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+.brick-pill {
+  padding: 5px 11px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.catalog-class h3 {
+  margin: 18px 0 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.catalog-class h3 small {
+  margin-left: 6px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+.catalog-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.catalog-item .building-thumb {
+  width: 100% !important;
+  margin-bottom: 2px;
+  border-radius: 9px;
+  background: linear-gradient(#f4f7ee, #e7efdc);
+}
+.catalog-item b {
+  font-size: 13px;
+}
+.catalog-item small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.catalog-item:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.catalog-item.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.catalog-item:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+.catalog-item:disabled .building-thumb {
+  filter: grayscale(0.35) opacity(0.85);
+}
+.catalog-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.catalog-price em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4d7e63;
+}
+.catalog-price em.minus,
+.receipt-card .minus {
+  color: #b85a42;
+}
+.catalog-short {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b85a42;
+}
+.catalog-owned {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  z-index: 1;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: #4d7e63;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.catalog-rules {
+  margin-top: 16px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* The receipt after a session. */
+@keyframes receipt-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+}
+.receipt-card {
+  position: fixed;
+  z-index: 60;
+  bottom: 84px;
+  left: calc(50% + 100px);
+  transform: translateX(-50%);
+  width: min(340px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  border: 1px solid #e3dcc8;
+  border-radius: 16px;
+  background: #fffaf0;
+  box-shadow: 0 18px 60px #18171233;
+  color: var(--ink);
+  animation: receipt-in 0.3s var(--ease-spring, ease-out);
+}
+.receipt-card > .icon-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.receipt-card h3 {
+  margin: 0 28px 10px 0;
+  font-size: 14.5px;
+}
+.receipt-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px dashed #d8cfb7;
+}
+.receipt-card li,
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12.5px;
+  border-bottom: 1px dashed #e7dfca;
+}
+.receipt-card li b,
+.receipt-total b {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-total {
+  border-bottom: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+.receipt-balance {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .receipt-card {
+    left: 50%;
+    bottom: 90px;
+  }
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

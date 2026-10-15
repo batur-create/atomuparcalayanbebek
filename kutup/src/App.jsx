@@ -64,7 +64,9 @@ import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
 import { MascotCard } from "./Mascot.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
-import { KINDS, kindFor } from "./Village.jsx";
+import { kindFor } from "./Village.jsx";
+import { BY_ID, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, wageFor } from "../shared/catalog.js";
+import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
@@ -291,6 +293,7 @@ export default function App() {
   }, [session?.memberId]);
   // The last build-mode session's ending, replayed on the construction site.
   const [buildOutcome, setBuildOutcome] = useState(null);
+  const [receipt, setReceipt] = useState(null);
   // Friends who just switched to "Kütüpte" get a short glow on their card.
   const [arrived, setArrived] = useState([]);
   const lastStatus = useRef(null);
@@ -493,44 +496,54 @@ export default function App() {
   }, [me?.focusEnd, now]);
   useEffect(() => {
     if (me?.focusEnd) {
+      const item = modelOf(me.focusModel, kindFor(me.focusMinutes));
       lastFocus.current = {
         end: me.focusEnd,
         minutes: me.focusMinutes,
         strict: !!me.focusStrict,
-        kind: kindFor(me.focusMinutes),
+        kind: item.kind,
+        model: item.id,
         seed: me.focusSeed,
         week: me.focusWeek || 0,
+        cost: me.focusCost || 0,
       };
       return;
     }
     const done = lastFocus.current;
     lastFocus.current = null;
     if (!done) return;
+    const item = BY_ID[done.model];
     const outcome = (type) =>
-      setBuildOutcome({ type, kind: done.kind, seed: done.seed, at: Date.now() });
+      setBuildOutcome({ type, kind: done.kind, model: done.model, seed: done.seed, at: Date.now() });
     if (done.end > Date.now() + 2000) {
-      if (done.strict) outcome("collapsed"); // gave up or left the app
+      // Gave up or left the app; in the first two minutes nothing collapses.
+      const early = Date.now() - (done.end - done.minutes * 60000) < GRACE + 5000;
+      if (done.strict && !early) outcome("collapsed");
+      if (done.strict && done.cost) setReceipt({ end: done.end, type: early ? "cancelled" : "collapsed", at: Date.now() });
       return;
     }
     if ((me?.focusWeek || 0) > done.week) {
       if (done.strict) outcome("built");
       notify(
         done.strict
-          ? `${KINDS[done.kind].label} bitti! ${KINDS[done.kind].emoji} Köyüne eklendi.`
+          ? `${item.name} bitti! ${item.emoji} Köyüne eklendi.`
           : `İşte bu! ${done.minutes} dakika cebinde. Şimdi bir nefes. 🌱`,
       );
       navigator.vibrate?.([120, 80, 120]);
+      // The receipt waits for the handover ceremony to get going.
+      setReceipt({ end: done.end, type: done.strict ? "built" : "plain", delay: done.strict ? 2600 : 600, at: Date.now() });
     } else if (done.strict) {
       outcome("collapsed");
       notify("İnşaat çöktü 🧱 Bu sefer telefon kazandı.");
+      setReceipt({ end: done.end, type: "collapsed", delay: 1200, at: Date.now() });
     }
   }, [me?.focusEnd]);
   const buildRun = useMemo(
     () =>
       me?.focusStrict && me.focusEnd > Date.now()
-        ? { endsAt: me.focusEnd, minutes: me.focusMinutes, kind: kindFor(me.focusMinutes), seed: me.focusSeed }
+        ? { endsAt: me.focusEnd, minutes: me.focusMinutes, ...(({ kind, id }) => ({ kind, model: id }))(modelOf(me.focusModel, kindFor(me.focusMinutes))), seed: me.focusSeed }
         : null,
-    [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed],
+    [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed, me?.focusModel],
   );
   // Build mode: keep the screen on, report presence, and let the building collapse
   // if the app is left for more than a few seconds (switching apps, closing the tab).
@@ -1311,6 +1324,11 @@ export default function App() {
                                     action: "start",
                                     joinMember: m.id,
                                     strict: storage.get("kutup-fidan-on") !== "0",
+                                    model:
+                                      fits(BY_ID[pickedModel()], Math.floor((m.focusEnd - now) / 60000)) &&
+                                      BY_ID[pickedModel()].cost <= (me?.bricks || 0)
+                                        ? pickedModel()
+                                        : "kulube",
                                   },
                                   "Aynı ritimdesiniz. İyi çalışmalar!",
                                 ),
@@ -1460,6 +1478,7 @@ export default function App() {
           mutate={mutate}
         />
       )}
+      {receipt && <ReceiptCard key={receipt.at} receipt={receipt} close={() => setReceipt(null)} />}
       {toast && (
         <div role="status" className="toast">
           <span>✦</span>
@@ -1548,37 +1567,54 @@ function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false 
     </button>
   );
 }
+// The building picked for the next build-mode session (kept on this device).
+const pickedModel = () => (BY_ID[storage.get("kutup-model")] ? storage.get("kutup-model") : "kulube");
 function FocusCard({ me, members, now, requireMember, mutate, compact }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
-    [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0");
+    [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
+    [model, setModel] = useState(pickedModel),
+    [picking, setPicking] = useState(false);
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
-  const running = !!me?.focusEnd && !finishing,
-    seconds = running
-      ? Math.max(0, Math.ceil((me.focusEnd - now) / 1000))
-      : duration * 60;
-  const progress = running
-    ? 1 - seconds / ((me.focusMinutes || duration) * 60)
-    : 0;
+  const running = !!me?.focusEnd && !finishing;
+  // Build mode: the building sets the length. Free focus: you pick it.
+  const item = running ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : BY_ID[model];
+  const length = fidan ? minutesOf(item) : duration;
+  const seconds = running ? Math.max(0, Math.ceil((me.focusEnd - now) / 1000)) : length * 60;
+  const progress = running ? 1 - seconds / ((me.focusMinutes || length) * 60) : 0;
   const growing = running && !!me?.focusStrict;
-  const building = KINDS[kindFor(running ? me.focusMinutes : duration)];
+  const bricks = me?.bricks || 0,
+    short = fidan && !running ? Math.max(0, item.cost - bricks) : 0;
+  const early = growing && now - (me.focusEnd - me.focusMinutes * 60000) < GRACE;
+  const ruin = me?.ruinUntil > now && me?.ruinRefund > 0 ? me.ruinRefund : 0;
+  const pick = (id) => {
+    setModel(id);
+    storage.set("kutup-model", id);
+  };
   const control = async () => {
-    if (
-      growing &&
-      !confirm("Pes edersen bina yıkılır ve bu seansın dakikaları yazılmaz. Emin misin?")
-    )
-      return;
+    if (growing) {
+      const cost = me.focusCost || 0,
+        name = item.name.toLocaleLowerCase("tr");
+      const warning = early
+        ? `İlk 2 dakikadasın: vazgeçersen ${cost ? `${cost} 🧱 malzemenin tamamı geri gelir` : "hiçbir şey kaybetmezsin"}.`
+        : cost
+          ? `Pes edersen ${name} yıkılır ve bu seansın dakikaları yazılmaz.\n\n${refundNow(cost)} 🧱 hemen geri gelir; enkazı bir sonraki seansın kaldırınca ${refundLater(cost)} 🧱 daha. ${cost - refundNow(cost) - refundLater(cost)} 🧱 gider.`
+          : `Pes edersen ${name} yıkılır ve bu seansın dakikaları yazılmaz.`;
+      if (!confirm(`${warning}\n\nEmin misin?`)) return;
+    }
     if (!running && fidan) keepScreenOn(); // needs the tap itself on some phones
     setBusy(true);
     await mutate(
       "/focus",
-      { action: running ? "cancel" : "start", minutes: duration, strict: fidan },
+      running ? { action: "cancel" } : { action: "start", minutes: length, strict: fidan, ...(fidan ? { model: item.id } : {}) },
       running
         ? growing
-          ? "İnşaat çöktü 🧱 Bir dahakine sonuna kadar!"
+          ? early
+            ? "Vazgeçtin; malzeme kasana geri döndü. Hazır olunca yeniden."
+            : "İnşaat çöktü 🧱 Bir dahakine sonuna kadar!"
           : "Seans durdu. Hazır olunca yeniden başla."
         : fidan
-          ? `Temel atıldı 🏗️ ${building.label} yükseliyor. Uygulamada kal, ekran açık kalacak.`
+          ? `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
           : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧",
     );
     setBusy(false);
@@ -1591,9 +1627,12 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
         <span>
           <Headphones size={18} /> ODAK MODU
         </span>
+        <span className="brick-chip" title="Tuğla: odaklandıkça kazanılır, yapılara harcanır" aria-label={`${bricks} tuğla`}>
+          🧱 {bricks}
+        </span>
         {growing ? (
-          <span className="focus-plant" aria-label={`${building.label} inşa ediliyor`}>
-            {building.emoji}
+          <span className="focus-plant" aria-label={`${item.name} inşa ediliyor`}>
+            {item.emoji}
           </span>
         ) : (
           <span className="focus-spark">✧</span>
@@ -1601,7 +1640,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
       </div>
       <h2>
         {growing
-          ? `${building.label} yükseliyor.`
+          ? `${item.name} yükseliyor.`
           : running
             ? "Şu an kendin için."
             : "Bir küçük odak arası."}
@@ -1644,19 +1683,42 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           </span>
         </div>
       </div>
-      {!running && !finishing && (
-        <div className="duration-options">
-          {[25, 50, 75].map((n) => (
-            <button
-              key={n}
-              className={duration === n ? "active" : ""}
-              aria-pressed={duration === n}
-              onClick={() => setDuration(n)}
-            >
-              {n} dk
-            </button>
-          ))}
-        </div>
+      {!running && !finishing && fidan && (
+        <button type="button" className="build-pick" onClick={() => setPicking(true)}>
+          <BuildingThumb id={item.id} size={62} />
+          <span>
+            <b>
+              {item.emoji} {item.name}
+            </b>
+            <small>
+              {CLASSES[item.class].label} · {length} dk · {item.cost ? `${item.cost} 🧱 malzeme` : "bedava"} · bitince +{wageFor(length)} 🧱
+            </small>
+          </span>
+          <span className="build-pick-change">Değiştir</span>
+        </button>
+      )}
+      {!running && !finishing && !fidan && (
+        <>
+          <div className="duration-options">
+            {[25, 50, 75].map((n) => (
+              <button
+                key={n}
+                className={duration === n ? "active" : ""}
+                aria-pressed={duration === n}
+                onClick={() => setDuration(n)}
+              >
+                {n} dk
+              </button>
+            ))}
+          </div>
+          <p className="free-note">Serbest çalışma: yapı yok, risk yok, maaşın yarısı ({duration} dk → {wageFor(duration, false)} 🧱).</p>
+        </>
+      )}
+      {!running && !finishing && ruin > 0 && (
+        <p className="ruin-note">Köyünde enkaz var. Bir sonraki seansın onu kaldırır ve +{ruin} 🧱 geri gelir.</p>
+      )}
+      {picking && (
+        <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} />
       )}
       {!compact && !running && !finishing && (
         <button
@@ -1668,19 +1730,20 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
             storage.set("kutup-fidan-on", fidan ? "0" : "1");
           }}
         >
-          <span aria-hidden="true">{fidan ? building.emoji : "🏗️"}</span>
+          <span aria-hidden="true">{fidan ? item.emoji : "🏗️"}</span>
           <span>
             <b>İnşaat modu {fidan ? "açık" : "kapalı"}</b>
             <small>
               {fidan
-                ? `${duration} dk sonunda köyüne bir ${building.label.toLocaleLowerCase("tr")} eklenir. Ekran açık kalır; 10 saniyeden uzun çıkarsan yıkılır.`
-                : "Odaklandıkça bir bina yükselir: 25 dk kulübe, 50 dk iki katlı ev, 75 dk kule. Bitenler köyüne kalır."}
+                ? `${length} dk sonunda köyüne ${item.name.toLocaleLowerCase("tr")} eklenir ve tam maaşın yatar. Ekran açık kalır; 10 saniyeden uzun çıkarsan yıkılır.`
+                : "Açınca katalogdan bir yapı seçersin: tam maaş ve köyüne bir bina. Kapalıyken serbest çalışırsın: yarım maaş."}
             </small>
           </span>
         </button>
       )}
       <Busy
         loading={busy || finishing}
+        disabled={short > 0}
         className="btn focus-start"
         onClick={() => requireMember(control)}
       >
@@ -1693,11 +1756,15 @@ function FocusCard({ me, members, now, requireMember, mutate, compact }) {
           ? "Dakikalar cebine yazılıyor…"
           : running
             ? growing
-              ? "Pes et (bina yıkılır)"
+              ? early
+                ? "Vazgeç (bedava)"
+                : "Pes et (bina yıkılır)"
               : "Seansı durdur"
-            : fidan
-              ? `Temeli at ${building.emoji}`
-              : "Hadi odaklanalım"}
+            : short > 0
+              ? `${short} 🧱 eksik · başka yapı seç`
+              : fidan
+                ? `Temeli at ${item.emoji}`
+                : "Hadi odaklanalım"}
       </Busy>
       <p className="focus-bottom">
         {members.length ? (
