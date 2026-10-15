@@ -221,7 +221,7 @@ function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
 }
 
 // ---------- the Köy tab ----------
-export function VillagePanel({ me, members, groupId, village, like, run, outcome, notify, session, error, retry }) {
+export function VillagePanel({ me, members, groupId, village, like, run, outcome, notify, session, error, retry, week }) {
   const [moving, setMoving] = useState(null); // { building, spots } while moving one's own building
   const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId, spots: moving?.spots });
   const [picked, setPicked] = useState(null),
@@ -378,6 +378,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
               />
             )}
           </div>
+          {week && <MonumentBar week={week} members={members} stages={village?.monument || 0} />}
           <p className="village-caption">
             {!me
               ? "Herkesin kendi mahallesi var; odaklandıkça köy büyür. Binaya dokun, kimin olduğunu gör."
@@ -413,6 +414,37 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
         </>
       )}
     </section>
+  );
+}
+
+// The team's shared monument: this week's minutes together against the goal.
+function MonumentBar({ week, members, stages }) {
+  const total = members.reduce((t, m) => t + (m.focusWeek || 0), 0),
+    goal = week.goal,
+    master = members.find((m) => m.id === week.master?.memberId);
+  return (
+    <div className={`monument-bar ${week.monument ? "done" : ""}`}>
+      {week.monument ? (
+        <span>
+          🏛️ <b>Bu haftanın ortak anıtı dikildi!</b> Meydandaki Milli Kütüphane anıtı {stages}. katında; herkese +50 🧱 yattı.
+        </span>
+      ) : (
+        <span>
+          🏛️ Haftanın ortak anıtı: <b>{total} / {goal} dk</b> · hep birlikte tamamlanınca herkese +50 🧱 ve meydandaki anıt bir kat yükselir.
+        </span>
+      )}
+      {!week.monument && (
+        <div className="monument-track" aria-hidden="true">
+          <i style={{ width: `${Math.min(100, Math.round((total / goal) * 100))}%` }} />
+        </div>
+      )}
+      {master && (
+        <span className="monument-master">
+          {" "}
+          👑 Geçen haftanın ustası: <b>{master.name}</b> ({Math.round((week.master.minutes / 60) * 10) / 10} sa)
+        </span>
+      )}
+    </div>
   );
 }
 

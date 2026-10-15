@@ -293,6 +293,31 @@ async function auditFixture() {
   return { sqlite, app, joined, headers };
 }
 
+test("the week: Haftanın Ustası is crowned once, and the shared monument pays everyone", async () => {
+  const { sqlite, app, headers } = await auditFixture();
+  const me = sqlite.prepare("SELECT id FROM members").get().id;
+  const week = weekStart(Date.now());
+  // Last week: two hours of focus. (The group's first read already looked at an empty last week.)
+  sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)").run("w1", me, 120, week - 2 * 86400000);
+  sqlite.exec("DELETE FROM weekly");
+  const crowned = (await call(app, "/state", { headers })).data;
+  assert.deepEqual(crowned.week.master, { memberId: me, minutes: 120 });
+  await call(app, "/state", { headers });
+  assert.equal(sqlite.prepare("SELECT bricks FROM members").get().bricks, 50, "crowned exactly once");
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM unlocks WHERE source = 'master'").get().n, 1, "with a blueprint");
+  assert.ok(crowned.messages.some((m) => m.text.startsWith("geçen haftanın ustası oldu 👑")));
+  // This week: 580 minutes already; a 25-minute session crosses the 600 goal of a team of one.
+  assert.equal(crowned.week.goal, 600);
+  sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)").run("w2", me, 580, week + 1000);
+  await call(app, "/focus", { method: "POST", headers, body: { action: "start", model: "kulube", strict: true } });
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ?").run(Date.now() - 1000, Date.now() - 1000);
+  const done = (await call(app, "/state", { headers })).data;
+  assert.equal(done.week.monument.by, me);
+  assert.equal(sqlite.prepare("SELECT SUM(delta) AS d FROM bricks_log WHERE reason = 'monument'").get().d, 50);
+  assert.equal((await call(app, "/village", { headers })).data.monument, 1);
+  assert.ok(done.messages.some((m) => m.text.startsWith("haftanın ortak anıtını tamamladı 🏛️")));
+});
+
 test("an expired presence changes the revision seen by idle polling clients", async () => {
   const { sqlite, app, headers } = await auditFixture();
   const here = await call(app, "/presence", { method: "POST", headers, body: { status: "here" } });

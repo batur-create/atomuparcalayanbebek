@@ -94,6 +94,12 @@ export const imeceBonus = (friends, cafe = false) => Math.round(Math.min(IMECE_M
 /** Streak bonus on the wage of the n-th session in a row: 2nd +10%, 3rd on +20%. */
 export const streakBonus = (n) => (n >= 3 ? 0.2 : n === 2 ? 0.1 : 0);
 
+// The week: Haftanın Ustası (most minutes last week) and the team's shared
+// monument (a weekly goal of minutes, together).
+export const MASTER_PRIZE = 50;
+export const MONUMENT_PRIZE = 50;
+export const monumentGoal = (members) => Math.max(600, 250 * members);
+
 /** Wage for a session: longer sessions pay more per minute (25 → 25, 50 → 55, 75 → 90). */
 export function wageFor(minutes, strict = true) {
   const rate = 1 + 0.2 * Math.min(1, Math.max(0, (minutes - 25) / 50));
@@ -112,6 +118,8 @@ export const REASONS = {
   imece: "İmece",
   effect: "Yapı etkisi",
   blueprint: "Nadir plan",
+  master: "Haftanın Ustası",
+  monument: "Ortak anıt",
   cost: "Malzeme",
   refund: "İade",
   "ruin-refund": "Enkaz kaldırıldı",

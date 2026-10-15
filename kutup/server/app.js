@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { dayStreak, statsOf } from "./stats.js";
-import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, refundLater, refundNow, stateOf, streakBonus, wageFor } from "../shared/catalog.js";
+import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, stateOf, streakBonus, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -286,7 +286,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   const memberColumns =
     "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, updated, badge";
   async function readSnapshot(groupId, now) {
-    const [groups, members, focus, messages, reactions, plans, attendees, villages] =
+    const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly] =
       await db.read([
         ["SELECT id, name, invite, rev, village_rev AS villageRev FROM groups WHERE id = ?", [groupId]],
         [`SELECT ${memberColumns} FROM members WHERE group_id = ? ORDER BY joined`, [groupId]],
@@ -319,6 +319,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           "SELECT member_id AS id, SUM(buildings) AS n FROM districts WHERE group_id = ? AND member_id IS NOT NULL GROUP BY member_id",
           [groupId],
         ],
+        ["SELECT kind, week, member_id AS memberId, minutes FROM weekly WHERE group_id = ? AND week >= ?", [groupId, weekStart(now) - 7 * DAY]],
       ]);
     const group = groups[0];
     if (!group) return null;
@@ -334,8 +335,18 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (!going.has(a.planId)) going.set(a.planId, []);
       going.get(a.planId).push(a.memberId);
     }
+    const lastWeek = weekStart(now) - 7 * DAY;
+    const master = weekly.find((w) => w.kind === "master" && w.week === lastWeek);
+    const monument = weekly.find((w) => w.kind === "monument" && w.week === weekStart(now));
     return {
       group,
+      // Last week's Haftanın Ustası is crowned on the first read of a new week.
+      crownDue: !master,
+      week: {
+        master: master?.memberId ? { memberId: master.memberId, minutes: master.minutes } : null,
+        goal: monumentGoal(members.length),
+        monument: monument ? { by: monument.memberId, at: monument.week } : null,
+      },
       expiredFocus: members.some((m) => m.focusEnd > 0 && m.focusEnd <= now),
       expiredPresence: members.some((m) => m.status !== "away" && m.status_until <= now),
       members: members.map(({ status_until, ...m }) => {
@@ -348,6 +359,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           focusWeek: totals.get(m.id)?.week || 0,
           buildsWeek: totals.get(m.id)?.builds || 0,
           buildings: built.get(m.id) || 0,
+          crown: !!master?.memberId && master.memberId === m.id,
         };
       }),
       messages: messages
@@ -441,6 +453,77 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     );
     const half = (end - start) / 2;
     return new Set(rows.filter((r) => Math.min(r.b, end) - Math.max(r.a, start) >= half).map((r) => r.id)).size;
+  }
+
+  // Haftanın Ustası: the most minutes in the week that just ended earns a
+  // crown for the week, +50 tuğla and a blueprint. Every write is guarded by the
+  // week's row, so concurrent readers crown exactly once.
+  async function crownMaster(groupId, now) {
+    const week = weekStart(now) - 7 * DAY;
+    const top = await db.get(
+      `SELECT f.member_id AS id, SUM(f.minutes) AS minutes FROM focus_log f JOIN members m ON m.id = f.member_id
+       WHERE m.group_id = ? AND f.created >= ? AND f.created < ? GROUP BY f.member_id ORDER BY minutes DESC, MIN(f.created) LIMIT 1`,
+      [groupId, week, week + 7 * DAY],
+    );
+    const open = ["NOT EXISTS (SELECT 1 FROM weekly WHERE group_id = ? AND week = ? AND kind = 'master')", [groupId, week]];
+    const statements = [];
+    if (top) {
+      const have = (await db.all("SELECT model FROM unlocks WHERE member_id = ?", [top.id])).map((u) => u.model);
+      const pool = blueprintPool(now).filter((item) => !have.includes(item.id));
+      const plan = pool.length ? pool[Math.floor((crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32) * pool.length)] : null;
+      const hours = Math.round((top.minutes / 60) * 10) / 10;
+      statements.push(
+        [`UPDATE members SET bricks = bricks + ? WHERE id = ? AND ${open[0]}`, [MASTER_PRIZE, top.id, ...open[1]]],
+        [
+          `INSERT INTO bricks_log (id, member_id, delta, reason, ref, note, created) SELECT ?, id, ?, 'master', NULL, ?, ? FROM members WHERE id = ? AND ${open[0]}`,
+          [randomHex(16), MASTER_PRIZE, `👑 Haftanın Ustası: ${hours} saat odak`, now, top.id, ...open[1]],
+        ],
+        ...(plan
+          ? [
+              [`INSERT OR IGNORE INTO unlocks (member_id, model, source, created) SELECT id, ?, 'master', ? FROM members WHERE id = ? AND ${open[0]}`, [plan.id, now, top.id, ...open[1]]],
+              [
+                `INSERT INTO bricks_log (id, member_id, delta, reason, ref, note, created) SELECT ?, id, 0, 'blueprint', NULL, ?, ? FROM members WHERE id = ? AND ${open[0]}`,
+                [randomHex(16), `🎁 Ustalık ödülü: ${plan.name} planı`, now, top.id, ...open[1]],
+              ],
+            ]
+          : []),
+        [
+          `INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, group_id, id, ?, 'system', ? FROM members WHERE id = ? AND ${open[0]}`,
+          [crypto.randomUUID(), `geçen haftanın ustası oldu 👑 ${hours} saat odak! +${MASTER_PRIZE} 🧱${plan ? ` ve ${plan.name} planı` : ""}`, now, top.id, ...open[1]],
+        ],
+      );
+    }
+    statements.push(
+      ["INSERT OR IGNORE INTO weekly (group_id, week, kind, member_id, minutes, created) VALUES (?, ?, 'master', ?, ?, ?)", [groupId, week, top?.id ?? null, top?.minutes ?? 0, now]],
+      bump(groupId),
+    );
+    await db.batch(statements);
+  }
+  // The shared monument: once the team's minutes this week reach the goal,
+  // everyone gets +50 and the Milli Kütüphane monument on the square grows a stage.
+  async function monumentStatements(groupId, now, finishing, memberId) {
+    const week = weekStart(now);
+    const [done, total, people] = await db.read([
+      ["SELECT 1 AS ok FROM weekly WHERE group_id = ? AND week = ? AND kind = 'monument'", [groupId, week]],
+      ["SELECT COALESCE(SUM(f.minutes), 0) AS m FROM focus_log f JOIN members m ON m.id = f.member_id WHERE m.group_id = ? AND f.created >= ?", [groupId, week]],
+      ["SELECT count(*) AS n FROM members WHERE group_id = ?", [groupId]],
+    ]);
+    const minutes = total[0].m + finishing;
+    if (done.length || minutes < monumentGoal(people[0].n)) return [];
+    const open = ["NOT EXISTS (SELECT 1 FROM weekly WHERE group_id = ? AND week = ? AND kind = 'monument')", [groupId, week]];
+    return [
+      [`UPDATE members SET bricks = bricks + ? WHERE group_id = ? AND ${open[0]}`, [MONUMENT_PRIZE, groupId, ...open[1]]],
+      [
+        `INSERT INTO bricks_log (id, member_id, delta, reason, ref, note, created) SELECT lower(hex(randomblob(16))), id, ?, 'monument', NULL, '🏛️ Ortak anıt tamamlandı: herkese', ? FROM members WHERE group_id = ? AND ${open[0]}`,
+        [MONUMENT_PRIZE, now, groupId, ...open[1]],
+      ],
+      [
+        `INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, group_id, id, ?, 'system', ? FROM members WHERE id = ? AND ${open[0]}`,
+        [crypto.randomUUID(), `haftanın ortak anıtını tamamladı 🏛️ Herkese +${MONUMENT_PRIZE} 🧱`, now, memberId, ...open[1]],
+      ],
+      ["INSERT OR IGNORE INTO weekly (group_id, week, kind, member_id, minutes, created) VALUES (?, ?, 'monument', ?, ?, ?)", [groupId, week, memberId, minutes, now]],
+      bumpVillage(groupId),
+    ];
   }
 
   // Which rare building's blueprint, if any, a finished session turns up.
@@ -565,6 +648,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       for (const [delta, reason, note] of pay) statements.push(ledgerRow(s.id, delta, reason, ref, note, now, s.ends));
     }
     if (planner) statements.push(bumpVillage(groupId));
+    const finishing = sessions.filter((s) => s.minutes > 0 && (!s.strict || s.beat >= s.ends - BEAT_GRACE));
+    if (finishing.length)
+      statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.minutes, 0), finishing.at(-1).id)));
     statements.push(
       [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0 WHERE ${due}`, args],
       bump(groupId),
@@ -630,9 +716,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ]);
       state = await readSnapshot(groupId, now);
     }
+    if (state?.crownDue) {
+      await crownMaster(groupId, now).catch(() => {});
+      state = await readSnapshot(groupId, now);
+    }
     if (!state) return null;
     delete state.expiredFocus;
     delete state.expiredPresence;
+    delete state.crownDue;
     return { ...state, serverTime: now };
   }
 
@@ -1541,7 +1632,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const area = box.length === 4 && box.every(Number.isFinite);
     const range = area ? " AND pos_x BETWEEN ? AND ? AND pos_y BETWEEN ? AND ?" : "";
     const rangeArgs = area ? [box[0], box[2], box[1], box[3]] : [];
-    const [districts, buildings, liked, ruins] = await db.read([
+    const [districts, buildings, liked, ruins, stages] = await db.read([
       ["SELECT id, member_id AS memberId, dx, dy, seed FROM districts WHERE group_id = ? ORDER BY created, id", [gid]],
       [
         `SELECT id, member_id AS memberId, kind, model, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched
@@ -1553,6 +1644,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [member.id, gid, since],
       ],
       ["SELECT id, ruin_kind AS kind, ruin_x AS x, ruin_y AS y, ruin_until AS until FROM members WHERE group_id = ? AND ruin_until > ?", [gid, now]],
+      ["SELECT count(*) AS n FROM weekly WHERE group_id = ? AND kind = 'monument'", [gid]],
     ]);
     const mine = new Set(liked.map((l) => l.id));
     return json({
@@ -1562,6 +1654,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       districts: districts.map((d) => [d.id, d.memberId, d.dx, d.dy, d.seed]),
       buildings: buildings.map((b) => [b.id, b.memberId, b.kind, b.seed, b.x, b.y, b.facing, b.minutes, b.created, b.likes, mine.has(b.id) ? 1 : 0, b.model]),
       ruins: ruins.map((r) => [r.id, r.kind, r.x, r.y, r.until]),
+      monument: stages[0]?.n || 0,
     });
   });
 
@@ -1822,7 +1915,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks", "weekly"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {

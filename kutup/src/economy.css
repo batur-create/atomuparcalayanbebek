@@ -362,3 +362,49 @@ button.brick-pill {
 .catalog-owned.soon {
   background: #b9772a;
 }
+
+/* Haftanın Ustası wears a crown for a week. */
+.avatar {
+  position: relative;
+}
+.avatar-crown {
+  position: absolute;
+  top: -0.55em;
+  right: -0.35em;
+  font-size: 0.62em;
+  font-style: normal;
+  line-height: 1;
+  transform: rotate(18deg);
+  filter: drop-shadow(0 1px 1px #0003);
+  pointer-events: none;
+}
+/* The team's shared monument for the week. */
+.monument-bar {
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--paper);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.monument-bar b {
+  font-variant-numeric: tabular-nums;
+}
+.monument-track {
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+.monument-track i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #d4a24c, #f2c14e);
+}
+.monument-bar.done {
+  border-color: #e3c26a;
+  background: #fff8e6;
+}

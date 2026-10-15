@@ -1321,6 +1321,7 @@ export default function App() {
                   outcome={buildOutcome}
                   notify={notify}
                   session={session}
+                  week={data.week}
                 />
                 <AmbientSound />
                 <WeekBoard members={data.members} me={me} />
@@ -2549,6 +2550,7 @@ function MemberModal({ member, now, close, mutate }) {
         <Avatar member={member} size="large" />
         <Badge status={member.status} />
         <h3>{member.note || "Küçük adımlar, büyük işler."}</h3>
+        {member.crown && <p className="crown-line">👑 Geçen haftanın ustası</p>}
         <p>
           <MapPin size={16} />
           {member.status === "coming"

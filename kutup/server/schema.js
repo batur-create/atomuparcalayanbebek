@@ -191,6 +191,11 @@ export const migrations = [
   [
     "CREATE TABLE unlocks (member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, model TEXT NOT NULL, source TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(member_id, model))",
   ],
+  // 18 — the week: Haftanın Ustası ('master', for the week that ended) and the
+  // team's shared monument ('monument', the week its goal was reached).
+  [
+    "CREATE TABLE weekly (group_id TEXT NOT NULL, week INTEGER NOT NULL, kind TEXT NOT NULL, member_id TEXT, minutes INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, PRIMARY KEY(group_id, week, kind))",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

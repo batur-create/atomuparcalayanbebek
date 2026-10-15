@@ -57,6 +57,7 @@ export function Avatar({ member, size = "", className = "" }) {
     >
       {member?.avatar || "🪐"}
       {dev && <i className="dev-orbit" />}
+      {member?.crown && <i className="avatar-crown">👑</i>}
     </span>
   );
 }

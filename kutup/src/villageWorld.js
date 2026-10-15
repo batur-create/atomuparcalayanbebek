@@ -43,6 +43,7 @@ export function mergeVillage(prev, raw) {
     districts,
     buildings: [...buildings.values()].filter((b) => owners.has(b.memberId)).sort((a, b) => a.created - b.created),
     ruins: raw.ruins.map(([memberId, kind, x, y, until]) => ({ memberId, kind, x, y, until })),
+    monument: raw.monument ?? prev?.monument ?? 0,
   };
 }
 
@@ -304,11 +305,30 @@ function ruinArt(view, x, y, seed) {
   seg(P(-1.9, 1.9, 0.6), P(1.9, 1.9, 0.6), "#f2c14e", 2.2);
   seg(P(1.9, -1.9, 0.6), P(1.9, 1.9, 0.6), "#f2c14e", 2.2);
 }
-function plazaArt(view) {
+// The Milli Kütüphane monument on the square: every week the team reaches its
+// shared goal adds a stage (columns, entablature, a tier, the roof, the gold
+// finial), so the monument is a record of the weeks done together.
+function plazaArt(view, stages = 0) {
   const P = view.at(0, 0);
-  // The Milli Kütüphane's foundation: the monument rises here later.
+  const MARBLE = ["#f4efe6", "#ddd6c8", "#c6bdad"];
   box(P, -2.6, -2.6, 2.6, 2.6, 0, 0.35, ["#e9e2d4", "#d6ccb9", "#c2b6a0"]);
   box(P, -1.7, -1.7, 1.7, 1.7, 0.35, 0.6, ["#f2ece0", "#e2d8c6", "#cfc3ad"]);
+  if (stages >= 1) for (const [x, y] of [[-1.3, -1.3], [1.3, -1.3], [-1.3, 1.3], [1.3, 1.3], [0, 1.3], [1.3, 0]]) box(P, x - 0.16, y - 0.16, x + 0.16, y + 0.16, 0.6, 2.2, MARBLE);
+  if (stages >= 2) box(P, -1.65, -1.65, 1.65, 1.65, 2.2, 2.5, MARBLE);
+  if (stages >= 3) {
+    box(P, -1.05, -1.05, 1.05, 1.05, 2.5, 3.3, ["#efe8da", "#d9cfbd", "#c3b7a1"]);
+    for (const t of [-0.5, 0, 0.5]) poly([P(t - 0.12, 1.06, 2.7), P(t + 0.12, 1.06, 2.7), P(t + 0.12, 1.06, 3.1), P(t - 0.12, 1.06, 3.1)], "#5c5246");
+  }
+  if (stages >= 4) {
+    const apex = P(0, 0, 4.4);
+    poly([P(-1.25, 1.25, 3.3), P(1.25, 1.25, 3.3), apex], "#b9a68a");
+    poly([P(1.25, -1.25, 3.3), P(1.25, 1.25, 3.3), apex], "#a08d72");
+  }
+  if (stages >= 5) {
+    seg(P(0, 0, 4.4), P(0, 0, 5.1), "#c99622", 2);
+    const [gx, gy] = P(0, 0, 5.2);
+    circle(gx, gy, Math.abs(P(0, 0, 1)[1] - P(0, 0, 0)[1]) * 0.28, "#f2c14e");
+  }
   box(P, 2.9, 1.4, 3.05, 1.55, 0, 1.2, WOOD);
   box(P, 3.05, 0.6, 3.12, 2.3, 0.8, 1.5, ["#f3e3c3", "#e9d2a8", "#d2b685"]);
 }
@@ -355,7 +375,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     for (let i = 0; i < 32; i++) ring.push([Math.cos((i / 32) * Math.PI * 2) * PLAZA, Math.sin((i / 32) * Math.PI * 2) * PLAZA]);
     fillShape(v, ring, PLAZA_STONE, PLAZA_RING, 0.35);
   } });
-  add(standing, { type: "plaza", depth: 0, x: 0, y: 0, bbox: boxOf(0, 0, 6, 6, 3, 4), draw: plazaArt });
+  add(standing, { type: "plaza", depth: 0, x: 0, y: 0, bbox: boxOf(0, 0, 6, 6, 6.5, 4), draw: (v) => plazaArt(v, village.monument || 0) });
   for (let i = 0; i < 4; i++) {
     const a = Math.PI / 4 + (i * Math.PI) / 2,
       x = Math.cos(a) * (PLAZA - 0.6),
