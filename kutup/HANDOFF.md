@@ -29,7 +29,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 ```
 kutup/
   server/app.js     Tüm API: Fetch Request/Response + async DB adaptörü (all/get/run/read/batch). Node ve Worker'da aynı kod.
-  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 12). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
+  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 20). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
                     D1 yüzünden her eleman TEK SQL ifadesi olmalı.
   server/push.js    Web Push (Web Crypto)
   server/sqlite.js  node:sqlite adaptörü
@@ -64,9 +64,9 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (68 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (87 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
-npm run test:browser # gerçek tarayıcı, 18 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
+npm run test:browser # gerçek tarayıcı, 30 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
@@ -110,6 +110,84 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 > - Astra `astra/gorevler` dalında çalışıyor ve kendi başına yayınlayabiliyor.
 > - Her yayından önce iki dalı birleştir (`git fetch` ve `git merge origin/astra/gorevler`); aksi hâlde birinin işi geri gider.
 > - Göç numaraları sırayla, en son yayınlananın arkasına eklenir.
+
+### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
+
+**Durum: duraklatıldı.** Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Yeni sohbette Batur "devam" ya da açık bir onay vermeden hiçbir şey çalıştırma. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
+
+**Batur'un çalışma kuralları:**
+- Paketleri arka arkaya yap. Her önemli adımda: test → (göç varsa önce yedek) → deploy → canlı duman testi → commit + push → iş panosunu güncelle.
+- Kredi: arada `get_usage` ile bak; %99'a gelmeden yayınla ve checkpoint al.
+- İş ortasında attığı fikirler ilhamdır: panoda en uygun sıraya koy, uyumlu olanları birleştir, mevcut işe devam et.
+- **iOS öncelikli** (Bensu, Zeynep, Sıla iPhone kullanıyor): iOS Safari + ana ekran PWA; Fullscreen API'ye güvenme; safe-area; ≥44px dokunma alanı; hover'a bağlı kontrol yok; push gereken yerde "Paylaş → Ana Ekrana Ekle" gibi adım adım rehber.
+- Soru yağmuru yok. Gerçekten Batur'a ait bir karar varsa seçenekli tek soru.
+
+**Güvenlik (değişmez):** `ADMIN_KEY`'i (`kutup/data/batur-key-canli.txt`) asla ekrana ya da sohbete yazma, betikte dosyadan oku. Gerçek üyeleri ve verilerini koru. `main` dalına dokunma. `kutup/data/` commit'lenmez. Canlı D1'e doğrudan yazma; yalnızca API ve owner uçlarını kullan. Göçten önce yedek al (betik aşağıda). Canlı `ADMIN_KEY`'i ve davetleri değiştirme.
+
+**Bu dönemde gelenler (hepsi canlı):**
+- **Tuğla ekonomisi** (`shared/catalog.js`, göç 14–18):
+  - Katalogdan bina seçilir; malzeme başta, ücret bitişte ödenir. Sınıflar: küçük 25, orta 50, büyük 75 dk (en az 25). Serbest mod yarım ücret.
+  - Yarım kalan iş: %50 hemen, %30 enkaz toplanınca (3 gün), %20 zarar. İlk 2 dk vazgeçmek bedava (çay molası kullanılmadıysa).
+  - Bonuslar: günlük bonus; seri (2. seans +%10, 3. ve sonrası +%20, ara en fazla 10.5 dk); imece (arkadaş başına +%5, kahvehane ile +%8, en fazla +%20); atölye etkileri (fırın, sahaf, değirmen, kütüphane).
+  - Nadir yapılar ve planlar (blueprint: %10 şans ve 7/14/30 seri), haftalık yapılar (`since`), kurucu gözlemevi.
+  - Defter `bricks_log` (`sessionRef = memberId:focusEnd`); makbuz kartı ve katalog `src/Economy.jsx`.
+- **Haftalık:** Haftanın Ustası (👑, 50 🧱) ve ortak anıt (hedef max(600, 250 × üye) dk, 50 🧱). `weekly` tablosu; `crownMaster` snapshot'ta tembel tetiklenir.
+- **İstatistikler:** `server/stats.js` + `src/Stats.jsx`. Gün serisinde haftada bir gün dondurma var.
+- **Diğer:** bina taşıma (`/buildings/:id/spots|move`), `/batur`'da 🧱 hediye ve üye başına push sayısı.
+- **İnşaat modunda cihaz kuralı:** bilgisayarda sekme ve uygulama değiştirmek serbest. Telefonda 60 sn tolerans; çıkarken ve 30. saniyede bildirim. Wake Lock'a ek olarak canvas video yedeği var (`ui.jsx keepScreenOn`); gerçek iPhone'da doğrulanmadı.
+- **Ses motoru** `src/Sound.jsx`: yağmur, kütüphane, şömine, orman, dalga, kafe, kahverengi gürültü, kara delik; tek ortak mikser.
+- **Odak ekranı** `src/FocusScreen.jsx`: tam ekran, flip saat (geri sayım / ileri sayım / saat), sahne gizli / yan / tam, yakınlaştırma, kenardan kenara gökyüzü. iOS'ta tam ekran düğmesi gizli.
+- **Gün ışığı ve mevsimler:** `villageWorld.js skyAt()` → `{night, warm, lamps, season, key}`. Kışın kar, ilkbaharda çiçek; 5 günden uzun arada evleri sarmaşık sarar.
+- **Beraber çalışma** (göç 19–20, `src/Together.jsx`):
+  - Ekip ritmi 50+10 / 25+5, saate hizalı (`POST /rhythm`; `tick` sınırları duyurur).
+  - Çay molası: seans başına bir kez; 40 dk ve üstü 5 dk, 70 dk ve üstü 10 dk.
+  - "📣 Ekibi çağır" daveti, masa arkadaşları, panoda "birlikte çalıştı" satırı.
+  - Kişiye özel kahve çağrısı ve hazır cevaplar (`CallOverlay`).
+  - Pano okunma takibi (`board_seen`, `/seen`, "görüldü"), okunmamış rozeti, uygulama içi mesaj şeridi.
+  - iOS ana ekran rehberi (`SetupCard`).
+- **Kurucu:** ✳'e 1.2 sn basılı tutmak kapıyı açar. Dev rozetli hesapta "✳ Komuta merkezi" bağlantısı ve kurucu avatarları var.
+
+**Sıradaki işler (panoda bu sırayla):**
+1. **n15 Karanlık tema:** gün batımında kendiliğinden açılsın (`skyAt`); "Benim köşem"de Otomatik / Açık / Koyu seçimi. Dikkat: `styles.css` (~4600 satır) çok sabit renk içeriyor. Mevcut değişkenler: `--paper`, `--ink`, `--muted`, `--border`, `--accent*`.
+2. **n13 Özgün avatarlar:** 24 elle çizilmiş SVG karakter (hayvanlar + kütüphane tipleri) ve aksesuarlar (gözlük, kulaklık, bere, atkı, şapka). Arka plan üyenin renginde olsun; köyde yürüyenler dahil (canvas) her yerde aynı görünsün. Kurucu karakteri olsun; emoji seçeneği kalsın.
+3. **n14 Başarımlar:**
+   - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.
+   - Gizli rozetler (kara delik kâşifi vb.).
+   - Rozet vitrini ve kutlama anı.
+   - `achievements` tablosu zaten var (göç 12).
+- n06 maskot (Kara) ayrı yürüyor; ona dokunma.
+
+**Bilinen açıklar:**
+- Wake Lock video yedeği gerçek telefonda denenmedi.
+- Kendiliğinden biten çay molasından sonra maliyet satırının ref'i makbuzla eşleşmiyor.
+- Mola, seans bitişini ritimden kaydırıyor.
+- IdleDetector kullanılmıyor.
+- Zeynep'in push aboneliği yok; uygulamayı ana ekrana ekleyip oradan açması lazım.
+- Sıla'nın ekran kilitlenince çöken inşaatı için Batur `/batur`'dan 🧱 verebilir.
+
+**Yeni tuzaklar:**
+- Git Bash heredoc'larında backtick ve tırnak bozuluyor. Yama betiklerini Write ile scratchpad'e yaz ve `node` ile çalıştır. CRLF dosyalarda `split("\r\n")` kullan; değiştirmeyi sayım kontrollü yap.
+- Sunucu kodu değişince önizlemeyi `preview_stop` + `preview_start` ile yeniden başlat; yoksa eski kod çalışır.
+- Test paketi yazma hız sınırına takılıyordu: test kancaları açıkken sınır 400/dk, `/__test/` çağrıları muaf.
+- Canlı duman testi yayından hemen sonra eski şemayı görebilir; `/health` ile yeniden dener.
+- Görsel kontrol için `tests/visual-harness.html` kullan; modülleri `performance.getEntriesByType('resource')` URL'leriyle içe aktar.
+- ODTÜ ağında deploy/push DNS hatası verebilir; Batur bağlantıyı düzeltince tekrar dene.
+
+**Yedek betiği** (scratchpad oturuma özel; yoksa `backup.mjs` olarak yeniden oluştur, `node backup.mjs "C:/Users/İzzettin/bilim-dunyasi/kutup-platform/kutup/data"` ile çalıştır):
+
+```js
+import { readFileSync, writeFileSync } from "node:fs";
+const dir = process.argv[2];
+const base = "https://kutup.ahmetbaturkaplanoglu.workers.dev";
+const key = readFileSync(`${dir}/batur-key-canli.txt`, "utf8").trim();
+const res = await fetch(`${base}/api/owner/backup`, { headers: { "x-owner-key": key, "x-kutup": "1" } });
+const text = await res.text();
+if (!res.ok) { console.log("backup failed", res.status, text.slice(0, 200)); process.exit(1); }
+const data = JSON.parse(text);
+const file = `${dir}/backup-before-astra-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+writeFileSync(file, text, { mode: 0o600 });
+console.log("saved", file.split("/").pop(), "bytes", text.length, "schema", data.schema);
+```
 
 ### Öncelikli devir: Kara yön değişikliği ve duraklama — 15 Ekim 2026
 
@@ -480,7 +558,7 @@ Batur inşaat mühendisi; iş akışı gerçekçi ve detaylı olsun, ama sahne y
 ## 8. Başlarken ilk adımlar
 
 1. `C:\Users\İzzettin\bilim-dunyasi\kutup-platform` içinde `git status` ve `git pull`; dalın `kutup-platform` olduğunu doğrula.
-2. `kutup/` içinde `npm ci` ve `npm run test:all` (41 test yeşil olmalı).
-3. Paket 1 için kısa bir teknik plan yaz (tablo değişiklikleri, arsa atama algoritması, canvas çizici yapısı), sonra uygula.
+2. `kutup/` içinde `npm ci` ve `npm run test:all` (87 test yeşil olmalı) ve `npm run test:browser` (30 kontrol).
+3. Batur onay vermeden başlama. Onay gelince 6b'deki "Güncel devir" bölümündeki sıradaki işe (n15 karanlık tema) geç, iş panosunu güncelle.
 4. Her paketten sonra: `npm run test:all` → `npm run deploy` → canlı duman testi (geçici veriyi sil) → commit ve push → Batur'a kısa özet.
 5. Kalite çıtası: telefonda akıcı ve okunaklı, mevcut sıcak kâğıt-lila tasarım diliyle uyumlu; her şey Türkçe ve samimi. Görsel ayrıntı Batur için çok önemli; aceleye getirme, ama her paketi canlıya almadan sonrakine geçme.
