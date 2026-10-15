@@ -99,6 +99,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 14 Ekim 2026)
 
+- **Kara kalite revizyonu canlı:** `4c35d95e`, Worker `fce5c608-7e05-40fb-bba6-0b71b267fd92`. Atkı düğüm/iki kumaş ucu/kat/püskül ile yeniden çizildi; doğal duraklama, gecikmeli kumaş hareketi, sakin mırlama, hızlı göz kırpma ve pozuna dönen selam eklendi. 78 test + 30 tarayıcı kontrolü, canlı sağlık ve derleme hash kontrolü geçti. Ayrıntı ASTRA_RAPOR_2.md sonunda.
+
 - **Kara canlı — 15 Ekim 2026:** Batur statik görseli istemedi; adını Kara olarak değiştirdi, doğal kara kedi/kehribar göz fenotipini onayladı. `ca7c9ff9` ile bitmap kaldırıldı, parçalı SVG rig + bakış/kafa takibi, göz kırpma, kuyruk/kulak/atkı, dokunma/pati, uzun basma/mırlama, tekrar dokunma/ters bakış, kitap/uyku/uyanma eklendi. Gerçek odak durumunda kitap okur; 45 sn kendi hâlinde kalınca uyur. Tema ve azaltılmış hareket destekli; ekran dışında animasyonlar durur. `bc5f02d3` Claude inşaat güncellemesi aynen alındı. 78 test + 30 tarayıcı kontrolü geçti. Worker `383c3a7c-3946-4d42-9bf8-a084a54d3a0e`; canlı JS/CSS yerel testli derlemeyle aynı. Sonraki yayın için `astra/gorevler` dalını dahil et. Önceki Mürekkep/WebP notu tarihsel, artık geçerli tasarım değil.
 
 
