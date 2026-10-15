@@ -62,6 +62,7 @@ import {
 } from "./ui.jsx";
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
+import { MascotCard } from "./Mascot.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { KINDS, kindFor } from "./Village.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
@@ -1193,6 +1194,7 @@ export default function App() {
                 )}
               </section>
               <div className="right-stack">
+                <MascotCard navigate={navigate} />
                 <CoffeeCard
                   requireMember={requireMember}
                   onCoffee={() => setModal("coffee")}

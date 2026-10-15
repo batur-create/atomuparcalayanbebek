@@ -1,0 +1,29 @@
+.murekkep-card{grid-column:1 / -1;position:relative;isolation:isolate;overflow:hidden;border:1px solid var(--border);border-radius:24px;background:var(--paper);padding:22px 22px 24px}
+.murekkep-label{font-size:10px;font-weight:800;letter-spacing:1.2px;display:flex;align-items:center;gap:7px;padding-right:25px;color:var(--muted)}
+.murekkep-label>span{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.murekkep-hide{position:absolute;right:9px;top:9px;z-index:2;min-width:44px;min-height:44px}
+.murekkep-scene{height:225px;position:relative;display:grid;place-items:center;margin-top:12px}
+.murekkep-orbit{position:absolute;width:190px;height:190px;border-radius:50%;background:var(--accent-soft);bottom:9px;z-index:-1}
+.murekkep-orbit:after{content:"";position:absolute;inset:-9px;border:1px dashed var(--accent);border-radius:50%;opacity:.3}
+.murekkep-star{position:absolute;left:8px;top:32px;font-size:29px;color:var(--accent);transform:rotate(-12deg)}
+.murekkep-stamp{position:absolute;right:-5px;bottom:19px;z-index:1;border:1px solid var(--border);background:var(--paper);border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;transform:rotate(-8deg);pointer-events:none}
+.murekkep-figure{margin:0;display:grid;justify-items:center}
+.murekkep-figure img{display:block;max-width:100%;height:auto;object-fit:contain}
+.murekkep-figure figcaption{font-size:13px;line-height:1.5;text-align:center}
+.murekkep-pet{background:transparent;padding:0;border-radius:45%;transition:transform .18s ease}
+.murekkep-pet:hover{transform:rotate(-3deg) translateY(-3px)}
+.murekkep-pet:active{transform:scale(.96)}
+.murekkep-copy h3{font-size:27px;letter-spacing:-1px;line-height:1.2;margin-top:10px}
+.murekkep-copy h3>span{color:var(--accent)}
+.murekkep-copy p{font-size:13px;line-height:1.6;color:var(--muted);min-height:42px;margin:9px 0 15px}
+.murekkep-hello{width:100%;min-height:44px;padding:10px 14px;background:var(--accent-soft);color:var(--accent-deep);border-radius:12px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.murekkep-peek{grid-column:1 / -1;width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--paper);border:1px solid var(--border);border-radius:18px;text-align:left;font-size:13px;font-weight:700}
+.murekkep-peek small{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:3px}
+.murekkep-peek>svg{margin-left:auto;color:var(--accent)}
+.murekkep-intro>.murekkep-figure{background:var(--accent-soft);border-radius:24px;margin:20px 0;padding:12px}
+.murekkep-tips{display:grid;gap:18px;margin-bottom:24px}
+.murekkep-tips p{display:flex;gap:12px;font-size:13px;line-height:1.6;color:var(--muted)}
+.murekkep-tips svg{color:var(--accent);flex-shrink:0;margin-top:3px}
+.murekkep-tips strong{display:block;color:var(--ink);font-weight:700}
+.murekkep-start{width:100%;justify-content:center}
+@media(prefers-reduced-motion:reduce){.murekkep-pet{transition:none}.murekkep-pet:hover,.murekkep-pet:active{transform:none}}
