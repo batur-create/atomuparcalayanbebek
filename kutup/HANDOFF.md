@@ -99,6 +99,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 14 Ekim 2026)
 
+- **Astra 2. tur — 15 Ekim 2026, canlı:** Batur'un doğrudan yayın onayıyla 1A kalıcı bildirim kuyruğu (`35ba3adb`, göç 13) ve küçük Mürekkep tanışma kartı (`82b44941`) yayınlandı. Son Worker sürümü `2bcaa74b-fe63-4e14-beef-25541ef97f8f`. 78 test, 18 mevcut tarayıcı kontrolü ve 6 maskot kontrolü geçti; canlı sağlık/görsel/JS, şema 13, cron ve test hook kapalılığı doğrulandı. **Kod `astra/gorevler` dalında; sonraki platform yayını öncesi bu dalı birleştir, eski kodla geri alma.** Korunan köy/şantiye dosyaları değişmedi. Mürekkep şimdilik sabit mor atkılı WebP + etkileşimli kart; tam SVG/poz/rozet sistemi değil. 1B ve diğer görevler bekliyor. Ayrıntılar: [ASTRA_RAPOR_2.md](ASTRA_RAPOR_2.md).
+
 ### Astra denetimi (14 Ekim 2026)
 
 **Yayında (14 Ekim 2026; Claude inceledi ve yayınladı, aşağıdaki son maddeye bak).** Ayrıntılar ve commit listesi [ASTRA_RAPOR.md](ASTRA_RAPOR.md), kurtarma prosedürü [RECOVERY.md](RECOVERY.md). `npm run test:all`: **63/63**, gerçek Chromium: **18/18**, `npm audit`: **0** bildirilen açık. `audit/2026-10-14/` sentetik verili ekran görüntülerini ve ölçümü içerir. Canlı arkadaş grubuna ve `data/` dosyalarına dokunulmadı.
