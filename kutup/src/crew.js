@@ -94,27 +94,52 @@ function barrow(P, from, to, z, time, load) {
   return tub + worker(P, x - (go ? 0.35 : -0.35), y, z, time * 1.4, 0.7, "#f6d24a", "none");
 }
 function excavator(P, x, y, time) {
-  // Tracks, turntable, cab, then boom → arm → bucket swinging into the pit.
-  let s = box(P, x - 0.55, y - 0.3, x + 0.55, y + 0.3, 0, 0.22, ["#4a4f55", "#3c4146", "#2f3338"]);
-  s += box(P, x - 0.4, y - 0.36, x + 0.4, y + 0.36, 0.22, 0.6, YELLOW);
-  s += box(P, x - 0.38, y - 0.34, x - 0.02, y + 0.04, 0.6, 1.0, YELLOW);
-  s += box(P, x - 0.36, y + 0.03, x - 0.05, y + 0.05, 0.66, 0.95, GLASS);
+  // Crawler tracks with links and sprockets, the upper structure with its
+  // counterweight and glazed cab, then boom → stick → toothed bucket, each with
+  // its hydraulic cylinder, digging into the pit and swinging out to dump.
+  let s = "";
+  for (const side of [-1, 1]) {
+    const ty = y + side * 0.32;
+    s += box(P, x - 0.62, ty - 0.11, x + 0.62, ty + 0.11, 0, 0.24, ["#3c4146", "#30353a", "#25292d"]);
+    for (let i = 0; i < 9; i++) s += seg(P(x - 0.56 + i * 0.14, ty + 0.115, 0.02), P(x - 0.56 + i * 0.14, ty + 0.115, 0.22), "#5b6168", 0.8);
+    for (const sx of [-0.5, 0.5]) {
+      const [cx, cy] = P(x + sx, ty + 0.12, 0.12);
+      s += `<circle cx="${n1(cx)}" cy="${n1(cy)}" r="3" fill="#6b7178"/>`;
+    }
+  }
+  s += box(P, x - 0.15, y - 0.15, x + 0.15, y + 0.15, 0.24, 0.32, STEEL);
+  s += box(P, x - 0.45, y - 0.38, x + 0.42, y + 0.38, 0.32, 0.68, YELLOW);
+  s += box(P, x + 0.42, y - 0.36, x + 0.6, y + 0.36, 0.32, 0.62, ["#4a4f55", "#3c4146", "#2f3338"]); // counterweight
+  s += box(P, x - 0.42, y - 0.36, x - 0.02, y + 0.02, 0.68, 1.1, YELLOW);
+  s += poly([P(x - 0.425, y - 0.3, 0.74), P(x - 0.425, y - 0.02, 0.74), P(x - 0.425, y - 0.02, 1.04), P(x - 0.425, y - 0.3, 1.04)], "#4f6f8c");
+  s += poly([P(x - 0.38, y + 0.025, 0.74), P(x - 0.06, y + 0.025, 0.74), P(x - 0.06, y + 0.025, 1.04), P(x - 0.38, y + 0.025, 1.04)], "#5b7a96");
   const swing = Math.sin(time * 0.9),
-    reach = 1.1 + 0.25 * swing,
-    lift = 0.9 + 0.5 * Math.max(0, swing);
-  const shoulder = [x - 0.45, y, 0.75],
-    elbow = [x - 0.45 - reach * 0.7, y - 0.15, 0.75 + lift],
-    wrist = [x - 0.45 - reach * 1.3, y - 0.25, 0.25 + 0.6 * Math.max(0, swing)];
-  s += seg(P(...shoulder), P(...elbow), YELLOW[1], 4.2) + seg(P(...elbow), P(...wrist), YELLOW[2], 3.2);
-  s += box(P, wrist[0] - 0.16, wrist[1] - 0.14, wrist[0] + 0.12, wrist[1] + 0.14, wrist[2] - 0.22, wrist[2], ["#5a5f66", "#4a4f55", "#3c4146"]);
+    dig = Math.max(0, swing),
+    reach = 1.15 + 0.25 * swing,
+    lift = 0.95 + 0.5 * dig;
+  const shoulder = [x - 0.4, y + 0.2, 0.62],
+    elbow = [x - 0.4 - reach * 0.7, y + 0.05, 0.62 + lift],
+    wrist = [x - 0.4 - reach * 1.3, y - 0.05, 0.15 + 0.65 * dig];
+  s += seg(P(...shoulder), P(...elbow), YELLOW[1], 5) + seg(P(...elbow), P(...wrist), YELLOW[2], 3.8);
+  s += seg(P(x - 0.25, y + 0.2, 0.7), P(elbow[0] * 0.55 + shoulder[0] * 0.45, y + 0.12, elbow[2] * 0.6 + shoulder[2] * 0.4), "#c8cdd2", 1.8);
+  s += seg(P(elbow[0] + 0.1, y + 0.05, elbow[2] + 0.12), P(wrist[0] * 0.4 + elbow[0] * 0.6, y, wrist[2] * 0.4 + elbow[2] * 0.6 + 0.1), "#c8cdd2", 1.6);
+  const [bx, by] = P(...wrist);
+  s += `<path d="M${n1(bx - 6)} ${n1(by - 4)} q6 -4 11 1 l-1 7 l-2 -2 l-1 3 l-2 -2 l-1 3 l-2 -2 l-1 3 z" fill="#555b62"/>`;
+  if (dig > 0.6) s += `<ellipse cx="${n1(bx)}" cy="${n1(by - 3)}" rx="5" ry="2" fill="#8a6a48"/>`;
   return s;
 }
 function dumpTruck(P, x, y, fill) {
-  let s = wheels(P, x - 0.5, y + 0.33, 3, 0.55);
-  s += box(P, x - 0.8, y - 0.32, x + 0.45, y + 0.32, 0.2, 0.75, ["#d0573b", "#b4472f", "#963a26"]);
-  if (fill > 0) s += box(P, x - 0.72, y - 0.26, x + 0.38, y + 0.26, 0.6, 0.6 + 0.3 * fill, ["#a07e58", "#8b6c48", "#755a3b"]);
-  s += box(P, x + 0.5, y - 0.3, x + 0.95, y + 0.3, 0.2, 0.95, CAB);
-  s += box(P, x + 0.93, y - 0.24, x + 0.96, y + 0.24, 0.6, 0.88, GLASS);
+  // A tipper: rimmed wheels, the shared cab, a ribbed body that fills with spoil.
+  let s = tyre(P, x - 0.62, y + 0.32) + tyre(P, x - 0.22, y + 0.32) + tyre(P, x + 0.78, y + 0.32);
+  s += box(P, x - 0.9, y - 0.27, x + 0.55, y + 0.27, 0.2, 0.32, ["#4a5058", "#3c4148", "#30353b"]);
+  s += box(P, x - 0.88, y - 0.32, x + 0.42, y + 0.32, 0.32, 0.8, ["#d0573b", "#b4472f", "#963a26"]);
+  for (let i = 0; i < 4; i++) s += seg(P(x - 0.7 + i * 0.32, y + 0.325, 0.36), P(x - 0.7 + i * 0.32, y + 0.325, 0.78), "#963a26", 1.2);
+  if (fill > 0) {
+    s += box(P, x - 0.82, y - 0.27, x + 0.36, y + 0.27, 0.8, 0.8 + 0.12 * fill, ["#a07e58", "#8b6c48", "#755a3b"]);
+    const [mx, my] = P(x - 0.2, y, 0.95 + 0.25 * fill);
+    s += `<ellipse cx="${n1(mx)}" cy="${n1(my + 4)}" rx="${n1(10 + 6 * fill)}" ry="${n1(3 + 2 * fill)}" fill="#a88560"/>`;
+  }
+  s += cab(P, x + 0.45, x + 0.95, y, ["#e9eef2", "#cdd5dc", "#b3bcc5"]);
   return s;
 }
 // Truck parts shared by the mixer and the pump: rimmed wheels and a cab with
