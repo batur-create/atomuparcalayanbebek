@@ -67,6 +67,7 @@ import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "./Village.jsx";
 import { BY_ID, CHAIN_GAP, CLASSES, GRACE, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
+import { MemberStats } from "./Stats.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
@@ -2543,6 +2544,7 @@ function MemberModal({ member, now, close, mutate }) {
           </div>
         </div>
       </div>
+      <MemberStats memberId={member.id} />
       <button
         className="btn primary full"
         onClick={async () => {

@@ -4,6 +4,7 @@ import { ArrowRight, Check, KeyRound, LogOut, Plus, ShieldCheck, Smartphone, Spa
 import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
+import { MemberStats } from "./Stats.jsx";
 const LOGIN_TABS = [["login", "Giriş"], ["reset", "Şifremi unuttum"], ["code", "Kodla"]];
 
 function ProfileFields({ value, setValue }) {
@@ -583,6 +584,10 @@ export function ProfileModal({ me, username, onAccount, theme, setTheme, close, 
         <Busy loading={busy} type="submit" className="btn primary full">
           Böyle çok daha ben <Sparkles size={16} />
         </Busy>
+        <details className="my-stats">
+          <summary>📊 İstatistiklerim</summary>
+          <MemberStats memberId={me.id} />
+        </details>
       </form>
       <AccountBox username={username} notify={notify} onSaved={onAccount} />
         <DeviceTransfer notify={notify} />

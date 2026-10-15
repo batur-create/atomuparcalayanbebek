@@ -414,6 +414,13 @@ export function defineSuite(target) {
     assert.equal(member(await state("bob"), "Deniz").chain, 2);
     const [, , , , x2, y2] = grown.buildings.find((b) => b[0] !== buildingId);
     assert.ok(Math.hypot(x2 - x, y2 - y) > 4, "buildings keep their distance");
+    // Statistics, for friends in the same team only.
+    const stats = (await request(`/stats/${deniz.id}`, { cookie: people.alice })).data;
+    assert.deepEqual([stats.focus.total, stats.focus.sessions, stats.focus.strict], [75, 3, 2]);
+    assert.deepEqual([stats.builds.total, stats.builds.collapses, stats.builds.success], [2, 2, 50]);
+    assert.equal(stats.focus.streak.current, 1);
+    assert.equal(stats.focus.last14.at(-1)[1], 75);
+    assert.equal((await request(`/stats/${deniz.id}`, { cookie: people.charlie })).status, 404);
   });
 
   test(`[${target}] web push reaches friends, encrypted and signed, with an arrival cooldown`, async () => {

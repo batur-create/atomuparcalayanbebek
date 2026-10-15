@@ -1,3 +1,4 @@
+import { statsOf } from "../server/stats.js";
 import { BY_ID, CATALOG, CATEGORIES, CLASSES, fits, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -88,6 +89,43 @@ test("finished Fidan modu sessions turn into village buildings on upgrade", asyn
   assert.equal(sqlite.prepare("SELECT bricks FROM members WHERE id = 'm'").get().bricks, 150);
   assert.deepEqual({ ...sqlite.prepare("SELECT delta, reason FROM bricks_log WHERE member_id = 'm'").get() }, { delta: 150, reason: "opening" });
   assert.throws(() => sqlite.exec("UPDATE members SET bricks = -1 WHERE id = 'm'"), /CHECK/);
+});
+
+test("statistics: day streaks, the best day, library visits and the usual arrival", () => {
+  const day = 86400000,
+    at = (d, h, m = 0) => Date.UTC(2026, 9, d, h - 3, m); // Türkiye local time
+  const s = statsOf({
+    now: at(15, 20),
+    focus: [
+      { minutes: 50, created: at(12, 11), strict: 1 },
+      { minutes: 25, created: at(13, 10), strict: 0 },
+      { minutes: 75, created: at(14, 16), strict: 1 },
+      { minutes: 25, created: at(14, 17), strict: 1 },
+      { minutes: 50, created: at(15, 11), strict: 1 },
+    ],
+    activity: [
+      { kind: "arrive", detail: "Adnan", created: at(14, 9, 30) },
+      { kind: "leave", created: at(14, 17, 30) },
+      { kind: "arrive", detail: "Adnan", created: at(15, 10, 10) },
+      { kind: "arrive", detail: "Müjgan", created: at(15, 13) },
+      { kind: "collapse", detail: "ev", created: at(15, 14) },
+    ],
+    built: [{ model: "kulube", n: 3, likes: 2 }, { model: "firin", n: 1, likes: 1 }],
+    ledger: [{ reason: "wage", total: 230 }, { reason: "cost", total: -70 }],
+    social: { messages: 4, plans: 1, joined: 2 },
+    bricks: 160,
+  });
+  assert.deepEqual([s.focus.total, s.focus.sessions, s.focus.longest], [225, 5, 75]);
+  assert.deepEqual(s.focus.streak, { current: 4, best: 4 });
+  assert.equal(s.focus.bestDay.minutes, 100);
+  assert.equal(s.focus.last14.length, 14);
+  assert.equal(s.focus.today, 50);
+  assert.deepEqual([s.builds.total, s.builds.likes, s.builds.collapses, s.builds.success], [4, 3, 1, 80]);
+  assert.deepEqual([s.library.visits, s.library.days, s.library.room], [3, 2, "Adnan"]);
+  assert.equal(s.library.minutes, 8 * 60 + 170 + 7 * 60, "a visit ends at leaving, the next arrival or after 8 hours");
+  assert.equal(s.library.usualArrival, 10 * 60 + 10);
+  assert.deepEqual([s.bricks.earned, s.bricks.spent], [230, 70]);
+  assert.ok(day > 0);
 });
 
 test("the tuğla economy: wages grow with session length, refunds split 50/30/20", () => {

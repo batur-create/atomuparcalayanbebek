@@ -178,6 +178,15 @@ export const migrations = [
     "ALTER TABLE members ADD COLUMN chain INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE members ADD COLUMN chain_end INTEGER NOT NULL DEFAULT 0",
   ],
+  // 16 — statistics: arrivals at the library (with the room), leaving, and
+  // collapsed builds. Earlier ones are recovered from the board's system lines.
+  [
+    "CREATE TABLE activity (id TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, kind TEXT NOT NULL, detail TEXT, created INTEGER NOT NULL)",
+    "CREATE INDEX activity_member ON activity(member_id, created)",
+    "INSERT INTO activity (id, member_id, kind, detail, created) SELECT lower(hex(randomblob(16))), member_id, 'arrive', CASE WHEN instr(text, ' · ') > 0 AND instr(text, '. Bir sandalye') > 0 THEN substr(text, instr(text, ' · ') + 3, instr(text, '. Bir sandalye') - instr(text, ' · ') - 3) END, created FROM messages WHERE kind = 'system' AND text LIKE 'kütübe geldi%'",
+    "INSERT INTO activity (id, member_id, kind, detail, created) SELECT lower(hex(randomblob(16))), member_id, 'leave', NULL, created FROM messages WHERE kind = 'system' AND text LIKE 'bugünlük paydos%'",
+    "INSERT INTO activity (id, member_id, kind, detail, created) SELECT lower(hex(randomblob(16))), member_id, 'collapse', NULL, created FROM messages WHERE kind = 'system' AND text LIKE 'inşaatı çöktü%'",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

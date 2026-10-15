@@ -6,6 +6,7 @@ import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, createPlanner, kindFor } from "../shared/village.js";
+import { statsOf } from "./stats.js";
 import { BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, RUIN_DAYS, fits, minutesOf, modelOf, refundLater, refundNow, streakBonus, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
@@ -421,6 +422,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [randomHex(16), memberId, delta, reason, ref, note, now],
         ];
   const sessionRef = (memberId, end) => `${memberId}:${end}`;
+  const activityRow = (memberId, kind, detail, now) => [
+    "INSERT INTO activity (id, member_id, kind, detail, created) VALUES (?, ?, ?, ?, ?)",
+    [randomHex(16), memberId, kind, detail, now],
+  ];
+
 
   // Completed focus sessions are credited by whoever reads the state next, so
   // minutes count even if the owner closed the tab. Every write is pinned to the
@@ -497,6 +503,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [
             "INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, group_id, id, ?, 'system', focus_end FROM members WHERE id = ? AND focus_end = ?",
             [crypto.randomUUID(), WITHERED, s.id, s.ends],
+          ],
+          [
+            "INSERT INTO activity (id, member_id, kind, detail, created) SELECT ?, id, 'collapse', ?, focus_end FROM members WHERE id = ? AND focus_end = ?",
+            [randomHex(16), item.id, s.id, s.ends],
           ],
         );
       }
@@ -703,6 +713,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM feedback WHERE member_id = ?", [id]],
       ["DELETE FROM achievements WHERE member_id = ?", [id]],
       ["DELETE FROM bricks_log WHERE member_id = ?", [id]],
+      ["DELETE FROM activity WHERE member_id = ?", [id]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
@@ -1030,6 +1041,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           away: "bugünlük paydos etti. Görüşürüz! 👋",
         };
         statements.push(systemMessage(m.group_id, m.id, phrases[status]));
+        // Statistics: a real arrival (not back from a break), and leaving.
+        if (status === "here" && previous !== "break") statements.push(activityRow(m.id, "arrive", location || null, now));
+        if (status === "away" && (previous === "here" || previous === "break")) statements.push(activityRow(m.id, "leave", null, now));
         // Each kind has its own persistent timer: here -> break -> here cannot
         // erase the arrival cooldown (and vice versa). Coming back from a break
         // waits out the long cooldown; a real arrival only the short one.
@@ -1204,7 +1218,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         const ref = sessionRef(m.id, current.focus_end);
         return [
           ...(outcome.withered
-            ? [await ruinStatement(current, now, outcome.pending), systemMessage(m.group_id, m.id, WITHERED), bumpVillage(m.group_id)]
+            ? [await ruinStatement(current, now, outcome.pending), systemMessage(m.group_id, m.id, WITHERED), activityRow(m.id, "collapse", item.id, now), bumpVillage(m.group_id)]
             : []),
           ...(outcome.refunded
             ? [
@@ -1284,6 +1298,24 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       built: Object.fromEntries(built.map((b) => [b.model, b.n])),
       receipt: session ? receipt : [],
     });
+  });
+
+  // A member's statistics, for anyone in the same team.
+  route("GET", "/stats/:id", async ({ member: m, params }) => {
+    const target = await db.get("SELECT id, bricks FROM members WHERE id = ? AND group_id = ?", [params.id, m.group_id]);
+    if (!target) fail("Kişi bulunamadı.", 404);
+    const id = target.id;
+    const [focus, activity, built, ledger, social] = await db.read([
+      ["SELECT minutes, created, strict FROM focus_log WHERE member_id = ? ORDER BY created", [id]],
+      ["SELECT kind, detail, created FROM activity WHERE member_id = ? ORDER BY created", [id]],
+      ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, count(*) AS n, SUM(likes) AS likes FROM buildings WHERE member_id = ? GROUP BY 1", [id]],
+      ["SELECT reason, SUM(delta) AS total FROM bricks_log WHERE member_id = ? GROUP BY reason", [id]],
+      [
+        "SELECT (SELECT count(*) FROM messages WHERE member_id = ? AND kind <> 'system') AS messages, (SELECT count(*) FROM plans WHERE member_id = ?) AS plans, (SELECT count(*) FROM attendees WHERE member_id = ?) AS joined",
+        [id, id, id],
+      ],
+    ]);
+    return json(statsOf({ focus, activity, built, ledger, social: social[0], bricks: target.bricks, now: Date.now() }));
   });
 
   route("POST", "/push", async ({ member, body, ctx }) => {
@@ -1682,7 +1714,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {
