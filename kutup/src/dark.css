@@ -1,0 +1,99 @@
+/* ---------- Dark mode ----------
+   html[data-mode="dark"] is set by public/mode.js before the first paint and
+   kept up to date by src/colorMode.js. The tokens below are tuned by hand; the
+   build writes the dark twins of the literal colors (scripts/dark-css.js). */
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  color: var(--ink);
+  background: var(--canvas);
+  --canvas: #181916;
+  --paper: #22231f;
+  --ink: #ebeae4;
+  --muted: #a5a69c;
+  --border: #383933;
+  /* member colors: dim enough for a dark page, still easy to tell apart */
+  --mint: #43553f;
+  --peach: #5e4636;
+  --pink: #5b4049;
+  --blue: #3e4d5f;
+  --lilac: #4b4363;
+  --lemon: #57532e;
+  /* lilac, the default theme; the others follow */
+  --accent: #8272d8;
+  --accent-deep: #c4b9f5;
+  --accent-soft: #2d2940;
+  --hero: #2b2840;
+}
+:root[data-mode="dark"][data-theme="mint"] {
+  --accent: #5b9273;
+  --accent-deep: #a8d4ba;
+  --accent-soft: #233029;
+  --hero: #242f27;
+}
+:root[data-mode="dark"][data-theme="peach"] {
+  --accent: #c27f5b;
+  --accent-deep: #efbd9f;
+  --accent-soft: #34281f;
+  --hero: #352820;
+}
+:root[data-mode="dark"][data-theme="pink"] {
+  --accent: #cc6587;
+  --accent-deep: #f1adc2;
+  --accent-soft: #36252c;
+  --hero: #36262d;
+}
+:root[data-mode="dark"][data-theme="blue"] {
+  --accent: #5a86c2;
+  --accent-deep: #abc8ee;
+  --accent-soft: #212c39;
+  --hero: #222c39;
+}
+/* --accent-deep is light ink here, so hovers that used it as a fill keep the accent. */
+:root[data-mode="dark"] .btn.primary:hover,
+:root[data-mode="dark"] .send-button:hover {
+  background: var(--accent);
+  filter: brightness(1.1);
+}
+/* Kara is a black cat: give her a moonlit disc to sit in front of. */
+:root[data-mode="dark"] .murekkep-orbit,
+:root[data-mode="dark"] .murekkep-intro > .murekkep-figure {
+  background: #3f3b55;
+  background: color-mix(in oklab, var(--accent) 34%, var(--paper));
+}
+
+/* Unbuilt catalog buildings: a pale silhouette instead of a black one. */
+:root[data-mode="dark"] .catalog-item.unseen .building-thumb svg {
+  filter: brightness(0) invert(1) opacity(0.14);
+}
+
+/* ---------- the switch in "Benim köşem" ---------- */
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+}
+.mode-options button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.mode-options button.selected {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  outline: 1px solid var(--border);
+}
+.mode-options button.selected svg {
+  color: var(--accent);
+}

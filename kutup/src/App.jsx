@@ -75,6 +75,7 @@ import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
 import { mergeState } from "./sync.js";
+import { useColorMode } from "./colorMode.js";
 
 const nav = [
   { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
@@ -218,6 +219,7 @@ export default function App() {
       const saved = storage.get("kutup-theme");
       return THEMES.includes(saved) ? saved : "lilac";
     });
+  const [mode, setMode] = useColorMode();
   const [invite, setInvite] = useState(
       location.pathname.startsWith("/join/")
         ? location.pathname.split("/")[2]
@@ -1513,6 +1515,8 @@ export default function App() {
           onAccount={(username) => setSession((s) => ({ ...s, username }))}
           theme={theme}
           setTheme={setTheme}
+          mode={mode}
+          setMode={setMode}
           close={() => setModal(null)}
           mutate={mutate}
           notify={notify}

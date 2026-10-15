@@ -72,6 +72,8 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
             with sync_playwright() as p:
                 browser = p.chromium.launch(executable_path=args.chromium, args=['--no-sandbox'])
                 context = browser.new_context(viewport={'width':375,'height':812}, device_scale_factor=2, reduced_motion='reduce')
+                # "auto" turns the page dark after sunset in Ankara; colour checks below expect the light page.
+                context.add_init_script("try{localStorage.getItem('kutup-mode')||localStorage.setItem('kutup-mode','light')}catch(e){}")
                 page = context.new_page(); errors=[]
                 page.on('pageerror', lambda e: errors.append(str(e)))
                 page.goto(base)
@@ -149,6 +151,15 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+                friend.evaluate("localStorage.setItem('kutup-mode','dark')"); friend.reload()
+                expect(friend.locator('.member-card').first).to_be_visible()
+                check('Dark mode darkens the page, the cards and the status bar', friend.evaluate('''()=>{
+                    const rgb=(e)=>getComputedStyle(e).backgroundColor.match(/\\d+/g).slice(0,3).map(Number);
+                    return document.documentElement.dataset.mode==='dark'
+                        && Math.max(...rgb(document.documentElement))<40
+                        && Math.max(...rgb(document.querySelector('.member-card')))<60
+                        && document.querySelector('meta[name=theme-color]').content==='#181916';
+                }'''))
                 page.locator('.feedback-form textarea').fill('Denetim: Batur paneli ve özel geri bildirim akışı.')
                 page.locator('.feedback-form button[type=submit]').click()
                 expect(page.locator('.feedback-success')).to_be_visible()

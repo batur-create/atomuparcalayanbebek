@@ -1,11 +1,23 @@
 // Account entry, profile customization and moving between devices.
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Check, KeyRound, LogOut, Plus, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import { ArrowRight, Check, KeyRound, LogOut, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
 import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 import { MemberStats } from "./Stats.jsx";
+import { sunTimes } from "./villageWorld.js";
 const LOGIN_TABS = [["login", "Giriş"], ["reset", "Şifremi unuttum"], ["code", "Kodla"]];
+const MODE_CHOICES = [["auto", SunMoon, "Otomatik"], ["light", Sun, "Açık"], ["dark", Moon, "Koyu"]];
+const clock = (hours) => {
+  const m = Math.round(hours * 60);
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+};
+function modeHint(mode) {
+  if (mode === "light") return "Hep açık, gece de gündüz de.";
+  if (mode === "dark") return "Hep koyu. Gözlerin dinlensin. 🌙";
+  const { sunrise, sunset } = sunTimes();
+  return `Güneş batınca koyulaşır, doğunca açılır. Bugün gün batımı ${clock(sunset)}, gün doğumu ${clock(sunrise)}.`;
+}
 
 function ProfileFields({ value, setValue }) {
   return (
@@ -522,7 +534,7 @@ function AccountBox({ username, notify, onSaved }) {
     </div>
   );
 }
-export function ProfileModal({ me, username, onAccount, theme, setTheme, close, mutate, notify, onLeft }) {
+export function ProfileModal({ me, username, onAccount, theme, setTheme, mode, setMode, close, mutate, notify, onLeft }) {
   const [value, setValue] = useState({
       name: me.name,
       avatar: me.avatar,
@@ -580,6 +592,24 @@ export function ProfileModal({ me, username, onAccount, theme, setTheme, close, 
             ))}
           </div>
           <small>Sadece senin ekranında değişir.</small>
+        </div>
+        <div className="theme-section">
+          <label className="field-label" id="mode-label">Gündüz mü, gece mi?</label>
+          <div className="mode-options" role="radiogroup" aria-labelledby="mode-label">
+            {MODE_CHOICES.map(([key, Icon, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={mode === key}
+                className={mode === key ? "selected" : ""}
+                onClick={() => setMode(key)}
+              >
+                <Icon size={16} /> {label}
+              </button>
+            ))}
+          </div>
+          <small>{modeHint(mode)}</small>
         </div>
         <Busy loading={busy} type="submit" className="btn primary full">
           Böyle çok daha ben <Sparkles size={16} />

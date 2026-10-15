@@ -113,7 +113,7 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
 
-**Durum: duraklatıldı.** Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Yeni sohbette Batur "devam" ya da açık bir onay vermeden hiçbir şey çalıştırma. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
+**Durum (güncel):** Batur yeni sohbette "devam" dedi; n15 karanlık tema bitti ve canlıda (aşağıda). Sıradaki n13. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
 
 **Batur'un çalışma kuralları:**
 - Paketleri arka arkaya yap. Her önemli adımda: test → (göç varsa önce yedek) → deploy → canlı duman testi → commit + push → iş panosunu güncelle.
@@ -147,10 +147,15 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
   - iOS ana ekran rehberi (`SetupCard`).
 - **Kurucu:** ✳'e 1.2 sn basılı tutmak kapıyı açar. Dev rozetli hesapta "✳ Komuta merkezi" bağlantısı ve kurucu avatarları var.
 
+**n15 Karanlık tema — 15 Ekim 2026 gecesi, canlı (Worker `d63c7b00`):**
+- "Benim köşem"de Gündüz mü, gece mi? → Otomatik / Açık / Koyu. Otomatik, Ankara gün batımında koyulaşır, gün doğumunda açılır (`darkAt` + `sunTimes`, `villageWorld.js`). Seçim cihazda (`localStorage kutup-mode`).
+- `public/mode.js` ilk boyamadan önce `html[data-mode]`, `data-theme` ve `theme-color`'ı ayarlar (CSP satır içi betiğe izin vermediği için ayrı dosya). `src/colorMode.js` açık kalan uygulamada dakikada bir kontrol eder; geçişte View Transition ile yumuşak geçiş.
+- **Renkler:** `scripts/dark-css.js` PostCSS eklentisi (vite.config'te) her sabit renkli kuralın hemen arkasına `:where(html[data-mode="dark"]) .x {…}` ikizini yazar: açık yüzey → koyu, koyu yazı → açık; canlı renkler, yarı saydamlar ve zaten koyu bileşenler (koyu arka planlı kural ve altındakiler) dokunulmaz. `:where` özgüllük eklemez, kaskad bozulmaz. Bir kuralı hariç tutmak için içine `/* dark: keep */` yaz. `focusscreen.css` ve `blackhole.css` atlanır. Elle ayarlanan jetonlar (`--paper`, `--ink`, tema vurguları, üye renkleri) ve istisnalar `src/dark.css`'te.
+- Testler: 90 birim + 31 tarayıcı (tarayıcı testi açık moda sabitlenir, ayrıca koyu kontrolü var), canlı duman testinde koyu mod adımı.
+
 **Sıradaki işler (panoda bu sırayla):**
-1. **n15 Karanlık tema:** gün batımında kendiliğinden açılsın (`skyAt`); "Benim köşem"de Otomatik / Açık / Koyu seçimi. Dikkat: `styles.css` (~4600 satır) çok sabit renk içeriyor. Mevcut değişkenler: `--paper`, `--ink`, `--muted`, `--border`, `--accent*`.
-2. **n13 Özgün avatarlar:** 24 elle çizilmiş SVG karakter (hayvanlar + kütüphane tipleri) ve aksesuarlar (gözlük, kulaklık, bere, atkı, şapka). Arka plan üyenin renginde olsun; köyde yürüyenler dahil (canvas) her yerde aynı görünsün. Kurucu karakteri olsun; emoji seçeneği kalsın.
-3. **n14 Başarımlar:**
+1. **n13 Özgün avatarlar:** 24 elle çizilmiş SVG karakter (hayvanlar + kütüphane tipleri) ve aksesuarlar (gözlük, kulaklık, bere, atkı, şapka). Arka plan üyenin renginde olsun; köyde yürüyenler dahil (canvas) her yerde aynı görünsün. Kurucu karakteri olsun; emoji seçeneği kalsın.
+2. **n14 Başarımlar:**
    - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.
    - Gizli rozetler (kara delik kâşifi vb.).
    - Rozet vitrini ve kutlama anı.

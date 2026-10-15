@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mergeState } from '../src/sync.js';
-import { mergeVillage, skyAt, tinter } from '../src/villageWorld.js';
+import postcss from 'postcss';
+import { darkAt, mergeVillage, skyAt, tinter } from '../src/villageWorld.js';
 import { tileLevel } from '../src/villageView.js';
+import darkCss, { darkValue, parseColor } from '../scripts/dark-css.js';
 
 const raw = (rev, buildings = [], extra = {}) => ({ rev, until: rev * 1000, districts: [['d', 'm', 1, 0, 7]], buildings, ruins: [], ...extra });
 const home = (id, likes = 0, mine = 0) => [id, 'm', 'cottage', 4, 10, 11, 1, 25, 100, likes, mine];
@@ -39,6 +41,40 @@ test('sky follows Ankara time at noon, midnight and seasonal boundaries', () => 
     }
   }
   assert.equal(tinter(skyAt(Date.parse('2026-10-14T21:00:00Z')))('#fff4c8'), '#fff4c8', 'lamps stay luminous');
+});
+
+test('auto mode turns dark at the Ankara sunset and light at sunrise; manual modes stay put', () => {
+  // 15 Oct: the sun sets around 18:11 and rises around 07:25 local time (UTC+3).
+  assert.equal(darkAt('auto', Date.parse('2026-10-15T09:00:00Z')), false, 'noon');
+  assert.equal(darkAt('auto', Date.parse('2026-10-15T15:00:00Z')), false, '18:00, before sunset');
+  assert.equal(darkAt('auto', Date.parse('2026-10-15T15:20:00Z')), true, '18:20, after sunset');
+  assert.equal(darkAt('auto', Date.parse('2026-10-15T03:00:00Z')), true, '06:00, before sunrise');
+  assert.equal(darkAt('auto', Date.parse('2026-06-21T16:30:00Z')), false, 'a June evening is still light at 19:30');
+  assert.equal(darkAt('dark', Date.parse('2026-10-15T09:00:00Z')), true);
+  assert.equal(darkAt('light', Date.parse('2026-10-15T21:00:00Z')), false);
+});
+
+test('dark twins: light surfaces go dark, dark ink goes light, vivid and night colors stay', () => {
+  const lightness = (v) => Math.max(...parseColor(v).rgb) / 255;
+  assert.ok(lightness(darkValue('background', '#fffefb')) < 0.25, 'paper turns dark');
+  assert.ok(lightness(darkValue('border', '1px solid #e8e7df').split(' ').pop()) < 0.35, 'hairlines turn dark');
+  assert.ok(lightness(darkValue('color', '#30312f')) > 0.85, 'ink turns light');
+  assert.equal(darkValue('color', '#fff'), null, 'light text is already right');
+  assert.equal(darkValue('background', '#262823'), null, 'night widgets stay');
+  assert.equal(darkValue('background', '#d4a24c'), null, 'gold progress stays');
+  assert.equal(darkValue('background', 'rgba(255, 255, 255, 0.06)'), null, 'faint tints stay');
+  assert.equal(darkValue('mask', '#000'), null, 'masks are not colors');
+  assert.match(darkValue('background', 'url(#fade), #fff'), /^url\(#fade\), #/, 'url() is never touched');
+});
+
+test('dark twins sit right after their rule with no extra specificity, and skip keyframes and dark scopes', async () => {
+  const css = `.a{background:#fff;padding:2px}@keyframes k{from{background:#fff}}.night{background:#262823}.night p{border:1px solid #eee}.b{/* dark: keep */background:#fff}`;
+  const out = (await postcss([darkCss()]).process(css, { from: undefined })).css;
+  assert.match(out, /^\.a\{background:#fff;padding:2px\}:where\(html\[data-mode="dark"\]\) \.a\{background:#[0-9a-f]{6}\}/);
+  assert.doesNotMatch(out, /padding:2px\}[^@]*padding/, 'only color declarations are copied');
+  assert.match(out, /@keyframes k\{from\{background:#fff\}\}/);
+  assert.doesNotMatch(out, /\.night p\{[^}]*\}:where/);
+  assert.doesNotMatch(out, /\) \.b\{/);
 });
 
 test('visible tiles fit the cache on phones, fullscreen displays and distant large villages', () => {

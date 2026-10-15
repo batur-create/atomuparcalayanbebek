@@ -12,6 +12,7 @@ import "@fontsource/dm-sans/latin-ext-700.css";
 import "@fontsource-variable/bricolage-grotesque/opsz.css";
 import "./styles.css";
 import "./motion.css";
+import "./dark.css";
 
 class ErrorBoundary extends React.Component {
   state = { failed: false };

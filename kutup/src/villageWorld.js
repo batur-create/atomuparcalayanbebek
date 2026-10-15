@@ -49,14 +49,24 @@ export function mergeVillage(prev, raw) {
 
 // ---------- time of day (Türkiye, Ankara sun) ----------
 const clamp = (v) => Math.max(0, Math.min(1, v));
-export function skyAt(now = Date.now()) {
+// Local hour now, and that day's sunrise and sunset in hours (public/mode.js
+// repeats this formula to pick the page's look before the first paint).
+export function sunTimes(now = Date.now()) {
   const local = new Date(now + 3 * 3600000);
   const hour = local.getUTCHours() + local.getUTCMinutes() / 60;
   const start = Date.UTC(local.getUTCFullYear(), 0, 0);
   const day = (local.getTime() - start) / 86400000;
   const length = 12 + 2.9 * Math.sin((2 * Math.PI * (day - 80)) / 365);
-  const sunrise = 12.8 - length / 2,
-    sunset = 12.8 + length / 2;
+  return { local, hour, sunrise: 12.8 - length / 2, sunset: 12.8 + length / 2 };
+}
+// The page goes dark at sunset in "auto" mode and light again at sunrise.
+export function darkAt(mode, now = Date.now()) {
+  if (mode !== "auto") return mode === "dark";
+  const { hour, sunrise, sunset } = sunTimes(now);
+  return hour < sunrise || hour >= sunset;
+}
+export function skyAt(now = Date.now()) {
+  const { local, hour, sunrise, sunset } = sunTimes(now);
   const evening = clamp((hour - (sunset - 0.2)) / 1.2),
     morning = clamp((sunrise + 0.4 - hour) / 1.2);
   const night = Math.max(evening, morning);

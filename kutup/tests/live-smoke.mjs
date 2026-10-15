@@ -64,6 +64,13 @@ for (let attempt = 0; attempt < 6; attempt++) {
 }
 check(`live D1 schema is ${SCHEMA_VERSION}`, schema === String(SCHEMA_VERSION), `schema ${schema}`);
 
+// Dark mode: the page loads mode.js before its first paint, and the stylesheet carries the dark twins.
+const page = await fetch(base, { cache: "no-store" }).then((r) => r.text());
+const mode = await fetch(`${base}/mode.js`, { cache: "no-store" });
+const sheet = /href="(\/assets\/[^"]+\.css)"/.exec(page)?.[1];
+const css = sheet ? await fetch(base + sheet).then((r) => r.text()) : "";
+check("dark mode ships (mode.js before paint, dark twins in CSS)", page.includes('src="/mode.js"') && mode.ok && (await mode.text()).includes("kutup-mode") && /:where\(html\[data-mode="?dark"?\]\)/.test(css));
+
 // 1. New team requires an account; with one it works.
 const noAccount = await call("/groups", { body: { name: "Duman A", groupName: `Duman ${tag}` } });
 check("new team without account is rejected", noAccount.status === 400, `status ${noAccount.status}`);

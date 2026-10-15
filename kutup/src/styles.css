@@ -806,6 +806,7 @@ button:active {
   color: #d8e4b7;
 }
 .focus-start {
+  /* dark: keep (lime on the dark focus card) */
   background: #d7e99f;
   color: #3c472c;
   width: 100%;
@@ -814,6 +815,7 @@ button:active {
   padding: 10px 10px;
 }
 .focus-start:hover {
+  /* dark: keep */
   background: #e7f4be;
 }
 .focus-bottom {
