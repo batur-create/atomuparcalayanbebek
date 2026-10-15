@@ -323,3 +323,48 @@
     font-size: 11px;
   }
 }
+
+/* The site fills its frame edge to edge in the colour of its sky, and zooms. */
+.fs-scene {
+  touch-action: none;
+}
+.fs-scene .village-scene {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.fs-zoom {
+  width: 100%;
+  transform-origin: 50% 50%;
+  transition: transform 0.08s linear;
+  will-change: transform;
+}
+.scene-full .fs-scene > .fs-zoom {
+  width: min(100vw, calc(100vh * 1.7));
+}
+.fs-zoom-buttons button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+}
+
+/* Here the whole screen is the sky: the scene's own sky and light wash (drawn
+   only inside its frame) give way to it, and the time of day tints the site. */
+.fs-scene .sky,
+.fs-scene .light {
+  display: none;
+}
+.fs-scene.night .village-scene {
+  filter: brightness(0.8) saturate(0.82);
+}
+.fs-scene.warm .village-scene {
+  filter: sepia(0.14) saturate(1.08);
+}
+.fs-scene.night .village-scene text {
+  fill: #f1efe6;
+}
+.scene-full .fs-clock {
+  top: auto;
+  bottom: max(64px, calc(env(safe-area-inset-bottom) + 56px));
+  right: 16px;
+}

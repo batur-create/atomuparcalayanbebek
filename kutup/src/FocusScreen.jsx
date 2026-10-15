@@ -4,12 +4,13 @@
 // screen, and the sounds a tap away. The controls stay out of sight until the
 // screen is touched.
 import React, { useEffect, useRef, useState } from "react";
-import { Expand, Headphones, Shrink, X } from "lucide-react";
+import { Expand, Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
 import { ConstructionScene } from "./Village.jsx";
 import { keepScreenOn, releaseScreen, storage } from "./ui.jsx";
 import { SoundButton, SoundPanel } from "./Sound.jsx";
 import { modelOf } from "../shared/catalog.js";
 import { kindFor } from "../shared/village.js";
+import { skyAt } from "./villageWorld.js";
 import "./focusscreen.css";
 
 const KEY = "kutup-odak-ekrani";
@@ -31,6 +32,96 @@ const timeParts = (now) => {
   const d = new Date(now + 3 * 3600000); // Türkiye
   return [two(d.getUTCHours()), two(d.getUTCMinutes())];
 };
+
+// The site's surroundings in the colour of its sky, so it fills the screen
+// edge to edge (day green, sunset peach, night navy).
+const STARS = [[12, 8], [28, 18], [47, 6], [63, 15], [81, 9], [92, 22], [8, 31], [37, 27], [71, 30], [55, 38], [18, 44], [88, 41]]
+  .map(([x, y], i) => `radial-gradient(${i % 3 ? 1 : 1.6}px ${i % 3 ? 1 : 1.6}px at ${x}% ${y}%, #fff8e1 60%, transparent 100%)`)
+  .join(", ");
+const skyOf = (now) => {
+  const { night, warm } = skyAt(now);
+  if (night > 0.4) return { tone: "night", background: `${STARS}, linear-gradient(#151c38, #34406a)` };
+  if (warm > 0) return { tone: "warm", background: "linear-gradient(#f3b58c, #f7e2c8 55%, #eef4e6)" };
+  return { tone: "day", background: "#eef4e6" };
+};
+
+// Pinch (two fingers), wheel or the buttons zoom the site; drag pans it when
+// zoomed in; a double tap zooms in or back out.
+function useZoom() {
+  const [view, setView] = useState({ s: 1, x: 0, y: 0 });
+  const box = useRef(null),
+    pointers = useRef(new Map()),
+    pinch = useRef(null),
+    lastTap = useRef(0);
+  const clampView = (v) => {
+    const s = Math.min(4, Math.max(1, v.s)),
+      el = box.current,
+      w = el ? el.clientWidth : 0,
+      h = el ? el.clientHeight : 0,
+      mx = ((s - 1) * w) / 2,
+      my = ((s - 1) * h) / 2;
+    return { s, x: Math.max(-mx, Math.min(mx, v.x)), y: Math.max(-my, Math.min(my, v.y)) };
+  };
+  // Zoom by `k` keeping the screen point (cx, cy) where it is.
+  const zoomAt = (k, cx, cy) =>
+    setView((v) => {
+      const el = box.current;
+      if (!el) return v;
+      const r = el.getBoundingClientRect(),
+        px = cx - (r.left + r.width / 2),
+        py = cy - (r.top + r.height / 2);
+      const s = Math.min(4, Math.max(1, v.s * k)),
+        f = s / v.s;
+      return clampView({ s, x: px - (px - v.x) * f, y: py - (py - v.y) * f });
+    });
+  const center = () => {
+    const r = box.current?.getBoundingClientRect();
+    return r ? [r.left + r.width / 2, r.top + r.height / 2] : [0, 0];
+  };
+  const handlers = {
+    onWheel: (e) => zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY),
+    onPointerDown: (e) => {
+      pointers.current.set(e.pointerId, [e.clientX, e.clientY]);
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      if (pointers.current.size === 2) {
+        const [a, b] = [...pointers.current.values()];
+        pinch.current = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) };
+      }
+      const now = Date.now();
+      if (pointers.current.size === 1 && now - lastTap.current < 300) {
+        setView((v) => (v.s > 1.2 ? { s: 1, x: 0, y: 0 } : v));
+        if (view.s <= 1.2) zoomAt(2, e.clientX, e.clientY);
+      }
+      lastTap.current = now;
+    },
+    onPointerMove: (e) => {
+      const prev = pointers.current.get(e.pointerId);
+      if (!prev) return;
+      pointers.current.set(e.pointerId, [e.clientX, e.clientY]);
+      if (pointers.current.size === 2 && pinch.current) {
+        const [a, b] = [...pointers.current.values()];
+        const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+        zoomAt(d / pinch.current.d, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+        pinch.current.d = d;
+      } else if (pointers.current.size === 1) {
+        setView((v) => (v.s > 1 ? clampView({ ...v, x: v.x + e.clientX - prev[0], y: v.y + e.clientY - prev[1] }) : v));
+      }
+    },
+    onPointerUp: (e) => {
+      pointers.current.delete(e.pointerId);
+      if (pointers.current.size < 2) pinch.current = null;
+    },
+  };
+  handlers.onPointerCancel = handlers.onPointerUp;
+  return {
+    view,
+    box,
+    handlers,
+    zoomIn: () => zoomAt(1.4, ...center()),
+    zoomOut: () => zoomAt(1 / 1.4, ...center()),
+    reset: () => setView({ s: 1, x: 0, y: 0 }),
+  };
+}
 
 /** Asks for full screen; call it from the tap that opens the focus screen. */
 export function enterFullscreen() {
@@ -101,6 +192,7 @@ export function FocusScreen({ me, now, run, outcome, close }) {
     [drift, setDrift] = useState([0, 0]);
   const opened = useRef(Date.now()),
     hide = useRef(0);
+  const zoom = useZoom();
   const session = me?.focusEnd > now ? { end: me.focusEnd, total: me.focusMinutes * 60000, at: me.focusPausedAt || now } : null;
   const item = session && me.focusStrict ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : null;
   const showScene = !!(run || outcome) && pref.scene !== "hidden";
@@ -173,8 +265,10 @@ export function FocusScreen({ me, now, run, outcome, close }) {
     >
       <div className="fs-stage" style={{ transform: `translate(${drift[0]}px, ${drift[1]}px)` }}>
         {showScene && (
-          <div className="fs-scene">
-            <ConstructionScene run={run} outcome={outcome} />
+          <div className={`fs-scene ${skyOf(now).tone}`} style={{ background: skyOf(now).background }} ref={zoom.box} {...zoom.handlers}>
+            <div className="fs-zoom" style={{ transform: `translate(${zoom.view.x}px, ${zoom.view.y}px) scale(${zoom.view.s})` }}>
+              <ConstructionScene run={run} outcome={outcome} />
+            </div>
           </div>
         )}
         <div className="fs-clock">
@@ -226,6 +320,19 @@ export function FocusScreen({ me, now, run, outcome, close }) {
                   {label}
                 </button>
               ))}
+            </div>
+          )}
+          {showScene && (
+            <div className="fs-seg fs-zoom-buttons" role="group" aria-label="Yakınlaştır">
+              <button aria-label="Uzaklaştır" onClick={zoom.zoomOut}>
+                <Minus size={15} />
+              </button>
+              <button aria-label="Yakınlaştırmayı sıfırla" onClick={zoom.reset}>
+                <RotateCcw size={14} />
+              </button>
+              <button aria-label="Yakınlaştır" onClick={zoom.zoomIn}>
+                <Plus size={15} />
+              </button>
             </div>
           )}
           <button className={`fs-icon ${sounds ? "on" : ""}`} aria-label="Odak sesleri" aria-expanded={sounds} onClick={() => setSounds(!sounds)}>
