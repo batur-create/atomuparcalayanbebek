@@ -97,3 +97,119 @@
 .mode-options button.selected svg {
   color: var(--accent);
 }
+
+/* ---------- the same switch in the top bar ---------- */
+/* The menu hangs from the right edge of the top-bar actions, so on a phone it
+   never runs off the left side of the screen. */
+.topbar-actions {
+  position: relative;
+}
+.mode-button {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+}
+.mode-button[aria-expanded="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+/* Drawn the size of the bell beside it... */
+@media (max-width: 760px) {
+  .mode-button {
+    height: 32px;
+    width: 32px;
+  }
+}
+@media (max-width: 370px) {
+  .mode-button {
+    height: 30px;
+    width: 30px;
+  }
+}
+/* ...but at least 44px to the finger (inset counts from inside the border). */
+.mode-button::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.mode-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  width: min(300px, calc(100vw - 32px));
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px #272a2326;
+  animation: mode-menu-in 0.16s ease-out backwards;
+  transform-origin: top right;
+}
+.mode-menu > p {
+  margin: 4px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.mode-menu button {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+.mode-menu button > svg:first-child {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.mode-menu button span {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.mode-menu strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.mode-menu small {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.mode-menu button[aria-checked="true"] {
+  background: var(--accent-soft);
+}
+.mode-menu button[aria-checked="true"] > svg {
+  color: var(--accent);
+}
+.mode-menu button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+@keyframes mode-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+@media (hover: hover) {
+  .mode-menu button:hover {
+    background: var(--canvas);
+  }
+  .mode-menu button[aria-checked="true"]:hover {
+    background: var(--accent-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mode-menu {
+    animation: none;
+  }
+}

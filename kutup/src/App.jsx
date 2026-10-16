@@ -73,7 +73,7 @@ import { FocusScreen, enterFullscreen } from "./FocusScreen.jsx";
 import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Together.jsx";
 import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
-import { Welcome, Onboard, ProfileModal } from "./Account.jsx";
+import { Welcome, Onboard, ProfileModal, ModeButton } from "./Account.jsx";
 import { mergeState } from "./sync.js";
 import { useColorMode } from "./colorMode.js";
 
@@ -1012,7 +1012,9 @@ export default function App() {
               <Menu />
             </button>
             <span className="breadcrumb">
-              Bizim alan <ChevronRight size={13} />{" "}
+              <span className="crumb-root">
+                Bizim alan <ChevronRight size={13} />
+              </span>{" "}
               <strong>
                 {tab === "feedback"
                   ? "Batur’a ilet"
@@ -1029,6 +1031,7 @@ export default function App() {
                 timeZone: "Europe/Istanbul",
               })}
             </span>
+            <ModeButton mode={mode} setMode={setMode} />
             <button
               className={`icon-button notification-button ${notificationOn ? "enabled" : ""} ${notificationWorking ? "working" : ""}`}
               aria-busy={notificationWorking}

@@ -1,5 +1,5 @@
 // Account entry, profile customization and moving between devices.
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, KeyRound, LogOut, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
 import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
@@ -18,6 +18,78 @@ function modeHint(mode) {
   if (mode === "dark") return "Hep koyu. Gözlerin dinlensin. 🌙";
   const { sunrise, sunset } = sunTimes();
   return `Güneş batınca koyulaşır, doğunca açılır. Bugün gün batımı ${clock(sunset)}, gün doğumu ${clock(sunrise)}.`;
+}
+// Shorter lines for the top-bar menu.
+function modeNote(mode) {
+  if (mode === "light") return "Gece de gündüz de açık.";
+  if (mode === "dark") return "Hep koyu, gözlerin dinlensin.";
+  const { sunrise, sunset } = sunTimes();
+  return `Güneş batınca koyu, doğunca açık (bugün ${clock(sunset)} / ${clock(sunrise)}).`;
+}
+
+// The same choice from the top bar: one button that shows it, a small menu to change it.
+export function ModeButton({ mode, setMode }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef(null),
+    button = useRef(null);
+  const [, Icon, label] = MODE_CHOICES.find(([key]) => key === mode) || MODE_CHOICES[0];
+  useEffect(() => {
+    if (!open) return;
+    const outside = (e) => wrap.current?.contains(e.target) || setOpen(false);
+    const key = (e) => {
+      const items = [...(wrap.current?.querySelectorAll("[role=menuitemradio]") || [])];
+      const at = items.indexOf(document.activeElement);
+      if (e.key === "Escape" || e.key === "Tab") {
+        if (e.key === "Escape") button.current?.focus();
+        setOpen(false);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        items[(at + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
+      }
+    };
+    wrap.current?.querySelector("[aria-checked=true]")?.focus();
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", key);
+    };
+  }, [open]);
+  const pick = (key) => {
+    setMode(key);
+    setOpen(false);
+    button.current?.focus();
+  };
+  return (
+    <div className="mode-switch" ref={wrap}>
+      <button
+        ref={button}
+        type="button"
+        className="icon-button mode-button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Görünüm: ${label}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Icon size={18} />
+      </button>
+      {open && (
+        <div className="mode-menu" role="menu" aria-label="Gündüz mü, gece mi?">
+          <p aria-hidden="true">Gündüz mü, gece mi?</p>
+          {MODE_CHOICES.map(([key, ItemIcon, name]) => (
+            <button key={key} type="button" role="menuitemradio" aria-checked={mode === key} onClick={() => pick(key)}>
+              <ItemIcon size={18} />
+              <span>
+                <strong>{name}</strong>
+                <small>{modeNote(key)}</small>
+              </span>
+              {mode === key && <Check size={16} className="mode-check" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const slotOf = (id) => ACCESSORIES.find((a) => a.id === id)?.slot;

@@ -169,6 +169,33 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                         && Math.max(...rgb(document.querySelector('.member-card')))<60
                         && document.querySelector('meta[name=theme-color]').content==='#181916';
                 }'''))
+                check('Top-bar look button: 44px to the finger, no overflow at 375px', friend.evaluate('''()=>{
+                    const r=document.querySelector('.mode-button').getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+                    return [[x-21,y],[x+21,y],[x,y-21],[x,y+21]].every(([px,py])=>document.elementFromPoint(px,py)?.closest('.mode-button'))
+                        && document.documentElement.scrollWidth<=innerWidth}'''))
+                friend.get_by_role('button', name='Görünüm: Koyu').click()
+                menu = friend.get_by_role('menu', name='Gündüz mü, gece mi?')
+                expect(menu).to_be_visible()
+                check('Look menu: three choices, 44px rows, inside the screen, current one ticked', friend.evaluate('''()=>{
+                    const items=[...document.querySelectorAll('.mode-menu [role=menuitemradio]')], boxes=items.map(b=>b.getBoundingClientRect());
+                    return items.length===3 && boxes.every(b=>b.height>=44 && b.left>=0 && b.right<=innerWidth)
+                        && document.querySelector('.mode-menu [aria-checked=true]').textContent.startsWith('Koyu')
+                        && items.includes(document.activeElement)}'''))
+                menu.locator('[role=menuitemradio]', has_text='Gece de gündüz de açık').click()
+                expect(menu).to_have_count(0)
+                check('Picking Açık turns the page light, remembers it and returns focus', friend.evaluate('''()=>
+                    document.documentElement.dataset.mode==='light' && localStorage.getItem('kutup-mode')==='light'
+                    && document.activeElement.matches('.mode-button[aria-label="Görünüm: Açık"]')
+                    && document.querySelector('meta[name=theme-color]').content==='#f6f5f0'
+                '''))
+                friend.get_by_role('button', name='Görünüm: Açık').click()
+                expect(menu).to_be_visible()
+                friend.keyboard.press('Escape')
+                expect(menu).to_have_count(0)
+                friend.get_by_role('button', name='Görünüm: Açık').click()
+                friend.mouse.click(8, 400)  # the page gutter, left of the menu
+                expect(menu).to_have_count(0)
+                check('Look menu closes with Escape and with a tap outside', True)
                 page.locator('.feedback-form textarea').fill('Denetim: Batur paneli ve özel geri bildirim akışı.')
                 page.locator('.feedback-form button[type=submit]').click()
                 expect(page.locator('.feedback-success')).to_be_visible()

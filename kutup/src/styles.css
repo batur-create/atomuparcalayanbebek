@@ -350,6 +350,11 @@ button:active {
 .breadcrumb svg {
   color: #b9b8af;
 }
+.crumb-root {
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+}
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -3139,7 +3144,7 @@ button:active {
     gap: 5px;
     font-size: 11.5px;
   }
-  .breadcrumb > svg {
+  .breadcrumb svg {
     width: 11px;
   }
   .topbar-actions {
@@ -3897,6 +3902,10 @@ button:active {
   }
   .topbar .breadcrumb {
     font-size: 11px;
+  }
+  /* Room for the top-bar buttons: the phone shows just the page name. */
+  .crumb-root {
+    display: none !important;
   }
   .topbar .breadcrumb > strong {
     max-width: 87px;

@@ -70,6 +70,10 @@ const mode = await fetch(`${base}/mode.js`, { cache: "no-store" });
 const sheet = /href="(\/assets\/[^"]+\.css)"/.exec(page)?.[1];
 const css = sheet ? await fetch(base + sheet).then((r) => r.text()) : "";
 check("dark mode ships (mode.js before paint, dark twins in CSS)", page.includes('src="/mode.js"') && mode.ok && (await mode.text()).includes("kutup-mode") && /:where\(html\[data-mode="?dark"?\]\)/.test(css));
+// The look switch in the top bar (n16): its menu is in the app bundle and styled.
+const script = /src="(\/assets\/[^"]+\.js)"/.exec(page)?.[1];
+const bundle = script ? await fetch(base + script).then((r) => r.text()) : "";
+check("top-bar look switch ships", bundle.includes("mode-menu") && bundle.includes("Görünüm: ") && css.includes(".mode-menu"));
 
 // 1. New team requires an account; with one it works.
 const noAccount = await call("/groups", { body: { name: "Duman A", groupName: `Duman ${tag}` } });
