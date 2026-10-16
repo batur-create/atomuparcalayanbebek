@@ -81,6 +81,8 @@ import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Tog
 import { VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
+import { ENTRY, Entry } from "./Entry.jsx";
+import { IosGuide, SAMPLE } from "./Samples.jsx";
 import { Home, Badge, Kinetic } from "./Home.jsx";
 import { MePage, TeamModal } from "./MePage.jsx";
 import { useMotionPref } from "./motionPref.js";
@@ -146,7 +148,8 @@ export default function App() {
         ? location.pathname.split("/")[2]
         : "",
     ),
-    [inviteInfo, setInviteInfo] = useState(null);
+    [inviteInfo, setInviteInfo] = useState(null),
+    [entryStart, setEntryStart] = useState(0);
   const [notificationOn, setNotificationOn] = useState(false),
     [notificationWorking, setNotificationWorking] = useState(false),
     [now, setNow] = useState(Date.now());
@@ -308,7 +311,8 @@ export default function App() {
       get(`/invites/${encodeURIComponent(invite)}`)
         .then((info) => {
           setInviteInfo(info);
-          setModal("onboard");
+          // n27 options: the invite opens on a welcome, not straight on the form.
+          if (!ENTRY) setModal("onboard");
         })
         .catch((e) => {
           notify(e.message);
@@ -816,8 +820,13 @@ export default function App() {
     );
   if (!session)
     return (
-      <>
-        <Welcome invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} />
+      <LazyMotion features={motionFeatures} strict>
+      <MotionConfig reducedMotion={motionPick === "still" ? "always" : motionPick ? "never" : "user"}>
+        {ENTRY ? (
+          <Entry invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} onSuccess={joinSuccess} now={now} dark={dark} start={entryStart} />
+        ) : (
+          <Welcome invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} />
+        )}
         {(modal === "onboard" || modal === "login") && (
           <Onboard
             invite={invite}
@@ -826,6 +835,7 @@ export default function App() {
             close={() => setModal(null)}
             onSuccess={joinSuccess}
             existing={false}
+            onNew={ENTRY ? () => (setModal(null), setEntryStart((n) => n + 1)) : undefined}
           />
         )}
         {toast && (
@@ -837,7 +847,8 @@ export default function App() {
             </button>
           </div>
         )}
-      </>
+      </MotionConfig>
+      </LazyMotion>
     );
   const visibleMembers = data.members.filter(
     (m) =>
@@ -2333,12 +2344,19 @@ function MemberModal({ member, now, close, mutate }) {
 // Getting notifications working is the whole point of Kütüp, so the home screen
 // walks people through it until they turn it on (or hide the card).
 function SetupCard({ enable, busy }) {
-  const needsHomeScreen = isIOS && !standalone;
+  const needsHomeScreen = (isIOS && !standalone) || SAMPLE;
   // On an iPhone notifications only work from the home screen: the guide comes back every three days.
   const [hidden, setHidden] = useState(
     () => storage.get("kutup-setup-hidden") === "1" && !(needsHomeScreen && Date.now() - Number(storage.get("kutup-setup-hidden-at") || 0) > 3 * 86400000),
   );
-  if (hidden || (!pushSupported && !isIOS)) return null;
+  if (hidden || (!pushSupported && !isIOS && !SAMPLE)) return null;
+  const hide = () => {
+    storage.set("kutup-setup-hidden", "1");
+    storage.set("kutup-setup-hidden-at", String(Date.now()));
+    setHidden(true);
+  };
+  // n27 sample (?ornek=1): the same steps, drawn.
+  if (SAMPLE && needsHomeScreen) return <IosGuide hide={hide} />;
   return (
     <section className="setup-card">
       <span className="setup-emoji">{needsHomeScreen ? "📲" : "🔔"}</span>
@@ -2377,15 +2395,7 @@ function SetupCard({ enable, busy }) {
           {!busy && <Bell size={16} />} Bildirimleri aç
         </Busy>
       )}
-      <button
-        className="icon-button setup-close"
-        aria-label="Bu kartı gizle"
-        onClick={() => {
-          storage.set("kutup-setup-hidden", "1");
-          storage.set("kutup-setup-hidden-at", String(Date.now()));
-          setHidden(true);
-        }}
-      >
+      <button className="icon-button setup-close" aria-label="Bu kartı gizle" onClick={hide}>
         <X size={17} />
       </button>
     </section>

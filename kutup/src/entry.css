@@ -1,0 +1,856 @@
+/* n27 "Vitrin": the welcome, invite and team-founding screens (Entry.jsx).
+   Two looks to choose from: .sky-entry (1, the living sky) and .card-entry
+   (2, the library card). Surfaces use the tokens; the sky keeps its own
+   palette (home.css) and its rules skip the automatic dark twins. Motion is
+   transform/opacity only; the sky's loops follow the motion setting through
+   .home-sky (home.css), Kara's through kara.css. */
+
+.entry {
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--canvas);
+  color: var(--ink);
+}
+/* Inputs at 16px: iOS Safari zooms the page into anything smaller. */
+.entry .field-label input {
+  font-size: 16px;
+  padding: 13px 14px;
+}
+.entry .field-label {
+  color: var(--muted);
+}
+.entry .color-options {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.entry .color-options button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+/* The swatch is small; the finger target is 44px. */
+.entry .color-options button::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+.entry-brand {
+  display: inline-block;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+  line-height: 1;
+}
+.entry-brand > span {
+  margin-left: 1px;
+  color: var(--accent);
+}
+.entry-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+.entry .entry-actions .btn {
+  min-height: 50px;
+  margin-top: 0;
+  font-size: 14.5px;
+}
+.entry-note {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--muted);
+}
+.entry .form-error {
+  margin-top: 14px;
+}
+
+/* ======================= 1 · Gökyüzü ======================= */
+.sky-entry {
+  display: flex;
+  flex-direction: column;
+}
+.entry-sky.home-sky {
+  /* dark: keep */
+  --scene-w: max(100%, 1100px);
+  --sky-accent: #5c49b6;
+  --sky-sign: #ecd5a8;
+  --sky-sign-edge: #8a6a45;
+  --sky-sign-ink: #4b3a26;
+  --sky-halo: rgba(255, 254, 248, 0.85);
+  flex: none;
+  height: clamp(360px, 52svh, 520px);
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(#bed5ec, #cfe1f2 150px);
+}
+.entry-sky.home-sky.is-night {
+  /* dark: keep */
+  --sky-accent: #c4b9f5;
+  --sky-sign: #6d5a45;
+  --sky-sign-edge: #3b2f24;
+  --sky-sign-ink: #f6e9cf;
+  --sky-halo: rgba(29, 28, 60, 0.85);
+}
+.entry-sky .sky-scene,
+.entry-sky .sky-over {
+  width: var(--scene-w);
+}
+/* A phone sees the library and Kara's roof, a little left of the middle. */
+@media (max-width: 899px) {
+  .sky-entry:not(.on-form) .entry-sky .sky-scene,
+  .sky-entry:not(.on-form) .entry-sky .sky-over {
+    left: calc(50% - 44px);
+  }
+}
+/* The sky above the drawing, matched to its top colour at every hour. */
+.entry-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  transition: opacity 1.6s ease;
+}
+.entry-glow.warm {
+  /* dark: keep */
+  background: linear-gradient(#aab5e0, #b9c3e6 150px);
+}
+.entry-glow.night {
+  /* dark: keep */
+  background: linear-gradient(#121130, #1d1c3c 150px);
+}
+.entry-stars.sky-stars {
+  z-index: -1;
+  bottom: auto;
+  height: 46%;
+}
+.entry-copy {
+  position: relative;
+  z-index: 3;
+  padding: calc(18px + env(safe-area-inset-top)) 20px 0;
+  color: var(--sky-ink);
+  pointer-events: none;
+}
+.entry-copy .entry-brand {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--sky-ink);
+}
+.entry-copy .entry-brand > span {
+  color: var(--sky-accent);
+}
+.entry-copy h1 {
+  max-width: 340px;
+  margin: 8px 0 0;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 34px;
+  line-height: 1.03;
+  letter-spacing: -1.1px;
+  font-weight: 700;
+  color: var(--sky-ink);
+}
+.entry-live {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 330px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--sky-ink);
+  text-shadow: 0 0 6px var(--sky-halo), 0 0 2px var(--sky-halo);
+}
+.entry-live > i {
+  /* dark: keep */
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b8b6ab;
+}
+.entry-live > i.on {
+  /* dark: keep */
+  background: #6fae6a;
+  box-shadow: 0 0 0 3px rgba(111, 174, 106, 0.25);
+}
+/* Faces on the path: they stand on their point, feet first. */
+.entry-over {
+  z-index: 2;
+}
+.path-face {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.path-face > span,
+.path-face > .seat {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: grid;
+  justify-items: center;
+  width: 64px;
+  margin-left: -32px;
+  transform-origin: 50% 100%;
+}
+.path-face .avatar.small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--sky-halo), 0 3px 8px rgba(37, 36, 45, 0.18);
+}
+.path-face small {
+  max-width: 64px;
+  margin-top: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  font-weight: 750;
+  color: var(--sky-ink);
+  text-shadow: 0 0 4px var(--sky-halo), 0 0 2px var(--sky-halo), 0 0 1px var(--sky-halo);
+}
+.path-face.inside .avatar.small {
+  box-shadow: 0 0 0 2px #ffd98a, 0 0 14px rgba(255, 217, 138, 0.7); /* dark: keep */
+}
+/* Your seat on the welcome: the one thing on the sky to press. */
+.path-face .seat {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sky-ink);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.path-face .seat > svg {
+  box-sizing: content-box;
+  width: 16px;
+  height: 16px;
+  padding: 7px;
+  border: 2px dashed currentColor;
+  border-radius: 50%;
+  background: var(--sky-halo);
+  opacity: 0.9;
+}
+.path-face .seat::after {
+  content: "";
+  position: absolute;
+  inset: -8px 4px -2px;
+}
+.team-sign {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.team-sign > span {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: grid;
+  justify-items: center;
+  width: 140px;
+  margin-left: -70px;
+  transform-origin: 50% 100%;
+}
+.team-sign b {
+  max-width: 132px;
+  padding: 4px 9px 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 1.5px solid var(--sky-sign-edge);
+  border-radius: 4px;
+  background: var(--sky-sign);
+  color: var(--sky-sign-ink);
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  transform: rotate(-2deg);
+}
+.team-sign > span::after {
+  content: "";
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  background: var(--sky-sign-edge);
+}
+/* Feet on the roof edge, like .kara-home: Kara sits at 171 of its 240 units. */
+.entry-kara {
+  transform: translate(-50%, -71.25%);
+}
+.entry-kara .kara-say {
+  max-width: min(230px, 64vw);
+}
+/* The paper sheet under the sky. */
+.entry-sheet {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  margin-top: -26px;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  border-radius: 26px 26px 0 0;
+  background: var(--paper);
+  box-shadow: 0 -10px 30px rgba(40, 30, 70, 0.07);
+}
+.sheet-page {
+  max-width: 440px;
+  margin: 0 auto;
+}
+.entry-intro {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entry-intro li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.entry-intro svg {
+  margin-top: 1px;
+  color: var(--accent);
+}
+.entry-intro b {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+.entry-intro small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -8px 0 4px;
+}
+.step-back {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -12px;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+}
+.step-count {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+}
+.step-count i {
+  flex: 1;
+  max-width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background-color 0.3s ease;
+}
+.step-count i.on {
+  background: var(--accent);
+}
+.step-of {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.sheet-page h2 {
+  margin: 4px 0 4px;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 25px;
+  letter-spacing: -0.7px;
+}
+.step-note {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.entry .field-label.big input {
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 21px;
+  font-weight: 650;
+}
+form.sheet-page > .btn.full {
+  min-height: 50px;
+  margin-top: 22px;
+  font-size: 14.5px;
+}
+/* While filling in: the sky becomes a header that stays in view, so the sign
+   and your little figure change as you type. */
+.sky-entry.on-form .entry-sky.home-sky {
+  --scene-w: max(100%, 960px);
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 236px;
+  border-radius: 0 0 24px 24px;
+}
+.sky-entry.on-form .entry-copy .entry-brand {
+  display: none;
+}
+.sky-entry.on-form .entry-copy h1 {
+  font-size: 25px;
+  letter-spacing: -0.7px;
+}
+.sky-entry.on-form .entry-live {
+  display: none;
+}
+.sky-entry.on-form .entry-sheet {
+  margin-top: 0;
+  border-top: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--canvas);
+}
+
+@media (min-width: 900px) {
+  .sky-entry {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 40px 56px;
+  }
+  .entry-sky.home-sky,
+  .sky-entry.on-form .entry-sky.home-sky {
+    --scene-w: max(100%, 220svh);
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    height: auto;
+    border-radius: 0;
+  }
+  .sky-entry.on-form .entry-live {
+    display: flex;
+  }
+  /* The library sits left of the paper. */
+  .entry-sky .sky-scene,
+  .entry-sky .sky-over {
+    left: 30%;
+  }
+  .entry-copy {
+    padding: 44px 56px 0;
+  }
+  .entry-copy .entry-brand,
+  .sky-entry.on-form .entry-copy .entry-brand {
+    display: block;
+    font-size: 28px;
+  }
+  .entry-copy h1,
+  .sky-entry.on-form .entry-copy h1 {
+    max-width: 560px;
+    font-size: 54px;
+    letter-spacing: -2px;
+  }
+  .entry-live {
+    max-width: 520px;
+    font-size: 14px;
+  }
+  .entry-sheet,
+  .sky-entry.on-form .entry-sheet {
+    grid-column: 2;
+    margin: 120px 0 0;
+    padding: 28px 30px 30px;
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    background: var(--paper);
+    box-shadow: 0 24px 60px rgba(40, 30, 70, 0.16);
+  }
+  .sky-entry.on-form {
+    align-items: start;
+  }
+}
+
+/* ======================= 2 · Okuyucu kartı ======================= */
+.card-entry {
+  --line: color-mix(in srgb, var(--accent) 9%, transparent);
+  padding: calc(18px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  background:
+    linear-gradient(90deg, transparent 7px, color-mix(in srgb, var(--accent) 16%, transparent) 7px 8px, transparent 8px),
+    repeating-linear-gradient(transparent 0 27px, var(--line) 27px 28px),
+    var(--canvas);
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 400px;
+  margin: 0 auto 16px;
+  padding-left: 6px;
+}
+.card-head .sky-eyebrow {
+  color: var(--muted);
+}
+.card-stage {
+  display: grid;
+  place-items: center;
+  padding: 4px 0;
+}
+.lib-card {
+  --tint: var(--hero);
+  position: relative;
+  width: min(100%, 360px);
+  padding: 10px 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 16px 36px rgba(60, 45, 110, 0.11), 0 2px 0 var(--border);
+}
+.lib-card.filling {
+  background: linear-gradient(172deg, var(--paper) 52%, var(--tint));
+}
+.lib-card.lilac { --tint: var(--lilac); }
+.lib-card.mint { --tint: var(--mint); }
+.lib-card.peach { --tint: var(--peach); }
+.lib-card.blue { --tint: var(--blue); }
+.lib-card.pink { --tint: var(--pink); }
+.lib-card.lemon { --tint: var(--lemon); }
+.lib-card.slate { --tint: var(--slate, var(--blue)); }
+.lib-card.sand { --tint: var(--sand, var(--peach)); }
+.lib-card.olive { --tint: var(--olive, var(--mint)); }
+/* The lanyard slot of a real library card. */
+.lib-hole {
+  position: absolute;
+  top: 17px;
+  left: 50%;
+  z-index: 3;
+  width: 38px;
+  height: 8px;
+  margin-left: -19px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--canvas);
+}
+.lib-window.home-sky {
+  height: 164px;
+  border: 0;
+  border-radius: 14px;
+}
+.lib-body {
+  padding: 14px 8px 0;
+}
+.lib-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+.lib-label i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: 1px;
+}
+.lib-no {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-deep);
+}
+.lib-team {
+  margin: 8px 0 3px;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 30px;
+  line-height: 1.04;
+  letter-spacing: -1px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.lib-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.lib-faces,
+.lib-foot,
+.lib-holder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.lib-stack {
+  display: flex;
+  flex: none;
+}
+.lib-stack > span + span {
+  margin-left: -9px;
+}
+.lib-stack .avatar.small {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.lib-faces small {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.lib-faces .dot {
+  /* dark: keep */
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 3px;
+  border-radius: 50%;
+  background: #6fae6a;
+}
+.lib-foot {
+  justify-content: space-between;
+}
+.lib-foot small {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+.lib-barcode {
+  width: 120px;
+  height: 22px;
+  fill: var(--ink);
+  opacity: 0.7;
+}
+.lib-photo {
+  display: inline-block;
+  flex: none;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--paper);
+  box-shadow: 0 4px 12px rgba(37, 36, 45, 0.1);
+}
+.lib-photo .avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  font-size: 32px;
+}
+.lib-sign {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.lib-sign small {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+.lib-sign b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+}
+.lib-stamp {
+  position: absolute;
+  top: 128px;
+  right: 16px;
+  z-index: 3;
+  padding: 6px 10px 5px;
+  border: 2.5px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  color: var(--accent);
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  line-height: 1;
+}
+.lib-stamp.member {
+  border-color: var(--accent-deep);
+  color: var(--accent-deep);
+}
+.card-panel {
+  max-width: 400px;
+  margin: 22px auto 0;
+}
+.tear {
+  height: 0;
+  margin: 0 0 18px;
+  border-top: 2px dashed var(--border);
+}
+.card-intro {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.card-intro li {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 5px;
+}
+.card-intro .num {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+}
+.card-intro svg {
+  color: var(--accent-deep);
+}
+.card-intro b {
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+.card-intro small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.card-form {
+  padding: 8px 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--paper);
+}
+.card-back {
+  min-height: 44px;
+}
+@media (min-width: 900px) {
+  .card-entry {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+    grid-template-rows: auto 1fr;
+    column-gap: 64px;
+    align-items: center;
+    padding: 36px max(48px, calc(50vw - 560px)) 48px;
+    background:
+      linear-gradient(90deg, transparent 63px, color-mix(in srgb, var(--accent) 16%, transparent) 63px 64px, transparent 64px),
+      repeating-linear-gradient(transparent 0 31px, var(--line) 31px 32px),
+      var(--canvas);
+  }
+  .card-head {
+    grid-column: 1 / -1;
+    max-width: none;
+    width: 100%;
+    margin: 0 0 24px;
+    padding-left: 40px;
+  }
+  .card-head .entry-brand {
+    font-size: 28px;
+  }
+  .card-entry.on-form {
+    align-items: start;
+  }
+  .card-stage {
+    position: sticky;
+    top: 36px;
+  }
+  .lib-card {
+    width: min(100%, 460px);
+    padding: 12px 12px 22px;
+  }
+  .lib-window.home-sky {
+    height: 210px;
+  }
+  .lib-stamp {
+    top: 172px;
+    font-size: 15px;
+  }
+  .lib-body {
+    padding: 18px 12px 0;
+  }
+  .lib-team {
+    font-size: 42px;
+    letter-spacing: -1.6px;
+  }
+  .card-panel {
+    max-width: none;
+    margin: 0;
+  }
+}
+/* Whatever gets focus or scrolled to stays clear of the sticky sky. */
+html:has(.sky-entry.on-form) {
+  scroll-padding-top: 250px;
+}
+@media (min-width: 900px) {
+  html:has(.sky-entry.on-form) {
+    scroll-padding-top: 24px;
+  }
+}
+
+/* ---------- entrances: one-shot, transform/opacity only ---------- */
+.entry .rise {
+  animation: entry-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) backwards;
+}
+.entry .pop {
+  animation: entry-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0s) backwards;
+}
+.entry .swap {
+  animation: entry-swap 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.entry .swap.back {
+  animation-name: entry-swap-back;
+}
+.entry .drop {
+  animation: entry-drop 0.75s cubic-bezier(0.3, 1.35, 0.5, 1) 0.05s backwards;
+}
+.entry-words .kw > span {
+  animation: entry-word 0.62s cubic-bezier(0.3, 1.45, 0.5, 1) var(--d, 0s) backwards;
+}
+.lib-card {
+  transform: rotate(-1.6deg);
+}
+.lib-stamp {
+  transform: rotate(-9deg);
+  animation: entry-stamp 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) var(--d, 0s) backwards;
+}
+@keyframes entry-rise {
+  from { transform: translateY(26px); opacity: 0; }
+}
+@keyframes entry-pop {
+  from { transform: translateY(8px) scale(0); opacity: 0; }
+}
+@keyframes entry-swap {
+  from { transform: translateX(24px); opacity: 0; }
+}
+@keyframes entry-swap-back {
+  from { transform: translateX(-18px); opacity: 0; }
+}
+@keyframes entry-drop {
+  from { transform: translateY(30px) rotate(-7deg); opacity: 0; }
+}
+@keyframes entry-word {
+  from { transform: translateY(108%) rotate(4deg); }
+}
+@keyframes entry-stamp {
+  from { transform: scale(2.2) rotate(-20deg); opacity: 0; }
+}
+/* Until a motion setting is picked, the phone's "reduce motion" decides.
+   (Kıpırtısız makes every animation instant in home.css; Sakin keeps these
+   one-shot entrances and rests the sky's loops.) */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion]) .entry :is(.rise, .pop, .swap, .drop, .lib-stamp, .kw > span) {
+    animation: none;
+  }
+}

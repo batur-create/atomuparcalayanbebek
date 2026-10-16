@@ -167,7 +167,11 @@ export function defineSuite(target) {
     assert.equal(created.data.members[0].avatar, "🦄");
     assert.ok(group.invite.length >= 24);
     assert.ok(created.data.live === "sse" || created.data.live === "poll");
-    assert.equal((await request(`/invites/${group.invite}`)).data.count, 1);
+    const invited = (await request(`/invites/${group.invite}`)).data;
+    assert.equal(invited.count, 1);
+    // n27: the welcome shows who is waiting (names and faces only).
+    assert.deepEqual(invited.faces, [{ name: "Aylin", avatar: "🦄", color: "pink", here: false }]);
+    assert.equal(invited.here, 0);
     const second = await request("/join", { body: { invite: group.invite, name: "Deniz", avatar: "🪐" } });
     assert.equal(second.status, 201);
     people.bob = second.cookie;

@@ -16,6 +16,7 @@ import { skyAt, sunTimes } from "./villageWorld.js";
 import { modelOf } from "../shared/catalog.js";
 import { BuildingThumb } from "./Economy.jsx";
 import { KaraHome } from "./Kara.jsx";
+import { AloneTable, SAMPLE } from "./Samples.jsx";
 import "./home.css";
 
 // Kütüp's motion feel: playful paper. Cards settle with a little give,
@@ -118,8 +119,8 @@ function Ticker({ facts }) {
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 // The scene is 960 × 236 units (x from −300 to 660). A phone sees the middle,
 // a wide screen all of it. Layers sit on it in percentages of the scene.
-const at = (x, y) => ({ left: `${((x + 300) / 960) * 100}%`, top: `${(y / 236) * 100}%` });
-const span = (w) => `${(w / 960) * 100}%`;
+export const at = (x, y) => ({ left: `${((x + 300) / 960) * 100}%`, top: `${(y / 236) * 100}%` });
+export const span = (w) => `${(w / 960) * 100}%`;
 const STARS = Array.from({ length: 34 }, (_, i) => ({
   x: ((i * 97 + 31) % 950) - 295,
   y: ((i * 53 + 17) % 118) + 6,
@@ -138,7 +139,7 @@ const MILLS = [
 const FINS = Array.from({ length: 9 }, (_, i) => 202 + i * 11.4);
 const WINDOWS = Array.from({ length: 8 }, (_, i) => 206.5 + i * 11.4).filter((_, i) => i !== 4);
 const TREES = [[-280, 0], [-205, 1], [-120, 2], [-60, 0], [16, 1], [128, 2], [322, 0], [344, 1], [400, 2], [480, 0], [610, 1], [640, 2]];
-const greeting = (hour) =>
+export const greeting = (hour) =>
   hour < 5 ? "GECE MESAİSİ" : hour < 11 ? "GÜNAYDIN" : hour < 17 ? "GÜZEL BİR ÇALIŞMA GÜNÜ" : hour < 22 ? "İYİ AKŞAMLAR" : "GECE MESAİSİ";
 
 // A friend (or I) walking along the path into the library when they arrive.
@@ -170,10 +171,9 @@ function House({ x, y, w, h, roof }) {
   );
 }
 
-function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, intro }) {
-  const box = useRef(null),
-    [paused, setPaused] = useState(false);
-  // The loops stop when the sky is off screen or the app is in the background.
+// The loops stop when the sky is off screen or the app is in the background.
+export function useSkyPaused(box) {
+  const [paused, setPaused] = useState(false);
   useEffect(() => {
     let seen = true;
     const update = () => setPaused(!seen || document.visibilityState !== "visible");
@@ -185,8 +185,13 @@ function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, int
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
+  return paused;
+}
+
+// Where the sun and moon are, how dark and how warm the sky is, minute by minute.
+export function useSky(now, dark) {
   const minute = Math.floor(now / 60000);
-  const sky = useMemo(() => {
+  return useMemo(() => {
     const t = minute * 60000,
       s = skyAt(t),
       { hour, sunrise, sunset } = sunTimes(t),
@@ -205,6 +210,131 @@ function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, int
       moon: [268 + 58 * moonAt, 96 - 48 * Math.sin(Math.PI * moonAt)],
     };
   }, [minute, dark]);
+}
+
+// The drawing: a still SVG with small moving layers on top (see the note above).
+// Layers sit on the 960 × 236 scene with at() and span().
+export function SkyScene({ sky, arrivals = [] }) {
+  return (
+    <div className="sky-scene" aria-hidden="true">
+      <svg className="sky-base" viewBox="-300 0 960 236" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="sky-day" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#cfe1f2" />
+            <stop offset=".62" stopColor="#eef1ea" />
+            <stop offset="1" stopColor="#f8f1e2" />
+          </linearGradient>
+          <linearGradient id="sky-warm" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#b9c3e6" />
+            <stop offset=".55" stopColor="#f2c9c0" />
+            <stop offset="1" stopColor="#f8dcb4" />
+          </linearGradient>
+          <linearGradient id="sky-night" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#1d1c3c" />
+            <stop offset=".6" stopColor="#352f5c" />
+            <stop offset="1" stopColor="#55456a" />
+          </linearGradient>
+        </defs>
+        <rect x="-300" width="960" height="236" fill="url(#sky-day)" />
+        <rect className="sky-fade" x="-300" width="960" height="236" fill="url(#sky-warm)" style={{ opacity: sky.warm }} />
+        <rect className="sky-fade" x="-300" width="960" height="236" fill="url(#sky-night)" style={{ opacity: sky.night }} />
+        <g className="sky-land">
+          <path className="sky-hill back" d="M-300 176 C -220 152, -110 168, 0 178 C 60 150, 120 160, 180 170 S 300 150, 360 162 S 540 148, 660 168 L660 236 L-300 236Z" />
+          {MILLS.map((mill) => (
+            <g key={mill.x} transform={`translate(${mill.x} 0)`}>
+              <path className="sky-wall" d={`M-7 ${mill.y + 41} L-4 ${mill.y + 5} L4 ${mill.y + 5} L7 ${mill.y + 41}Z`} />
+              <path className={`sky-roof ${mill.roof}`} d={`M-6 ${mill.y + 6} L0 ${mill.y - 3} L6 ${mill.y + 6}Z`} />
+            </g>
+          ))}
+          <House x={-250} y={162} w={20} h={15} roof="r3" />
+          <House x={430} y={158} w={22} h={16} roof="r2" />
+          <House x={28} y={154} w={22} h={18} roof="r1" />
+          <House x={62} y={160} w={18} h={15} roof="r2" />
+          <House x={92} y={164} w={20} h={14} roof="r3" />
+          <g className="sky-crane">
+            <rect x="151" y="112" width="3" height="58" />
+            <rect className="sky-wall" x="138" y="160" width="26" height="11" rx="1" />
+          </g>
+          <g className="sky-library">
+            <rect className="sky-lib-top" x="194" y="134" width="112" height="7" rx="1.5" />
+            <rect className="sky-lib" x="198" y="141" width="104" height="30" rx="1" />
+            {FINS.map((x) => <rect key={x} className="sky-lib-top" x={x} y="141" width="3" height="30" />)}
+            {WINDOWS.map((x, i) => <rect key={x} className="sky-window" x={x} y="146" width="6" height="9" rx="1" style={{ transitionDelay: `${(i % 4) * 0.15}s` }} />)}
+            <rect className="sky-door" x="248" y="157" width="10" height="14" rx="1" />
+            {arrivals.map((a) => <rect key={a.key} className="sky-door-glow" x="248" y="157" width="10" height="14" rx="1" />)}
+            <rect className="sky-steps" x="238" y="171" width="30" height="2.5" rx="1" />
+          </g>
+          <path className="sky-hill front" d="M-300 204 C -200 186, -90 196, 0 202 C 70 184, 150 192, 210 198 S 320 186, 360 194 S 550 184, 660 198 L660 236 L-300 236Z" />
+          <path className="sky-path" d="M-300 228 C -200 222, -90 226, -10 220" />
+          <path className="sky-path" id="sky-route" d="M-10 220 C 60 210, 140 216, 190 200 S 240 182, 253 172" />
+          {TREES.map(([x, k]) => (
+            <g key={x}>
+              <rect className="sky-trunk" x={x} y={186 + k * 3} width="3" height="11" />
+              <circle className={`sky-leaf ${k % 2 ? "b" : ""}`} cx={x + 1.5} cy={182 + k * 3} r={7 + k * 1.5} />
+            </g>
+          ))}
+          {arrivals.map((a) => <Walker key={a.key} color={a.color} />)}
+        </g>
+      </svg>
+      <div className="sky-stars" style={{ opacity: sky.night }}>
+        {["a", "b"].map((half, h) => (
+          <svg key={half} className={`stars ${half}`} viewBox="-300 0 960 236" preserveAspectRatio="none">
+            {STARS.filter((_, i) => i % 2 === h).map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} />)}
+          </svg>
+        ))}
+      </div>
+      <div className="sky-orb sun" style={{ ...at(...sky.sun), width: span(34), opacity: clamp(1 - sky.night * 1.6) }}>
+        <i className="sky-halo" />
+        <i className="sky-disc" />
+      </div>
+      <div className="sky-orb moon" style={{ ...at(...sky.moon), width: span(28), opacity: clamp(sky.night * 1.4 - 0.3) }}>
+        <svg viewBox="-14 -14 28 28">
+          <mask id="sky-crescent">
+            <rect x="-14" y="-14" width="28" height="28" fill="#fff" />
+            <circle cx="6" cy="-4" r="11" fill="#000" />
+          </mask>
+          <circle r="13" fill="#f4efd9" mask="url(#sky-crescent)" />
+        </svg>
+      </div>
+      {CLOUDS.map((c) => (
+        <div key={c.d} className={`sky-drift ${c.d}`} style={{ top: `${(c.y / 236) * 100}%` }}>
+          <svg className="sky-cloud" style={{ width: span(c.w) }} viewBox="0 0 64 26">
+            <ellipse cx="30" cy="17" rx="27" ry="9" />
+            <ellipse cx="40" cy="11" rx="15" ry="11" />
+            <ellipse cx="20" cy="12" rx="11" ry="8" />
+          </svg>
+        </div>
+      ))}
+      <div className="sky-drift birds" style={{ top: "34%" }}>
+        <svg className="sky-birds" style={{ width: span(34) }} viewBox="0 0 34 14">
+          <path d="M1 9 q4 -4 8 0 q4 -4 8 0" />
+          <path d="M21 4 q3 -3 6 0 q3 -3 6 0" />
+        </svg>
+      </div>
+      {MILLS.map((mill) => (
+        <div key={mill.x} className="sky-hub" style={{ ...at(mill.x, mill.y), width: span(30) }}>
+          <svg className={`sky-blades ${mill.slow ? "slow" : ""}`} viewBox="-15 -15 30 30">
+            <rect x="-1.2" y="-14" width="2.4" height="28" rx="1" />
+            <rect x="-14" y="-1.2" width="28" height="2.4" rx="1" />
+            <circle r="2" />
+          </svg>
+        </div>
+      ))}
+      <svg className="sky-boom" style={{ ...at(140, 110), width: span(48) }} viewBox="0 0 48 30">
+        <rect x="0" y="2" width="44" height="2.6" rx="1" />
+        <line x1="36" y1="4.5" x2="36" y2="22" />
+        <rect className="sky-load" x="32" y="22" width="8" height="5" rx="1" />
+      </svg>
+      <i className="sky-puff" style={{ ...at(42, 146), width: span(7) }} />
+      <i className="sky-puff late" style={{ ...at(42, 146), width: span(7) }} />
+    </div>
+  );
+}
+
+function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, intro }) {
+  const box = useRef(null),
+    paused = useSkyPaused(box),
+    sky = useSky(now, dark);
   const here = data.members.filter((x) => x.status === "here" || x.status === "break"),
     coming = data.members.filter((x) => x.status === "coming"),
     focusing = data.members.filter((x) => x.focusEnd > now).sort((a, b) => a.focusEnd - b.focusEnd),
@@ -220,118 +350,7 @@ function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, int
   const night = sky.night > 0.5;
   return (
     <section ref={box} className={`home-sky ${night ? "is-night" : ""} ${sky.lamps ? "lamps" : ""} ${paused ? "paused" : ""} ${intro ? "intro" : ""}`}>
-      <div className="sky-scene" aria-hidden="true">
-        <svg className="sky-base" viewBox="-300 0 960 236" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="sky-day" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#cfe1f2" />
-              <stop offset=".62" stopColor="#eef1ea" />
-              <stop offset="1" stopColor="#f8f1e2" />
-            </linearGradient>
-            <linearGradient id="sky-warm" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#b9c3e6" />
-              <stop offset=".55" stopColor="#f2c9c0" />
-              <stop offset="1" stopColor="#f8dcb4" />
-            </linearGradient>
-            <linearGradient id="sky-night" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#1d1c3c" />
-              <stop offset=".6" stopColor="#352f5c" />
-              <stop offset="1" stopColor="#55456a" />
-            </linearGradient>
-          </defs>
-          <rect x="-300" width="960" height="236" fill="url(#sky-day)" />
-          <rect className="sky-fade" x="-300" width="960" height="236" fill="url(#sky-warm)" style={{ opacity: sky.warm }} />
-          <rect className="sky-fade" x="-300" width="960" height="236" fill="url(#sky-night)" style={{ opacity: sky.night }} />
-          <g className="sky-land">
-            <path className="sky-hill back" d="M-300 176 C -220 152, -110 168, 0 178 C 60 150, 120 160, 180 170 S 300 150, 360 162 S 540 148, 660 168 L660 236 L-300 236Z" />
-            {MILLS.map((mill) => (
-              <g key={mill.x} transform={`translate(${mill.x} 0)`}>
-                <path className="sky-wall" d={`M-7 ${mill.y + 41} L-4 ${mill.y + 5} L4 ${mill.y + 5} L7 ${mill.y + 41}Z`} />
-                <path className={`sky-roof ${mill.roof}`} d={`M-6 ${mill.y + 6} L0 ${mill.y - 3} L6 ${mill.y + 6}Z`} />
-              </g>
-            ))}
-            <House x={-250} y={162} w={20} h={15} roof="r3" />
-            <House x={430} y={158} w={22} h={16} roof="r2" />
-            <House x={28} y={154} w={22} h={18} roof="r1" />
-            <House x={62} y={160} w={18} h={15} roof="r2" />
-            <House x={92} y={164} w={20} h={14} roof="r3" />
-            <g className="sky-crane">
-              <rect x="151" y="112" width="3" height="58" />
-              <rect className="sky-wall" x="138" y="160" width="26" height="11" rx="1" />
-            </g>
-            <g className="sky-library">
-              <rect className="sky-lib-top" x="194" y="134" width="112" height="7" rx="1.5" />
-              <rect className="sky-lib" x="198" y="141" width="104" height="30" rx="1" />
-              {FINS.map((x) => <rect key={x} className="sky-lib-top" x={x} y="141" width="3" height="30" />)}
-              {WINDOWS.map((x, i) => <rect key={x} className="sky-window" x={x} y="146" width="6" height="9" rx="1" style={{ transitionDelay: `${(i % 4) * 0.15}s` }} />)}
-              <rect className="sky-door" x="248" y="157" width="10" height="14" rx="1" />
-              {arrivals.map((a) => <rect key={a.key} className="sky-door-glow" x="248" y="157" width="10" height="14" rx="1" />)}
-              <rect className="sky-steps" x="238" y="171" width="30" height="2.5" rx="1" />
-            </g>
-            <path className="sky-hill front" d="M-300 204 C -200 186, -90 196, 0 202 C 70 184, 150 192, 210 198 S 320 186, 360 194 S 550 184, 660 198 L660 236 L-300 236Z" />
-            <path className="sky-path" d="M-300 228 C -200 222, -90 226, -10 220" />
-            <path className="sky-path" id="sky-route" d="M-10 220 C 60 210, 140 216, 190 200 S 240 182, 253 172" />
-            {TREES.map(([x, k]) => (
-              <g key={x}>
-                <rect className="sky-trunk" x={x} y={186 + k * 3} width="3" height="11" />
-                <circle className={`sky-leaf ${k % 2 ? "b" : ""}`} cx={x + 1.5} cy={182 + k * 3} r={7 + k * 1.5} />
-              </g>
-            ))}
-            {arrivals.map((a) => <Walker key={a.key} color={a.color} />)}
-          </g>
-        </svg>
-        <div className="sky-stars" style={{ opacity: sky.night }}>
-          {["a", "b"].map((half, h) => (
-            <svg key={half} className={`stars ${half}`} viewBox="-300 0 960 236" preserveAspectRatio="none">
-              {STARS.filter((_, i) => i % 2 === h).map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} />)}
-            </svg>
-          ))}
-        </div>
-        <div className="sky-orb sun" style={{ ...at(...sky.sun), width: span(34), opacity: clamp(1 - sky.night * 1.6) }}>
-          <i className="sky-halo" />
-          <i className="sky-disc" />
-        </div>
-        <div className="sky-orb moon" style={{ ...at(...sky.moon), width: span(28), opacity: clamp(sky.night * 1.4 - 0.3) }}>
-          <svg viewBox="-14 -14 28 28">
-            <mask id="sky-crescent">
-              <rect x="-14" y="-14" width="28" height="28" fill="#fff" />
-              <circle cx="6" cy="-4" r="11" fill="#000" />
-            </mask>
-            <circle r="13" fill="#f4efd9" mask="url(#sky-crescent)" />
-          </svg>
-        </div>
-        {CLOUDS.map((c) => (
-          <div key={c.d} className={`sky-drift ${c.d}`} style={{ top: `${(c.y / 236) * 100}%` }}>
-            <svg className="sky-cloud" style={{ width: span(c.w) }} viewBox="0 0 64 26">
-              <ellipse cx="30" cy="17" rx="27" ry="9" />
-              <ellipse cx="40" cy="11" rx="15" ry="11" />
-              <ellipse cx="20" cy="12" rx="11" ry="8" />
-            </svg>
-          </div>
-        ))}
-        <div className="sky-drift birds" style={{ top: "34%" }}>
-          <svg className="sky-birds" style={{ width: span(34) }} viewBox="0 0 34 14">
-            <path d="M1 9 q4 -4 8 0 q4 -4 8 0" />
-            <path d="M21 4 q3 -3 6 0 q3 -3 6 0" />
-          </svg>
-        </div>
-        {MILLS.map((mill) => (
-          <div key={mill.x} className="sky-hub" style={{ ...at(mill.x, mill.y), width: span(30) }}>
-            <svg className={`sky-blades ${mill.slow ? "slow" : ""}`} viewBox="-15 -15 30 30">
-              <rect x="-1.2" y="-14" width="2.4" height="28" rx="1" />
-              <rect x="-14" y="-1.2" width="28" height="2.4" rx="1" />
-              <circle r="2" />
-            </svg>
-          </div>
-        ))}
-        <svg className="sky-boom" style={{ ...at(140, 110), width: span(48) }} viewBox="0 0 48 30">
-          <rect x="0" y="2" width="44" height="2.6" rx="1" />
-          <line x1="36" y1="4.5" x2="36" y2="22" />
-          <rect className="sky-load" x="32" y="22" width="8" height="5" rx="1" />
-        </svg>
-        <i className="sky-puff" style={{ ...at(42, 146), width: span(7) }} />
-        <i className="sky-puff late" style={{ ...at(42, 146), width: span(7) }} />
-      </div>
+      <SkyScene sky={sky} arrivals={arrivals} />
       <div className="sky-copy">
         <span className="sky-eyebrow">{greeting(sky.hour)}</span>
         <Kinetic as="h1" when="mount" delay={intro ? 0.3 : 0.05} text={`Selam${me ? `, ${me.name}` : ""}`}>
@@ -610,7 +629,7 @@ function MemberCard({ member, mine, now, onClick, arrived }) {
 // People at the library first (latest arrival first), then those on the way.
 const RANK = { here: 0, break: 0, coming: 1 };
 const rank = (x) => RANK[x.status] ?? 2;
-function People({ members, me, now, arrived, filter, setFilter, openMember, intro }) {
+function People({ members, me, now, arrived, filter, setFilter, openMember, intro, invite }) {
   const sorted = useMemo(
     () => [...members].sort((a, b) => rank(a) - rank(b) || (rank(a) === 0 ? (b.since || 0) - (a.since || 0) : 0)),
     [members],
@@ -662,6 +681,7 @@ function People({ members, me, now, arrived, filter, setFilter, openMember, intr
           ))}
         </AnimatePresence>
       </div>
+      {SAMPLE && members.length === 1 && me && filter === "all" && <AloneTable me={me} invite={invite} />}
       {!visible.length && (
         <Empty emoji="🪑" title="Şimdilik sakin.">
           İlk gelenin haberi buraya düşecek.
@@ -862,6 +882,7 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
           setFilter={setFilter}
           intro={intro}
           openMember={(x) => (x.id === me?.id ? navigate("me") : requireMember(() => setModal({ member: x })))}
+          invite={() => setModal("invite")}
         />
       </m.div>
       <m.div className="home-side" {...rise(2)}>

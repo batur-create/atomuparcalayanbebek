@@ -93,7 +93,7 @@ export function ModeButton({ mode, setMode }) {
 
 const slotOf = (id) => ACCESSORIES.find((a) => a.id === id)?.slot;
 // Characters (with accessories to try on) or the old emoji, side by side.
-function AvatarPicker({ value, setValue }) {
+export function AvatarPicker({ value, setValue }) {
   const dev = value.badge === "dev";
   const picked = parseAvatar(value.avatar);
   const [tab, setTab] = useState(picked || !value.avatar ? "chars" : "emoji");
@@ -170,7 +170,7 @@ function AvatarPicker({ value, setValue }) {
     </>
   );
 }
-function ProfileFields({ value, setValue }) {
+export function ProfileFields({ value, setValue }) {
   return (
     <>
       <div className="profile-preview">
@@ -256,7 +256,10 @@ export function Welcome({ invite, inviteInfo, open }) {
     </main>
   );
 }
-export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
+// Joining a team (with an invite) or founding one: the profile, the team name
+// and the account, and the one request that creates them. Shared by the modal
+// below and the welcome screens (Entry.jsx).
+export function useJoinForm({ invite, onSuccess }) {
   const [value, setValue] = useState({
       name: "",
       avatar: randomCharacter(),
@@ -266,34 +269,39 @@ export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start 
     [groupName, setGroupName] = useState("Bizim tayfa"),
     [account, setAccount] = useState({ username: "", password: "", code: "" }),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [mode, setMode] = useState(start || (standalone && !invite ? "code" : "profile")),
-    [via, setVia] = useState("login"),
-    [login, setLogin] = useState({ username: "", password: "" }),
-    [code, setCode] = useState("");
-  const submit = async (e) => {
-    e.preventDefault();
+    [error, setError] = useState("");
+  const submit = async (e, before) => {
+    e?.preventDefault();
     setBusy(true);
     setError("");
     try {
-      onSuccess(
-        await api(invite ? "/join" : "/groups", {
-          ...value,
-          groupName,
-          invite,
-          username: account.username,
-          password: account.password,
-        }),
-      );
+      const d = await api(invite ? "/join" : "/groups", {
+        ...value,
+        groupName,
+        invite,
+        username: account.username,
+        password: account.password,
+      });
+      if (before) await before(d);
+      onSuccess(d);
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
   };
+  return { value, setValue, groupName, setGroupName, account, setAccount, busy, error, setError, submit };
+}
+export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start, onNew }) {
+  const { value, setValue, groupName, setGroupName, account, setAccount, busy, error, setError, submit } = useJoinForm({ invite, onSuccess });
+  const [mode, setMode] = useState(start || (standalone && !invite ? "code" : "profile")),
+    [via, setVia] = useState("login"),
+    [login, setLogin] = useState({ username: "", password: "" }),
+    [code, setCode] = useState(""),
+    [claimBusy, setClaimBusy] = useState(false);
   const claim = async (e) => {
     e.preventDefault();
-    setBusy(true);
+    setClaimBusy(true);
     setError("");
     try {
       const d =
@@ -306,7 +314,7 @@ export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start 
     } catch (e) {
       setError(e.message);
     } finally {
-      setBusy(false);
+      setClaimBusy(false);
     }
   };
   if (mode === "code")
@@ -450,13 +458,14 @@ export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start 
               {error}
             </p>
           )}
-          <Busy loading={busy} className="btn primary full" type="submit">
+          <Busy loading={claimBusy} className="btn primary full" type="submit">
             Profilimi aç <KeyRound size={17} />
           </Busy>
           <button
             type="button"
             className="text-button centered-link"
             onClick={() => {
+              if (onNew) return onNew();
               setMode("profile");
               setError("");
             }}

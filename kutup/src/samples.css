@@ -1,0 +1,357 @@
+/* n27 phase 1 samples (Samples.jsx, ?ornek=1): the iPhone guide and the
+   empty reading table. Tokens only; the few drawing colours below have their
+   own dark values. */
+
+/* ---------- iPhone: add to home screen, drawn ---------- */
+.ios-guide {
+  position: relative;
+  margin: -6px 0 24px;
+  padding: 18px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--accent-soft);
+}
+.ios-guide-head {
+  padding: 0 52px 0 18px;
+}
+.ios-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--accent-deep);
+}
+.ios-guide-head strong {
+  display: block;
+  margin-top: 6px;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 18px;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+}
+.ios-guide-head p {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.ios-strip {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0 18px 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 18px;
+  list-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.ios-strip::-webkit-scrollbar {
+  display: none;
+}
+.ios-strip > li {
+  display: grid;
+  flex: none;
+  align-content: start;
+  gap: 3px;
+  width: min(232px, 72vw);
+  padding: 10px 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--paper);
+  scroll-snap-align: start;
+}
+.ios-strip .ig {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 6px;
+}
+.ios-no {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+}
+.ios-strip b {
+  font-size: 14px;
+}
+.ios-strip small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.ios-strip small.ios-note {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--accent-deep);
+}
+.ios-dots {
+  display: flex;
+  justify-content: center;
+}
+/* Small dots, 44px to the finger. */
+.ios-dots button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 44px;
+  padding: 0;
+  background: none;
+}
+.ios-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: transform 0.25s var(--ease-out, ease), background-color 0.25s ease;
+}
+.ios-dots [aria-current] i {
+  background: var(--accent);
+  transform: scale(1.35);
+}
+/* The little screens. */
+.ig-frame {
+  fill: var(--canvas);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.ig-sky {
+  fill: var(--hero);
+}
+.ig-line {
+  fill: var(--border);
+}
+.ig-line.soft {
+  opacity: 0.6;
+}
+.ig-card {
+  fill: var(--paper);
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+.ig-dim {
+  fill: var(--ink);
+  opacity: 0.12;
+}
+.ig-hi-row {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1.3;
+}
+.ig-t {
+  font-family: "DM Sans", sans-serif;
+  font-size: 8.5px;
+  font-weight: 500;
+  fill: var(--ink);
+}
+.ig-t.strong {
+  font-weight: 750;
+}
+.ig-t.muted {
+  fill: var(--muted);
+}
+.ig-t.accent {
+  fill: var(--accent-deep);
+}
+.ig-t.tiny {
+  font-size: 7px;
+  font-weight: 650;
+}
+.ig-ink {
+  fill: var(--ink);
+}
+.ig-stroke {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ig-stroke.hi {
+  stroke: var(--accent-deep);
+}
+.ig-sep {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.ig-icon-box {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+}
+.ig-icon-box.hi {
+  stroke: var(--accent-deep);
+}
+.ig-tap circle:first-child {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.ig-tap-dot {
+  fill: var(--accent);
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+.ig-app {
+  fill: #6755d9; /* dark: keep */
+}
+.ig-app-mark {
+  fill: none;
+  stroke: #fffdf5; /* dark: keep */
+  stroke-width: 15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ig-app-dot {
+  fill: #d7f586; /* dark: keep */
+}
+.ig-app-soft,
+.ig-app-dot-soft {
+  fill: var(--lilac);
+}
+.ig-app-soft.c1,
+.ig-app-dot-soft.c1 {
+  fill: var(--mint);
+}
+.ig-app-soft.c2,
+.ig-app-dot-soft.c2 {
+  fill: var(--peach);
+}
+.ig-app-soft.c3,
+.ig-app-dot-soft.c3 {
+  fill: var(--blue);
+}
+.ig-switch {
+  fill: var(--accent);
+}
+.ig-knob {
+  fill: var(--paper);
+}
+
+/* ---------- the empty reading table ---------- */
+.alone {
+  /* dark: keep */
+  --wood: #caa77e;
+  --wood-dark: #a9875f;
+  --lamp: #7fa77a;
+  --glow: #ffe3a3;
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+  padding: 12px 12px 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--paper);
+}
+:where(html[data-mode="dark"]) .alone {
+  --wood: #7a6248;
+  --wood-dark: #5f4b36;
+  --lamp: #4f6f4b;
+  --glow: #ffd98a;
+}
+.alone-art {
+  position: relative;
+}
+.alone-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.al-wall {
+  fill: var(--hero);
+}
+.al-shelf {
+  fill: var(--wood-dark);
+}
+.al-book {
+  fill: var(--lilac);
+  stroke: color-mix(in srgb, var(--ink) 18%, transparent);
+  stroke-width: 0.6;
+}
+.al-book.peach { fill: var(--peach); }
+.al-book.blue { fill: var(--blue); }
+.al-book.mint { fill: var(--mint); }
+.al-book.lemon { fill: var(--lemon); }
+.al-book.pink { fill: var(--pink); }
+.al-chair {
+  fill: var(--wood-dark);
+  opacity: 0.55;
+}
+.al-table {
+  fill: var(--wood);
+}
+.al-leg {
+  fill: var(--wood-dark);
+}
+.al-lamp {
+  fill: var(--lamp);
+}
+.al-lamp-post {
+  fill: var(--wood-dark);
+}
+.al-glow {
+  fill: var(--glow);
+  opacity: 0.55;
+}
+.al-page {
+  fill: var(--paper);
+  stroke: color-mix(in srgb, var(--ink) 35%, transparent);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+.al-page.b {
+  fill: none;
+}
+.al-tea {
+  fill: var(--peach);
+  stroke: color-mix(in srgb, var(--ink) 35%, transparent);
+  stroke-width: 0.8;
+}
+/* You on the first chair, Kara asleep at the far end of the table. */
+.alone-me {
+  position: absolute;
+  left: 34%;
+  top: 57%;
+  transform: translate(-50%, -50%);
+}
+.alone-me .avatar.small {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.alone-kara {
+  position: absolute;
+  left: 74%;
+  top: 70%;
+  width: 15%;
+  transform: translate(-50%, -71.25%);
+}
+.alone-kara svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.alone-copy {
+  padding: 0 6px;
+}
+.alone-copy strong {
+  display: block;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 19px;
+  letter-spacing: -0.4px;
+}
+.alone-copy p {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.alone-copy .btn {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 14px;
+  font-size: 13.5px;
+}
