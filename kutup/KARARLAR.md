@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n24 Ses t
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
 | n27 | Vitrin ve cila: Gökyüzü girişi, gizli davet, sahte basılabilir avı | Tasarım | 16 Eki 23:00 | 1743855a |
 | n26 | Köy 2.0: odak stüdyosu ve yaşayan harita | Köy | 16 Eki 21:00 | 00990aa5 · d5651113 · f541476a |
@@ -67,6 +68,28 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n24 Ses t
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d22 · Ana sayfa hata avı (Batur'un ekran görüntüsü)
+Düzeltme · 17 Eki 2026 · 4d5a5cfb · Worker d2761763
+
+**Ne yapıldı:** Batur canlı ana sayfanın (masaüstü, koyu Lavanta) ekran görüntüsünü attı: "nasıl hatalar görüyorsun". Görüntü yerelde aynı genişlikte yeniden kuruldu; altı hata bulundu, sebepleriyle düzeltildi:
+- **Sol menüdeki ekip kartı gri, köşeli bir kutuydu.** Kart bir düğme, ama kendi zemini, iç boşluğu ve köşesi yoktu; tarayıcı varsayılan düğmesini çiziyordu (koyuda gri, açıkta açık gri). n18'den beri böyleydi. Artık şeffaf, yuvarlak köşeli; üstüne gelince kart görünümü.
+- **Üst çubukta güneş simgesinin yanında boş, geniş bir kutu vardı.** n26'daki "İnşaat / Serbest" anahtarı, üst çubuktaki görünüm düğmesiyle aynı sınıf adını (`.mode-switch`) taşıyordu; stüdyonun iki sütunlu kutusu üst çubuğa da uygulanıyordu (açılan menünün satırları da etkileniyordu). Stüdyonunki `.studio-mode` oldu.
+- **"Herkes" çipinin sol üst köşesinde küçük yeşil bir nokta vardı.** Filtrelerin kayan vurgusu (`.filter-pill`) da bir `<i>`; renk noktası kuralı (`.filter-chip i`) ona da uyup onu 4 px'lik noktaya çeviriyordu. Vurgu artık çipin tamamını kaplıyor ve filtreler arasında kayıyor.
+- **"Kim nerede?" kartları yan yana kayıktı.** Kart bir düğme ve düğme, içeriği kendinden kısa kalınca dikeyde ortalıyor; yanındaki kart uzun olunca (Batur'un "Kurucu" satırı, odaktakinin süre çubuğu) diğerinin içeriği aşağı kayıyordu. İçerik artık üstten başlıyor, alt satır her kartta en altta. Telefonda da aynı.
+- **Gece mesaisinde ay görünmüyordu.** Geniş ekranda sahne 236 px'lik gökyüzünden uzun, üstü kesiliyor; ay (öğlen de güneş) kesilen kısımda kalıyordu. Artık en az kendi yarıçapı kadar görünür alanın içinde. Dar ekranda değişiklik yok.
+- **"Plan yap"ın çevresinde köşeli bir çerçeve kalıyordu.** Pencere kapanınca odak açan düğmeye dönüyor (n27); not yazılıp fareyle kaydedilince tarayıcı odak halkasını gösteriyordu ve yazı düğmesinin köşesi olmadığı için kare çiziliyordu. Fareyle ya da dokunarak kapanınca halka artık çıkmıyor (klavyeyle kapanınca çıkıyor); yazı düğmelerinin halkası yuvarlak.
+- **Test:** tarayıcı testine "ana sayfa kendi görünümünü koruyor" kontrolü eklendi (ekip kartı zemini, üst çubuk düğmesi, filtre vurgusu, kart hizası).
+
+**Kararlar ve nedenleri:**
+- Sol taraftaki yel değirmeni geniş ekranda selamlamanın arkasında kalıyor; hata sayılmadı, sahnenin parçası. Batur isterse kaydırılır.
+- Ay için kahraman alanı büyütülmedi (düzeni değiştirirdi); yalnız ay ve güneş görünür alana çekildi.
+
+**Batur'un sözleri:** "nasıl hatalar görüyorsun bulamazsan ipucu verecem ama bul."
+
+**Açık:** Gerçek iPhone'da bakılmadı.
+
+**Dosyalar:** `home.css`, `koy.css`, `styles.css`, `polish.css`, `Home.jsx`, `App.jsx`, `Modal.jsx`, `tests/browser_smoke.py`.
 
 ### n23 · Tema revizyonu: altı kapsamlı tema paketi
 Tema · 17 Eki 2026 · 82f2136e · a0f366e1 (bulut oturumu, PR #3) · Worker da4c894e

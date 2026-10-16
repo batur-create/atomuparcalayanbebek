@@ -239,6 +239,12 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - Tema jetonları `src/themes.css`'te, eski kimlikler `THEME_MOVED` ile eşleniyor.
 - Yeni CSS'te renk sabitlemek yerine jeton kullan; `scripts/theme-css.js` sabit nötrleri derlemede temaya bağlıyor, `scripts/theme-check.mjs` kontrastı denetliyor.
 
+**d22 Ana sayfa hata avı (17 Ekim, Worker d2761763):** Batur'un ekran görüntüsündeki 6 hata düzeldi. Notlar:
+- Düğme olan kartlara (`<button>`) zemin, köşe ve iç boşluk ver; yoksa tarayıcının gri düğmesi görünür.
+- Yeni bileşende sınıf adı seçmeden önce `grep` ile çakışma ara (`.mode-switch` hem üst çubukta hem Köy stüdyosundaydı; stüdyonunki `.studio-mode`).
+- Kişi kartları sütun halinde (`display: flex`), yan yana kartlar hizalı. Ay ve güneşin üst konumu `--orb-y` değişkeninde; ana sayfa onu görünür alana çekiyor.
+- Pencere fareyle kapanınca odak dönen düğmede halka yok (`quiet-focus`, `Modal.jsx`).
+
 **Bulut kredisi (17 Ekim):** ~30 dolar kaldı, iş başına ~20–25 dolar gidiyor. Kalan kredi n25'e ayrıldı. Görsel ve onaya bağlı işler (Kara'nın yerleşmesi, n24, n28), Batur'un haftalık limiti perşembe sıfırlanınca yerelde yapılacak.
 
 **Sıradaki işler (Batur'un onayladığı plan; ayrıntılı tanımlar panoda):**

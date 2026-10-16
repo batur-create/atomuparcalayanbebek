@@ -137,6 +137,7 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✔ **Kara:** doğal kara kedi, kodla yaşayan SVG. Statik görsel istenmedi.
 - ✔ **n17 menü (B):** 4 sekme (Kütüp, Köy, Pano, Ben), ☰ yok, planlar ana sayfada "Kim ne zaman geliyor?", ana eylem Geldim. A (5 sekme) seçilmedi.
 - ✔ **n18-2 görsel şölen turu:** Batur: "Abi çok beğendim ... Temiz iş çıkarmışsın." Hareket animasyonları beğenildi.
+- ✔ **d22 düzeltmeleri:** düğme olan her kart kendi zeminini, köşesini ve iç boşluğunu tanımlar (yoksa tarayıcı gri kutu çizer); sınıf adı yeni bileşende tekrar kullanılmaz (`.mode-switch` çakışması); gökyüzündeki ay ve güneş geniş ekranda da görünür alanda kalır.
 - ✔ **n23 temaları:** altı kapsamlı paket (Lavanta, Lacivert, Petrol, Kiremit, Gül, Grafit), her biri zemin, kart, yazı, gökyüzü ve odak kartıyla; soluk yazılar 4.5:1. Batur onayladı.
 - ✘ **n18 temaları:** yalnız vurgu rengi değişiyor, tonlar soft ve birbirine yakın ("tema dediğin daha kapsamlı olur"). Revizyon n23.
 - ✘ **Pano'ya dosya/fotoğraf yükleme:** istenmedi ("biraz abartı olur").
