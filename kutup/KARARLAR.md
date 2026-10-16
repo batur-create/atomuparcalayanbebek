@@ -19,7 +19,7 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda: n06 (Kara'yı baştan tasarlama: sitede yaşayan, işlevli kedi), n14 (Başarımlar), n22 (Köy animasyonuna daha fazla ayrıntı). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda: n06 (Kara: sitede yaşayan, işlevli kedi), n14 (Başarımlar), n22 (Köy ayrıntısı), n23 (Tema revizyonu), n24 (Ses turu), n25 (Hesaplar arası geçiş). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
@@ -78,6 +78,7 @@ Tasarım · 16 Ekim 2026 · ea86b4c4 (Worker e3c0ea53)
 **Batur'un sözleri:** "bazı elemanlar birazcık sönük mü kalmış" · "sadelik demek hani görsel şölenden vazgeçmek demek değil" · "bu kadarcık sade de sevmiyorum" · "Instagram'da paylaşıp vay be dedirteceğin bir şeyler" · "motion grafik ... akıcı ve hani her şeye böyle hani dimdirek değil animasyonlarla hareket" · "ayarlardan kapatabilirim ... sitemizin temasına uyan şekilde yazarak" · "bana uygun seçenek de ekleyelim ... sadece kız temalı olmasın" · "sol altta Milli Kütüphane ... tıklanabilir bir şeye benziyor ama tıklayınca bir şey olmuyor" · "ekip ... yazıya basınca niye bir şey olmuyor ... tam isim gözükmüyor".
 **Denenip vazgeçilenler:** Gökyüzünü tek SVG'de CSS ile oynatmak (yavaş telefonda takılıyordu). Ağaç sallanması (maliyetine değmedi).
 **Açık:** Kara'nın ana sayfaya işlevli dönüşü n06'da (öneri n06 tanımında). Köy animasyonuna daha fazla ayrıntı n22.
+**Batur'un onayı (16 Ekim akşamı):** "Abi çok beğendim. Aga bence gayet güzel olmuş ... Temiz iş çıkarmışsın." Ardından: temalar zayıf (n23), sesler daha gerçekçi olsun (n24), iki ekip için iki hesap doğru ama hesaplar arası geçiş kolay olmalı (n25), Pano'ya dosya yükleme gerekmez.
 **Dosyalar:** `src/Home.jsx` (HomeSky katmanları, Ticker, Kinetic, Reveal, StatusArt, VillageTile, BoardTile), `src/home.css`, `src/motionPref.js`, `src/MePage.jsx` (TeamModal), `src/Account.jsx` (LookModal), `src/App.jsx` (saat, sekme kayması, Board), `public/mode.js`, `src/ui.jsx` (reducedMotion), `server/app.js` + `shared/avatars.js` + `src/api.js` (renkler, temalar). Testler: 93 birim, 45 tarayıcı, canlı duman testinde yeni adım.
 
 ### n17 · Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa

@@ -8,6 +8,8 @@ Görsel bir işe başlamadan önce bunu oku. Öncelik sırası: Batur'un sözü 
 - Oyunsu ayrıntılar küçük ve yerinde: eğik "damga" etiketleri, kesik çizgili daireler, küçük yıldızlar. Gösteriş değil, sıcaklık.
 - Şantiye ve köy çizimleri inşaat mühendisi gözüyle doğru olur; ayrıntı bu sitenin kimliği.
 - **Sade ama şölen:** Sadelik akışta tekrar ve kafa karışıklığı olmaması demek; görsel şölenden vazgeçmek değil (Batur, 16 Ekim: "bu kadarcık sade de sevmiyorum"). Her kartın bir kişiliği olsun: küçük çizim, kişinin rengi, canlı bir bilgi. Ama birbirinin kopyası, işlevsiz süs yok.
+- **Basılabilir görünen her şey bir iş yapar.** Ok, kart görünümü, hover ya da çerçeve taşıyan her yazı ve kutu dokununca adını taşıdığı şeyi açar (ekip adı → ekip kartı, kütüphane → yol tarifi). İşi yoksa basılabilir görünmez. (Batur, 16 Ekim: "basınca bir şey olacakmış gibi duran ama hiçbir şey olmayan tuşlar, yazılar görünce rahatsız oluyorum.")
+- **Tema demek kapsamlı:** bir tema yalnız vurgu rengini değil zemini, kartları, kahraman alanını ve gökyüzü tonunu birlikte değiştirir; temalar birbirinden belirgin ayrılır (n23).
 - Telefon önce: iPhone Safari ve ana ekran uygulaması. 375 px'te (360'ta da) taşma yok, dokunulan her şey en az 44 px, hover'a bağlı kontrol yok, safe-area'ya uyulur.
 
 ## 2. Renk
@@ -99,6 +101,9 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✔ **n15 karanlık tema:** gün batımında otomatik koyulaşır; Kara ay ışığı dairesinin önünde durur.
 - ✔ **Kara:** doğal kara kedi, kehribar gözler, kodla yaşayan SVG. Statik görsel istenmedi.
 - ✔ **n17 menü (B):** 4 sekme (Kütüp, Köy, Pano, Ben), ☰ yok, planlar ana sayfada "Kim ne zaman geliyor?", ana eylem Geldim. A (5 sekme) seçilmedi.
+- ✔ **n18-2 görsel şölen turu:** Batur: "Abi çok beğendim ... Temiz iş çıkarmışsın." Hareket animasyonları beğenildi.
+- ✘ **n18 temaları:** yalnız vurgu rengi değişiyor, tonlar soft ve birbirine yakın ("tema dediğin daha kapsamlı olur"). Revizyon n23.
+- ✘ **Pano'ya dosya/fotoğraf yükleme:** istenmedi ("biraz abartı olur").
 - ✘ **n17'nin ilk hâli fazla sade:** Batur: "bazı elemanlar birazcık sönük", Köy/Pano satırları "çok basit tasarlanmış gibi". Düzeltmesi n18-2 (kutucuklar, çizimler, renkler).
 - ✔ **n18 canlı ana sayfa:** saatle değişen gökyüzü kartı (köy, Milli Kütüphane silueti, vinç, değirmen), gelişte kart dönüşü + "GELDİ" damgası + kütüphaneye yürüyen figür, Geldim'de konfeti, kayan sekme işareti. 25 sn'lik video önizlemesiyle onaylandı.
 
