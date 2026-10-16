@@ -23,6 +23,7 @@ Açık işler panoda: n17 (Menü akışını sadeleştirme), n06 (Kara'yı başt
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d21 | Yeni çalışma sistemi: tasarım rehberi, karar kaydı, kodlu pano | Sistem | 16 Eki 10:05 | ef11b80d |
 | n16 | Tema düğmesi ana ekranın sağ üstünde | Tema | 16 Eki 10:05 | 16e35609 |
 | n13 | Özgün çizilmiş avatarlar | Profil | 16 Eki 01:30 | da136d96 |
 | n15 | Karanlık tema (hava kararınca otomatik) | Tema | 15 Eki 21:00 | 628de73a |
@@ -59,6 +60,17 @@ Açık işler panoda: n17 (Menü akışını sadeleştirme), n06 (Kara'yı başt
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d21 · Yeni çalışma sistemi: tasarım rehberi, karar kaydı, kodlu pano
+Sistem · 16 Eki 10:05 · ef11b80d
+
+**Ne yapıldı:** DESIGN.md (sitenin görünümü ve çizim dili), KARARLAR.md (bu dosya), HANDOFF.md 67 binden 28 bin karaktere indi ve bölüm 0'a oturum başlangıç sırası eklendi. Panoda kartların kodu görünüyor; tam tanım (`spec`), verilen kararlar (`decisions`), görsel/teknik ve onay bekliyor (`review`) durumu eklendi.
+
+**Kararlar ve nedenleri:** Yeni sohbetler siteye bakmadan çalışıyordu (n13'ün ilk çizimleri reddedildi) ve bir sohbet bilmediği bir işe (n16) kısa brif yazdı. Batur'un seçtiği düzen: paket bitince her şey diske yazılır, sonra Claude hazır bir `/compact` satırı verir ve aynı sohbette devam edilir. Yeni sohbet yalnızca alakasız ya da paralel işler için açılır; brifi işi bilen yazar. Her oturum pano yan panelde açık başlar.
+
+**Batur'un sözleri:** "handofflarda detay daha iyi olsun", "her yapılan iş ve her işin verilen kararları detaylı anlatımı tek dosyada olursa agent onları okuyup yabancılık çekmez", "ama bunları kredi efficient da yapmalıyız".
+
+**Dosyalar:** `kutup/DESIGN.md`, `kutup/KARARLAR.md`, `kutup/HANDOFF.md`; iş panosu artifact'i.
 
 ### n16 · Tema düğmesi ana ekranın sağ üstünde
 Tema · 16 Eki 10:05 · 16e35609
