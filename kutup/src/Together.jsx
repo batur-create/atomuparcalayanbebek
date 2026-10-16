@@ -10,7 +10,7 @@ import "./together.css";
 const minutesLeft = (m, now) => Math.max(1, Math.ceil((m.focusEnd - (m.focusPausedAt || now)) / 60000));
 
 /** Friends focusing right now, their minutes left and the imece they bring. */
-export function DeskMates({ me, members, now, dark = false }) {
+export function DeskMates({ me, members, now, dark = false, onJoin }) {
   const mates = members.filter((m) => m.id !== me?.id && m.focusEnd > now);
   if (!mates.length) return null;
   const focusing = me?.focusEnd > now;
@@ -25,6 +25,11 @@ export function DeskMates({ me, members, now, dark = false }) {
         {mates.length === 1 ? `${mates[0].name} odakta · ${minutesLeft(mates[0], now)} dk` : `${mates.length} arkadaşın odakta`}
         {focusing ? ` · imece +%${Math.min(20, mates.length * 5)}'e kadar` : " · katılırsan imece +%5"}
       </span>
+      {onJoin && !focusing && (
+        <button type="button" className="join" onClick={() => onJoin([...mates].sort((a, b) => b.focusEnd - a.focusEnd)[0])}>
+          Katıl
+        </button>
+      )}
     </div>
   );
 }

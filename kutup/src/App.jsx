@@ -34,6 +34,7 @@ import {
   Reply,
   Send,
   Settings2,
+  SlidersHorizontal,
   Sparkles,
   Square,
   Trash2,
@@ -74,7 +75,7 @@ import { kindFor } from "./Village.jsx";
 import { BY_ID, CHAIN_GAP, CLASSES, GRACE, RHYTHMS, fits, minutesOf, modelOf, refundLater, refundNow, rhythmAt, rhythmEnd, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal, ReceiptCard } from "./Economy.jsx";
 import { MemberStats } from "./Stats.jsx";
-import { SoundButton, SoundMixer, useSoundFollowsFocus } from "./Sound.jsx";
+import { SoundButton, SoundPanel, useSoundFollowsFocus } from "./Sound.jsx";
 import { FocusScreen, enterFullscreen } from "./FocusScreen.jsx";
 import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Together.jsx";
 import { VillagePanel, useVillage } from "./VillageMap.jsx";
@@ -1052,6 +1053,7 @@ export default function App() {
                 onScreen={() => setFocusScreen(true)}
                 rhythm={data.group.rhythm}
                 outcome={buildOutcome}
+                onJoin={joinFriend}
               />
               <div className="focus-side">
                 <VillagePanel
@@ -1068,50 +1070,6 @@ export default function App() {
                   session={session}
                   week={data.week}
                 />
-                <SoundMixer />
-                <WeekBoard members={data.members} me={me} />
-                <section className="panel">
-                  <div className="section-heading">
-                    <h2>Beraber odaktayız</h2>
-                    <span className="count-tag">{focusMembers.length}</span>
-                  </div>
-                  {focusMembers.length ? (
-                    focusMembers.map((m) => (
-                      <div className="focus-friend" key={m.id}>
-                        <Avatar member={m} size="small" />
-                        <div>
-                          <strong>
-                            {m.name}
-                            {m.id === me?.id ? " (sen)" : ""}
-                            {m.focusStrict ? " 🏗️" : ""}
-                          </strong>
-                          <small>
-                            {Math.ceil((m.focusEnd - now) / 60000)} dakika kaldı
-                          </small>
-                        </div>
-                        {m.id !== me?.id && !me?.focusEnd && (
-                          <button
-                            className="btn small-btn"
-                            onClick={() => joinFriend(m)}
-                          >
-                            Katıl
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <Empty emoji="🎧" title="İlk seans senden.">
-                      Sen başlayınca ekibin de sana katılabilir.
-                    </Empty>
-                  )}
-                </section>
-                <section className="focus-tip">
-                  <span>🌱</span>
-                  <p>
-                    Bugün <strong>{me?.focusToday || 0} dakika</strong> kendine
-                    yatırım yaptın. Küçük adımlar da ilerlemedir.
-                  </p>
-                </section>
               </div>
             </div>
           )}
@@ -1319,12 +1277,13 @@ const clockTR = (t) => {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };
 const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
-function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null }) {
+function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
     [model, setModel] = useState(pickedModel),
     [picking, setPicking] = useState(false),
+    [mixer, setMixer] = useState(false),
     [invite, setInvite] = useState(() => storage.get("kutup-invite") === "1");
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
@@ -1457,6 +1416,29 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
           </span>
         </div>
       </div>
+      {!compact && !running && !finishing && (
+        <div className="mode-switch" role="group" aria-label="Çalışma şekli">
+          {[
+            [true, "🏗️", "İnşaat", "köye bina, tam maaş"],
+            [false, "🎧", "Serbest", "risk yok, yarım maaş"],
+          ].map(([on, icon, label, hint]) => (
+            <button
+              key={label}
+              type="button"
+              className={fidan === on ? "on" : ""}
+              aria-pressed={fidan === on}
+              onClick={() => {
+                setFidan(on);
+                storage.set("kutup-fidan-on", on ? "1" : "0");
+              }}
+            >
+              <span aria-hidden="true">{icon}</span>
+              <b>{label}</b>
+              <small>{hint}</small>
+            </button>
+          ))}
+        </div>
+      )}
       {!running && !finishing && fidan && (
         <button type="button" className="build-pick" onClick={() => setPicking(true)}>
           <BuildingThumb id={item.id} size={62} />
@@ -1485,8 +1467,16 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
               </button>
             ))}
           </div>
-          <p className="free-note">Serbest çalışma: yapı yok, risk yok, maaşın yarısı ({duration} dk → {wageFor(duration, false)} 🧱).</p>
         </>
+      )}
+      {!compact && !running && !finishing && (
+        <p className="mode-hint">
+          {fidan
+            ? onComputer()
+              ? "Bitince köyüne eklenir. Bu sekmeyi kapatma."
+              : "Bitince köyüne eklenir. Çıkarsan 1 dk içinde dön."
+            : `Yapı yok, risk yok: ${duration} dk → ${wageFor(duration, false)} 🧱.`}
+        </p>
       )}
       {round && !running && !finishing && (
         <p className="rhythm-note">
@@ -1543,27 +1533,6 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
       {picking && (
         <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} founder={me?.badge === "dev"} maxMinutes={round ? roundMinutes : 0} />
       )}
-      {!compact && !running && !finishing && (
-        <button
-          type="button"
-          className={`fidan-toggle ${fidan ? "on" : ""}`}
-          aria-pressed={fidan}
-          onClick={() => {
-            setFidan(!fidan);
-            storage.set("kutup-fidan-on", fidan ? "0" : "1");
-          }}
-        >
-          <span aria-hidden="true">{fidan ? item.emoji : "🏗️"}</span>
-          <span>
-            <b>İnşaat modu {fidan ? "açık" : "kapalı"}</b>
-            <small>
-              {fidan
-                ? `${length} dk sonunda köyüne ${item.name.toLocaleLowerCase("tr")} eklenir ve tam maaşın yatar. ${onComputer() ? "Bilgisayarda sekme ve uygulama değiştirmek serbest; bu sekmeyi kapatırsan yıkılır. Telefonda da açık tutarsan telefonun bekçin olur." : "Ekran açık kalır, telefonu kilitleme. Uygulamadan çıkarsan 1 dakika içinde dönmelisin, yoksa yıkılır."}`
-                : "Açınca katalogdan bir yapı seçersin: tam maaş ve köyüne bir bina. Kapalıyken serbest çalışırsın: yarım maaş."}
-            </small>
-          </span>
-        </button>
-      )}
       <Busy
         loading={busy || finishing}
         disabled={short > 0 || tooBig}
@@ -1591,7 +1560,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
                 ? `Temeli at ${item.emoji}`
                 : "Hadi odaklanalım"}
       </Busy>
-      <DeskMates me={me} members={members} now={now} />
+      <DeskMates me={me} members={members} now={now} onJoin={onJoin} />
       <div className="focus-tools">
         {!running && !finishing && (
           <button
@@ -1608,10 +1577,14 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
           </button>
         )}
         <SoundButton />
+        <button type="button" className="sound-pill icon-only" aria-label="Ses karışımı" onClick={() => setMixer(true)}>
+          <SlidersHorizontal size={14} />
+        </button>
         {onScreen && (
           <button
             type="button"
-            className="sound-pill"
+            className="sound-pill screen-pill"
+            aria-label="Odak ekranı"
             onClick={() => {
               enterFullscreen(); // inside the tap, or browsers refuse
               onScreen();
@@ -1623,15 +1596,19 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
         )}
       </div>
       <p className="focus-bottom">
-        {members.length ? (
+        {me?.focusToday > 0 ? (
           <>
-            <span className="mini-live" /> {members.length} kişi şu an odakta.
-            Sen de var mısın?
+            Bugün <b>{minutesLabel(me.focusToday)}</b> kendine ayırdın. Küçük adımlar da ilerlemedir.
           </>
         ) : (
           "Küçük bir başlangıç, büyük bir iyi his."
         )}
       </p>
+      {mixer && (
+        <Modal title="Şehir biraz sussun." subtitle="Yağmur, kütüphane, şömine… ya da bir kara delik." close={() => setMixer(false)}>
+          <SoundPanel />
+        </Modal>
+      )}
     </section>
   );
 }
@@ -2411,51 +2388,6 @@ function SetupCard({ enable, busy }) {
       >
         <X size={17} />
       </button>
-    </section>
-  );
-}
-function WeekBoard({ members, me }) {
-  const ranked = members
-    .filter((m) => m.focusWeek > 0)
-    .sort((a, b) => b.focusWeek - a.focusWeek);
-  const top = ranked[0]?.focusWeek || 1;
-  return (
-    <section className="panel week-board">
-      <div className="section-heading">
-        <h2>Haftanın odak tablosu</h2>
-        <Trophy size={18} />
-      </div>
-      {ranked.length ? (
-        <ol>
-          {ranked.map((m, i) => (
-            <li key={m.id} className={m.id === me?.id ? "mine" : ""}>
-              <span className="week-rank">{["🥇", "🥈", "🥉"][i] || i + 1}</span>
-              <Avatar member={m} size="tiny" />
-              <strong>
-                {m.name}
-                {m.id === me?.id ? " (sen)" : ""}
-              </strong>
-              <span className="week-bar" aria-hidden="true">
-                <i style={{ width: `${Math.max(6, (m.focusWeek / top) * 100)}%` }} />
-              </span>
-              <small>
-                {minutesLabel(m.focusWeek)}
-                {m.buildsWeek > 0 && (
-                  <span className="week-trees" title={`Bu hafta ${m.buildsWeek} bina`}>
-                    {" "}
-                    🏠{m.buildsWeek > 1 ? `×${m.buildsWeek}` : ""}
-                  </span>
-                )}
-              </small>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="muted small">
-          Bu hafta henüz biten seans yok. İlk 25 dakika tabloyu açar. 🌱
-        </p>
-      )}
-      <p className="week-note">Pazartesi sıfırlanır · tamamlanan seanslar sayılır</p>
     </section>
   );
 }

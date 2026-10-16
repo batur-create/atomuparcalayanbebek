@@ -8,7 +8,8 @@ import { buildWorld, mergeVillage, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene, KINDS } from "./Village.jsx";
 import { modelOf } from "../shared/catalog.js";
-import { avatarText } from "../shared/avatars.js";
+import { Modal } from "./Modal.jsx";
+import "./koy.css";
 
 // ---------- data ----------
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
@@ -293,15 +294,6 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
         </>
       ) : (
         <>
-          {people.length > 1 && (
-            <div className="filter-row village-people" aria-label="Mahalleye git">
-              {people.map((m) => (
-                <button key={m.id} className="filter-chip" onClick={() => flyTo(m.id)}>
-                  {avatarText(m.avatar)} {m.id === me?.id ? "Benim mahallem" : m.name}
-                </button>
-              ))}
-            </div>
-          )}
           <div className={`village-map-wrap ${full ? "village-full" : ""}`}>
             {world && (
               <VillageCanvas
@@ -337,6 +329,25 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 {full ? <Shrink size={17} /> : <Expand size={17} />}
               </button>
             </div>
+            {people.length > 1 && (
+              <div className="map-people" role="group" aria-label="Mahalleye git">
+                {people.map((m) => {
+                  const focusing = m.focusEnd > Date.now();
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={focusing ? "focusing" : ""}
+                      aria-label={`${m.id === me?.id ? "Benim mahallem" : `${m.name} mahallesi`}${focusing ? ", şu an odakta" : ""}`}
+                      onClick={() => flyTo(m.id)}
+                    >
+                      <Avatar member={m} size="tiny" />
+                      {focusing && <i aria-hidden="true">🎧</i>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {full && <span className="village-full-title">Kütüp köyü · {count} bina</span>}
             {moving && (
               <div className="move-banner" role="status">
@@ -379,7 +390,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
               />
             )}
           </div>
-          {week && <MonumentBar week={week} members={members} stages={village?.monument || 0} />}
+          {week && <KoyTiles week={week} members={members} me={me} stages={village?.monument || 0} />}
           <p className="village-caption">
             {!me
               ? "Herkesin kendi mahallesi var; odaklandıkça köy büyür. Binaya dokun, kimin olduğunu gör."
@@ -446,6 +457,89 @@ function MonumentBar({ week, members, stages }) {
         </span>
       )}
     </div>
+  );
+}
+
+// Two tiles under the map: the shared monument and the week's table; each opens its sheet.
+function KoyTiles({ week, members, me, stages }) {
+  const [open, setOpen] = useState(null);
+  const total = members.reduce((t, m) => t + (m.focusWeek || 0), 0),
+    goal = week.goal;
+  const ranked = members.filter((m) => m.focusWeek > 0).sort((a, b) => b.focusWeek - a.focusWeek);
+  const mine = ranked.findIndex((m) => m.id === me?.id);
+  return (
+    <>
+      <div className="koy-tiles">
+        <button type="button" className={`koy-tile ${week.monument ? "done" : ""}`} onClick={() => setOpen("monument")}>
+          <span className="koy-tile-head">
+            <b>🏛️ Ortak anıt</b>
+            <ArrowUpRight size={15} />
+          </span>
+          <strong>{week.monument ? `${stages}. kat dikildi` : `${total} / ${goal} dk`}</strong>
+          {!week.monument && (
+            <span className="monument-track" aria-hidden="true">
+              <i style={{ width: `${Math.min(100, Math.round((total / goal) * 100))}%` }} />
+            </span>
+          )}
+          <small>{week.monument ? "Herkese +50 🧱 yattı." : "Bitince herkese +50 🧱"}</small>
+        </button>
+        <button type="button" className="koy-tile" onClick={() => setOpen("week")}>
+          <span className="koy-tile-head">
+            <b>🏆 Bu hafta</b>
+            <ArrowUpRight size={15} />
+          </span>
+          {ranked.length ? (
+            <span className="koy-podium">
+              {ranked.slice(0, 3).map((m, i) => (
+                <span key={m.id}>
+                  <Avatar member={m} size="tiny" />
+                  <em aria-hidden="true">{["🥇", "🥈", "🥉"][i]}</em>
+                </span>
+              ))}
+            </span>
+          ) : (
+            <strong>Tablo boş</strong>
+          )}
+          <small>{mine >= 0 ? `Sen ${mine + 1}. sıradasın · ${minutesLabel(ranked[mine].focusWeek)}` : "İlk 25 dakika tabloyu açar."}</small>
+        </button>
+      </div>
+      {open === "monument" && (
+        <Modal title="Haftanın ortak anıtı" subtitle="Hep birlikte odaklandıkça meydandaki Milli Kütüphane anıtı kat kat yükselir." close={() => setOpen(null)}>
+          <MonumentBar week={week} members={members} stages={stages} />
+        </Modal>
+      )}
+      {open === "week" && (
+        <Modal title="Haftanın odak tablosu" subtitle="Pazartesi sıfırlanır · tamamlanan seanslar sayılır." close={() => setOpen(null)}>
+          <WeekList ranked={ranked} me={me} />
+        </Modal>
+      )}
+    </>
+  );
+}
+
+function WeekList({ ranked, me }) {
+  const top = ranked[0]?.focusWeek || 1;
+  if (!ranked.length) return <p className="muted small">Bu hafta henüz biten seans yok. İlk 25 dakika tabloyu açar. 🌱</p>;
+  return (
+    <ol className="week-list">
+      {ranked.map((m, i) => (
+        <li key={m.id} className={m.id === me?.id ? "mine" : ""}>
+          <span className="week-rank">{["🥇", "🥈", "🥉"][i] || i + 1}</span>
+          <Avatar member={m} size="tiny" />
+          <strong>
+            {m.name}
+            {m.id === me?.id ? " (sen)" : ""}
+          </strong>
+          <span className="week-bar" aria-hidden="true">
+            <i style={{ width: `${Math.max(6, (m.focusWeek / top) * 100)}%` }} />
+          </span>
+          <small>
+            {minutesLabel(m.focusWeek)}
+            {m.buildsWeek > 0 && <span title={`Bu hafta ${m.buildsWeek} bina`}> 🏠{m.buildsWeek > 1 ? `×${m.buildsWeek}` : ""}</span>}
+          </small>
+        </li>
+      ))}
+    </ol>
   );
 }
 

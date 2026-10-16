@@ -1,0 +1,264 @@
+/* Köy 2.0 (n26): one studio card for focusing, a bigger living village, and two
+   tiles under the map. The focus card is always dark, so its colours stay. */
+
+/* İnşaat or Serbest, under the timer. */
+.mode-switch {
+  /* dark: keep */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 14px 0 8px;
+  padding: 4px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.mode-switch button {
+  /* dark: keep */
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 7px;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: #c9ccbb;
+  text-align: left;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.mode-switch button > span {
+  grid-row: span 2;
+  font-size: 19px;
+}
+.mode-switch b {
+  /* dark: keep */
+  font-size: 13px;
+  font-weight: 700;
+  color: #ece9dd;
+}
+.mode-switch small {
+  /* dark: keep */
+  font-size: 10.5px;
+  color: #9ea392;
+}
+.mode-switch button.on {
+  /* dark: keep */
+  background: #d6ef9e;
+}
+.mode-switch button.on b {
+  /* dark: keep */
+  color: #24301a;
+}
+.mode-switch button.on small {
+  /* dark: keep */
+  color: #4b5a39;
+}
+.mode-hint {
+  /* dark: keep */
+  margin: 8px 0 2px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: center;
+  color: #b9bca9;
+}
+.focus-card .build-pick {
+  margin-top: 4px;
+}
+
+/* Friends at their desks: one line, one tap to join. */
+.desk-mates .join {
+  /* dark: keep */
+  min-height: 34px;
+  margin-left: 2px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 99px;
+  background: #d6ef9e;
+  color: #24301a;
+  font-size: 12px;
+  font-weight: 800;
+}
+.sound-pill.icon-only {
+  padding-inline: 11px;
+}
+.focus-bottom b {
+  color: inherit;
+  font-weight: 700;
+}
+
+/* The village: faces on the map take you to each neighbourhood. */
+.map-people {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+  max-width: calc(100% - 64px);
+  padding: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.map-people::-webkit-scrollbar {
+  display: none;
+}
+.map-people button {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(80, 70, 110, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 253, 247, 0.95);
+  box-shadow: 0 2px 8px rgba(40, 30, 70, 0.12);
+}
+.map-people button.focusing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft), 0 2px 8px rgba(40, 30, 70, 0.12);
+}
+.map-people i {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 13px;
+  font-style: normal;
+}
+.village-full .map-people {
+  bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+/* Two tiles under the map. */
+.koy-tiles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.koy-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  min-height: 112px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.koy-tile.done {
+  border-color: #e3c26a;
+  background: #fff8e6;
+}
+.koy-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+}
+.koy-tile-head svg {
+  flex: none;
+  color: var(--accent);
+}
+.koy-tile strong {
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+}
+.koy-tile small {
+  margin-top: auto;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.koy-tile .monument-track {
+  display: block;
+  margin: 0;
+}
+.koy-podium {
+  display: flex;
+  gap: 4px;
+}
+.koy-podium > span {
+  position: relative;
+}
+.koy-podium em {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  font-size: 12px;
+  font-style: normal;
+}
+.koy-podium .avatar {
+  flex: none;
+}
+.week-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.week-list li {
+  display: grid;
+  grid-template-columns: 26px auto minmax(0, 1fr) 70px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.week-list li > .avatar {
+  flex: none;
+}
+.week-list li strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.week-list li.mine strong {
+  color: var(--accent-deep);
+}
+.week-list .week-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+.week-list .week-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+}
+.week-list small {
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.koy-tile strong {
+  font-size: 17px;
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .village-panel .village-map-wrap {
+    height: 390px;
+  }
+  .village-panel .village-map-wrap.village-full {
+    height: 100%;
+  }
+  /* A slightly smaller timer while setting up; full size once it runs. */
+  .focus-page .focus-card:not(.running) .timer-wrap {
+    transform: scale(0.86);
+    margin: -7px auto;
+  }
+  /* The tools fit one row: the focus screen keeps only its icon. */
+  .focus-tools .screen-pill span {
+    display: none;
+  }
+}
