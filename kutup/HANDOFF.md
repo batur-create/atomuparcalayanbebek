@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **İkinci üs (17–22 Ekim 2026):** Batur'un Claude sınırı dolu; işler arkadaşının bilgisayarında, onun Claude hesabıyla, fork + PR ile yapılıyor. Kurulum, sınırlar, devir promptu ve sıradaki işlerin tanımı: `IKINCI-US.md`.
+
 Her oturum işe bu sırayla başlar:
 1. İş panosunu yan panelde aç (Artifact `open`: https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX). Batur akışı oradan izliyor. Her işin bir kodu var (n17 gibi); sohbette işi bu kodla an.
 2. Bu dosyayı oku. Burada yalnızca şu anki durum var; geçmiş KARARLAR.md'de.
