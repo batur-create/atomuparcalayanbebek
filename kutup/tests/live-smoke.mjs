@@ -78,6 +78,7 @@ check("top-bar look switch ships", bundle.includes("mode-menu") && bundle.includ
 // bundle, the sky is styled, and Motion's engine is a separate lazy chunk.
 check("four tabs and the living home ship", bundle.includes("Geliyor musun?") && bundle.includes("Hesap ve cihazlar") && bundle.includes("tab-pill") && css.includes(".home-sky") && css.includes(".sky-scene") && /motionFeatures-[\w-]+\.js/.test(bundle));
 // The show round: the motion setting, replies on the board, the team card and the new themes.
+check("Kara lives on the library roof", bundle.includes("Kara: dokun, sana bir şey söylesin") && bundle.includes("k-tail-hang") && css.includes(".kara-home"));
 check("motion setting, replies, team card and themes ship", bundle.includes("Kıpırtısız") && bundle.includes("Yanıtla") && bundle.includes("haftanın odağı") && /data-theme="?navy"?/.test(css));
 
 // 1. New team requires an account; with one it works.

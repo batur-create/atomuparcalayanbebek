@@ -102,7 +102,7 @@ export function CallOverlay({ data, me, reply, seen }) {
  * New board messages from friends, wherever you are: a banner for a few
  * seconds (tap to open the board), with a soft chime on the focus screen.
  */
-export function MessageBanner({ data, me, onBoard, focusScreen, open }) {
+export function MessageBanner({ data, me, onBoard, onHome, focusScreen, open }) {
   const [shown, setShown] = useState(null);
   const since = useRef(Date.now()),
     hide = useRef(0);
@@ -110,7 +110,8 @@ export function MessageBanner({ data, me, onBoard, focusScreen, open }) {
     const fresh = data.messages.filter((m) => m.kind !== "system" && m.memberId !== me?.id && m.created > since.current && !(m.kind === "coffee" && m.toMember === me?.id));
     if (!fresh.length) return;
     since.current = Math.max(...fresh.map((m) => m.created));
-    if (onBoard && !focusScreen) return;
+    // On the board you see it; on the home tab Kara brings it.
+    if ((onBoard || onHome) && !focusScreen) return;
     setShown(fresh.at(-1));
     if (focusScreen) chime();
     clearTimeout(hide.current);

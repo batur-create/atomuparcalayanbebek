@@ -37,7 +37,7 @@ Bütün renkler `src/styles.css` başındaki değişkenlerden gelir. Koda yeni s
 
 - **Gövde:** DM Sans. **Başlık ve büyük sayılar:** Bricolage Grotesque Variable. Başka yazı tipi ekleme.
 - Arayüz yoğun ve küçük puntolu: etiket ve ek bilgi 10–12 px, kart içi metin 13 px, normal metin 14–16 px, başlıklar 21–27 px, en büyük 35 px.
-- **Etiket stili:** 10 px, kalınlık 800, harf aralığı 1.2 px, yanında küçük vurgu noktası (`.murekkep-label` örneği).
+- **Etiket stili:** 10 px, kalınlık 800, harf aralığı 1.2 px, yanında küçük vurgu noktası (örnek: odak kartındaki "ODAK MODU").
 - Kalınlıklar: 400, 500, 600, 650, 700, 800.
 
 ## 4. Şekil ve yüzey
@@ -63,7 +63,6 @@ Bütün karakter ve rozet çizimleri Kara'nın dilinden türer (`shared/avatars.
 - Doğal bir kara kedi; siyah ya da füme tüy, kehribar gözler. Kara deliği anımsatır ama gerçek hayatta görülebilecek bir kedidir.
 - Fantastik galaksi deseni ya da doğa dışı göz yok. Statik resim ya da GIF değil, kodla yaşayan bir SVG (`src/LiveMascot.jsx`).
 - Batur'un en güçlü isteği: "canlı yaşaması en çok etkiliyor bence."
-- Eski adı Mürekkep; CSS'teki `murekkep-*` sınıfları bu yüzden.
 
 ## 6. Köy ve şantiye
 

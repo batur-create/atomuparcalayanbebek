@@ -1,0 +1,708 @@
+/* Kara (n06): a cute black hole. Poses are data-pose on the svg and change with
+   transitions; small acts (data-act) and blinks (data-blink) come from Kara.jsx.
+   Only transform and opacity move. The "Sakin" setting drops the loops and acts,
+   "Kıpırtısız" makes every change instant (home.css). */
+.kara {
+  /* dark: keep */
+  --kara-fur: #0b0a0f;
+  --kara-sheen: #1b1b27;
+  --kara-shade: #15151f;
+  --kara-pad: #121119;
+  --dil: 1;
+  --lx: 0px;
+  --ly: 0px;
+  --px: 0px;
+  --py: 0px;
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.kara g,
+.kara path {
+  transition: transform 0.55s cubic-bezier(0.34, 1.3, 0.5, 1), opacity 0.35s ease;
+}
+
+/* The ring of light: a faint warm edge by day, the photon ring by night. */
+.kara .k-rim {
+  opacity: 0.5;
+  transition: opacity 1s ease;
+}
+.is-night .kara .k-rim,
+html[data-mode="dark"] .kara .k-rim,
+.focus-card .kara .k-rim {
+  opacity: 1;
+}
+.kara .k-rim .glow {
+  stroke-width: 18px;
+  opacity: 0.3;
+}
+.kara .k-rim .core {
+  stroke-width: 7.5px;
+}
+.kara .k-rim .k-tailpos .glow {
+  stroke-width: 30px;
+}
+.kara .k-rim .k-tailpos .core {
+  stroke-width: 19.5px;
+}
+
+/* Joints. */
+.kara .k-sit,
+.kara .k-loaf,
+.kara .k-breath {
+  transform-origin: 100px 171px;
+}
+
+.kara .k-loaf {
+  opacity: 0;
+  transform: scale(0.75, 0.55);
+}
+.kara .k-headpos {
+  transform-origin: 100px 74px;
+}
+.kara .k-look {
+  transform-origin: 100px 112px;
+}
+.kara .k-tilt {
+  transform-origin: 100px 100px;
+}
+.kara .k-ear.left {
+  transform-origin: 70px 52px;
+}
+.kara .k-ear.right {
+  transform-origin: 130px 52px;
+}
+.kara .k-tail-hang {
+  transform-origin: 141px 164px;
+}
+.kara .k-tail-up {
+  opacity: 0;
+  transform-origin: 141px 162px;
+  transform: rotate(40deg) scale(0.6);
+}
+.kara .k-paw {
+  transform-origin: 84px 168px;
+}
+.kara .k-beans {
+  opacity: 0;
+}
+.kara[data-act="groom"] .k-beans {
+  opacity: 1;
+}
+.kara .k-tag {
+  transform-origin: 100px 124px;
+}
+
+/* Eyes: a thin gold ring around a wide black pupil that widens and narrows. */
+.kara .k-pupil {
+  transform-box: fill-box;
+  transform-origin: center;
+  translate: calc(var(--lx) + var(--px)) calc(var(--ly) + var(--py));
+  scale: var(--dil);
+  transition: translate 0.35s ease-out, scale 0.7s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.kara .k-lid {
+  fill: var(--kara-fur);
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  transition: transform 0.09s ease-in;
+}
+.kara[data-blink] .k-lid {
+  transform: scaleY(1);
+}
+.kara .k-shut,
+.kara .k-happy {
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0;
+}
+.kara .k-shut {
+  /* dark: keep */
+  stroke: #645f72;
+  stroke-width: 2.4;
+}
+.kara .k-happy {
+  /* dark: keep */
+  stroke: #e6b13f;
+  stroke-width: 2.6;
+}
+.kara .k-mouth {
+  /* dark: keep */
+  fill: none;
+  stroke: #2a2935;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.kara .k-yawn {
+  transform-origin: 100px 100px;
+  transform: scaleY(0);
+}
+.kara .k-tongue {
+  transform-origin: 100px 102px;
+  transform: scaleY(0);
+}
+.kara .k-whisk {
+  /* dark: keep */
+  fill: none;
+  stroke: #d2cddd;
+  stroke-width: 1;
+  stroke-linecap: round;
+  opacity: 0.5;
+  transform-origin: 100px 102px;
+}
+
+/* Things that come and go with a pose. */
+.kara .k-glasses {
+  /* dark: keep */
+  fill: none;
+  stroke: #c9a86a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0;
+  transform-origin: 100px 76px;
+  transform: translateY(-12px);
+}
+.kara .k-hat {
+  opacity: 0;
+  transform-origin: 100px 50px;
+  transform: translateY(-28px) rotate(-10deg);
+}
+.kara .k-note {
+  opacity: 0;
+  transform-origin: 100px 108px;
+  transform: scale(0.3) rotate(25deg);
+}
+.kara .k-book {
+  opacity: 0;
+  transform-origin: 100px 172px;
+  transform: translateY(10px) scaleY(0.3);
+}
+.kara .k-page {
+  transform-origin: 100px 160px;
+}
+.kara :is(.k-zzz, .k-hearts, .k-sparks) {
+  opacity: 0;
+}
+
+/* ----- poses ----- */
+/* watch: someone is on the way; eyes on the path, down to the left. */
+.kara[data-pose="watch"] {
+  --lx: -2.4px;
+  --ly: 1.4px;
+}
+.kara[data-pose="watch"] .k-headpos {
+  transform: rotate(-9deg) translate(-3px, 2px);
+}
+/* greet: a friend came in. Up, tail high, pupils wide. */
+.kara:is([data-pose="greet"], [data-pose="note"], [data-pose="cheer"]) .k-tail-hang {
+  opacity: 0;
+  animation: none;
+}
+.kara:is([data-pose="greet"], [data-pose="note"], [data-pose="cheer"]) .k-tail-up {
+  opacity: 1;
+  transform: none;
+  animation: k-flick 1.6s ease-in-out 0.5s infinite;
+}
+.kara[data-pose="greet"] {
+  --dil: 1.08;
+  --lx: -1.6px;
+  --ly: 1px;
+  animation: k-hop 0.6s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.kara:is([data-pose="greet"], [data-pose="note"]) .k-sit {
+  transform: translateY(-3px) scale(1, 1.03);
+}
+.kara[data-pose="greet"] .k-headpos {
+  transform: translateY(-3px) rotate(-5deg);
+}
+/* note: a message for you, held in the mouth. */
+.kara[data-pose="note"] {
+  --dil: 1.1;
+}
+.kara[data-pose="note"] .k-headpos {
+  transform: translateY(-2px) rotate(3deg);
+}
+.kara[data-pose="note"] .k-note {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.15s;
+}
+.kara[data-pose="note"] .k-mouth {
+  opacity: 0;
+}
+/* sleep: nobody at the library. Curled into a loaf, head down, slow breath. */
+.kara[data-pose="sleep"] .k-sit,
+.kara[data-pose="sleep"] .k-paw {
+  opacity: 0;
+  transform: scale(1.05, 0.6);
+}
+.kara[data-pose="sleep"] .k-loaf {
+  opacity: 1;
+  transform: none;
+}
+.kara[data-pose="sleep"] .k-headpos {
+  transform: translate(0, 52px) scale(0.84);
+}
+.kara[data-pose="sleep"] .k-ear.left {
+  transform: rotate(-7deg);
+}
+.kara[data-pose="sleep"] .k-ear.right {
+  transform: rotate(7deg);
+}
+.kara[data-pose="sleep"] .k-open {
+  opacity: 0;
+}
+.kara[data-pose="sleep"] .k-shut {
+  opacity: 1;
+}
+.kara[data-pose="sleep"][data-wink] .k-eye.left .k-open {
+  opacity: 1;
+}
+.kara[data-pose="sleep"][data-wink] .k-eye.left .k-shut {
+  opacity: 0;
+}
+.kara[data-pose="sleep"] .k-zzz {
+  opacity: 1;
+}
+.kara[data-pose="sleep"]:is([data-act="sigh"], [data-act="dream"]) .k-zzz .z1 {
+  animation: k-z 1.6s ease-in-out;
+}
+.kara[data-pose="sleep"]:is([data-act="sigh"], [data-act="dream"]) .k-zzz .z2 {
+  animation: k-z 1.6s ease-in-out 0.5s;
+}
+/* read: you are focusing; round glasses, a book in both paws. */
+.kara[data-pose="read"] {
+  --ly: 2.6px;
+}
+.kara[data-pose="read"] .k-glasses {
+  opacity: 1;
+  transform: none;
+}
+.kara[data-pose="read"] .k-book {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.2s;
+}
+.kara[data-pose="read"] .k-paw {
+  opacity: 0;
+}
+.kara[data-pose="read"] .k-headpos {
+  transform: translateY(3px) rotate(3deg);
+}
+/* build: your building is going up; a hard hat, eyes on the crane. */
+.kara[data-pose="build"] {
+  --lx: -2.2px;
+}
+.kara[data-pose="build"] .k-hat {
+  opacity: 1;
+  transform: none;
+}
+.kara[data-pose="build"] .k-headpos {
+  transform: rotate(-4deg);
+}
+/* cheer: the building is done. Two hops, happy eyes, sparks. */
+.kara[data-pose="cheer"] {
+  animation: k-hop 0.6s cubic-bezier(0.3, 0.7, 0.4, 1) 2;
+}
+.kara[data-pose="cheer"] .k-hat {
+  opacity: 1;
+  transform: translateY(-6px) rotate(-12deg);
+}
+.kara:is([data-pose="cheer"], [data-pose="purr"]) .k-open {
+  opacity: 0;
+}
+.kara:is([data-pose="cheer"], [data-pose="purr"]) .k-happy {
+  opacity: 1;
+}
+.kara[data-pose="cheer"] .k-sparks {
+  opacity: 1;
+}
+.kara[data-pose="cheer"] .k-sparks path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: k-twinkle 0.9s ease-in-out infinite alternate;
+}
+.kara[data-pose="cheer"] .k-sparks .s2 {
+  animation-delay: -0.3s;
+}
+.kara[data-pose="cheer"] .k-sparks .s3 {
+  animation-delay: -0.6s;
+}
+/* sad: the building fell. Ears flat, head low, big shiny pupils. */
+.kara[data-pose="sad"] {
+  --dil: 1.16;
+  --ly: 1.6px;
+}
+.kara[data-pose="sad"] .k-ear.left {
+  transform: rotate(-38deg) translate(-2px, 6px);
+}
+.kara[data-pose="sad"] .k-ear.right {
+  transform: rotate(38deg) translate(2px, 6px);
+}
+.kara[data-pose="sad"] .k-headpos {
+  transform: translateY(5px);
+}
+/* purr: a long press. Happy eyes, a head tilt, hearts. */
+.kara[data-pose="purr"] .k-tilt {
+  transform: rotate(-9deg);
+}
+.kara[data-pose="purr"] .k-look {
+  animation: k-purr 0.32s ease-in-out infinite alternate;
+}
+.kara[data-pose="purr"] .k-hearts {
+  opacity: 1;
+}
+.kara[data-pose="purr"] .k-hearts path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: k-love 1.3s ease-in-out infinite alternate;
+}
+.kara[data-pose="purr"] .k-hearts .h2 {
+  animation-delay: -0.6s;
+}
+
+/* ----- small acts ----- */
+.kara[data-act="look-l"] {
+  --lx: -2.6px;
+}
+.kara[data-act="look-l"] .k-look {
+  transform: rotate(-8deg) translateX(-3px);
+}
+.kara[data-act="look-r"] {
+  --lx: 2.6px;
+}
+.kara[data-act="look-r"] .k-look {
+  transform: rotate(7deg) translateX(3px);
+}
+.kara[data-act="look-up"] {
+  --ly: -2.8px;
+}
+.kara[data-act="look-up"] .k-look {
+  transform: translateY(-3px) rotate(-2deg);
+}
+.kara[data-act="tilt"] .k-tilt {
+  transform: rotate(14deg);
+}
+.kara[data-act="slow-blink"] .k-lid {
+  animation: k-slowblink 2s ease-in-out;
+}
+.kara[data-act="ear-l"] .k-ear.left,
+.kara[data-act="dream"] .k-ear.left {
+  animation: k-twitch 0.7s ease-in-out;
+}
+.kara[data-act="ear-r"] .k-ear.right {
+  animation: k-twitch-r 0.7s ease-in-out;
+}
+.kara[data-act="flick"] .k-tail-hang,
+.kara[data-act="hunt"] .k-tail-hang {
+  animation: k-flick-hang 1.3s ease-in-out;
+}
+.kara[data-act="groom"] .k-paw {
+  transform: translate(13px, -64px) rotate(-28deg);
+}
+.kara[data-act="groom"] .k-tilt {
+  transform: rotate(-7deg);
+}
+.kara[data-act="groom"] .k-tongue {
+  animation: k-lick 0.45s ease-in-out 0.6s 5 alternate;
+}
+.kara[data-act="groom"] .k-lid {
+  transform: scaleY(0.45);
+}
+.kara[data-act="yawn"] .k-yawn {
+  animation: k-yawn 2.4s ease-in-out;
+}
+.kara[data-act="yawn"] .k-mouth {
+  opacity: 0;
+}
+.kara[data-act="yawn"] .k-lid {
+  animation: k-squeeze 2.4s ease-in-out;
+}
+.kara[data-act="yawn"] .k-shut {
+  animation: k-shut 2.4s ease-in-out;
+}
+.kara[data-act="yawn"] .k-look {
+  transform: translateY(-3px) rotate(-3deg);
+}
+.kara[data-act="yawn"] .k-ear.left {
+  transform: rotate(-12deg);
+}
+.kara[data-act="yawn"] .k-ear.right {
+  transform: rotate(12deg);
+}
+/* The black hole breathes: pupils widen, the ring glows. */
+.kara:is([data-act="pulse"], [data-act="hunt"]) {
+  --dil: 1.14;
+}
+.kara[data-act="pulse"] .k-rim {
+  opacity: 1;
+}
+.kara[data-act="hunt"] .k-sit {
+  animation: k-wiggle 0.32s ease-in-out 6 alternate;
+}
+.kara[data-act="page"] .k-page {
+  animation: k-page 1.6s ease-in-out;
+}
+.kara[data-act="peek"] {
+  --ly: -3px;
+}
+.kara[data-act="peek"] .k-look {
+  transform: translateY(-2px);
+}
+.kara[data-act="peek"] .k-glasses {
+  transform: translateY(4px);
+}
+.kara[data-act="doze"] .k-look {
+  animation: k-doze 3s ease-in-out;
+}
+.kara[data-act="doze"] .k-lid {
+  animation: k-doze-lid 3s ease-in-out;
+}
+.kara[data-act="nod"] .k-look {
+  animation: k-nod 0.9s ease-in-out 2;
+}
+.kara[data-act="dream"] .k-whisk {
+  animation: k-whisk 0.5s ease-in-out 3 alternate;
+}
+.kara[data-act="sigh"] .k-loaf {
+  animation: k-sigh 2.6s ease-in-out;
+}
+.kara[data-act="sway"] .k-tail-hang {
+  animation: k-sway 1.6s ease-in-out 2;
+}
+.kara[data-act="breathe"] .k-breath {
+  animation: k-breathe 1.7s ease-in-out;
+}
+.kara:is([data-act="tilt"], [data-act="groom"], [data-act="sway"]) .k-tag {
+  animation: k-swing 0.9s ease-in-out 2;
+}
+
+@keyframes k-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  45% { transform: scale(1.015, 1.03); }
+}
+@keyframes k-sway {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(-5deg); }
+  70% { transform: rotate(6deg); }
+}
+@keyframes k-swing {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@keyframes k-flick {
+  0%, 100% { transform: rotate(0); }
+  50% { transform: rotate(-8deg); }
+}
+@keyframes k-flick-hang {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-6deg); }
+  60% { transform: rotate(9deg); }
+  80% { transform: rotate(-2deg); }
+}
+@keyframes k-hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-9%); }
+  70% { transform: translateY(1%); }
+}
+@keyframes k-twitch {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(-16deg); }
+  60% { transform: rotate(5deg); }
+}
+@keyframes k-twitch-r {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(16deg); }
+  60% { transform: rotate(-5deg); }
+}
+@keyframes k-slowblink {
+  0%, 100% { transform: scaleY(0); }
+  25%, 40% { transform: scaleY(0.78); }
+  55% { transform: scaleY(0.2); }
+  70%, 82% { transform: scaleY(0.78); }
+}
+@keyframes k-squeeze {
+  0%, 100% { transform: scaleY(0); }
+  25%, 70% { transform: scaleY(1); }
+}
+@keyframes k-shut {
+  0%, 20%, 75%, 100% { opacity: 0; }
+  28%, 68% { opacity: 1; }
+}
+@keyframes k-yawn {
+  0%, 100% { transform: scaleY(0); }
+  30%, 65% { transform: scaleY(1); }
+}
+@keyframes k-lick {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes k-wiggle {
+  from { transform: translateX(-1.6px); }
+  to { transform: translateX(1.6px); }
+}
+@keyframes k-page {
+  0%, 100% { transform: scaleX(1); }
+  45% { transform: scaleX(-1); }
+  55% { transform: scaleX(-1); opacity: 0; }
+  60% { transform: scaleX(1); opacity: 0; }
+  80% { opacity: 1; }
+}
+@keyframes k-doze {
+  0%, 100% { transform: none; }
+  55% { transform: translateY(5px) rotate(6deg); }
+  62% { transform: translateY(-2px) rotate(-2deg); }
+  72% { transform: none; }
+}
+@keyframes k-doze-lid {
+  0%, 100% { transform: scaleY(0); }
+  50%, 56% { transform: scaleY(0.8); }
+  62% { transform: scaleY(0); }
+}
+@keyframes k-nod {
+  0%, 100% { transform: none; }
+  50% { transform: translateY(3px) rotate(3deg); }
+}
+@keyframes k-whisk {
+  from { transform: rotate(-3deg); }
+  to { transform: rotate(3deg); }
+}
+@keyframes k-sigh {
+  0%, 100% { transform: none; }
+  45% { transform: scale(1.03, 1.06); }
+}
+@keyframes k-z {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+@keyframes k-purr {
+  from { transform: translateX(0); }
+  to { transform: translateX(0.8px); }
+}
+@keyframes k-love {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-6px) scale(1.12); }
+}
+@keyframes k-twinkle {
+  from { transform: scale(0.6) rotate(0); opacity: 0.5; }
+  to { transform: scale(1.15) rotate(20deg); opacity: 1; }
+}
+
+/* ---------- Kara on the home sky ---------- */
+/* A layer with the sky scene's geometry, above the words, letting taps through. */
+.sky-over {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 2;
+  width: max(100%, 960px);
+  aspect-ratio: 960 / 236;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.kara-spot {
+  position: absolute;
+  z-index: 2;
+  pointer-events: auto;
+  will-change: transform;
+}
+/* Feet on the roof edge: Kara sits at 171 of its 240-unit box. */
+.kara-home {
+  transform: translate(-50%, -71.25%);
+}
+/* Beside the focus timer, feet on the timer's bottom edge, tail over the next box. */
+.kara-buddy {
+  right: -6px;
+  bottom: 0;
+  width: 64px;
+  transform: translateY(28.75%);
+}
+.kara-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* The drawing is small; the finger target is not. */
+.kara-button::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: -6px -8px 30% -8px;
+  pointer-events: auto;
+}
+.kara-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+.kara-say {
+  position: absolute;
+  right: 72%;
+  top: 46%;
+  z-index: 1;
+  width: max-content;
+  max-width: min(210px, 62vw);
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 14px 4px 14px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(37, 36, 45, 0.09);
+  transform-origin: 100% 0;
+  animation: k-say 0.42s cubic-bezier(0.34, 1.45, 0.5, 1);
+  /* Taps go through to what is under the note; only its button catches them. */
+  pointer-events: none;
+}
+.kara-say > button {
+  display: inline-block;
+  margin: 2px -6px -6px 4px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: auto;
+}
+@keyframes k-say {
+  from { transform: scale(0.5) translate(8px, -6px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+/* "Sakin" keeps the pose changes, drops the loops; the phone's own setting too. */
+html[data-motion="calm"] .kara,
+html[data-motion="calm"] .kara * {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion]) .kara,
+  html:not([data-motion]) .kara * {
+    animation: none !important;
+  }
+}
+/* The focus card is always dark: a light note stands out on it. */
+.focus-card .kara-say {
+  /* dark: keep */
+  border-color: #e3dcc8;
+  background: #fffaf0;
+  color: #25242d;
+}

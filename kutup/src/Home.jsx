@@ -15,6 +15,7 @@ import { STATUS, dayWord, shortTime, minutesLabel } from "./api.js";
 import { skyAt, sunTimes } from "./villageWorld.js";
 import { modelOf } from "../shared/catalog.js";
 import { BuildingThumb } from "./Economy.jsx";
+import { KaraHome } from "./Kara.jsx";
 import "./home.css";
 
 // Kütüp's motion feel: playful paper. Cards settle with a little give,
@@ -169,7 +170,7 @@ function House({ x, y, w, h, roof }) {
   );
 }
 
-function HomeSky({ me, data, arrivals, dark, now, intro }) {
+function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, intro }) {
   const box = useRef(null),
     [paused, setPaused] = useState(false);
   // The loops stop when the sky is off screen or the app is in the background.
@@ -341,6 +342,9 @@ function HomeSky({ me, data, arrivals, dark, now, intro }) {
           <i className={here.length ? "on" : ""} />
           <Ticker facts={facts} />
         </span>
+      </div>
+      <div className="sky-over">
+        <KaraHome me={me} data={data} now={now} unread={unread} navigate={navigate} arrived={arrived} style={{ ...at(290, 134), width: span(62) }} />
       </div>
       <span className="sky-sticker" aria-hidden="true">
         ders arası
@@ -845,7 +849,7 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
     intro ? { initial: { opacity: 0, y: 22 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.75, delay: 0.35 + i * 0.12, ease: EASE_OUT } } : {};
   return (
     <div className="home-stack">
-      <HomeSky me={me} data={data} arrivals={arrivals} dark={dark} now={now} intro={intro} />
+      <HomeSky me={me} data={data} arrivals={arrivals} arrived={arrived} unread={unread} navigate={navigate} dark={dark} now={now} intro={intro} />
       <m.div className="home-main" {...rise(0)}>
         <StatusCard me={me} data={data} now={now} setModal={setModal} requireMember={requireMember} mutate={mutate} />
         {extras}

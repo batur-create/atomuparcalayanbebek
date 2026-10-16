@@ -40,11 +40,11 @@
   animation: banner-in 0.35s var(--ease-spring, ease-out);
 }
 .join-banner > span,
-.message-banner > span {
+.message-banner > span:not(.avatar) {
   flex: 1;
   min-width: 0;
 }
-.message-banner > span {
+.message-banner > span:not(.avatar) {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;

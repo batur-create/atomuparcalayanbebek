@@ -68,7 +68,7 @@ import {
 } from "./ui.jsx";
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { OwnerPage } from "./Owner.jsx";
-import { MascotCard } from "./Mascot.jsx";
+import { KaraBuddy } from "./Kara.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "./Village.jsx";
 import { BY_ID, CHAIN_GAP, CLASSES, GRACE, RHYTHMS, fits, minutesOf, modelOf, refundLater, refundNow, rhythmAt, rhythmEnd, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
@@ -239,7 +239,8 @@ export default function App() {
       .map((m) => m.id);
     if (!fresh.length) return;
     const friend = data.members.find((m) => fresh.includes(m.id) && m.id !== session.memberId);
-    if (friend) notify(`📍 ${friend.name} kütübe geldi · ${friend.location || "Milli Kütüphane"}`, 3500);
+    // On the home tab Kara says it from the library roof.
+    if (friend && tab !== "home") notify(`📍 ${friend.name} kütübe geldi · ${friend.location || "Milli Kütüphane"}`, 3500);
     setArrived((list) => [...list, ...fresh]);
     setTimeout(
       () => setArrived((list) => list.filter((id) => !fresh.includes(id))),
@@ -1050,6 +1051,7 @@ export default function App() {
                 mutate={mutate}
                 onScreen={() => setFocusScreen(true)}
                 rhythm={data.group.rhythm}
+                outcome={buildOutcome}
               />
               <div className="focus-side">
                 <VillagePanel
@@ -1067,7 +1069,6 @@ export default function App() {
                   week={data.week}
                 />
                 <SoundMixer />
-                <MascotCard navigate={navigate} focusing={Boolean(me?.focusEnd > now)} />
                 <WeekBoard members={data.members} me={me} />
                 <section className="panel">
                   <div className="section-heading">
@@ -1251,6 +1252,7 @@ export default function App() {
           data={data}
           me={me}
           onBoard={tab === "board"}
+          onHome={tab === "home"}
           focusScreen={focusScreen}
           open={() => {
             setFocusScreen(false);
@@ -1317,7 +1319,7 @@ const clockTR = (t) => {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };
 const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
-function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null }) {
+function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
@@ -1415,6 +1417,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
             : "Bir küçük odak arası."}
       </h2>
       <div className="timer-wrap">
+        {!compact && <KaraBuddy me={me} now={now} item={item} outcome={outcome} />}
         <svg className="timer-ring" viewBox="0 0 180 180">
           <circle
             cx="90"
