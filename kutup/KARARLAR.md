@@ -19,10 +19,11 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda: n18 aşama 2 (hareket dilinin diğer sekmelere yayılması), n06 (Kara'yı baştan tasarlama: sitede yaşayan kedi), n14 (Başarımlar). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda: n06 (Kara'yı baştan tasarlama: sitede yaşayan, işlevli kedi), n14 (Başarımlar), n22 (Köy animasyonuna daha fazla ayrıntı). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n18-2 | Görsel şölen turu: katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, temalar, cevaplar | Tasarım | 16 Eki 19:00 | ea86b4c4 |
 | n17 | Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa | Gezinme | 16 Eki 14:30 | c6162645 |
 | n18 | Canlı site, aşama 1: yaşayan gökyüzü ve hareket anları | Tasarım | 16 Eki 14:30 | c6162645 |
 | d21 | Yeni çalışma sistemi: tasarım rehberi, karar kaydı, kodlu pano | Sistem | 16 Eki 10:05 | ef11b80d |
@@ -62,6 +63,22 @@ Açık işler panoda: n18 aşama 2 (hareket dilinin diğer sekmelere yayılması
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n18-2 · Görsel şölen turu: katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, temalar, cevaplar
+Tasarım · 16 Ekim 2026 · ea86b4c4 (Worker e3c0ea53)
+
+**Ne yapıldı:**
+- **Performans:** Gökyüzü sabit bir çizim + üstünde ayrı hareketli katmanlar (bulut, kuş, güneş/hale, yıldız, değirmen kanadı, vinç, duman); hepsi yalnız transform/opacity. 4 kat yavaşlatılmış telefonda ana sayfa 54 fps, 33 ms kareler ve %91 dolu ana iş parçacığından sabit 60 fps'e (16,8 ms) çıktı. Uygulama saati her saniye yalnız saniye gösterilebilecekken (çalışan sayaç, Köy sekmesi, odak ekranı, ritim) atıyor, yoksa 15 sn; uygulamaya dönünce hemen yenileniyor.
+- **Ana sayfa:** gökyüzünde sırayla dönen canlı bilgi şeridi (kaç kişi kütüpte, kim yolda, kim odakta, sıradaki plan, haftalık odak), "ders arası hayat ✷" çıkartması geri geldi, selam kelime kelime yükseliyor. Durum kartı: küçük çizim (ışığı yanan kapı / yoldaki scooter / saat halkalı iğne), "Zeynep ve Batur kütüpte, masan hazır" avatarları, Milli Kütüphane yol tarifi, Geldim'de parıltı. Üye kartları kendi renginde, odaktayken ilerleme çubuğu, 👑. Planlar renkli tarih karoları ve zaman çizgisiyle. Köy ve Pano satırları yerine iki kutucuk: Köy'de ekibin son binalarının portreleri ve anıt/inşaat çubuğu, Pano'da son iki mesaj baloncukları. Başlıklar kelime kelime, bloklar kaydırınca yükseliyor; sekmeler geldikleri yönden kayıyor. Tablette üye kartları 3 sütunlu ızgara.
+- **Ben:** bugünkü ve haftalık odak, bina sayısı; ekip kartı satırı.
+- **Sol menü:** ekip adı ekip kartını açıyor (tam ad, kim nerede, haftanın odağı ve anıt, davet). Milli Kütüphane kartı "Şu an N kişi burada" ve yol tarifi (Google Haritalar).
+- **Görünüm:** dört yeni tema (Lacivert, Petrol, Kehribar, Grafit), üç sakin profil rengi (Arduvaz, Kum, Zeytin), hareket ayarı: Şölen / Sakin / Kıpırtısız. Seçilmezse telefonun "hareketi azalt" ayarı geçerli.
+- **Pano:** kişi renginde baloncuklar, kendi mesajın sağda; her mesaja "Yanıtla" (alıntılanır, yazarına mevcut "Mesajına cevap" bildirimi gider); çift dokunuşla kalp ve büyük kalp patlaması; yeni mesajlar süzülerek giriyor.
+**Kararlar ve nedenleri:** Batur sadeliği "akışta tekrar ve kafa karışıklığı olmasın" diye istemişti, görsel şölenden vazgeçmek değil. Kaybedilenler geri getirildi ama tekrar eden eylem olarak değil: çıkartma ve çizimler, köyün gerçek binaları (Köy kutucuğu), canlı odak bilgisi, Pano'nun son mesajları. Ölçüm, maliyetin animasyon sayısından değil büyük SVG'nin içinde bir şey hareket ettikçe her karede yeniden boyanmasından geldiğini gösterdi; kural: büyük çizimin içinde animasyon yok, hareket ayrı katmanda. Mesajlarda eksik olan cevap vermeydi (sunucu zaten destekliyordu, arayüz yoktu).
+**Batur'un sözleri:** "bazı elemanlar birazcık sönük mü kalmış" · "sadelik demek hani görsel şölenden vazgeçmek demek değil" · "bu kadarcık sade de sevmiyorum" · "Instagram'da paylaşıp vay be dedirteceğin bir şeyler" · "motion grafik ... akıcı ve hani her şeye böyle hani dimdirek değil animasyonlarla hareket" · "ayarlardan kapatabilirim ... sitemizin temasına uyan şekilde yazarak" · "bana uygun seçenek de ekleyelim ... sadece kız temalı olmasın" · "sol altta Milli Kütüphane ... tıklanabilir bir şeye benziyor ama tıklayınca bir şey olmuyor" · "ekip ... yazıya basınca niye bir şey olmuyor ... tam isim gözükmüyor".
+**Denenip vazgeçilenler:** Gökyüzünü tek SVG'de CSS ile oynatmak (yavaş telefonda takılıyordu). Ağaç sallanması (maliyetine değmedi).
+**Açık:** Kara'nın ana sayfaya işlevli dönüşü n06'da (öneri n06 tanımında). Köy animasyonuna daha fazla ayrıntı n22.
+**Dosyalar:** `src/Home.jsx` (HomeSky katmanları, Ticker, Kinetic, Reveal, StatusArt, VillageTile, BoardTile), `src/home.css`, `src/motionPref.js`, `src/MePage.jsx` (TeamModal), `src/Account.jsx` (LookModal), `src/App.jsx` (saat, sekme kayması, Board), `public/mode.js`, `src/ui.jsx` (reducedMotion), `server/app.js` + `shared/avatars.js` + `src/api.js` (renkler, temalar). Testler: 93 birim, 45 tarayıcı, canlı duman testinde yeni adım.
 
 ### n17 · Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa
 Gezinme · 16 Ekim 2026 · c6162645 (Worker cfa3318b)

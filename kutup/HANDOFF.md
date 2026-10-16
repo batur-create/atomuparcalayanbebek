@@ -105,6 +105,7 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 - **Dinamik isimlerden sonra Türkçe ek kullanma** ("Batur’e" hatası). "X için not", "Köy: X" gibi kalıplar kullan.
 - **Mobil öncelikli:** 375px'te yatay taşma olmamalı. Alt menüde 4 öğe var (Kütüp, Köy, Pano, Ben).
 - **Taşma tuzağı:** `display: grid` kapsayıcılarda `grid-template-columns: minmax(0, 1fr)` yoksa uzun tek satırlık (`nowrap`) metin sütunu genişletir; telefonda sayfa 434 px'e açılır ve sabit alt menü ekranın dışına düşer. Kontrolü `scrollWidth > 375` ile yap (`innerWidth` de büyüdüğü için onunla karşılaştırma yetmez).
+- **Sekme geçişi:** `AnimatePresence mode="wait"`; yeni sekme eskisi çıktıktan sonra takılır. Testlerde sekmeye bastıktan sonra o sekmenin bir öğesini bekle (`.me-page` gibi).
 - **Motion:** `motion/react`'tan `m` bileşeni kullanılıyor (`LazyMotion strict`, `motion.` yasak). `.map((m) => <m.div>)` yazma, parametre `m`'yi gölgeler; `x` de.
 - **Animasyon kuralı:** tek bir orkestra edilmiş açılış ve eyleme cevap veren hareketler. Kendi `transform`'u olan öğelerde yalnızca `from` tanımlı keyframe ve `animation-fill-mode: backwards` kullan. İnşaat sahnesi tek rAF döngüsünde 30 fps; ekran 75 dk açık kaldığı için pil bütçesine dikkat.
 - **Sayfa yenileme "uygulamadan çıkma" sayılmamalı.** 3 sn'lik yerel işaret bu yüzden var.
@@ -137,7 +138,7 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
 
-**Durum (güncel, 16 Ekim 2026 öğleden sonra):** n17 menü akışı (4 sekme, Ben, yeni ana sayfa) ve n18 canlı site aşama 1 (yaşayan gökyüzü, hareket anları) canlıda; Batur'un canlıda bakıp onaylaması bekleniyor (panoda "Onayını bekliyor"). Son kod commit'i `c6162645`, Worker `cfa3318b`, şema 20. Testler: 93 birim, 41 tarayıcı, canlı duman testi geçti. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
+**Durum (güncel, 16 Ekim 2026 akşamı):** n18-2 görsel şölen turu canlıda (commit `ea86b4c4`, Worker `e3c0ea53`): katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, yeni temalar ve renkler, ekip kartı, Pano'da cevap ve çift dokunuşla kalp. Testler 93 birim, 45 tarayıcı, canlı duman testi geçti. Batur'un canlıda bakması bekleniyor. *(Önceki:)* **Durum (16 Ekim 2026 öğleden sonra):** n17 menü akışı (4 sekme, Ben, yeni ana sayfa) ve n18 canlı site aşama 1 (yaşayan gökyüzü, hareket anları) canlıda; Batur'un canlıda bakıp onaylaması bekleniyor (panoda "Onayını bekliyor"). Son kod commit'i `c6162645`, Worker `cfa3318b`, şema 20. Testler: 93 birim, 41 tarayıcı, canlı duman testi geçti. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
 
 **Batur'un çalışma kuralları:**
 - Paketleri arka arkaya yap. Her önemli adımda: test → (göç varsa önce yedek) → deploy → canlı duman testi → commit + push → iş panosunu güncelle.
@@ -205,8 +206,9 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - Ana paket 182 KB gzip (canlıdan +21 KB) + 28 KB tembel Motion parçası.
 - **Doğrulanmadı:** gerçek iPhone'da akıcılık ve pil.
 
+**n18-2 notları:** Saat (`now`) artık her saniye değil: `fastClock` (Köy sekmesi, odak ekranı, çalışan sayaç, ritim) iken 1 sn, yoksa 15 sn. Saniye gösteren yeni bir şey eklersen `fastClock`'a koşulunu ekle. Gökyüzüne yeni hareketli parça eklerken SVG'nin içine değil `sky-scene` üstüne ayrı katman olarak ekle (DESIGN.md §7). Performans ölçümü: Playwright + CDP `Emulation.setCPUThrottlingRate` 4, yerel üretim sunucusu (`node server/index.js`, `--dev` olmadan). Hareket ayarı `src/motionPref.js` ve `public/mode.js`.
+
 **Sıradaki işler (panoda bu sırayla, 16 Ekim 2026):**
-1. **n18 aşama 2:** Hareket dilinin Köy, Pano ve Ben sekmelerine yayılması (DESIGN.md §7). Önce Batur'un aşama 1'i canlıda onaylaması.
 2. **n06 Kara'yı baştan tasarlama (öne alındı):** Kart ve poz düğmeleri kalkar. Kara ekranın kenarında, içeriği kapatmadan kendi hâlinde yaşar: etrafa bakar, yerleşir, uyuklar, dokununca uyanır. Doğal kara kedi, kehribar gözler, koyu temada da seçilir. Sonra köyde ve şantiyede dolaşma. Küçük denemelerle ilerle, her adımda Batur'a ön izleme göster. Ayrıntılar aşağıdaki "Kara yön değişikliği" bölümünde. Kaynak `LiveMascot.jsx`, `Mascot.jsx`, `mascot.css`.
 3. **n14 Başarımlar:**
    - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.

@@ -7,6 +7,7 @@ Görsel bir işe başlamadan önce bunu oku. Öncelik sırası: Batur'un sözü 
 - Sakin, sıcak bir kâğıt zemin üstünde yumuşak pastel renkler. Kütüphane defteri ile küçük bir köyün karışımı gibi bir dünya.
 - Oyunsu ayrıntılar küçük ve yerinde: eğik "damga" etiketleri, kesik çizgili daireler, küçük yıldızlar. Gösteriş değil, sıcaklık.
 - Şantiye ve köy çizimleri inşaat mühendisi gözüyle doğru olur; ayrıntı bu sitenin kimliği.
+- **Sade ama şölen:** Sadelik akışta tekrar ve kafa karışıklığı olmaması demek; görsel şölenden vazgeçmek değil (Batur, 16 Ekim: "bu kadarcık sade de sevmiyorum"). Her kartın bir kişiliği olsun: küçük çizim, kişinin rengi, canlı bir bilgi. Ama birbirinin kopyası, işlevsiz süs yok.
 - Telefon önce: iPhone Safari ve ana ekran uygulaması. 375 px'te (360'ta da) taşma yok, dokunulan her şey en az 44 px, hover'a bağlı kontrol yok, safe-area'ya uyulur.
 
 ## 2. Renk
@@ -78,6 +79,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 - **His: oyunsu kâğıt.** Kartlar yay `stiffness 300, damping 24`; kutlamalar `220 / 14`; içerik geçişi 0.32 sn giriş, 0.16 sn çıkış. Kademe öğe başına 60–120 ms, toplamı 500 ms'yi geçmez. CSS'te `--ease-out` ve `--ease-spring` (`src/motion.css`).
 - **Araç:** Motion (`motion/react`, sürüm 13.5.0) yalnız `m.*` bileşenleriyle, `LazyMotion` içinde; motor `src/motionFeatures.js` ile tembel yüklenir. Basit tek seferlik hareketlerde tarayıcının kendi `element.animate` yeterli. Sürekli süs döngüleri CSS keyframes ile.
 - **Açılış** ziyaret başına bir kez oynar, sekme değişiminde tekrar etmez.
+- **Büyük çizimin içinde animasyon yok.** Gökyüzü gibi büyük bir SVG'nin içinde tek bir şey bile oynarsa telefon her karede bütün çizimi yeniden boyar (ölçüldü: yavaş telefonda %91 işlemci, takılma). Hareket eden parça kendi küçük katmanında olur (`src/Home.jsx` HomeSky: `sky-scene` üstünde yüzde konumlu katmanlar).
+- **Hareket ayarı (Ben → Görünüm):** Şölen (hepsi), Sakin (süs döngüleri durur, geçişler kalır), Kıpırtısız (hiçbir şey kendiliğinden oynamaz). `html[data-motion]`; seçilmezse telefonun ayarı. Yeni bir süs döngüsü eklerken `home.css` sonundaki Sakin listesine ekle.
 - **Pil ve erişilebilirlik:** yalnız `transform` ve `opacity`. Ekran dışındaki ve arka plandaki döngüler durur (`.paused`). `prefers-reduced-motion` açıkken Motion hareketleri (`MotionConfig reducedMotion="user"`) ve CSS döngüleri kapanır. Odak ekranı açıkken arka plan sakin.
 
 ## 8. Metin tonu
@@ -96,6 +99,7 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✔ **n15 karanlık tema:** gün batımında otomatik koyulaşır; Kara ay ışığı dairesinin önünde durur.
 - ✔ **Kara:** doğal kara kedi, kehribar gözler, kodla yaşayan SVG. Statik görsel istenmedi.
 - ✔ **n17 menü (B):** 4 sekme (Kütüp, Köy, Pano, Ben), ☰ yok, planlar ana sayfada "Kim ne zaman geliyor?", ana eylem Geldim. A (5 sekme) seçilmedi.
+- ✘ **n17'nin ilk hâli fazla sade:** Batur: "bazı elemanlar birazcık sönük", Köy/Pano satırları "çok basit tasarlanmış gibi". Düzeltmesi n18-2 (kutucuklar, çizimler, renkler).
 - ✔ **n18 canlı ana sayfa:** saatle değişen gökyüzü kartı (köy, Milli Kütüphane silueti, vinç, değirmen), gelişte kart dönüşü + "GELDİ" damgası + kütüphaneye yürüyen figür, Geldim'de konfeti, kayan sekme işareti. 25 sn'lik video önizlemesiyle onaylandı.
 
 ## 10. Görsel bir iş nasıl yapılır
