@@ -1,0 +1,856 @@
+/* Home, Ben page and the tab bar (n17 + n18).
+   Surfaces use the tokens. The sky keeps its own palette: it is a picture of
+   the time of day, so it turns to night by the clock (or in dark mode) and its
+   rules skip the automatic dark twins. Ambient loops pause off screen. */
+
+.home-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+}
+.home-main,
+.home-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  min-width: 0;
+  align-content: start;
+}
+@media (min-width: 1001px) {
+  .home-stack {
+    grid-template-columns: minmax(0, 1fr) 330px;
+  }
+  .home-sky {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- the living sky ---------- */
+.home-sky {
+  /* dark: keep */
+  --sky-hill-back: #dde8cc;
+  --sky-hill-front: #cddfb9;
+  --sky-wall: #f6ecdc;
+  --sky-lib: #f0e8db;
+  --sky-lib-top: #ddd2c0;
+  --sky-window: #c9d7e4;
+  --sky-path: #fffdf6;
+  --sky-trunk: #a08a6e;
+  --sky-leaf: #a7c98f;
+  --sky-leaf-b: #92bc7e;
+  --sky-r1: #e2a184;
+  --sky-r2: #a9bcdc;
+  --sky-r3: #c9b1e0;
+  --sky-cloud: #ffffff;
+  --sky-crane: #e0b04f;
+  --sky-door: #8c7a66;
+  --sky-ink: #30312f;
+  --sky-muted: #6f7169;
+  position: relative;
+  min-height: 236px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  isolation: isolate;
+  background: #e9eef0;
+}
+.home-sky.is-night {
+  /* dark: keep */
+  --sky-hill-back: #2f3d3a;
+  --sky-hill-front: #283431;
+  --sky-wall: #4a4658;
+  --sky-lib: #47435a;
+  --sky-lib-top: #3a364b;
+  --sky-path: #8d86a8;
+  --sky-trunk: #4d4440;
+  --sky-leaf: #35513f;
+  --sky-leaf-b: #2e4838;
+  --sky-r1: #7a5a52;
+  --sky-r2: #4c5878;
+  --sky-r3: #5d4f73;
+  --sky-cloud: #8c84ad;
+  --sky-crane: #9a7a3c;
+  --sky-door: #5e5266;
+  --sky-ink: #f1efe6;
+  --sky-muted: #c9c4dc;
+  background: #2b2848;
+}
+.sky-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+.sky-art * {
+  transition: fill 1.3s ease, opacity 1.3s ease;
+}
+.sky-fade {
+  transition: opacity 1.6s ease;
+}
+.sky-body {
+  transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.6s ease;
+}
+.sky-halo {
+  /* dark: keep */
+  fill: #fff4c8;
+  opacity: 0.55;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sky-halo 4.5s ease-in-out infinite;
+}
+.sky-sun {
+  /* dark: keep */
+  fill: #f6d37a;
+}
+.sky-stars circle {
+  /* dark: keep */
+  fill: #fffbe8;
+  animation: sky-twinkle 3.2s ease-in-out infinite;
+}
+.sky-cloud-fill {
+  fill: var(--sky-cloud);
+  opacity: 0.9;
+}
+.is-night .sky-cloud-fill {
+  opacity: 0.28;
+}
+.sky-cloud.c1 {
+  animation: sky-drift 116s linear -50s infinite;
+}
+.sky-cloud.c2 {
+  animation: sky-drift 168s linear -120s infinite;
+}
+.sky-cloud.c3 {
+  animation: sky-drift 220s linear -70s infinite;
+}
+.sky-birds {
+  transition: opacity 1.3s ease;
+}
+.is-night .sky-birds {
+  opacity: 0;
+}
+.sky-fly {
+  animation: sky-fly 30s linear -9s infinite;
+}
+.sky-blades {
+  /* dark: keep */
+  fill: #b9a98f;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sky-spin 9s linear infinite;
+}
+.sky-blades.slow {
+  animation-duration: 14s;
+}
+@keyframes sky-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sky-flap {
+  /* dark: keep */
+  fill: none;
+  stroke: #7a7b73;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sky-flap 0.5s ease-in-out infinite;
+}
+.sky-hill.back {
+  fill: var(--sky-hill-back);
+}
+.sky-hill.front {
+  fill: var(--sky-hill-front);
+}
+.sky-wall {
+  fill: var(--sky-wall);
+}
+.sky-roof.r1 {
+  fill: var(--sky-r1);
+}
+.sky-roof.r2 {
+  fill: var(--sky-r2);
+}
+.sky-roof.r3 {
+  fill: var(--sky-r3);
+}
+.sky-window {
+  fill: var(--sky-window);
+}
+.lamps .sky-window {
+  /* dark: keep */
+  fill: #ffd98a;
+  filter: drop-shadow(0 0 2.5px #ffcf6a);
+}
+.sky-smoke {
+  /* dark: keep */
+  fill: #ffffff;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sky-smoke 3.6s ease-out infinite;
+}
+.is-night .sky-smoke {
+  /* dark: keep */
+  fill: #6d6888;
+}
+.sky-crane > rect:first-child,
+.sky-boom > rect {
+  fill: var(--sky-crane);
+}
+.sky-crane line {
+  /* dark: keep */
+  stroke: #7a7b73;
+  stroke-width: 0.9;
+}
+.sky-boom {
+  transform-box: view-box;
+  transform-origin: 153px 118px;
+  animation: sky-boom 7s ease-in-out infinite;
+}
+.sky-hook {
+  animation: sky-hook 3.5s ease-in-out infinite;
+}
+.sky-lib {
+  fill: var(--sky-lib);
+}
+.sky-lib-top,
+.sky-steps {
+  fill: var(--sky-lib-top);
+}
+.sky-door {
+  fill: var(--sky-door);
+}
+.sky-door-glow {
+  /* dark: keep */
+  fill: #ffd98a;
+  opacity: 0;
+  animation: sky-door 1.3s ease 2.7s;
+}
+.sky-path {
+  fill: none;
+  stroke: var(--sky-path);
+  stroke-width: 2.2;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.sky-trunk {
+  fill: var(--sky-trunk);
+}
+.sky-leaf {
+  fill: var(--sky-leaf);
+}
+.sky-leaf.b {
+  fill: var(--sky-leaf-b);
+}
+.sky-tree {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: sky-sway 5s ease-in-out infinite;
+}
+.sky-walker {
+  animation: sky-walker-out 0.3s ease 2.75s forwards;
+}
+.home-sky.paused *,
+.home-sky.paused *::before {
+  animation-play-state: paused !important;
+}
+.sky-copy {
+  position: relative;
+  padding: 22px 22px 0;
+  color: var(--sky-ink);
+}
+.sky-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--sky-muted);
+}
+.sky-copy h1 {
+  margin: 8px 0 0;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 30px;
+  line-height: 1.05;
+  letter-spacing: -0.8px;
+  font-weight: 700;
+  color: var(--sky-ink);
+}
+.sky-live {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 6px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.sky-live i {
+  /* dark: keep */
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #b8b6ab;
+}
+.sky-live i.on {
+  /* dark: keep */
+  background: #6fae6a;
+  animation: sky-ping 2.4s ease-out infinite;
+}
+/* The opening, once per visit. */
+.home-sky.intro {
+  animation: sky-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.home-sky.intro .sky-sun-rise {
+  animation: sky-sun-rise 1.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.home-sky.intro .sky-hill {
+  animation: sky-hill-up 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.12s backwards;
+}
+.home-sky.intro .sky-hill.front {
+  animation-delay: 0.24s;
+}
+.home-sky.intro .sky-houses,
+.home-sky.intro .sky-crane,
+.home-sky.intro .sky-library {
+  animation: sky-fade-in 0.7s ease 0.4s backwards;
+}
+.home-sky.intro .sky-copy > * {
+  animation: sky-copy-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s backwards;
+}
+.home-sky.intro .sky-copy > :nth-child(2) {
+  animation-delay: 0.36s;
+}
+.home-sky.intro .sky-copy > :nth-child(3) {
+  animation-delay: 0.47s;
+}
+@keyframes sky-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+@keyframes sky-sun-rise {
+  from {
+    transform: translateY(46px);
+  }
+}
+@keyframes sky-hill-up {
+  from {
+    transform: translateY(26px);
+  }
+}
+@keyframes sky-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sky-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@keyframes sky-halo {
+  50% {
+    transform: scale(1.18);
+    opacity: 0.3;
+  }
+}
+@keyframes sky-twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes sky-drift {
+  from {
+    transform: translateX(-420px);
+  }
+  to {
+    transform: translateX(780px);
+  }
+}
+@keyframes sky-fly {
+  from {
+    transform: translate(-340px, 0);
+  }
+  to {
+    transform: translate(720px, -40px);
+  }
+}
+@keyframes sky-flap {
+  50% {
+    transform: scaleY(0.35);
+  }
+}
+@keyframes sky-smoke {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  25% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -22px) scale(1.6);
+  }
+}
+@keyframes sky-boom {
+  50% {
+    transform: rotate(-9deg);
+  }
+}
+@keyframes sky-hook {
+  50% {
+    transform: translateY(6px);
+  }
+}
+@keyframes sky-sway {
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+@keyframes sky-door {
+  30% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes sky-walker-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sky-ping {
+  0% {
+    box-shadow: 0 0 0 0 #6fae6a88;
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px #6fae6a00;
+  }
+}
+
+/* ---------- my status ---------- */
+.home-status {
+  position: relative;
+  padding: 18px 18px 16px;
+  border-radius: 20px;
+}
+.home-status h2 {
+  margin: 0 0 4px;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 19px;
+  letter-spacing: -0.3px;
+}
+.home-status.here h2,
+.home-status.coming h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+}
+.home-status p {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.home-status-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+.home-status-head small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.home-pin {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+.home-acts {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 9px;
+}
+.home-acts.even {
+  grid-template-columns: 1fr 1fr;
+}
+.home-acts .btn {
+  min-height: 48px;
+  font-size: 13.5px;
+}
+.btn.ghost {
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+}
+.confetti {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  z-index: 6;
+  pointer-events: none;
+}
+.confetti .bit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1;
+}
+.confetti .bit.k1 {
+  width: 6px;
+  height: 9px;
+  border-radius: 1.5px;
+  border: 1px solid #25242d33;
+}
+.confetti .bit.k2 {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* ---------- who is where ---------- */
+.home-people .section-heading {
+  margin-bottom: 12px;
+}
+.member-slot {
+  display: grid;
+  min-width: 0;
+}
+.member-slot > .member-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.arrive-stamp {
+  position: absolute;
+  top: 58px;
+  right: 8px;
+  z-index: 3;
+  padding: 4px 9px;
+  border: 1.6px dashed var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-soft) 92%, transparent);
+  color: var(--accent-deep);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  rotate: -8deg;
+  pointer-events: none;
+}
+.scooter-route {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 44px;
+  height: 16px;
+}
+.scooter-route::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 9px;
+  border-top: 1.6px dashed color-mix(in srgb, var(--muted) 55%, transparent);
+}
+.scooter-route b {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  font-size: 13px;
+  font-weight: 400;
+  animation: scoot 5.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes scoot {
+  0% {
+    transform: translateX(0);
+  }
+  70%,
+  100% {
+    transform: translateX(26px);
+  }
+}
+.count-roll {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.count-roll > span {
+  display: inline-block;
+}
+
+/* ---------- who is coming when ---------- */
+.home-plans {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
+}
+.home-plans .section-heading {
+  margin: 0;
+}
+.home-plans .section-heading h2 {
+  font-size: 17px;
+}
+.home-plan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--border);
+}
+.home-plan:first-of-type {
+  border-top: 0;
+}
+.home-plan-text {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  min-width: 0;
+}
+.home-plan-text strong {
+  overflow: hidden;
+  font-size: 13.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-plan-text small,
+.home-plan-who {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.home-plan-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+.home-plan .btn.small-btn {
+  flex: none;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+.home-plan .icon-button {
+  flex: none;
+}
+
+/* ---------- doors and Ben rows ---------- */
+.home-doors,
+.me-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.home-door {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 62px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+}
+.home-door > span {
+  flex: 1;
+  min-width: 0;
+}
+.home-door strong {
+  display: block;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-door small {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-door > svg {
+  flex: none;
+  color: var(--muted);
+}
+.home-door.danger strong {
+  /* dark: keep */
+  color: #c0584f;
+}
+.door-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-style: normal;
+}
+.door-boom {
+  transform-box: view-box;
+  transform-origin: 7px 5px;
+  animation: sky-boom 7s ease-in-out infinite;
+}
+.door-hook {
+  animation: door-hook 3.5s ease-in-out infinite;
+}
+.door-icon.crane.busy .door-boom {
+  animation-duration: 3.5s;
+}
+@keyframes door-hook {
+  50% {
+    transform: translateY(2.5px);
+  }
+}
+.door-dot,
+.me-count {
+  /* dark: keep */
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0566b;
+  animation: door-ping 2s ease-out infinite;
+}
+@keyframes door-ping {
+  0% {
+    box-shadow: 0 0 0 0 #e0566b99;
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px #e0566b00;
+  }
+}
+.me-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  max-width: 640px;
+}
+.me-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.me-card b {
+  display: block;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 21px;
+}
+.me-card small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.me-label {
+  margin: 14px 2px 2px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+.me-stats {
+  overflow: hidden;
+}
+.me-stats > div {
+  padding: 4px 2px 8px;
+}
+.back-link {
+  margin: -6px 0 14px;
+}
+
+/* ---------- the tab bar: one pill slides to the tab you pick ---------- */
+.app-shell .mobile-bottom button {
+  isolation: isolate;
+}
+.app-shell .mobile-bottom button.active {
+  background: transparent;
+}
+.tab-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+
+/* ---------- the board on a phone: the coffee call sits on top ---------- */
+@media (max-width: 1000px) {
+  .app-shell .board-page {
+    min-height: 0;
+  }
+  /* The old home page ordered cards by grid row; the board must not inherit it. */
+  .app-shell .board-page > * {
+    grid-row: auto;
+  }
+  .app-shell .board-page > .right-stack {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    order: -1;
+  }
+  .app-shell .board-page .coffee-card {
+    min-height: 0;
+  }
+  .app-shell .board-page > .right-stack .board-guideline {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-sky *,
+  .home-sky.intro,
+  .scooter-route b,
+  .door-boom,
+  .door-hook,
+  .door-dot,
+  .me-count {
+    animation: none !important;
+  }
+  .sky-walker,
+  .sky-door-glow {
+    display: none;
+  }
+}

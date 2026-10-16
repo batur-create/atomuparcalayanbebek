@@ -88,7 +88,16 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 session = json_call(page, '/session')
                 check('Mobile account creation', session['username']=='audit_ada')
                 check('A new profile starts with a drawn character', page.locator('.member-card .avatar svg.av-art').count()>=1)
-                # Kara's rig is exercised with reduced motion, touch/keyboard and persistent UI.
+                # n17: four tabs, no hamburger, the home page leads with "Bugün geliyor musun?".
+                tabs = [b.inner_text().strip() for b in page.locator('.mobile-bottom button').all()]
+                check('Phone tab bar: Kütüp, Köy, Pano, Ben and no hamburger', tabs == ['Kütüp','Köy','Pano','Ben'] and page.locator('.mobile-menu').count()==0)
+                check('Home leads with the living sky and one main action', page.locator('.home-sky').count()==1
+                    and page.get_by_role('button', name='Geldim', exact=True).is_visible()
+                    and page.evaluate("document.querySelector('.home-status').getBoundingClientRect().top < document.querySelector('.home-people').getBoundingClientRect().top"))
+                page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
+                # Kara waits in the village until n06; her rig is exercised with reduced motion, touch/keyboard and persistent UI.
+                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
                 cat = page.get_by_role('button', name='Kara’ya selam ver')
                 cat.scroll_into_view_if_needed()
                 expect(cat.locator('svg')).to_have_count(1)
@@ -114,7 +123,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 check('Holding Kara triggers purring',True)
                 check('Reduced motion disables rig animations',cat.locator('.cat-tail').evaluate('(e)=>getComputedStyle(e).animationName')=='none')
                 page.get_by_role('button',name='Kara kartını küçült').click()
-                page.reload()
+                page.goto(base + '/?tab=focus')
                 page.get_by_role('button',name='Kara burada.').click()
                 expect(cat).to_be_visible()
                 check('Kara can be collapsed, persisted and reopened',True)
@@ -150,12 +159,13 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     return boxes.length>=30 && boxes.every(b=>b.height>=44 && b.width>=44 && b.right<=innerWidth) && document.documentElement.scrollWidth<=innerWidth}'''))
                 signup(friend, 'audit_ece', 'Ece')
                 check('Character with accessories is saved', any(m['avatar']=='k:tekir+gozluk+atki' for m in json_call(friend, '/state')['members']))
-                page.get_by_role('button', name='Ben geldim!', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
+                page.get_by_role('button', name='Geldim', exact=True).click()
                 page.locator('[role=dialog] button[type=submit]').click()
                 expect(page.get_by_role('dialog')).to_have_count(0)
                 expect(friend.locator('.member-card').filter(has=friend.get_by_text('Ada',exact=True))).to_contain_text('Kütüpte')
                 check('Presence reaches a second browser through SSE', True)
-                for name in ['Kütüp','Planlar','Köy','Pano','Batur’a']:
+                for name in ['Kütüp','Köy','Pano','Ben']:
                     page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
@@ -196,6 +206,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 friend.mouse.click(8, 400)  # the page gutter, left of the menu
                 expect(menu).to_have_count(0)
                 check('Look menu closes with Escape and with a tap outside', True)
+                page.locator('.home-door', has_text='Batur’a ilet').click()
                 page.locator('.feedback-form textarea').fill('Denetim: Batur paneli ve özel geri bildirim akışı.')
                 page.locator('.feedback-form button[type=submit]').click()
                 expect(page.locator('.feedback-success')).to_be_visible()

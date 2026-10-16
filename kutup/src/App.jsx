@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { LazyMotion, MotionConfig, m as M } from "motion/react";
+// Motion's animation and layout engine loads after the first paint.
+const motionFeatures = () => import("./motionFeatures.js").then((r) => r.default);
 import {
   ArrowUpRight,
   Expand,
@@ -8,7 +11,9 @@ import {
   BookOpen,
   CalendarDays,
   Check,
+  ChevronLeft,
   ChevronRight,
+  CircleUserRound,
   Coffee,
   Copy,
   DoorOpen,
@@ -71,19 +76,30 @@ import { MemberStats } from "./Stats.jsx";
 import { SoundButton, SoundMixer, useSoundFollowsFocus } from "./Sound.jsx";
 import { FocusScreen, enterFullscreen } from "./FocusScreen.jsx";
 import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Together.jsx";
-import { VillageNow, VillagePanel, useVillage } from "./VillageMap.jsx";
+import { VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
-import { Welcome, Onboard, ProfileModal, ModeButton } from "./Account.jsx";
+import { Welcome, Onboard, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
+import { Home, Badge } from "./Home.jsx";
+import { MePage } from "./MePage.jsx";
+import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
 import { useColorMode } from "./colorMode.js";
 
+// Four tabs (n17): who is where (with plans), the village, the board, and me.
+// Old "?tab=plans" links (plan notifications) open the plans on the home page.
 const nav = [
-  { id: "home", label: "Kütüphanem", short: "Kütüp", icon: LayoutGrid },
-  { id: "plans", label: "Planlar", short: "Planlar", icon: CalendarDays },
-  { id: "focus", label: "Kütüp köyü", short: "Köy", icon: House },
-  { id: "board", label: "Bizim pano", short: "Pano", icon: MessageCircle },
+  { id: "home", label: "Kütüp", icon: LayoutGrid },
+  { id: "focus", label: "Köy", icon: House },
+  { id: "board", label: "Pano", icon: MessageCircle },
+  { id: "me", label: "Ben", icon: CircleUserRound },
 ];
-const TABS = ["home", "plans", "focus", "board", "feedback"];
+const TABS = ["home", "focus", "board", "me", "feedback"];
+const PAGE = {
+  focus: ["EKİPLE HER ŞEY DAHA İYİ", "Odaklan, köy büyüsün.", "Her seans köye bir bina. Kulaklıkları tak, telefonu bırak."],
+  board: ["EKİPLE HER ŞEY DAHA İYİ", "Bizim küçük köşe.", "Yer tutmalar, küçük notlar, büyük motivasyonlar."],
+  me: ["TAM SENLİK BİR KÖŞE", "Ben.", "Profilin, görünümün, hesabın. Bir de Batur’a iletmek istediklerin."],
+  feedback: ["BU PLATFORM BİRAZ DA SENİN", "Söz sende.", "Fikirler, takılan şeyler, güzel iki kelime. Hepsi Batur’a."],
+};
 const startParams = new URLSearchParams(location.search);
 let introPlayed = false;
 // Nothing is shown before signing in: no sample people, no sample village.
@@ -103,104 +119,6 @@ const sameKey = (buffer, key) => {
 function Icon({ name: Component, ...props }) {
   return <Component size={19} strokeWidth={1.8} {...props} />;
 }
-function Badge({ status }) {
-  return (
-    <span className={`status ${status}`}>
-      <i />
-      {STATUS[status]?.[0] || status}
-    </span>
-  );
-}
-function HeroArt() {
-  return (
-    <div className="hero-art" aria-hidden="true">
-      <svg viewBox="0 0 300 235">
-        <ellipse
-          cx="165"
-          cy="209"
-          rx="115"
-          ry="10"
-          fill="#c9c3ed"
-          opacity=".5"
-        />
-        <g className="art-book-a">
-          <g transform="rotate(-9 146 170)">
-            <rect x="66" y="165" width="155" height="31" rx="5" fill="#6d5bd3" />
-            <path d="M75 170h139v19H75z" fill="#fffbed" />
-            <path d="M85 175h125M85 181h125" stroke="#ddd6bf" strokeWidth="2" />
-            <path d="M72 166v29" stroke="#483b91" strokeWidth="6" />
-          </g>
-        </g>
-        <g className="art-book-b">
-          <g transform="rotate(6 150 152)">
-            <rect x="80" y="135" width="160" height="27" rx="4" fill="#f48259" />
-            <path d="M88 141h146v14H88z" fill="#fff9e9" />
-            <path d="M100 147h127" stroke="#e3ddc4" strokeWidth="2" />
-            <path d="M87 136v24" stroke="#d46743" strokeWidth="5" />
-          </g>
-        </g>
-        <g className="art-open">
-          <path
-            d="M90 63q37-10 71 10v76q-39-18-71-9z"
-            fill="#fffdf4"
-            stroke="#b7afd7"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M161 73q33-20 70-11v77q-37-7-70 10z"
-            fill="#f9f6e9"
-            stroke="#b7afd7"
-            strokeWidth="1.5"
-          />
-          <path d="M161 74v74" stroke="#ded8c7" strokeWidth="3" />
-          <path
-            className="art-lines"
-            d="M103 78q19-3 43 7m-43 6q19-3 43 7m-43 6q19-3 32 3m43-20q20-9 39-9m-39 23q20-9 39-9m-39 23q20-9 29-9"
-            stroke="#bcb6cf"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          <path d="M189 64v39l8-7 8 4V60" fill="#a3be73" />
-        </g>
-        <g className="art-cup">
-        <g transform="rotate(-13 67 123)">
-          <path d="M36 109h45l-5 55q-17 12-34 0z" fill="#d4e996" />
-          <ellipse cx="58" cy="109" rx="26" ry="6" fill="#9db75c" />
-          <ellipse cx="58" cy="108" rx="19" ry="3" fill="#4f4135" />
-          <path d="M45 136h29" stroke="#f5ffe5" strokeWidth="13" />
-          <path
-            d="M49 139q8 8 16 0"
-            stroke="#59653d"
-            strokeWidth="2"
-            fill="none"
-          />
-          <path
-            d="M50 91q-7-11 0-17m13 13q-7-11 0-17"
-            stroke="#fffdf8"
-            strokeWidth="3"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </g>
-        </g>
-        <g fill="#6854c8">
-          <path className="art-spark" d="m238 41 3 10 10 3-10 4-3 10-4-10-10-4 10-3z" />
-          <path className="art-spark late" d="m47 50 2 7 7 2-7 2-2 7-2-7-7-2 7-2z" />
-        </g>
-        <path
-          d="m252 111 6-10m4 21 10-2M110 34l-3-12m-5 17-10-7"
-          stroke="#8672c6"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <circle cx="261" cy="169" r="5" fill="#f38b68" />
-        <circle cx="71" cy="41" r="3" fill="#f38b68" />
-      </svg>
-      <span className="art-note">birlikte, daha kolay.</span>
-    </div>
-  );
-}
-
 export default function App() {
   const [session, setSession] = useState(null),
     [data, setData] = useState(EMPTY),
@@ -214,7 +132,6 @@ export default function App() {
     [toast, setToast] = useState(""),
     [connected, setConnected] = useState(true);
   const [filter, setFilter] = useState("all"),
-    [mobileMenu, setMobileMenu] = useState(false),
     [theme, setTheme] = useState(() => {
       const saved = storage.get("kutup-theme");
       return THEMES.includes(saved) ? saved : "lilac";
@@ -318,6 +235,8 @@ export default function App() {
       .filter((m) => m.status === "here" && previous.get(m.id) !== "here")
       .map((m) => m.id);
     if (!fresh.length) return;
+    const friend = data.members.find((m) => fresh.includes(m.id) && m.id !== session.memberId);
+    if (friend) notify(`📍 ${friend.name} kütübe geldi · ${friend.location || "Milli Kütüphane"}`, 3500);
     setArrived((list) => [...list, ...fresh]);
     setTimeout(
       () => setArrived((list) => list.filter((id) => !fresh.includes(id))),
@@ -691,9 +610,16 @@ export default function App() {
   };
   const navigate = (id) => {
     setTab(id);
-    setMobileMenu(false);
     if (id !== "board") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  // A plan notification ("?tab=plans") lands on the plans part of the home page.
+  useEffect(() => {
+    if (startParams.get("tab") !== "plans" || !session) return;
+    const timer = setTimeout(() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "center" }), 700);
+    return () => clearTimeout(timer);
+  }, [!!session]);
+  const dark = darkAt(mode, now);
+  const leave = () => me && leaveTeam(me, notify, () => signedOut("Ekipten ayrıldın. Kapımız hep açık. 🫶"));
   // Joining a friend's timer builds the picked building if it fits, a cottage otherwise.
   const joinFriend = (m) =>
     m &&
@@ -899,6 +825,8 @@ export default function App() {
         : m.status === filter),
   );
   return (
+    <LazyMotion features={motionFeatures} strict>
+    <MotionConfig reducedMotion="user">
     <div
       className={`app-shell ${intro ? "intro" : ""} ${
         data.messages.some((m) => m.kind !== "system" && m.text.trim().toLocaleLowerCase("tr") === "çay" && now - m.created < 60000)
@@ -906,10 +834,7 @@ export default function App() {
           : ""
       }`}
     >
-      {mobileMenu && (
-        <div className="sidebar-scrim" onClick={() => setMobileMenu(false)} />
-      )}
-      <aside className={`sidebar ${mobileMenu ? "open" : ""}`}>
+      <aside className="sidebar">
         <button
           className="brand"
           onClick={() => navigate("home")}
@@ -927,56 +852,25 @@ export default function App() {
                 : "Senin ekibin, senin köşen"}
             </small>
           </div>
-          <ChevronRight size={16} />
         </div>
         <span className="nav-caption">BİZİM ALAN</span>
         <nav>
           {nav.map((item) => (
             <button
               key={item.id}
-              className={`nav-item ${tab === item.id ? "active" : ""}`}
+              className={`nav-item ${tab === item.id || (item.id === "me" && tab === "feedback") ? "active" : ""}`}
               onClick={() => navigate(item.id)}
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
-              {item.id === "plans" && data.plans.length > 0 && (
-                <b>{data.plans.length}</b>
-              )}
               {item.id === "board" && unread > 0 && <b className="nav-count" aria-label={`${unread} okunmamış mesaj`}>{unread}</b>}
+              {item.id === "me" && requestUpdates.count > 0 && <b className="nav-count" aria-label={`${requestUpdates.count} yeni gelişme`}>{requestUpdates.count}</b>}
               {item.id === "focus" && focusMembers.length > 0 && (
                 <span className="nav-dot" />
               )}
             </button>
           ))}
         </nav>
-        <div className="sidebar-divider" />
-        <button
-          className={`nav-item feedback-nav ${tab === "feedback" ? "active" : ""}`}
-          onClick={() => navigate("feedback")}
-        >
-          <Send size={19} />
-          <span>Batur’a ilet</span>
-          {requestUpdates.count ? (
-            <b aria-label={`${requestUpdates.count} yeni gelişme`}>
-              {requestUpdates.count}
-            </b>
-          ) : (
-            <span className="tiny-star">✧</span>
-          )}
-        </button>
-        <button
-          className="nav-item"
-          onClick={() => requireMember(() => setModal("profile"))}
-        >
-          <Settings2 size={19} />
-          <span>Benim köşem</span>
-        </button>
-        {me?.badge === "dev" && (
-          <a className="nav-item" href="/batur">
-            <span aria-hidden="true" className="nav-door">✳</span>
-            <span>Komuta merkezi</span>
-          </a>
-        )}
         <div className="sidebar-bottom">
           <div className="library-note">
             <BookOpen size={24} />
@@ -984,11 +878,10 @@ export default function App() {
               <strong>Milli Kütüphane</strong>
               <span>Ankara’da bir çalışma bahanesi.</span>
             </div>
-            <span className="note-doodle">↗</span>
           </div>
           <button
             className="sidebar-profile"
-            onClick={() => requireMember(() => setModal("profile"))}
+            onClick={() => requireMember(() => navigate("me"))}
           >
             <Avatar member={me} size="small" />
             <span>
@@ -1004,21 +897,12 @@ export default function App() {
       <main className="main-shell">
         <header className="topbar">
           <div className="topbar-left">
-            <button
-              className="icon-button mobile-menu"
-              onClick={() => setMobileMenu(true)}
-              aria-label="Menüyü aç"
-            >
-              <Menu />
-            </button>
             <span className="breadcrumb">
               <span className="crumb-root">
                 Bizim alan <ChevronRight size={13} />
               </span>{" "}
               <strong>
-                {tab === "feedback"
-                  ? "Batur’a ilet"
-                  : nav.find((x) => x.id === tab)?.label}
+                {tab === "feedback" ? "Batur’a ilet" : nav.find((x) => x.id === tab)?.label}
               </strong>
             </span>
           </div>
@@ -1044,21 +928,6 @@ export default function App() {
               {notificationOn ? <BellRing size={19} /> : <Bell size={19} />}
               <i />
             </button>
-            <button
-              className="btn invite-btn"
-              onClick={() =>
-                session ? setModal("invite") : setModal("onboard")
-              }
-            >
-              <Plus size={16} />
-              <span>
-                {session
-                  ? "Arkadaşını çağır"
-                  : invite
-                    ? "Ekibe katıl"
-                    : "Ekibini kur"}
-              </span>
-            </button>
           </div>
         </header>
         {!session && (
@@ -1082,284 +951,50 @@ export default function App() {
         )}
         <div className="page-content">
           <div className="tab-stage" key={tab}>
-          <div className="page-heading">
-            <div>
-              <div className="eyebrow">
-                {tab === "home"
-                  ? "GÜZEL BİR ÇALIŞMA GÜNÜ"
-                  : tab === "feedback"
-                    ? "BU PLATFORM BİRAZ DA SENİN"
-                    : "EKİPLE HER ŞEY DAHA İYİ"}
-              </div>
-              <h1>
-                {tab === "home" ? (
-                  <>
-                    Selam{me ? `, ${me.name}` : ", kütüp tayfa"}{" "}
-                    <span className="wave">✌️</span>
-                  </>
-                ) : tab === "plans" ? (
-                  "Birlikte planlayalım."
-                ) : tab === "focus" ? (
-                  "Odaklan, köy büyüsün."
-                ) : tab === "board" ? (
-                  "Bizim küçük köşe."
-                ) : (
-                  "Söz sende."
+          {tab !== "home" && (
+            <div className="page-heading">
+              <div>
+                {tab === "feedback" && (
+                  <button className="text-button back-link" onClick={() => navigate("me")}>
+                    <ChevronLeft size={15} /> Ben
+                  </button>
                 )}
-              </h1>
-              <p>
-                {tab === "home"
-                  ? "Kim nerede, kim geliyor? Hepsi burada."
-                  : tab === "plans"
-                    ? "“Yarın geliyor musun?” mesajının yerini burası alsın."
-                    : tab === "focus"
-                      ? "Her seans köye bir bina. Kulaklıkları tak, telefonu bırak."
-                      : tab === "board"
-                        ? "Yer tutmalar, küçük notlar, büyük motivasyonlar."
-                        : "Fikirler, takılan şeyler, güzel iki kelime. Hepsi Batur’a."}
-              </p>
-            </div>
-            {tab === "home" && (
-              <div className="live-chip">
-                <span className={session ? "live-dot" : "demo-dot"} />
-                {session ? "Anlık olarak birlikteyiz" : "Ekibinden bir kesit"}
+                <div className="eyebrow">{PAGE[tab][0]}</div>
+                <h1>{PAGE[tab][1]}</h1>
+                <p>{PAGE[tab][2]}</p>
               </div>
-            )}
-            {tab === "plans" && (
-              <button
-                className="btn primary"
-                onClick={() => requireMember(() => setModal("plan"))}
-              >
-                <Plus size={18} /> Plan yap
-              </button>
-            )}
-          </div>
-          {tab === "home" && session && !notificationOn && (
-            <SetupCard enable={enableNotifications} busy={notificationWorking} />
-          )}
-          {tab === "home" && session && !session.username && (
-            <button className="account-nudge" onClick={() => setModal("profile")}>
-              <KeyRound size={18} />
-              <span>
-                <strong>Hesabını koru</strong>
-                <small>Kullanıcı adı ve şifre belirle; başka bir telefondan ya da tarayıcıdan girince profilin seni beklesin.</small>
-              </span>
-              <ArrowRight size={16} />
-            </button>
+            </div>
           )}
           {tab === "home" && (
-            <div className="dashboard-grid">
-              <section className="hero-card">
-                <div className="hero-copy">
-                  <span className="hero-location">
-                    <MapPin size={13} /> MİLLİ KÜTÜPHANE, ANKARA
-                  </span>
-                  <h2 className="kinetic" aria-label="Aynı masa. Aynı motivasyon.">
-                    <span className="line" aria-hidden="true">
-                      <span>Aynı masa.</span>
-                    </span>
-                    <span className="line" aria-hidden="true">
-                      <span>
-                        Aynı motivasyon<b className="dot">.</b>
-                      </span>
-                    </span>
-                  </h2>
-                  <p>
-                    Kütüphane daha iyi bir yer.
-                    <br />
-                    Özellikle seninkiler de oradaysa.
-                  </p>
-                  <div className="hero-buttons">
-                    <button
-                      className="btn dark"
-                      onClick={() => requireMember(() => setModal("presence"))}
-                    >
-                      {me?.status === "here" ? (
-                        <Check size={18} />
-                      ) : (
-                        <MapPin size={18} />
-                      )}
-                      {me?.status === "here"
-                        ? "Yerimi güncelle"
-                        : "Ben geldim!"}
-                      <ArrowUpRight size={17} />
-                    </button>
-                    <button
-                      className="hero-secondary"
-                      onClick={() => requireMember(() => setModal("coming"))}
-                    >
-                      Yoldayım <ArrowRight size={16} />
-                    </button>
-                  </div>
-                  <div className="hero-company">
-                    <div className="avatar-stack">
-                      {here.slice(0, 3).map((m) => (
-                        <Avatar key={m.id} member={m} size="tiny" />
-                      ))}
-                    </div>
-                    <span>
-                      {here.length ? (
-                        <>
-                          <strong>{here.length} kişi</strong> yerini aldı bile.
-                        </>
-                      ) : (
-                        "İlk sandalye seni bekliyor."
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <HeroArt />
-                <span className="hero-sticker">
-                  ders arası
-                  <br />
-                  <b>hayat ✷</b>
-                </span>
-              </section>
-              <VillageNow
-                me={me}
-                members={data.members}
-                groupId={data.group.id}
-                village={village}
-                onOpen={() => navigate("focus")}
-              />
-              <FocusCard
-                me={me}
-                members={focusMembers}
-                now={now}
-                requireMember={requireMember}
-                mutate={mutate}
-                compact
-                onScreen={() => setFocusScreen(true)}
-                rhythm={data.group.rhythm}
-              />
-              <section className="members-section">
-                <div className="section-heading">
-                  <h2>
-                    Bugün kimler var? <span>{data.members.length}</span>
-                  </h2>
-                  {me && me.status !== "away" && (
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        mutate(
-                          "/presence",
-                          { status: "away" },
-                          "Bugünlük bu kadar. Yarın görüşürüz! 👋",
-                        )
-                      }
-                    >
-                      <DoorOpen size={15} /> Çıkış yap
-                    </button>
-                  )}
-                </div>
-                <div className="filter-row">
-                  {[
-                    ["all", "Herkes", data.members.length],
-                    ["here", "Kütüpte", here.length],
-                    [
-                      "coming",
-                      "Yolda",
-                      data.members.filter((m) => m.status === "coming").length,
-                    ],
-                  ].map(([id, label, count]) => (
-                    <button
-                      key={id}
-                      className={`filter-chip ${filter === id ? "selected" : ""}`}
-                      onClick={() => setFilter(id)}
-                    >
-                      {id !== "all" && <i className={id} />}
-                      {label}
-                      <span>{count}</span>
-                    </button>
-                  ))}
-                  <span className="filter-live">
-                    {session ? "canlı" : "örnek ekip"} <span />
-                  </span>
-                </div>
-                <div className="member-grid">
-                  {visibleMembers.map((m, i) => (
-                    <MemberCard
-                      key={m.id}
-                      index={i}
-                      arrived={arrived.includes(m.id)}
-                      member={m}
-                      mine={m.id === me?.id}
-                      now={now}
-                      onClick={() =>
-                        m.id === me?.id
-                          ? setModal("profile")
-                          : requireMember(() => setModal({ member: m }))
-                      }
-                    />
-                  ))}
-                </div>
-                {!visibleMembers.length && (
-                  <Empty emoji="🪑" title="Şimdilik sakin.">
-                    İlk gelenin haberi buraya düşecek.
-                  </Empty>
-                )}
-              </section>
-              <div className="right-stack">
-                <MascotCard navigate={navigate} focusing={Boolean(me?.focus_end > now)} />
-                <CoffeeCard
-                  requireMember={requireMember}
-                  onCoffee={() => setModal("coffee")}
-                />
-                <section className="panel small-plans">
-                  <div className="section-heading">
-                    <h2>Ufukta ne var?</h2>
-                    <CalendarDays size={18} />
-                  </div>
-                  {data.plans.slice(0, 2).map((p) => (
-                    <PlanMini
-                      key={p.id}
-                      plan={p}
-                      members={data.members}
-                      onClick={() => navigate("plans")}
-                    />
-                  ))}
-                  {!data.plans.length && (
-                    <p className="muted small">
-                      Takvim boş. İlk “yarın buluşuruz” senden gelsin.
-                    </p>
-                  )}
-                  <button
-                    className="text-button accent"
-                    onClick={() => requireMember(() => setModal("plan"))}
-                  >
-                    <Plus size={15} /> Bir plan bırak
-                  </button>
-                </section>
-              </div>
-              <Board
-                data={data}
-                me={me}
-                requireMember={requireMember}
-                mutate={mutate}
-                compact
-              />
-              <section className="tiny-love">
-                <span>✳</span>
-                <h3>Burası bizim.</h3>
-                <p>
-                  “Şu da olsa güzel olurdu” dediğin her şeyi duymak isteriz.
-                </p>
-                <button
-                  className="text-button"
-                  onClick={() => navigate("feedback")}
-                >
-                  Batur’a bir not bırak <ArrowUpRight size={16} />
-                </button>
-              </section>
-            </div>
-          )}
-          {tab === "plans" && (
-            <Plans
+            <Home
               data={data}
               me={me}
+              now={now}
+              dark={dark}
+              intro={intro}
+              arrived={arrived}
+              filter={filter}
+              setFilter={setFilter}
+              unread={unread}
+              setModal={setModal}
               requireMember={requireMember}
               mutate={mutate}
-              open={() => setModal("plan")}
+              navigate={navigate}
+              extras={
+                <>
+                  {session && !notificationOn && <SetupCard enable={enableNotifications} busy={notificationWorking} />}
+                  {session && !session.username && (
+                    <button className="account-nudge" onClick={() => setModal("account")}>
+                      <KeyRound size={18} />
+                      <span>
+                        <strong>Hesabını koru</strong>
+                        <small>Kullanıcı adı ve şifre belirle; başka bir telefondan ya da tarayıcıdan girince profilin seni beklesin.</small>
+                      </span>
+                      <ArrowRight size={16} />
+                    </button>
+                  )}
+                </>
+              }
             />
           )}
           {tab === "focus" && (
@@ -1389,6 +1024,7 @@ export default function App() {
                   week={data.week}
                 />
                 <SoundMixer />
+                <MascotCard navigate={navigate} focusing={Boolean(me?.focusEnd > now)} />
                 <WeekBoard members={data.members} me={me} />
                 <section className="panel">
                   <div className="section-heading">
@@ -1462,6 +1098,9 @@ export default function App() {
               </div>
             </div>
           )}
+          {tab === "me" && (
+            <MePage me={me} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} />
+          )}
           {tab === "feedback" && (
             <FeedbackPage
               me={me}
@@ -1480,27 +1119,25 @@ export default function App() {
         </div>
       </main>
       <nav className="mobile-bottom" aria-label="Bölümler">
-        {nav.map((item) => (
-          <button
-            key={item.id}
-            className={tab === item.id ? "active" : ""}
-            aria-current={tab === item.id ? "page" : undefined}
-            onClick={() => navigate(item.id)}
-          >
-            <Icon name={item.icon} />
-            <span>{item.short}</span>
-            {item.id === "board" && unread > 0 && <i className="nav-badge" aria-hidden="true" />}
-          </button>
-        ))}
-        <button
-          className={tab === "feedback" ? "active" : ""}
-          aria-current={tab === "feedback" ? "page" : undefined}
-          onClick={() => navigate("feedback")}
-        >
-          <Send size={19} />
-          <span>Batur’a</span>
-          {requestUpdates.count > 0 && <i className="nav-badge" aria-hidden="true" />}
-        </button>
+        {nav.map((item) => {
+          const active = tab === item.id || (item.id === "me" && tab === "feedback");
+          return (
+            <button
+              key={item.id}
+              className={active ? "active" : ""}
+              aria-current={active ? "page" : undefined}
+              onClick={() => navigate(item.id)}
+            >
+              {active && <M.span layoutId="tab-pill" className="tab-pill" transition={{ type: "spring", stiffness: 420, damping: 32 }} />}
+              <M.span key={active ? "on" : "off"} className="tab-icon" initial={active ? { y: -4, scale: 1.12 } : false} animate={{ y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 380, damping: 14 }}>
+                <Icon name={item.icon} />
+              </M.span>
+              <span>{item.label}</span>
+              {item.id === "board" && unread > 0 && <i className="nav-badge" aria-hidden="true" />}
+              {item.id === "me" && requestUpdates.count > 0 && <i className="nav-badge" aria-hidden="true" />}
+            </button>
+          );
+        })}
       </nav>
       {modal === "onboard" && (
         <Onboard
@@ -1511,22 +1148,14 @@ export default function App() {
           existing={!!session}
         />
       )}
-      {modal === "profile" && me && (
-        <ProfileModal
-          me={me}
+      {modal === "profile" && me && <ProfileModal me={me} close={() => setModal(null)} mutate={mutate} />}
+      {modal === "look" && <LookModal theme={theme} setTheme={setTheme} mode={mode} setMode={setMode} close={() => setModal(null)} />}
+      {modal === "account" && (
+        <AccountModal
           username={session?.username}
-          onAccount={(username) => setSession((s) => ({ ...s, username }))}
-          theme={theme}
-          setTheme={setTheme}
-          mode={mode}
-          setMode={setMode}
-          close={() => setModal(null)}
-          mutate={mutate}
+          onAccount={(username) => setSession((x) => ({ ...x, username }))}
           notify={notify}
-          onLeft={() => {
-            setModal(null);
-            signedOut("Ekipten ayrıldın. Kapımız hep açık. 🫶");
-          }}
+          close={() => setModal(null)}
         />
       )}
       {(modal === "presence" || modal === "coming") && me && (
@@ -1616,6 +1245,8 @@ export default function App() {
         </div>
       )}
     </div>
+    </MotionConfig>
+    </LazyMotion>
   );
 }
 
@@ -1630,69 +1261,6 @@ function Roll({ value }) {
         {digit}
       </span>
     ));
-}
-function MemberCard({ member: m, mine, now, onClick, index = 0, arrived = false }) {
-  return (
-    <button
-      className={`member-card ${m.color} ${arrived ? "arrived" : ""}`}
-      style={{ "--i": index }}
-      onClick={onClick}
-    >
-      <div className="member-card-top">
-        <Avatar member={m} />
-        <Badge status={m.status} />
-      </div>
-      <div className="member-name">
-        <h3>{m.name}</h3>
-        {mine && <span>sen</span>}
-        {m.focusEnd > now &&
-          (m.focusStrict ? (
-            <span className="member-plant" title="İnşaat modunda odakta">
-              🏗️
-            </span>
-          ) : (
-            <Headphones size={16} />
-          ))}
-      </div>
-      {m.badge === "dev" && (
-        <p className="dev-tag" title="Kütüp’ü yapan kişi">✦ Kurucu · Olay ufku bekçisi</p>
-      )}
-      <p className="member-note">
-        {m.note || "Bu masada güzel şeyler olacak."}
-      </p>
-      {(m.status === "here" || m.status === "break") && (
-        <p className="member-since">
-          {m.since && now - m.since >= 60000
-            ? `${m.status === "here" ? "burada" : "molada"} · ${minutesLabel(Math.floor((now - m.since) / 60000))}`
-            : m.status === "here"
-              ? "şimdi geldi ✨"
-              : "molaya yeni çıktı"}
-        </p>
-      )}
-      <div className="member-card-bottom">
-        {m.status === "coming" ? (
-          <>
-            <span>🛵</span>
-            <span>{m.arrival || "Birazdan burada"}</span>
-          </>
-        ) : m.status === "away" ? (
-          <>
-            <Moon size={14} />
-            <span>Henüz yerini almadı</span>
-          </>
-        ) : (
-          <>
-            <MapPin size={14} />
-            <span>
-              {m.location || "Milli Kütüphane"}
-              {m.desk ? ` · ${m.desk}` : ""}
-            </span>
-          </>
-        )}
-        <ArrowUpRight size={14} />
-      </div>
-    </button>
-  );
 }
 // A computer (mouse or trackpad) rather than a phone or tablet: build mode is
 // gentler there, since other tabs and apps are where the studying happens.
@@ -2036,35 +1604,6 @@ function CoffeeCard({ requireMember, onCoffee }) {
     </section>
   );
 }
-function PlanMini({ plan, members, onClick }) {
-  const date = new Date(plan.starts);
-  return (
-    <button className="plan-mini" onClick={onClick}>
-      <div className="date-square">
-        <span>
-          {date.toLocaleDateString("tr-TR", {
-            month: "short",
-            timeZone: "Europe/Istanbul",
-          })}
-        </span>
-        <b>
-          {date.toLocaleDateString("tr-TR", {
-            day: "numeric",
-            timeZone: "Europe/Istanbul",
-          })}
-        </b>
-      </div>
-      <div>
-        <strong>{plan.note || "Kütüpte buluşalım"}</strong>
-        <small>
-          {dayWord(plan.starts)} {shortTime(plan.starts)} ·{" "}
-          {plan.attendees.length} kişi geliyor
-        </small>
-      </div>
-      <ChevronRight size={15} />
-    </button>
-  );
-}
 function Board({ data, me, requireMember, mutate, compact }) {
   const [text, setText] = useState(""),
     [busy, setBusy] = useState(false);
@@ -2201,122 +1740,6 @@ function Board({ data, me, requireMember, mutate, compact }) {
         </Busy>
       </form>
     </section>
-  );
-}
-function Plans({ data, me, requireMember, mutate, open }) {
-  return (
-    <div className="plans-page">
-      <div className="plans-main">
-        {data.plans.length ? (
-          data.plans.map((plan) => {
-            const owner = data.members.find((m) => m.id === plan.memberId),
-              joined = plan.attendees.includes(me?.id);
-            return (
-              <article key={plan.id} className="plan-card">
-                <div className="plan-date">
-                  <b>
-                    {new Date(plan.starts).toLocaleDateString("tr-TR", {
-                      day: "numeric",
-                      timeZone: "Europe/Istanbul",
-                    })}
-                  </b>
-                  <span>
-                    {new Date(plan.starts).toLocaleDateString("tr-TR", {
-                      month: "long",
-                      timeZone: "Europe/Istanbul",
-                    })}
-                  </span>
-                </div>
-                <div className="plan-content">
-                  <span className="eyebrow">
-                    {dayWord(plan.starts)} · {shortTime(plan.starts)}
-                  </span>
-                  <h2>{plan.note || "Kütüpte buluşalım"}</h2>
-                  <p>
-                    <Avatar member={owner} size="tiny" /> {owner?.name} planladı{" "}
-                    <span>· Milli Kütüphane</span>
-                  </p>
-                  <div className="plan-attendees">
-                    <div className="avatar-stack">
-                      {plan.attendees.slice(0, 5).map((id) => (
-                        <Avatar
-                          key={id}
-                          member={data.members.find((x) => x.id === id)}
-                          size="tiny"
-                        />
-                      ))}
-                    </div>
-                    <span>{plan.attendees.length} kişi varım dedi</span>
-                  </div>
-                </div>
-                <div className="plan-actions">
-                  {plan.memberId === me?.id ? (
-                    <button
-                      className="icon-button"
-                      aria-label="Planı sil"
-                      onClick={() => {
-                        if (confirm("Bu planı kaldırmak istiyor musun?"))
-                          mutate(
-                            `/plans/${plan.id}`,
-                            {},
-                            "Plan kaldırıldı.",
-                            "DELETE",
-                          );
-                      }}
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                  ) : (
-                    <button
-                      className={`btn ${joined ? "joined" : "primary"}`}
-                      onClick={() =>
-                        requireMember(() =>
-                          mutate(
-                            `/plans/${plan.id}/join`,
-                            {},
-                            joined
-                              ? "Plandan ayrıldın."
-                              : "Sen de varsın. Harika!",
-                          ),
-                        )
-                      }
-                    >
-                      {joined ? <Check size={16} /> : <Plus size={16} />}
-                      {joined ? "Ben de varım" : "Ben de gelirim"}
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })
-        ) : (
-          <section className="panel">
-            <Empty emoji="🗓️" title="Takvim henüz boş.">
-              Güzel bir çalışma günü kendiliğinden planlanmaz.
-            </Empty>
-            <button
-              className="btn primary centered"
-              onClick={() => requireMember(open)}
-            >
-              <Plus size={17} /> İlk planı yap
-            </button>
-          </section>
-        )}
-      </div>
-      <aside className="plans-note">
-        <span>🛵</span>
-        <h2>
-          Bir “ben de”
-          <br />
-          her şeyi değiştirir.
-        </h2>
-        <p>
-          Önümüzdeki iki hafta için plan yap. İsteyen katılsın, kimlerin
-          geleceği baştan belli olsun.
-        </p>
-        <small>Saatler Türkiye saatine göredir.</small>
-      </aside>
-    </div>
   );
 }
 // The tayfa's two reading rooms at Milli Kütüphane (Adnan is home), plus break

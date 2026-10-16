@@ -1,10 +1,9 @@
 // Account entry, profile customization and moving between devices.
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, KeyRound, LogOut, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
+import { ArrowRight, Check, KeyRound, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
 import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
-import { MemberStats } from "./Stats.jsx";
 import { sunTimes } from "./villageWorld.js";
 import { ACCESSORIES, AVATAR_GROUPS, CHARACTERS, FOUNDER_CHARACTERS, composeAvatar, fitsCharacter, parseAvatar, randomCharacter } from "../shared/avatars.js";
 const LOGIN_TABS = [["login", "Giriş"], ["reset", "Şifremi unuttum"], ["code", "Kodla"]];
@@ -673,7 +672,26 @@ function AccountBox({ username, notify, onSaved }) {
     </div>
   );
 }
-export function ProfileModal({ me, username, onAccount, theme, setTheme, mode, setMode, close, mutate, notify, onLeft }) {
+// Leaving deletes the profile, buildings, messages and plans: the name must be typed.
+export async function leaveTeam(me, notify, onLeft) {
+  const typed = prompt(
+    `Ekipten ayrılırsan profilin, köydeki binaların, mesajların ve planların kalıcı olarak silinir. Emin misin? Onaylamak için adını yaz: ${me.name}`,
+  );
+  if (typed === null) return;
+  if (typed.trim().toLocaleLowerCase("tr") !== me.name.toLocaleLowerCase("tr")) {
+    notify("Ad eşleşmedi, ayrılmadın. Profilin yerinde. 🫶");
+    return;
+  }
+  try {
+    await api("/leave", {});
+    onLeft();
+  } catch (e) {
+    notify(e.message);
+  }
+}
+
+// Ben → Profilim: name, character, colour and desk note.
+export function ProfileModal({ me, close, mutate }) {
   const [value, setValue] = useState({
       name: me.name,
       avatar: me.avatar,
@@ -682,87 +700,64 @@ export function ProfileModal({ me, username, onAccount, theme, setTheme, mode, s
       badge: me.badge,
     }),
     [busy, setBusy] = useState(false);
-  const leave = async () => {
-    const typed = prompt(
-      `Ekipten ayrılırsan profilin, köydeki binaların, mesajların ve planların kalıcı olarak silinir. Emin misin? Onaylamak için adını yaz: ${me.name}`,
-    );
-    if (typed === null) return;
-    if (typed.trim().toLocaleLowerCase("tr") !== me.name.toLocaleLowerCase("tr")) {
-      notify("Ad eşleşmedi, ayrılmadın. Profilin yerinde. 🫶");
-      return;
-    }
-    try {
-      await api("/leave", {});
-      onLeft();
-    } catch (e) {
-      notify(e.message);
-    }
-  };
   return (
-    <Modal
-      title="Tam senlik bir köşe."
-      subtitle="İnsan masasına biraz kendini katmalı."
-      close={close}
-    >
+    <Modal title="Tam senlik bir köşe." subtitle="İnsan masasına biraz kendini katmalı." close={close}>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
-          if (await mutate("/profile", value, "Yeni havan ekibe yansıdı. ✨"))
-            close();
+          if (await mutate("/profile", value, "Yeni havan ekibe yansıdı. ✨")) close();
           setBusy(false);
         }}
       >
         <ProfileFields value={value} setValue={setValue} />
-        <div className="theme-section">
-          <label className="field-label">Ekranın da senin renginde olsun</label>
-          <div className="theme-options">
-            {THEMES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`${c} ${theme === c ? "selected" : ""}`}
-                aria-pressed={theme === c}
-                onClick={() => setTheme(c)}
-              >
-                {theme === c && <Check size={13} />}
-                {COLOR_NAMES[c]}
-              </button>
-            ))}
-          </div>
-          <small>Sadece senin ekranında değişir.</small>
-        </div>
-        <div className="theme-section">
-          <label className="field-label" id="mode-label">Gündüz mü, gece mi?</label>
-          <div className="mode-options" role="radiogroup" aria-labelledby="mode-label">
-            {MODE_CHOICES.map(([key, Icon, label]) => (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={mode === key}
-                className={mode === key ? "selected" : ""}
-                onClick={() => setMode(key)}
-              >
-                <Icon size={16} /> {label}
-              </button>
-            ))}
-          </div>
-          <small>{modeHint(mode)}</small>
-        </div>
         <Busy loading={busy} type="submit" className="btn primary full">
           Böyle çok daha ben <Sparkles size={16} />
         </Busy>
-        <details className="my-stats">
-          <summary>📊 İstatistiklerim</summary>
-          <MemberStats memberId={me.id} />
-        </details>
       </form>
-      <AccountBox username={username} notify={notify} onSaved={onAccount} />
-        <DeviceTransfer notify={notify} />
-      <button type="button" className="text-button leave-button" onClick={leave}>
-        <LogOut size={15} /> Ekipten ayrıl
+    </Modal>
+  );
+}
+
+// Ben → Görünüm: this device's colour theme and day/night look. Applies at once.
+export function LookModal({ theme, setTheme, mode, setMode, close }) {
+  return (
+    <Modal title="Görünüm" subtitle="Sadece senin ekranında değişir." close={close}>
+      <div className="theme-section">
+        <label className="field-label">Ekranın da senin renginde olsun</label>
+        <div className="theme-options">
+          {THEMES.map((c) => (
+            <button key={c} type="button" className={`${c} ${theme === c ? "selected" : ""}`} aria-pressed={theme === c} onClick={() => setTheme(c)}>
+              {theme === c && <Check size={13} />}
+              {COLOR_NAMES[c]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="theme-section">
+        <label className="field-label" id="mode-label">Gündüz mü, gece mi?</label>
+        <div className="mode-options" role="radiogroup" aria-labelledby="mode-label">
+          {MODE_CHOICES.map(([key, Icon, label]) => (
+            <button key={key} type="button" role="radio" aria-checked={mode === key} className={mode === key ? "selected" : ""} onClick={() => setMode(key)}>
+              <Icon size={16} /> {label}
+            </button>
+          ))}
+        </div>
+        <small>{modeHint(mode)}</small>
+      </div>
+      <button type="button" className="btn primary full" onClick={close}>
+        Tamam
       </button>
+    </Modal>
+  );
+}
+
+// Ben → Hesap ve cihazlar: username and password, and opening on another device.
+export function AccountModal({ username, onAccount, notify, close }) {
+  return (
+    <Modal title="Hesap ve cihazlar" subtitle="Başka bir telefondan girince profilin seni beklesin." close={close}>
+      <AccountBox username={username} notify={notify} onSaved={onAccount} />
+      <DeviceTransfer notify={notify} />
     </Modal>
   );
 }

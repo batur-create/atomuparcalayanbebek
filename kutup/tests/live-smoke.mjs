@@ -74,6 +74,9 @@ check("dark mode ships (mode.js before paint, dark twins in CSS)", page.includes
 const script = /src="(\/assets\/[^"]+\.js)"/.exec(page)?.[1];
 const bundle = script ? await fetch(base + script).then((r) => r.text()) : "";
 check("top-bar look switch ships", bundle.includes("mode-menu") && bundle.includes("Görünüm: ") && css.includes(".mode-menu"));
+// The four-tab layout and the living home page (n17 + n18): the home and Ben pages are in the
+// bundle, the sky is styled, and Motion's engine is a separate lazy chunk.
+check("four tabs and the living home ship", bundle.includes("Bugün geliyor musun?") && bundle.includes("Hesap ve cihazlar") && bundle.includes("tab-pill") && css.includes(".home-sky") && /motionFeatures-[\w-]+\.js/.test(bundle));
 
 // 1. New team requires an account; with one it works.
 const noAccount = await call("/groups", { body: { name: "Duman A", groupName: `Duman ${tag}` } });
