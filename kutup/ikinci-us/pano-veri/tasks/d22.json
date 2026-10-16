@@ -1,0 +1,10 @@
+{
+  "area": "Düzeltme",
+  "at": "2026-10-17T02:30:00+03:00",
+  "commit": "4d5a5cfb",
+  "decisions": "Yel değirmeninin selamlamanın arkasında kalması hata sayılmadı. Ay için kahraman alanı büyütülmedi; ay ve güneş görünür alana çekildi. Fareyle kapanan pencereden sonra odak çerçevesi yok, klavyeyle kapanınca var.",
+  "detail": "Sol menüdeki ekip kartı gri, köşeli kutuydu (düğmenin kendi zemini yoktu). Üst çubukta boş, geniş kutu vardı (Köy stüdyosu ile aynı sınıf adı, artık .studio-mode). Herkes çipinin köşesinde nokta vardı (kayan vurgu 4 px'e küçülmüştü). Yan yana kişi kartları kayıktı (düğme içeriği ortalıyordu). Geniş ekranda ay görünmüyordu. Plan yap'ta köşeli odak çerçevesi kalıyordu. Worker d2761763; 96 birim, 57 tarayıcı kontrolü, canlı duman testi geçti.",
+  "kind": "teknik",
+  "status": "done",
+  "title": "Ana sayfa hata avı: Batur'un ekran görüntüsündeki 6 hata"
+}

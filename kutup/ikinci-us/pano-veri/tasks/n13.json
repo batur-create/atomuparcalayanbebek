@@ -1,0 +1,11 @@
+{
+  "area": "Profil",
+  "at": "2026-10-16T01:30:00+03:00",
+  "commit": "da136d96",
+  "decisions": "İlk çizimler siteye bakılmadan yapıldı: kalın çizgili, çıkartma gibi, fazla canlı renkli, rastgele hayvanlar. Batur reddetti (\"siteyle alakası yok\"), yayına çıkmadı.\n\nBatur'un seçtiği yön: kadro sitenin kendi dünyasından (Kara gibi kediler, kütüphaneci, çaycı, baretli usta, kara delik, köylüler). Kara'nın çizim dili: sakin renkler, ton ton gölgeler; yanak kızarıklığı ve çıkartma kenarı yok.\n\n4 örnek gösterildi, Batur onayladı. Sonra 8 kedi, 15 tip ve kurucuya ✳ baretli şantiye şefi çizildi. Emojiler seçilebilir kaldı, mevcut üyelerin avatarı değişmedi.\n\nDers: Görsel işe siteye bakmadan başlanmaz; önce örnek gösterilir.",
+  "detail": "Kara'nın çizim diliyle 23 karakter + kurucuya ✳ baretli şantiye şefi: 8 kedi (Ankara, Van, tekir, sarman, smokin, üç renkli, füme, siyam), kütüphane ve köy tipleri, astronom, kara delik. Gözlük, kulaklık, bere, kep, atkı denenebilir. Profil, kartlar, pano ve köy haritasında aynı çizim; emojiler duruyor.",
+  "kind": "görsel",
+  "order": 2.6,
+  "status": "done",
+  "title": "Özgün çizilmiş avatarlar"
+}

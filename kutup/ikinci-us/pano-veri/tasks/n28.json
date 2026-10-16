@@ -1,0 +1,11 @@
+{
+  "area": "Birlikte",
+  "at": "2026-10-16T20:30:00+03:00",
+  "detail": "Pazar akşamı Instagram hikâyesi gibi tam ekran, dokundukça ilerleyen, hareketli haftalık özet; tek tuşla görsel ya da kısa video olarak paylaşılır.",
+  "kind": "görsel",
+  "order": 2.72,
+  "ready": true,
+  "spec": "Amaç: Haftayı kutlayan, paylaşmalık, motion grafikli bir özet.\n\nBatur'un sözleri (16 Eki): \"Instagram'da paylaşıp vay be dedirteceğin bir şeyler\" · motion videolar \"bir şeyler giriyor, vuruyor, çıkıyor, tak tuk tuk böyle ekranda yazılar\". Claude'un 5 önerisinden 3. madde, onaylandı.\n\nÖneri: Hikâye kartları: ekipçe kaç saat, en çok kim geldi, en uzun seri, haftanın gece kuşu / sabah erkencisi, yükselen binalar, anıt, Haftanın Ustası; kişiye özel bir kart (senin haftan). Dokununca ilerler, basılı tutunca durur. Paylaş: görsel (PNG) ya da kısa video. Pazar akşamı bildirim: \"Haftanın hikâyesi hazır\".\n\nAraç: howseen-ai/claude-motion-design (HTML + Playwright + ffmpeg ile video) video sürümü için aday; araç taraması kuralıyla okunup denenir.\n\nAçık sorular: Hangi kartlar, kişiye özel kart herkese mi görünsün, video mu görsel mi?\n\nBitti ölçütü: Hikâye haftalık verilerden doğru üretiliyor, 375 px'te akıcı, paylaşma çalışıyor, Batur onayladı.",
+  "status": "next",
+  "title": "Haftalık hikâye (Kütüp Wrapped)"
+}

@@ -1,0 +1,244 @@
+<title>Kütüp İş Akışı</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,750&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+<style>
+  /* Layout: a work-order board — header with the flow, a count strip, then three columns (now / next / done) that stack on a phone. */
+  :root {
+    --paper: #f7f4ec;
+    --card: #fffdf8;
+    --ink: #2f2c27;
+    --muted: #7b7262;
+    --line: #e4ddcd;
+    --accent: #7a66d8;
+    --accent-soft: #ece7fb;
+    --now: #e6892f;
+    --now-soft: #fdf0e1;
+    --review: #23869a;
+    --review-soft: #e0f1f4;
+    --done: #3f8f63;
+    --done-soft: #e5f3ea;
+    --warn: #c4473a;
+    --warn-soft: #fbe9e6;
+    --display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+    --body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1d1b18; --card: #26231f; --ink: #efe9dd; --muted: #a99f8c; --line: #3a352d;
+      --accent: #a99be6; --accent-soft: #2f2a44; --now: #f0a456; --now-soft: #3a2b1c;
+      --review: #5cc3d4; --review-soft: #1b3237; --done: #6cc193; --done-soft: #1f3328;
+      --warn: #ec8376; --warn-soft: #3b231f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1d1b18; --card: #26231f; --ink: #efe9dd; --muted: #a99f8c; --line: #3a352d;
+    --accent: #a99be6; --accent-soft: #2f2a44; --now: #f0a456; --now-soft: #3a2b1c;
+    --review: #5cc3d4; --review-soft: #1b3237; --done: #6cc193; --done-soft: #1f3328;
+    --warn: #ec8376; --warn-soft: #3b231f;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+  .wrap {
+    max-width: 1180px; margin: 0 auto; display: grid; gap: 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 22px 40px;
+  }
+  header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px 20px; }
+  header > div { min-width: 0; }
+  h1 { font-family: var(--display); font-weight: 750; font-size: 30px; letter-spacing: -0.8px; margin: 0; text-wrap: balance; }
+  h1 span { color: var(--accent); }
+  .sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
+  .stamp { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .stamp b { color: var(--ink); font-weight: 600; }
+
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--muted); }
+  .flow li { display: inline-flex; align-items: center; gap: 6px; }
+  .flow li + li::before { content: "→"; color: var(--line); font-weight: 600; }
+  .flow b { font-weight: 600; color: var(--ink); }
+
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .pill.now i { background: var(--now); } .pill.review i { background: var(--review); }
+  .pill.next i { background: var(--accent); } .pill.done i { background: var(--done); }
+  .pill.review[data-zero] { display: none; }
+  .note { background: var(--accent-soft); border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+
+  .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  @media (max-width: 860px) { .board { grid-template-columns: 1fr; } }
+  section { display: grid; gap: 10px; min-width: 0; }
+  section > h2 { display: flex; align-items: center; justify-content: space-between; margin: 0 2px; font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: -0.2px; }
+  section > h2 small { font-family: var(--body); font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0.4px; text-transform: uppercase; }
+  .list { display: grid; gap: 8px; }
+
+  .task { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 7px; min-width: 0; }
+  .task.doing { border-color: var(--now); }
+  .task.review { border-color: var(--review); }
+  .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .code { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.3px; padding: 1px 7px; border-radius: 6px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.2px; border: 1px solid transparent; }
+  .chip.state-doing { background: var(--now-soft); color: var(--ink); }
+  .chip.state-doing::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--now); animation: pulse 1.6s ease-in-out infinite; }
+  .chip.state-review { background: var(--review-soft); color: var(--ink); }
+  .chip.state-review::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--review); }
+  .chip.rank { background: var(--accent-soft); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .chip.kind { border-color: var(--line); color: var(--muted); }
+  .chip.kind.visual { color: var(--ink); }
+  .chip.ready { background: var(--done-soft); color: var(--ink); }
+  .chip.unready { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .chip.state-doing::before { animation: none; } }
+
+  .title { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+  .detail { color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+  details { border-top: 1px dashed var(--line); padding-top: 6px; }
+  summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); list-style: none; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; font-size: 11px; transition: transform 0.15s; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  summary:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .long { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; color: var(--ink); }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tag { padding: 2px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); font-size: 11.5px; letter-spacing: 0.2px; }
+  .done .tag { background: var(--done-soft); border-color: transparent; }
+  .commit { font-family: var(--mono); font-size: 11.5px; color: var(--accent); overflow-wrap: anywhere; }
+  .empty { border: 1px dashed var(--line); border-radius: 12px; padding: 16px; color: var(--muted); font-size: 13.5px; text-align: center; }
+  .more { justify-self: start; font: 600 13px var(--body); color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+  .more:hover { background: var(--accent-soft); }
+  .offline { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Kütüp <span>iş akışı</span></h1>
+      <p class="sub">Claude'un şu an yaptığı, sıraya aldığı ve bitirdiği işler. Her kartın başındaki kod (n13 gibi) sohbetlerde ve karar kaydında o işin adı.</p>
+    </div>
+    <div class="stamp" id="stamp">Yükleniyor…</div>
+  </header>
+  <ol class="flow" aria-label="Bir işin yolu">
+    <li><b>Fikir</b></li>
+    <li>tam tanım yazılır</li>
+    <li><b>Sırada</b></li>
+    <li><b>Şimdi</b></li>
+    <li>görselse <b>onayın</b></li>
+    <li><b>Bitti</b></li>
+    <li>kararlar kayda geçer</li>
+  </ol>
+  <div class="strip">
+    <span class="pill now"><i></i><span id="c-doing">–</span> şimdi</span>
+    <span class="pill review" id="p-review" data-zero><i></i><span id="c-review">0</span> onayını bekliyor</span>
+    <span class="pill next"><i></i><span id="c-next">–</span> sırada</span>
+    <span class="pill done"><i></i><span id="c-done">–</span> bitti</span>
+  </div>
+  <div class="note" id="note" hidden></div>
+  <div class="board">
+    <section aria-labelledby="h-now"><h2 id="h-now">Şimdi <small>yapılıyor</small></h2><div class="list" id="now"></div></section>
+    <section aria-labelledby="h-next"><h2 id="h-next">Sırada <small>bu sırayla</small></h2><div class="list" id="next"></div></section>
+    <section aria-labelledby="h-done"><h2 id="h-done">Bitti <small>yayında</small></h2><div class="list" id="done"></div><button class="more" id="more" type="button" hidden></button></section>
+  </div>
+</div>
+
+<script>
+  const DONE_PREVIEW = 8;
+  let showAllDone = false;
+  let lastTasks = [];
+  const $ = (id) => document.getElementById(id);
+  const empty = {
+    now: "Şu an çalışılan bir iş yok.",
+    next: "Sırada iş yok. Yeni fikirler tam tanımıyla buraya eklenir.",
+    done: "Henüz biten iş kaydı yok.",
+  };
+  const fmt = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
+  };
+  const el = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  function fold(label, text) {
+    const d = el("details");
+    d.append(el("summary", null, label), el("p", "long", text));
+    return d;
+  }
+  function card(t, rank) {
+    const box = el("article", "task " + t.status);
+    const chips = el("div", "chips");
+    if (t.id) chips.append(el("span", "code", t.id));
+    if (t.status === "doing") chips.append(el("span", "chip state-doing", "Yapılıyor"));
+    if (t.status === "review") chips.append(el("span", "chip state-review", "Onayını bekliyor"));
+    if (rank) chips.append(el("span", "chip rank", "Sıra " + rank));
+    if (t.kind) chips.append(el("span", "chip kind" + (t.kind === "görsel" ? " visual" : ""), t.kind === "görsel" ? "Görsel iş" : "Teknik iş"));
+    if (t.status === "next" || t.status === "doing" || t.status === "review") {
+      if (t.ready === true) chips.append(el("span", "chip ready", "Tanım hazır"));
+      else if (t.ready === false) chips.append(el("span", "chip unready", "Tanım eksik"));
+    }
+    box.append(chips, el("div", "title", t.title || "Adsız iş"));
+    if (t.detail) box.append(el("div", "detail", t.detail));
+    if (t.spec) box.append(fold("Tam tanım", t.spec));
+    if (t.decisions) box.append(fold("Verilen kararlar", t.decisions));
+    const meta = el("div", "meta");
+    if (t.area) meta.append(el("span", "tag", t.area));
+    if (t.at) meta.append(el("span", null, fmt(t.at)));
+    if (t.commit) meta.append(el("span", "commit", t.commit));
+    if (meta.childNodes.length) box.append(meta);
+    return box;
+  }
+  function fill(box, items, key) {
+    box.replaceChildren(...(items.length ? items : [el("div", "empty", empty[key])]));
+  }
+  function render(tasks) {
+    lastTasks = tasks;
+    const g = { doing: [], review: [], next: [], done: [] };
+    for (const t of tasks) (g[t.status] || g.next).push(t);
+    const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+    g.doing.sort(byOrder); g.review.sort(byOrder); g.next.sort(byOrder);
+    g.done.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+    fill($("now"), [...g.doing, ...g.review].map((t) => card(t)), "now");
+    fill($("next"), g.next.map((t, i) => card(t, i + 1)), "next");
+    const doneShown = showAllDone ? g.done : g.done.slice(0, DONE_PREVIEW);
+    fill($("done"), doneShown.map((t) => card(t)), "done");
+    const more = $("more");
+    more.hidden = g.done.length <= DONE_PREVIEW;
+    more.textContent = showAllDone ? "Son " + DONE_PREVIEW + " işi göster" : "Tümünü göster (" + g.done.length + ")";
+    $("c-doing").textContent = g.doing.length;
+    $("c-review").textContent = g.review.length;
+    $("p-review").toggleAttribute("data-zero", g.review.length === 0);
+    $("c-next").textContent = g.next.length;
+    $("c-done").textContent = g.done.length;
+  }
+  $("more").addEventListener("click", () => { showAllDone = !showAllDone; render(lastTasks); });
+  render([]);
+  (async () => {
+    const db = await window.claude?.use?.("db");
+    const stamp = $("stamp");
+    if (!db) {
+      stamp.innerHTML = '<span class="offline">Canlı veriye bu görünümde ulaşılamıyor.</span>';
+      return;
+    }
+    db.collection("tasks").onSnapshot(
+      (snap) => render(snap.docs.filter((d) => d.exists).map((d) => ({ ...d.data(), id: d.id }))),
+      () => { stamp.textContent = "Bağlantı kesildi; sayfayı yenile."; },
+    );
+    db.doc("meta/board").onSnapshot((snap) => {
+      const m = snap.exists ? snap.data() : null;
+      stamp.innerHTML = "";
+      if (m?.updated) { stamp.append("Son güncelleme: "); stamp.append(el("b", null, fmt(m.updated))); }
+      else stamp.textContent = "Henüz güncelleme yok";
+      const note = $("note");
+      note.hidden = !m?.note;
+      note.textContent = m?.note || "";
+    });
+  })();
+</script>
+

@@ -1,0 +1,11 @@
+{
+  "area": "Kütüphane",
+  "at": "2026-10-16T20:30:00+03:00",
+  "detail": "Milli Kütüphane salonlarının basit çizimi; arkadaşlar masalarında avatarlarıyla; boş masaya dokununca 'Geldim' o masayla dolar.",
+  "kind": "görsel",
+  "order": 2.74,
+  "ready": false,
+  "spec": "Amaç: \"Kim nerede?\" sorusunun en somut hâli.\n\nBatur'un sözleri: Claude'un 5 önerisinden 4. madde, onaylandı.\n\nÖneri: Salon seçimi (Adnan Ötüken, Müjgan, ...), salonun basit kuşbakışı çizimi, masa numaraları, arkadaşların masada avatarları, boş masaya dokununca yer seçimi. Mevcut 'salon + masa' verisiyle çalışır.\n\nAçık (başlamadan Batur'a sorulacak): Salonların düzeni ve masa numaralandırması (bir fotoğraf ya da kroki yeterli). Bu yüzden tanım eksik.\n\nBitti ölçütü: Batur ve arkadaşları masalarını haritada görüyor, 375 px'te kullanışlı, Batur onayladı.",
+  "status": "next",
+  "title": "Masa haritası: kim hangi masada"
+}

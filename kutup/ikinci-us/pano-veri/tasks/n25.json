@@ -1,0 +1,13 @@
+{
+  "area": "Hesap",
+  "at": "2026-10-17T02:20:00+03:00",
+  "commit": "76381788 · eb4e2ba9",
+  "decisions": "Bulut oturumu yaptı (PR #4), yerelde incelendi, birleştirildi, yayınlandı (Worker 812f7ef9). Göç 21'den önce canlı yedek alındı, göçten sonra 6/6 abonelik yerinde.\n\nBir hesap = bir ekip (Batur). Cihaz en fazla 5 hesap tutar. Anahtarlar sayfa betiklerine açık değil, HttpOnly çerezde; sunucu her istekte denetler. Bir hesabın bildirimi diğerine gitmez; birden fazla hesaplı telefonda başlıkta ekip adı yazar, dokununca o hesap açılır. \"Bu cihazda çıkış yap\" yalnız açık hesaptan çıkarır.\n\nAçık: gerçek telefonda iki hesaplı bildirim denenmedi. iPhone'da hesap ekleme ana ekran uygulamasının içinden yapılmalı.",
+  "detail": "Her ekip ayrı hesap olarak kalır (ilerleme karışmaz); cihaz birden fazla hesabı hatırlar, Ben'den ve sol menüden tek dokunuşla hesap değiştirilir.",
+  "kind": "teknik",
+  "order": 2.735,
+  "ready": true,
+  "spec": "Amaç: Birden fazla ekibi olan (Batur gibi) hesaplar arasında kolay geçsin.\n\nBatur'un sözleri (16 Eki): \"benim birden fazla arkadaş grubum var ... bir ekibim daha var ama onun için yeni bir hesap açtım. Batur 2 diye.\" · \"iki ayrı hesap daha mantıklı. O zaman hesaplarım arası geçiş yapmamı kolaylaştırman lazım. Benim için yani en azından.\"\n\nKararlaşan: Bir hesap = bir ekip (binalar, tuğlalar, istatistikler karışmaz). Geçiş Instagram'daki gibi: cihaz kayıtlı hesapları hatırlar.\n\nAçık (teknik, Claude karar verir): Oturum çerezi tek; birden fazla oturumun güvenle saklanması (sunucu tarafında cihaz bağlı oturum listesi), her hesabın push aboneliği, hesap ekleme akışı.\n\nBitti ölçütü: Batur iki hesabı arasında tek dokunuşla geçiyor, bildirimler iki hesap için de geliyor, testler eklendi.",
+  "status": "done",
+  "title": "Hesaplar arası hızlı geçiş"
+}

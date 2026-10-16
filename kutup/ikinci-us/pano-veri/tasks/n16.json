@@ -1,0 +1,11 @@
+{
+  "area": "Tema",
+  "at": "2026-10-16T10:05:00+03:00",
+  "commit": "16e35609",
+  "decisions": "Batur'un isteği (15 Eki): temayı ana ekranın sağ üstünden değiştirmek, üç mod, açıklamalı.\n\nÖnizleme 375 px'te açık ve koyu modda gösterildi. Batur A'yı seçti: çandaki gibi ince çizgi simge (emoji seçeneği B seçilmedi).\n\nTelefonda yer açmak için üstteki \"Bizim alan ›\" ön eki gizlendi. Düğme, Benim köşem'deki ayarla aynı ayarı kullanıyor.",
+  "detail": "Sağ üstte çanın yanında tek düğme: o anki görünümü çizgi simgeyle gösterir (güneş / ay / yarım güneş; Batur A'yı seçti). Dokununca 3 seçenekli açıklamalı menü: Otomatik (bugünün gün batımı / doğumu saatiyle), Açık, Koyu. Benim köşemdeki ayarla aynı. 44 px dokunma alanı, 360 px'te taşma yok; telefonda üstteki 'Bizim alan ›' ön eki gizlendi.",
+  "kind": "görsel",
+  "order": 2.56,
+  "status": "done",
+  "title": "Tema düğmesi ana ekranın sağ üstünde"
+}

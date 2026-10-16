@@ -1,0 +1,13 @@
+{
+  "area": "Tema",
+  "at": "2026-10-17T01:00:00+03:00",
+  "commit": "82f2136e · a0f366e1",
+  "decisions": "Batur: 'Altı tema da kalsın, adlar uygun. Koyu Lavanta'da koyu yazılı düğmeler kalsın. Soluk gri yazılar 4.5:1'e çekilsin.' Az ama kapsamlı ve belirgin paket. Açık: gerçek iPhone'da bakılmadı.",
+  "detail": "Yayında (Worker da4c894e, PR #3, bulut oturumu). Altı kapsamlı paket: Lavanta, Lacivert, Petrol, Kiremit, Gül, Grafit. Tema artık zemin, kart, çizgi, yazı, vurgu, kahraman, gökyüzü, odak kartı ve menüleri birlikte değiştiriyor (açık + koyu). Eski seçimler en yakın pakete geçiyor. Soluk yazılar her temada 4.5:1 (Lavanta açıkta eşik altı 130 → 0). Ek: Pano mesaj listesindeki yan kaydırma çubuğu düzeldi (819da5ff).",
+  "kind": "görsel",
+  "order": 2.705,
+  "ready": true,
+  "spec": "Amaç: Tema seçmek siteyi gerçekten değiştirsin.\n\nBatur'un sözleri (16 Eki): \"Tema olayı birazcık zayıf kalmış. Hani renk değiştiriyorsun ... sadece çok ufak bir renk tonu değişikliği oluyor ... fark yaratan aşırı bir tema yok gibi. Bir de renklerin tonları fazla, bazıları fazla soft ve birbirine yakın. Bazıları iyi.\" · \"Tema dediğin daha kapsamlı olur. Renk açısından.\" · \"görsel uyumluluğu kontrol etmek koşuluyla gerçekten estetik birkaç alternatif renk teması getirebilirsin.\"\n\nKararlaşan: Temalar kapsamlı paketler olur (zemin, kart, kenar, kahraman, vurgu, gökyüzü tonu, açık ve koyu); sayı azalıp kalite artar; birbirinden belirgin ayrılır. Eskilerden iyi olanlar kalır.\n\nAçık: Hangi paketler (öneri: 5–6 tema), adlar. Batur'a önce yan yana görüntülü önizleme.\n\nYöntem: Görsel iş. Her tema 375 px açık ve koyu, kontrast (yazı 4.5:1) kontrolü, araç taraması (renk paleti araçları).\n\nBitti ölçütü: Batur temaları belirgin ve güzel buldu, tüm ekranlarda kontrast tamam.",
+  "status": "done",
+  "title": "Tema revizyonu: gerçek renk temaları"
+}

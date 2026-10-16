@@ -1,0 +1,8 @@
+{
+  "area": "Bildirim",
+  "at": "2026-10-14T19:05:00+03:00",
+  "commit": "4ea95d31",
+  "detail": "Eski abonelikler bağlandı (9/9), yüksek öncelik, gerçek gelişte her zaman bildirim, ekranda kalan bildirim.",
+  "status": "done",
+  "title": "Bildirimleri sağlamlaştırma"
+}

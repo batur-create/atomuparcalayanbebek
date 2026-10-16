@@ -1,0 +1,8 @@
+{
+  "area": "Hesap",
+  "at": "2026-10-14T19:25:00+03:00",
+  "commit": "83674000",
+  "detail": "Kullanılan cihaz düşmez; yedek boş kopyaya doğrulanarak kurulur; test:browser Windows'ta çalışıyor.",
+  "status": "done",
+  "title": "Kayan oturum, JSON geri yükleme, tarayıcı testi"
+}

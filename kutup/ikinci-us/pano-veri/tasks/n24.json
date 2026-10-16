@@ -1,0 +1,11 @@
+{
+  "area": "Ses",
+  "at": "2026-10-16T20:00:00+03:00",
+  "detail": "Ses mikserindeki (yağmur, kütüphane, şömine, orman, dalga, kafe, kahverengi gürültü, kara delik) sesler gözden geçirilip daha gerçekçi ve kaliteli hâle getirilecek.",
+  "kind": "teknik",
+  "order": 2.71,
+  "ready": true,
+  "spec": "Amaç: Çalışırken dinlenen sesler daha gerçekçi ve güzel olsun.\n\nBatur'un sözleri (16 Eki): \"şu ses ses var ya gürültü. Oradaki sesleri bir inceleme turu da ekleyelim maskottan sonra ama. ... daha iyi, daha gerçekçi, daha güzel sesler, daha kaliteli üretebiliriz.\"\n\nBugün: `src/Sound.jsx` sesleri kodla üretiyor (tek ortak mikser).\n\nAçık: Kodla üretmeyi iyileştirmek mi, lisansı uygun gerçek kayıtlar (CC0) mi? Araç taraması yapılır; dosya boyutu ve çevrimdışı çalışma gözönünde.\n\nYöntem: Önce her sesin örneği Batur'a dinletilir (eski / yeni).\n\nBitti ölçütü: Batur yeni sesleri beğendi, iPhone'da çalıyor, uygulama boyutu makul.",
+  "status": "next",
+  "title": "Ses turu: daha gerçekçi, kaliteli sesler"
+}

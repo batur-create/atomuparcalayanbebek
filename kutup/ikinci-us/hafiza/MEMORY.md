@@ -1,0 +1,9 @@
+- [Kütüp work mode](kutup-work-mode.md) — packages back-to-back, use credits fully; per package save to disk then give Batur a ready /compact line; new sessions only for unrelated work, full briefs
+- [Kütüp work board](kutup-work-board.md) — open the coded board (n17…) in the side panel at every session start; specs and decisions live on it
+- [Kütüp economy design](kutup-economy-design.md) — Batur's tuğla/catalog rules (50/30/20 refund, pick before start, min 25 min); phase 1 live
+- [Kütüp ideas queue](kutup-ideas-queue.md) — Batur's mid-work ideas: queue at best spot with a full spec, merge compatible ones, keep current task going
+- [Kütüp iOS first](kutup-ios-first.md) — friends use iPhones: design for iOS Safari + home-screen PWA, guide-style help
+- [Kütüp ask before visuals](kutup-ask-before-visuals.md) — read kutup/DESIGN.md, look at the site, ask Batur with visual previews before building
+- [Kütüp no fake clickables](kutup-no-fake-clickables.md) — anything that looks tappable must do something useful, or must not look tappable
+- [Tool scouting](tool-scouting.md) — start each job with a quick scout for fresh repos/skills ("işimize yarayabilir"), vet, small trial, drop after
+- [Kütüp cloud workflow](kutup-cloud-workflow.md) — cloud sessions do the packages on claude/* branches + PR; local session reviews, merges, deploys, records

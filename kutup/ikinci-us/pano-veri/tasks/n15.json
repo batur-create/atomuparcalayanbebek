@@ -1,0 +1,9 @@
+{
+  "area": "Tema",
+  "at": "2026-10-15T21:00:00+03:00",
+  "commit": "628de73a",
+  "detail": "Benim köşemde 'Gündüz mü, gece mi?': Otomatik / Açık / Koyu. Otomatik, Ankara'da güneş batınca koyulaşır, doğunca açılır (bugün 18:10). Gece açılışta beyaz parlama yok, iPhone durum çubuğu da koyulaşır. Bütün kartlar, pano, katalog ve Kara koyuya uyumlu; Kara ay ışığı dairesinin önünde. Yayında.",
+  "order": 2.55,
+  "status": "done",
+  "title": "Karanlık tema (hava kararınca otomatik)"
+}

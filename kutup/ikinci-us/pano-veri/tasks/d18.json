@@ -1,0 +1,8 @@
+{
+  "area": "Şantiye",
+  "at": "2026-10-15T14:15:00+03:00",
+  "commit": "701d6fbf",
+  "detail": "Bilgisayarda sekme ve uygulama değiştirmek serbest; sekme kapanırsa ya da bilgisayar uyursa yıkılır. Telefonda 1 dakika tolerans, çıkınca ve 30 sn kala bildirim.",
+  "status": "done",
+  "title": "İnşaat kuralı cihaza göre"
+}

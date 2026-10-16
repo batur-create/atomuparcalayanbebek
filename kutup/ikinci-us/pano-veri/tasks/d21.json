@@ -1,0 +1,10 @@
+{
+  "area": "Sistem",
+  "at": "2026-10-16T10:05:00+03:00",
+  "commit": "ef11b80d",
+  "decisions": "Sorun: yeni sohbetler siteye bakmadan çalışıyordu (n13'ün ilk çizimleri reddedildi), bir sohbet bilmediği işe kısa brif yazdı.\n\nBatur'un seçtiği düzen: Paket bitince her şey diske yazılır, sonra Claude hazır bir /compact satırı verir ve aynı sohbette devam edilir. Yeni sohbet yalnızca alakasız ya da paralel işler için açılır; brifi işi bilen yazar. Her oturum pano yan panelde açık başlar. Görsel işte önce DESIGN.md ve ekran görüntüleri, sonra Batur'a önizleme.",
+  "detail": "DESIGN.md (sitenin görünümü ve çizim dili), KARARLAR.md (her işin kararları; dizinle okunur), HANDOFF.md 67 binden 28 bin karaktere indi. Panoda kodlar, tam tanım, karar alanı ve onay durumu.",
+  "kind": "teknik",
+  "status": "done",
+  "title": "Yeni çalışma sistemi: tasarım rehberi, karar kaydı, kodlu pano"
+}

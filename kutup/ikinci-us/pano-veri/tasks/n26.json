@@ -1,0 +1,13 @@
+{
+  "area": "Köy",
+  "at": "2026-10-16T21:00:00+03:00",
+  "commit": "00990aa5 · d5651113 · f541476a",
+  "decisions": "Aynı bilgi tek yerde (kim odakta: masadakiler satırı + haritadaki yüzler; ses odak kartında). Kutucuklar ve yüzler bir iş yapıyor. Uygulama işini bulut oturumu yaptı, Claude inceleyip birleştirdi ve yayınladı (Batur: \"cloud sessiona yaptıralım işleri, sen sadece yayınla\"). Açık: gerçek iPhone'da bakılmadı.",
+  "detail": "Yayında (Worker edee3e53). 1. kısım: odak stüdyosu (İnşaat/Serbest seçici, masadakiler tek satır + Katıl, ses mikseri düğmede), büyük harita, haritada yüzler, anıt ve haftalık tablo kutucukları; sayfa 3,2 → 2,4 ekran. 2. kısım (bulut oturumu, PR #1): yaşayan harita (yürüyen köylüler, gündüz kuşlar, odaktakilerin evinde neşes alan ışık ve 🎧, bina bitince haritanın binaya uçması + konfeti). Harita iki katmana ayrıldı: dolu köyde yavaş telefonda yük %75–80'den %35–38'e indi, 60 fps. Arduvaz/Kum/Zeytin renkleri haritada düzeldi.",
+  "kind": "görsel",
+  "order": 2.69,
+  "ready": true,
+  "spec": "Amaç: Ders çalışırken en çok vakit geçirilen sekmeyi ana sayfa seviyesine çıkarmak.\n\nBatur'un sözleri (16 Eki): Claude'un 5 önerisinden 1. madde; \"Tamam aga senin planını beğendim. Planlayalım.\" n22'den: \"köy inşaat olayı animasyonu çok güzel olmuş\" · \"köye birazcık daha detay bile ekleyebiliriz ileride.\"\n\nBugün (tur, 16 Eki): Köy 375 px'te ~3,6 ekran; koyu odak kartı, düz yeşil harita, sade ses kartı, haftalık tablo, \"Beraber odaktayız\" alt alta. Büyük Kara kartı n06'da kalktı; Kara artık odak kartında sayacın yanında oturuyor.\n\nÖneri: (1) Odak stüdyosu: süre, bina, ritim ve ses tek ekranda çiplerle; \"Temeli at\" deyince sahne açılır. (2) Harita ana sayfadaki gökyüzüyle aynı saati yaşar (gece ışıklar, mevsim); birlikte odaklananlar haritada avatarla. (3) Haftalık tablo ve anıt kutucukları. (4) n22: evler arasında yürüyen köylüler, duman, kuşlar, bina bitince küçük kutlama. Kara odak kartında kalır (KaraBuddy).\n\nAçık sorular: Stüdyo düzeni ve haritanın boyu; Batur'a 1–2 seçenekli önizleme.\n\nKurallar: büyük çizimin içinde animasyon yok, hareket ayrı katmanda (DESIGN.md §7); basılabilir görünen her şey bir iş yapar; SVG içinde sürekli döngü yok (n06 ölçümü).\n\nBitti ölçütü: Köy ~2 ekrana iner, odak bir dokunuşla başlar, yavaş telefonda 60 fps, Batur onayladı.",
+  "status": "done",
+  "title": "Köy 2.0: odak stüdyosu ve yaşayan harita"
+}

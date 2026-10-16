@@ -1,0 +1,10 @@
+{
+  "area": "Başarım",
+  "detail": "İlk inşaat, seri günleri, gece kuşu / sabah erkenci, maraton (art arda seans), imece ustası, koleksiyoncu, Haftanın Ustası, anıt ustası; gizli başarımlar (kara delik kâşifi gibi). Profilde rozet vitrini, kazanınca kutlama.",
+  "kind": "görsel",
+  "order": 2.75,
+  "ready": false,
+  "spec": "Amaç: Çalışmayı ödüllendiren başarımlar ve profilde rozet vitrini.\n\nBatur'un sözleri: Kayıtlarda Batur'un bu işi anlattığı bir mesaj bulunamadı. Aşağıdaki liste Claude'un önerisi (eski Paket 4 \"gizli rozetler\" fikriyle birleşti). Bu yüzden tanım eksik sayılır.\n\nÖnerilen liste: ilk inşaat, seri günleri, gece kuşu / sabah erkencisi, maraton (art arda seans), imece ustası, koleksiyoncu, Haftanın Ustası, anıt ustası; gizli başarımlar (kara delik kâşifi gibi). Kazanınca kutlama.\n\nAçık sorular (başlamadan Batur'a sorulacak): Liste ve eşikler (kaç gün seri, kaç seans maraton)? Başarımın tuğla ödülü olacak mı? Rozetler başkalarına görünecek mi? Kutlama ne kadar gösterişli olsun?\n\nEkranlar: Benim köşem / profil, kişi kartları, kazanma anı.\n\nYöntem: Görsel iş. Önce liste ve 2–3 rozet çizimi Batur'a gösterilir, sonra yapılır. Rozetler DESIGN.md'deki çizim diline uyar.\n\nBitti ölçütü: Geçmiş istatistiklerden hak edilenler geriye dönük açılır, testler eklenir, vitrin 375 px'te taşmaz.",
+  "status": "next",
+  "title": "Başarımlar"
+}

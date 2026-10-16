@@ -1,0 +1,13 @@
+{
+  "area": "Tasarım",
+  "at": "2026-10-16T23:00:00+03:00",
+  "commit": "1743855a",
+  "decisions": "Batur: 'Seçenek 1 (Gökyüzü). Sınırdaki maddelerde ve gizlilikte senin önerilerin olsun.' Canlı konum yalnız katılınca. Sayı hapları düz sayı. Okuyucu kartı n28 için saklandı. Açık: pul dokununca Kara cümlesi (yeni Kara yerleşince), gerçek iPhone'da bakılmadı.",
+  "detail": "Yayında (Worker f76db6c3, PR #2, bulut oturumu). Gökyüzü girişi: karşılama, davet ve ekip kurma tek canlı gökyüzü ekranında; davette ekip patikada bekliyor, 'sen?' yeri; katılma 2, ekip kurma 3 adım. Davet linkinde yalnız ad ve yüz, canlı konum yok (sunucu + canlı test). 19 sahte basılabilir düzeldi (sol üst '✳ sayfa adı', tuğla kasası, Pano kalemi, kişi kartları...). Köy/Pano kutucukları yan yana, formlar 16 px, renk düğmeleri 44 px, anıt penceresi katkı listesiyle. iPhone ekleme rehberi ve çizimli boş durumlar.",
+  "kind": "görsel",
+  "order": 2.7,
+  "ready": true,
+  "spec": "Amaç: İlk izlenim ve küçük ayrıntılarda cila.\n\nBatur'un sözleri (16 Eki): \"sol üstte kütüp yazıyor ... basınca bir şey olacakmış gibi duran ama hiçbir şey olmayan tuşlar, yazılar görünce rahatsız oluyorum. Gerçi sol üstteki kütüp yazısı mobilde biraz normal duruyor. Fazla sade durmuş. Benim Android telefonda.\" Claude'un 5 önerisinden 5. madde, onaylandı.\n\nBugün (tur): giriş ekranı düz beyaz bir kart; davet linkine tıklayan arkadaşın ilk gördüğü yer.\n\nÖneri: (1) Giriş, davet ve kurulum: yaşayan gökyüzü, kelime kelime başlık, kısa tanıtım. (2) iPhone 'Paylaş → Ana Ekrana Ekle' rehberi adım adım görsel. (3) Sahte basılabilir avı: tüm sayfalar taranır; sol üstteki 'Kütüp' telefonda logo + sayfa adı olur, dokununca en üste / ana sayfaya gider. (4) Boş durumlar ve yükleniyor anları çizimli. (5) Bildirim metinleri Kara'nın ağzından (n06'dan sonra).\n\nAçık: Giriş ekranı için 1–2 seçenekli önizleme.\n\nBitti ölçütü: Basılabilir görünen her öğe bir iş yapıyor (listeyle kontrol), giriş ekranı Batur'u etkiledi, Android ve iPhone'da düzgün.",
+  "status": "done",
+  "title": "Vitrin ve cila: giriş ekranı, sahte basılabilir avı"
+}

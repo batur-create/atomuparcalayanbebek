@@ -1,0 +1,11 @@
+{
+  "area": "Altyapı",
+  "at": "2026-10-16T20:30:00+03:00",
+  "detail": "Canlı sitede 5 sn'lik yoklama yerine anlık bağlantı (Durable Objects + WebSocket); 2.900 satırlık App.jsx bölünür; ağır parçalar gerekince yüklenir; son durum cihazda saklanır.",
+  "kind": "teknik",
+  "order": 2.73,
+  "ready": true,
+  "spec": "Amaç: Gelişler ve mesajlar anında görünsün, uygulama hızlı açılsın, sonraki işler daha kolay yapılsın.\n\nBatur'un sözleri: Claude'un 5 önerisinden 2. madde, onaylandı (\"senin planını beğendim\").\n\nBugün: Cloudflare'de canlılık 5 sn'lik yoklama (`worker/index.js`); Node'da SSE. App.jsx ~2.900 satır. Ana paket 186 KB gzip + 28 KB tembel Motion.\n\nÖneri: (1) Durable Objects + WebSocket hibernation ile anlık yayın; ücretsiz planda kullanılabilirliği başlamadan doğrulanır, yoklama yedek olarak kalır. (2) App.jsx'i modüllere bölmek (Focus, Board, modallar). (3) Tembel yükleme: /batur paneli, odak ekranı, katalog, istatistik, köy haritası. (4) Son durumu cihazda saklayıp anında açılış (zayıf çekim).\n\nKurallar: canlı D1'e doğrudan yazma yok; göç gerekirse önce yedek; testler (birim, worker, tarayıcı, canlı duman) yeşil.\n\nBitti ölçütü: Bir gelişin başka telefona yansıması < 1 sn, ilk açılış ana paketi küçüldü, tüm testler yeşil.",
+  "status": "next",
+  "title": "Anında ve hızlı: canlı bağlantı, bölünmüş kod, hızlı açılış"
+}

@@ -1,115 +1,315 @@
-# İkinci üs: Kütüp arkadaşın bilgisayarında (17 Ekim 2026)
+# İkinci üs: Kütüp'ü arkadaşın bilgisayarından yürütmek
 
-Batur'un kendi Claude hesabının haftalık sınırı 22 Ekim gece 01:00'e kadar dolu. Bu sürede Kütüp işleri Batur'un arkadaşının bilgisayarında, **arkadaşın kendi Claude hesabıyla** yapılır. Bu dosya hem kurulum hem de oradaki Claude'a yapıştırılacak devir promptudur.
+Batur'un kendi Claude hesabının haftalık sınırı 22 Ekim 2026 gece 01:00'e kadar dolu. Bu sürede Kütüp, Batur'un arkadaşının bilgisayarında, **arkadaşın kendi Claude hesabıyla, ana üstekiyle birebir aynı düzende** sürer, sonra temiz geri döner.
 
-## 1. Kurulum (bir kez)
+Batur'un sözleri (17 Ekim):
+- "senle nasıl çalışıyorsam BİREBİR AYNISINI istiyom. kütüp akış artifaktinin yanda açılı olma detayına kadar."
+- "her şey smooth gitsin ve smooth geri dönsün."
+- "adımları arkadaşımla beraber kursunlar ve her şey hazır olunca başlasınlar."
 
-1. Kur: Git, Node 22.13 veya üstü, Python 3 (`pip install playwright`; Chrome ya da Edge yüklü olsun), Claude masaüstü uygulaması (Code sekmesi, arkadaşın kendi hesabı), bir GitHub hesabı.
-2. GitHub'da https://github.com/batur-create/atomuparcalayanbebek sayfasında **Fork**.
-3. Terminalde:
-   ```sh
-   git clone https://github.com/batur-create/atomuparcalayanbebek.git
-   cd atomuparcalayanbebek
-   git checkout kutup-platform
-   git remote add fork https://github.com/<github-kullanıcı-adın>/atomuparcalayanbebek.git
-   cd kutup
-   npm ci
-   npm run test:all
-   npm run test:browser
-   ```
-   `test:all` 99 test, `test:browser` 66 kontrol; hepsi yeşil olmalı. Yerel sunucu gizli bilgi istemez: `kutup/data/` ilk açılışta kendi yerel anahtarını üretir.
-4. Depo kökünde `.claude/launch.json`:
-   ```json
-   { "version": "0.0.1", "configurations": [
-     { "name": "kutup", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "kutup", "run", "dev"], "port": 3001 } ] }
-   ```
-5. Batur `Kara-v2.zip`'i (ChatGPT'nin Kara paketi) gönderir. Deponun **dışında** bir klasöre aç (ör. `Masaüstü/kara-v2`).
-6. Claude Code'u depo kökünde aç, bölüm 5'teki promptu yapıştır.
+**Bu dosyayı okuyan Claude:** baştan sona oku. Önce §3'teki hazırlık listesini Batur ve arkadaşıyla birlikte, sırayla tamamla. Liste bitmeden işe başlama. Liste bitince kaldığımız yerden devam et.
 
-## 2. Sınırlar
+| § | Konu |
+|---|---|
+| 1 | Başlangıç mesajı (arkadaş yapıştırır) |
+| 2 | Kimsin, kiminle konuşuyorsun |
+| 3 | **Hazırlık listesi** (her adım doğrulanır) |
+| 4 | Her oturumun başı |
+| 5 | Bir paketin akışı |
+| 6 | Görsel onay |
+| 7 | ChatGPT ile çalışma |
+| 8 | Batur'un yayın adımları |
+| 9 | Günlük: geri dönüş kaydı |
+| 10 | Sınır dolarken |
+| 11 | Teslim ve geri dönüş |
+| 12 | Güvenlik |
+| 13 | Sorun çıkarsa |
 
-- **Yapılır:** kod, testler, yerel sunucu, ekran görüntüleri, kendi `claude/...` dalını `fork`'a push, `kutup-platform`'a PR.
-- **Yapılmaz:** yayın (Cloudflare girişi yalnız Batur'un bilgisayarında), canlı veritabanı, `ADMIN_KEY`, gerçek üye verisi. `kutup/data/` commit'lenmez. Batur'un `main` ya da `kutup-platform` dalına doğrudan push yok (fork'la zaten erişim yok).
-- İş panosu (claude.ai artifact) Batur'un hesabında; buradan açılmaz. Sıradaki işlerin tam tanımı bölüm 6'da.
+## 1. Başlangıç mesajı
 
-## 3. Bir paketin akışı
+Arkadaş:
+1. Claude masaüstü uygulamasını kurar (claude.ai/download) ve kendi hesabıyla girer.
+2. Belgeler'in altında boş bir **`Kutup-Us`** klasörü açar.
+3. Uygulamada **Code** sekmesinde bu klasörü seçer ve şunu yapıştırır:
 
-1. `git fetch origin && git switch -c claude/<kod>-<kisa-ad> origin/kutup-platform`
-2. Görsel işse önce Batur'a görüntü göster (ekran görüntüsünü arkadaş Batur'a iletir), onay gelince yap.
-3. `npm run test:all` ve `npm run test:browser` yeşil. Yeni özelliğe test ve tarayıcı kontrolü ekle. Yavaş telefonda ölç (Chrome DevTools, CPU 4× yavaşlatma, 375 px).
-4. Kayıtları aynı dalda yaz: `KARARLAR.md` kaydı ve dizin satırı (commit yerine "PR"), görsel kararsa `DESIGN.md` §9'a bir satır, `HANDOFF.md` 6b notu. Worker kimliğini Batur yayından sonra ekler.
-5. `git push fork <dal>`. PR: taban `batur-create/atomuparcalayanbebek` → `kutup-platform`. Açıklamada: ne yapıldı, testler, göç var mı, canlı duman testine eklenen adım, **pano güncellemesi** (hangi kart `done`, kararlar).
-6. Batur'a Türkçe kısa rapor.
-
-Commit mesajları İngilizce.
-
-## 4. Batur'un tarafı: yayın (Claude gerekmez)
-
-PR'ı GitHub'da "Create a merge commit" ile birleştir. Sonra `C:\Users\İzzettin\bilim-dunyasi\kutup-platform\kutup` içinde:
-
-```sh
-git pull origin kutup-platform
-npm ci
-npm run test:all
-node scripts/owner-backup.mjs <is-kodu>
-npm run deploy
-node tests/live-smoke.mjs
+```
+Merhaba, ben Batur. Kütüp projesinde benim geliştiricim olarak devam edeceksin.
+Şu dosyayı baştan sona oku ve uygula. Önce hazırlık listesini benimle ve arkadaşımla adım adım tamamla, sonra kaldığımız yerden devam et:
+https://raw.githubusercontent.com/batur-create/atomuparcalayanbebek/kutup-platform/kutup/IKINCI-US.md
 ```
 
-`owner-backup.mjs` yalnız PR göç içeriyorsa gerekir ve deploy'dan **önce** çalışır (göçler ilk istekte kendiliğinden uygulanır). Anahtarı ekrana basmaz. Duman testinin "push: members N/N bound" satırı aboneliklerin korunduğunu gösterir. Pano kayıtları 22 Ekim'den sonra Batur'un Claude'uyla PR açıklamalarından işlenir.
+**Neden ayrı klasör?** Claude Code hafızayı ve oturumları açılan klasöre göre tutar. `Kutup-Us`, arkadaşın kendi işlerinden ayrı, kendi hafızası olan yalıtılmış bir proje olur. Bütün Kütüp oturumları bu klasörde açılır, başka iş burada yapılmaz. Klasörün düzeni:
 
-## 5. Devir promptu (oradaki Claude'a aynen yapıştır)
+```
+Kutup-Us/                       ← Claude'un çalışma klasörü (hep bu)
+  .claude/launch.json           ← önizleme ayarı (§3, H10)
+  atomuparcalayanbebek/         ← depo (kod: atomuparcalayanbebek/kutup)
+  gelen/                        ← ChatGPT paketleri (depo dışında)
+  onizleme/                     ← Batur'a gidecek ekran görüntüleri
+```
 
-> Sen Kütüp projesinde çalışan geliştiricisin. Bu bilgisayar Batur'un arkadaşının; Batur'un kendi Claude'u 22 Ekim'e kadar dinleniyor. Önceki sohbetlere erişimin yok; gereken her şey depoda.
->
-> **Proje:** Kütüp, Milli Kütüphane'ye (Ankara) giden arkadaşlar için gerçek zamanlı buluşma ve odak PWA'sı. Canlı: https://kutup.ahmetbaturkaplanoglu.workers.dev (Cloudflare Workers + D1, React 18 + Vite). Kod `kutup/`, dal `kutup-platform`.
->
-> **İlk iş:** `kutup/IKINCI-US.md` (bu dosya: sınırlar, akış, sıradaki işler), `kutup/HANDOFF.md` bölüm 0, 3, 5 ve 6b, görsel işte `kutup/DESIGN.md`, `kutup/KARARLAR.md`'nin yalnız dizini (işin koduyla `### n24` gibi ara). HANDOFF §0'daki pano adımı burada geçersiz; tanımlar IKINCI-US.md §6'da.
->
-> **Batur'un kuralları:**
-> - Görsel işte önce siteye bak, Batur'a görsel önizleme göster, onayıyla yap. Teknik kararları kendin ver; soru yağmuru yok, gerçekten Batur'a ait karar varsa tek kısa soru.
-> - iOS öncelikli: arkadaşlar iPhone'da, Safari ve ana ekran uygulaması (PWA).
-> - Basılabilir görünen her şey işe yarar bir şey yapar; yapmıyorsa basılabilir görünmez.
-> - Sadelik = akışta tekrar yok; görsel şölenden vazgeçmek değil.
-> - Renkler `src/themes.css` jetonlarından. SVG içinde sonsuz döngülü animasyon yok. "Hareketi azalt" her zaman çalışır.
-> - Her işin başında kısa araç taraması; üçüncü taraf indirme ve kurulum Batur'un onayıyla, kod çalıştırılmadan önce okunur.
-> - İş ortasında gelen yeni fikir: tam tanımıyla sıraya yaz, eldeki işe devam et.
-> - Yayın yapma, canlı veriye dokunma, `kutup/data/` commit'leme, yalnız `fork`'taki kendi `claude/...` dalına push ve PR (IKINCI-US.md §2–3).
->
-> **Konuşma:** Klavyede Batur ya da arkadaşı olabilir. Türkçe ve samimi yaz ("aga"). Onay Batur'dan gelir.
->
-> **Sıradaki iş:** Kara v2 (IKINCI-US.md §6).
+## 2. Kimsin, kiminle konuşuyorsun
 
-## 6. Sıradaki işler (17 Ekim pano görüntüsü)
+- **Sen Batur'un Kütüp geliştiricisisin**, ana üsteki Claude'un yaptığı işi aynı kurallar ve aynı düzenle sürdürüyorsun. Önceki sohbetlere erişimin yok; gereken her şey bu dosyada, depoda ve `kutup/ikinci-us/` içinde.
+- **Konuştuğun kişi Batur:** projenin sahibi ve baş geliştirici.
+  - Ona "Batur" diye, Türkçe ve samimi yaz ("aga").
+  - Arkadaşı klavyedeyken de Batur adına konuşulur; kararlar Batur'un kararı sayılır.
+  - Kurulumda arkadaşın kendi elinin gerektiği adımları açıkça yaz: "Arkadaşın şunu yapsın: …". Bunlar program kurmak, GitHub'a girmek, şifre yazmak.
+- **Batur nasıl çalışmak ister:**
+  - Teknik kararları sen verirsin, soru yağmuru yok. Gerçekten Batur'a ait bir karar varsa tek kısa soru sorarsın.
+  - İşi uçtan uca bitirirsin.
+  - Her paketten sonra kısa bir özet ve hazır bir `/compact` satırı verirsin.
+- **Proje:** Kütüp, Milli Kütüphane'ye (Ankara) giden arkadaşlar için gerçek zamanlı buluşma ve odak PWA'sı.
+  - Canlı: https://kutup.ahmetbaturkaplanoglu.workers.dev (Cloudflare Workers + D1, React 18 + Vite).
+  - Kod `atomuparcalayanbebek/kutup`, dal `kutup-platform`. Deponun kökü ve `main` başka bir proje.
+- **Fark tek:** yayın (deploy) yalnız Batur'un bilgisayarından yapılır (§8). Sen PR açarsın. Panodaki kart yayına kadar `review` durumunda kalır.
 
-Sıra: **Kara v2 → n24 → n28 → n29 → n30 → n14.** n30 ve n14'ün tanımı eksik; başlamadan Batur'a sor.
+## 3. Hazırlık listesi
 
-### Kara v2: ChatGPT'nin yeni Kara çizimini yerleştir
-Kara, Kütüp'ün kedi maskotu (n06): `src/Kara.jsx`, `src/kara.css`. `KaraRig` 200×240 viewBox, taban çizgisi y = 171; `data-pose`, `act`, `blink`, `wink` alır. `KaraHome` ana sayfa gökyüzünde çatıda (`at(290,134)`, `span(62)`), `KaraBuddy` odak kartında. Hareketler `ACTS`/`LASTS` zamanlayıcısıyla.
+`update_plan` ile bu listeyi görev listesi yap. Her adımı doğrulama komutuyla kontrol et. Her adımdan sonra `kutup/ikinci-us/GUNLUK.md`'deki "Kurulum" kaydına ✓ ve sürümü yaz. İşletim sistemini kendin bul (PowerShell: `$env:OS`, macOS: `uname`); komutları ona göre seç.
 
-Paket (`Kara-v2.zip`): `Kara.jsx`, `kara.css`, `Kara.svg`, `Kara-Canli-Onizleme.html`, `NOTLAR.md`, ekran görüntüleri. e10c30a2 tabanlı; `kutup-platform` o zamandan ileri gitti. ChatGPT'nin dediği:
-- Korunan: `KaraRig` arayüzü ve data-attribute'ları, 200×240 kutu ve y = 171, `KaraHome` ve `KaraBuddy` çağrıları, eski `ACTS`/`LASTS` anahtarları.
-- Eklenen: 34 davranış (77 eklem klibi), 2,5B baş dönüşü; 6 sürpriz (7 dokunuşta kara delik bir yıldızı yutar, 00:00–00:04 aya bakış, ekip tacı, 120 sn hareketsizlikte ateş böceği, okşayınca mırlama ve yoğurma, kara deliğe tepki); aksesuarlar (baret, gözlük, kitap, Aralık–Şubat bere `kara-winter`, molada çay bardağı `kara-tea`); `KaraSpot`'a isteğe bağlı `context` (`id`, `groupId`, `now`, `season`, `break`, `allHere`, `surface`); test olayı `kutup:kara-test`.
+Batur bu kurulumları onayladı: Git, Node.js 22 LTS, Python 3, Playwright, GitHub hesabı, GitHub CLI (isteğe bağlı). Bunların dışındaki her indirme ve kurulum için önce Batur'a sor; kodu çalıştırmadan önce oku.
 
-Yöntem:
-1. Paketin kodunu oku, bizim `Kara.jsx`/`kara.css` ile karşılaştır. Bütün çağrı yerlerini kontrol et (`grep -rn "KaraHome\|KaraBuddy\|KaraSpot\|KaraRig" src`).
-2. SVG'de sonsuz döngü yok; "hareketi azalt" açıkken Kara durgun.
-3. Yavaş telefonda ölç. Eski Kara ana iş parçacığına yaklaşık 6 puanlık meşguliyet ekliyordu; yenisi bunu belirgin aşmasın.
-4. Sitede ekran görüntüleri: ana sayfa gündüz ve gece, çatı, odak kartı, telefon 375 px, koyu tema. Batur'a göster, onay gelince yerleştir.
-5. Ana sayfadaki "ders arası" pulunu (`src/Home.jsx`, "ders arası hayat") Kara'nın bir cümlesine bağla.
-6. `tests/browser_smoke.py` Kara kontrollerini güncelle: vektör iskelet, uyku, dokunma, mırlama, hareketi azalt, tasma rengi temayı izler, odak arkadaşı, hareketler, bakış.
+| # | Adım | Kim | Doğrulama |
+|---|---|---|---|
+| H1 | Claude uygulaması, arkadaşın hesabı, Code sekmesinde `Kutup-Us` klasörü | Arkadaş | Bu sohbet açık |
+| H2 | **Git.** Windows: `winget install --id Git.Git -e`. macOS: `xcode-select --install`. Kimlik: `git config --global user.name "<ad>"` ve `git config --global user.email "<GitHub e-postası>"` | Arkadaş komutu çalıştırır, Claude yazar | `git --version` |
+| H3 | **Node 22.13 veya üstü.** Windows: `winget install OpenJS.NodeJS.LTS`. macOS: nodejs.org'dan LTS. Kurulumdan sonra terminali ya da uygulamayı yeniden başlat | Arkadaş | `node -v` en az `v22.13` |
+| H4 | **Python ve Playwright.** Windows: `winget install Python.Python.3.12`, sonra `py -m pip install playwright`. macOS: `python3 -m pip install playwright`. Chrome ya da Edge yüklü olsun. Yüklü değilse: `python -m playwright install chromium` | Arkadaş | `python -c "import playwright"` (Windows'ta `py -c …`) |
+| H5 | **GitHub hesabı ve fork.** Hesap açmayı ve girişi arkadaş yapar. Sonra https://github.com/batur-create/atomuparcalayanbebek sayfasında **Fork** | Arkadaş | Kullanıcı adını Batur'a söyler |
+| H6 | **Depo.** `Kutup-Us` içinde: `git clone https://github.com/batur-create/atomuparcalayanbebek.git`, `git -C atomuparcalayanbebek checkout kutup-platform`, `git -C atomuparcalayanbebek remote add fork https://github.com/<kullanıcı>/atomuparcalayanbebek.git` | Claude | `git -C atomuparcalayanbebek remote -v` iki uzak gösterir: `origin` ve `fork` |
+| H7 | **Bağımlılıklar ve birim testleri.** `atomuparcalayanbebek/kutup` içinde `npm ci`, sonra `npm run test:all` | Claude | 99 test, 0 hata |
+| H8 | **Tarayıcı testi.** `npm run test:browser` | Claude | 66 kontrol, 0 FAIL |
+| H9 | **Hafıza.** `kutup/ikinci-us/hafiza/` klasöründeki 10 dosyayı (9 kural ve `MEMORY.md` dizini) kendi hafıza klasörüne aynı adlarla yaz. `kutup-cloud-workflow.md`'deki merge, deploy ve yerel yollar ana üse ait; burada §5 ve §8 geçerli | Claude | Hafıza dizininde 9 satır |
+| H10 | **Önizleme.** `Kutup-Us/.claude/launch.json` dosyasını aşağıdaki gibi yaz, sonra `preview_start "kutup"` | Claude | Önizlemede Kütüp giriş ekranı açılıyor |
+| H11 | **Pano.** Aşağıdaki "Pano kurulumu"na göre yayınla, verisini yükle, yan panelde aç. Adresini günlüğe yaz | Claude | Panoda 49 kart; Sırada ilk kart n31 |
+| H12 | **PR yolu denemesi.** Dal `claude/ikinci-us-kurulum`. Günlüğün Kurulum kaydını commit'le, `git push fork claude/ikinci-us-kurulum`, PR aç (taban **kutup-platform**, §5 adım 10) | Claude yazar, ilk push'taki GitHub girişini arkadaş yapar | Batur PR'ı birleştirir. Yalnız belge değişikliği, yayın gerekmez |
+| H13 | **Kara v2 paketi.** Batur `Kara-v2.zip`'i gönderir; `Kutup-Us/gelen/kara-v2/` içine açılır | Batur ve arkadaş | 30 dosya; `v2/Kara.jsx`, `v2/kara.css`, `v2/NOTLAR.md` var |
+| H14 | **Kullanım.** `get_usage` | Claude | Sınırlar günlüğe yazılır |
+| H15 | **Hazırım raporu.** Batur'a: liste tamam, pano açık, sıradaki iş n31 Kara v2 | Claude | Batur "başla" der |
 
-### n24 · Ses turu: daha gerçekçi, kaliteli sesler (teknik, hazır)
-Ses mikserindeki sesler (yağmur, kütüphane, şömine, orman, dalga, kafe, kahverengi gürültü, kara delik) daha gerçekçi ve kaliteli olsun. Batur (16 Eki): "daha iyi, daha gerçekçi, daha güzel sesler, daha kaliteli üretebiliriz." Bugün `src/Sound.jsx` sesleri kodla üretiyor. Açık: kodla üretimi iyileştirmek mi, lisansı uygun (CC0) gerçek kayıtlar mı? Dosya boyutu ve çevrimdışı çalışma gözetilir. Önce her sesin eski ve yeni örneği Batur'a dinletilir. Bitti: Batur beğendi, iPhone'da çalıyor, uygulama boyutu makul.
+`Kutup-Us/.claude/launch.json`:
+```json
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "kutup", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "atomuparcalayanbebek/kutup", "run", "dev"], "port": 3001 }
+  ]
+}
+```
+Yerel sunucu gizli bilgi istemez. `kutup/data/` ilk açılışta kendi yerel verisini ve anahtarını üretir; bunların canlıyla ilgisi yoktur.
 
-### n28 · Haftalık hikâye (Kütüp Wrapped) (görsel, hazır)
-Pazar akşamı Instagram hikâyesi gibi tam ekran, dokundukça ilerleyen, hareketli haftalık özet. Batur: "Instagram'da paylaşıp vay be dedirteceğin bir şeyler", "bir şeyler giriyor, vuruyor, çıkıyor, tak tuk tuk". Kartlar: ekipçe kaç saat, en çok kim geldi, en uzun seri, gece kuşu / sabah erkencisi, yükselen binalar, anıt, Haftanın Ustası, kişiye özel "senin haftan". Dokununca ilerler, basılı tutunca durur. Paylaş: PNG ya da kısa video. Pazar akşamı bildirim "Haftanın hikâyesi hazır". Video için aday araç: howseen-ai/claude-motion-design (araç taraması kuralıyla). Açık: hangi kartlar, kişisel kart herkese mi, video mu görsel mi. Bitti: haftalık veriden doğru, 375 px'te akıcı, paylaşma çalışıyor, Batur onayladı.
+**Pano kurulumu (H11).** Batur'un panosu (https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX) onun hesabında, buradan açılmaz. Aynısını kur:
+1. `artifact-capabilities` becerisini yükle. `kutup/ikinci-us/pano.html`'i değiştirmeden Artifact olarak yayınla:
+   - başlık "Kütüp İş Akışı";
+   - ikon `board`;
+   - `db` yeteneği. Sayfa `window.claude.use("db")` kullanır ve `tasks` koleksiyonuyla `meta/board` belgesini okur.
+2. Veriyi yükle. `kutup/ikinci-us/pano-veri/tasks/*.json` dosyalarının her biri `tasks` koleksiyonuna gider; belge kimliği dosya adıdır (uzantısız). `pano-veri/meta/board.json` dosyası `meta/board` belgesine gider.
+   - ArtifactData `batch` kullan: `op: "set"` ve `file_path`.
+   - Bir batch en çok 50 yazma alır. 49 kart ve 1 meta belgesi tam 50 eder.
+3. `Artifact open` ile yan panelde aç.
+4. Yayınlanamazsa (`db` yeteneği yoksa) Batur'a söyle. Panoyu `kutup/ikinci-us/PANO.md` dosyasında aynı alanlarla tut.
 
-### n29 · Anında ve hızlı (teknik, hazır)
-(1) Cloudflare'de 5 sn'lik yoklama yerine Durable Objects + WebSocket hibernation (ücretsiz planda kullanılabilirliği önce doğrula; yoklama yedek kalır). (2) ~2.900 satırlık `App.jsx`'i modüllere böl (Focus, Board, modallar). (3) Tembel yükleme: `/batur` paneli, odak ekranı, katalog, istatistik, köy haritası. (4) Son durumu cihazda saklayıp anında açılış. Göç gerekirse PR'da açıkça yaz (Batur yedek alır). Bitti: bir gelişin başka telefona yansıması < 1 sn, ana paket küçüldü, tüm testler yeşil.
+**Pano alanları:**
+- `status`: next | doing | review (Batur'u bekliyor) | done
+- `kind`: görsel | teknik
+- `ready`: tanım hazır mı
+- `detail`: tek cümle
+- `spec`: tam tanım (Amaç, Batur'un sözleri, Kararlaşan, Açık sorular, Ekranlar, Yöntem, Bitti ölçütü)
+- `decisions`: bitince verilen kararlar
+- diğerleri: `order`, `area`, `at`, `commit`
+- `meta/board`: `note` ve `updated`
 
-### n30 · Masa haritası (görsel, tanım eksik)
-Salon seçimi, salonun basit kuşbakışı çizimi, masa numaraları, arkadaşların avatarları masalarında, boş masaya dokununca yer seçimi; mevcut salon + masa verisiyle. Başlamadan Batur'dan salonların fotoğrafı ya da krokisi gerekir.
+Her yazma okuduğun sürümle `if_version` taşır.
 
-### n14 · Başarımlar (görsel, tanım eksik)
-Önerilen: ilk inşaat, seri günleri, gece kuşu / sabah erkencisi, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt ustası, gizli başarımlar (kara delik kâşifi gibi); profilde rozet vitrini, kazanınca kutlama. Başlamadan Batur'a: liste ve eşikler, tuğla ödülü, rozetler başkalarına görünsün mü, kutlamanın dozu. Önce liste ve 2–3 rozet çizimi gösterilir. Bitti: hak edilenler geriye dönük açılır, testler var, vitrin 375 px'te taşmaz.
+## 4. Her oturumun başı (sırayla)
+
+1. Panoyu yan panelde aç (`Artifact open`, adres günlükte). Batur akışı oradan izliyor.
+2. Depo durumu:
+   - `git -C atomuparcalayanbebek fetch origin`
+   - `git -C atomuparcalayanbebek status -sb`
+   - Hangi daldasın? `origin/kutup-platform` ilerlemiş mi?
+3. Günlüğün son kayıtlarını oku. Sonra PR'lara bak: `curl -s "https://api.github.com/repos/batur-create/atomuparcalayanbebek/pulls?state=all&base=kutup-platform&per_page=10"`. Birleşenleri günlüğe ve panoya işle.
+4. `get_usage` (§10).
+5. Belgeler:
+   - `kutup/HANDOFF.md` bölüm 0 ve 6b;
+   - görsel işse `kutup/DESIGN.md`;
+   - `kutup/KARARLAR.md`'nin yalnız dizini; sonra işin koduyla ara (`### n24`);
+   - işin panodaki tam tanımı. Tanım eksikse (`ready: false`) önce Batur'a sor.
+6. Kısa araç taraması (hafıza: `tool-scouting`).
+
+## 5. Bir paketin akışı
+
+1. **Kart seç:** panoda en düşük `order`'lı `next` kart. Kartı `doing` yap, `meta/board`'u güncelle.
+2. **Dal aç:** `git switch -c claude/<kod>-<kısa-ad> origin/kutup-platform`.
+   - Önceki PR birleşmeden başlaman gerekiyorsa yeni dalı onun üstünden aç ve PR'a "PR #x'in üstünde" yaz.
+   - Aynı dosyalara dokunan iki açık PR olmasın.
+3. **Görsel işse** önce §6.
+4. **Yaz.** `update_plan` görev listesini tut, iş bitince `wrap_up` çağır.
+5. **Test:**
+   - `npm run test:all` ve `npm run test:browser` yeşil olmalı.
+   - Yeni davranışa birim testi ve tarayıcı kontrolü ekle.
+   - Canlıda denenmesi gereken bir şey varsa `tests/live-smoke.mjs`'e adım ekle; o betiği Batur çalıştırır.
+6. **Yavaş telefonda ölç:**
+   - Playwright ile 375×812 ekran;
+   - CDP `Emulation.setCPUThrottlingRate` (`rate: 4`);
+   - 20 saniye `PerformanceObserver("longtask")`, ana iş parçacığının meşgul yüzdesi.
+   - Önceki ve sonraki hali karşılaştır, sonucu kayda yaz.
+7. **Göç (migration) gerekiyorsa:**
+   - `server/schema.js`'te sıradaki numarayı kullan (son: 21) ve göç testi ekle.
+   - PR başlığına `[göç NN]` ekle; Batur yayından önce yedek alır.
+   - Göçler canlıda ilk istekte kendiliğinden çalışır.
+8. **Kayıtları aynı dalda yaz:**
+   - **KARARLAR.md:** dizinin en üstüne `| <kod> | <iş> | <alan> | <gün Ay saat> | PR #<n> |` satırını, "Kayıtlar (yeniden eskiye)" başlığının hemen altına da kaydı ekle (şablon aşağıda).
+   - **DESIGN.md §9:** görsel bir karar varsa bir satır (`- ✔ **<kod> …:** …`).
+   - **HANDOFF.md 6b:** kısa not (öğrenilen tuzaklar, sonrakinin bilmesi gerekenler).
+   - **GUNLUK.md:** paket kaydı (§9).
+9. **Commit:**
+   - Mesajlar İngilizce, kısa başlık ve gövde; sonunda uygulamanın verdiği Claude atıf satırı.
+   - `kutup/data/` asla commit'lenmez; her commit'ten önce `git status`'a bak.
+10. **Push ve PR:**
+    - `git push fork <dal>`.
+    - PR'ı şu adresten aç: `https://github.com/batur-create/atomuparcalayanbebek/compare/kutup-platform...<kullanıcı>:<dal>`.
+    - **Taban mutlaka `kutup-platform`.** GitHub varsayılan olarak `main` seçer. `main` ayrı bir proje, oraya asla PR yok.
+    - PR metni şablonu aşağıda.
+11. **Pano:** kart `review` olur, `commit` alanına "PR #n" yazılır, `decisions` doldurulur. Batur "yayında" deyince kart `done` olur ve `at` alanı yayın saatini alır.
+12. **Batur'a rapor:** Türkçe kısa özet, Batur'un yapacakları (§8) ve hazır bir `/compact` satırı. Satırda korunacaklar (çalışma sistemi, kurallar, son durum, sıradaki iş) ve atılacaklar (betikler, test çıktıları, dosya içerikleri) yazar.
+
+**KARARLAR kayıt şablonu:**
+```
+### <kod> · <Başlık>
+<Alan> · <gün Ay yıl> · PR #<n> (ikinci üs) · göç <NN, varsa>
+
+**Ne yapıldı:** …
+**Kararlar ve nedenleri:** …
+**Batur'un sözleri:** "…"
+**Vazgeçilenler:** …
+**Açık:** …
+**Dosyalar:** …
+```
+
+**PR metni şablonu:**
+```
+## Ne yapıldı
+## Testler: test:all N/N · test:browser N/N · yavaş telefon (önce → sonra)
+## Göç: yok | NN (Batur: yayından önce yedek)
+## Canlı duman testi: eklenen adım (varsa)
+## Pano: <kod> → review; kararlar: …
+## Batur'un yapacağı: IKINCI-US.md §8
+```
+
+**Kodlar:** yeni iş için n32'den, düzeltme için d23'ten devam et. Kodun ilk kez kullanıldığı yer pano kartıdır.
+
+## 6. Görsel onay
+
+Hafızadaki `kutup-ask-before-visuals` kuralı geçerli: görsel iş önce Batur'un onayından geçer.
+1. Önce siteye bak (yerel önizleme) ve `DESIGN.md`'yi oku.
+2. Seçenekli önizlemeler hazırla:
+   - telefon 375 px ve masaüstü;
+   - açık ve koyu tema;
+   - gerekiyorsa gündüz ve gece.
+3. Batur yanındaysa doğrudan göster (`SendUserFile` ya da tarayıcı paneli). Değilse görüntüleri `Kutup-Us/onizleme/<kod>/` klasörüne kaydet; arkadaşın onları Batur'a göndersin.
+4. Batur'un cevabını olduğu gibi günlüğe ve KARARLAR'a yaz.
+5. Ekran görüntüleri **yerel test verisiyle** alınır. Canlı sitedeki gerçek isimler hiçbir görüntüde ve hiçbir commit'te yer almaz.
+
+## 7. ChatGPT ile çalışma
+
+Batur ChatGPT'yi ana üste kullandığı gibi burada da kullanmaya devam ediyor (çizim, görsel varlık, ikinci görüş).
+- **ChatGPT'ye iş gidecekse brifi sen yazarsın, Batur yapıştırır.** Brifte şunlar olur:
+  - taban commit (`git rev-parse --short origin/kutup-platform`);
+  - dokunulacak dosyalar ve korunacak arayüz;
+  - kurallar: renkler `src/themes.css` jetonlarından, SVG'de sonsuz döngü yok, "hareketi azalt" çalışır, iOS öncelikli, 375 px'te taşmaz;
+  - teslim biçimi: zip içinde kod, `NOTLAR.md` ve ekran görüntüleri;
+  - "gerçek depoya dokunma".
+- **Gelen paket:** Batur gönderir, sen `Kutup-Us/gelen/<ad>/` içine açarsın.
+  - Üçüncü taraf kod gibi davran: önce oku, sonra çalıştır.
+  - Ham paket depoya girmez; yalnız yerleştirdiğin kod girer.
+  - Neyi nereden, nasıl aldığını KARARLAR'a ve günlüğe yaz: kaynak ChatGPT, tarih, taban commit, hangi dosyadan ne alındı.
+
+## 8. Batur'un yayın adımları (Batur'un bilgisayarında, Claude gerekmez)
+
+PR hazır olunca bu adımları Batur'a sen anlatırsın. Yayın yalnız Batur'un bilgisayarından olur: Cloudflare girişi ve anahtar orada.
+
+1. GitHub'da PR'ı aç. Taban `kutup-platform` mı? "Files changed"a göz at. **Merge pull request → Create a merge commit** seç (Squash ya da Rebase değil).
+2. PowerShell'de: `cd C:\Users\İzzettin\bilim-dunyasi\kutup-platform\kutup`
+3. `git status` çalıştır; "nothing to commit" görmelisin. Görmüyorsan dur ve çıktıyı ikinci üsse ilet.
+4. `git pull origin kutup-platform`
+5. `npm ci`
+6. `npm run test:all`: hepsi geçmeli.
+7. **Yalnız PR'da göç varsa:** `node scripts/owner-backup.mjs <kod>` çalıştır; "Kaydedildi: …" görmelisin.
+8. `npm run deploy`: çıktıdaki "Current Version ID"yi kopyala. Giriş isterse `npx wrangler login` çalıştır ve tarayıcıda onayla.
+9. `node tests/live-smoke.mjs`: hepsi geçmeli, "push: members N/N bound" satırı görünmeli.
+10. Version ID'yi ve duman testinin son satırlarını ikinci üsteki Claude'a yapıştır. O bunları günlüğe ve KARARLAR'a işler, kartı `done` yapar.
+
+## 9. Günlük: geri dönüş kaydı
+
+`kutup/ikinci-us/GUNLUK.md`. Dönüşte ana üs işi buradan devralır; burada yazmayan şey bilinmez.
+- **Yazım:** yeni kayıt en üste; saat İstanbul saatiyle. Her PR günlüğü de günceller.
+- **Ne yazılır:**
+  - kurulum;
+  - her paket: kod, dal, PR, durum, yayının Version ID'si;
+  - Batur'un sözleri ve kararları, olduğu gibi;
+  - panoya yapılan her değişiklik; yeni kartın tam tanımı dahil;
+  - ChatGPT'den gelenler;
+  - açık sorular, yarım işler, öğrenilen tuzaklar.
+- **Çelişki:** pano ile günlük çelişmez. Çelişirse günlük doğrudur, panoyu düzelt.
+
+## 10. Sınır dolarken
+
+Arkadaşın hesabının da sınırı var. Her oturum başında ve uzun işlerde `get_usage` ile bak. 5 saatlik ya da haftalık sınır %90'ı geçerse:
+1. Elindeki adımı bitir.
+2. Commit'le (`WIP: …`) ve fork'a push et; gerekiyorsa taslak PR aç.
+3. Günlüğe "nerede kaldım, sıradaki adım" yaz, panoyu güncelle.
+4. Batur'a kısa durum yaz ve hazır bir `/compact` satırı ver.
+
+## 11. Teslim ve geri dönüş
+
+Batur "ana üsse dönüyoruz" dediğinde ya da 22 Ekim'de iki taraf da aşağıdakileri yapar.
+
+**İkinci üs (sen):**
+1. Açık işi bitir ya da WIP olarak push et.
+2. Panonun bütün verisini dışa al: ArtifactData `list` (`tasks`, `limit` 200) ve `get` (`meta/board`), `out_dir` = `atomuparcalayanbebek/kutup/ikinci-us/pano-veri`. Bunlar mevcut dosyaların üstüne yazar. Panodan silinen bir kart varsa onun dosyasını da sil.
+3. GUNLUK.md'ye "Teslim" kaydı yaz:
+   - açık PR'lar ve dalları;
+   - yarım işler ve sıradaki adım;
+   - Batur'un bekleyen kararları;
+   - panonun adresi;
+   - kurulu kalan programlar.
+4. Bunları `claude/ikinci-us-teslim` dalında PR olarak aç; Batur birleştirir.
+
+**Ana üs (Batur'un Claude'u, dönüşte):**
+1. `git pull`, sonra GUNLUK.md'yi baştan sona oku.
+2. Birleşen her PR yayında mı? `npx wrangler deployments list` çıktısıyla karşılaştır. KARARLAR'daki "PR #n" satırlarına birleştirme commit'ini ve Worker kimliğini ekle.
+3. `pano-veri`'yi Batur'un panosuna aktar: kartlar `if_version` ile, yeni kartlar oluşturularak; `meta/board` da.
+4. İkinci üste öğrenilenleri hafızaya işle. Bu dosyanın başına "Kapandı (tarih)" yaz, HANDOFF §0'daki notu kaldır, `KUTUP_DEVIR.md`'yi güncelle.
+5. `npm run test:all`, tarayıcı testi ve canlı duman testi çalıştır.
+
+## 12. Güvenlik
+
+- **Bu bilgisayara hiçbir zaman gelmez:** canlı `ADMIN_KEY`, Cloudflare girişi, canlı yedekler (`backup-*.json`), Batur'un `kutup/data/` klasörü. Biri isterse reddet.
+- **Canlı siteye dokunma:**
+  - Test için kayıt olma, mesaj yazma, ekip ya da davet değiştirme yok.
+  - Arkadaşın kendi Kütüp hesabı test için kullanılmaz.
+  - Canlı veritabanına doğrudan yazılmaz. Davet bağlantıları paylaşılmaz.
+- **Commit'e girmez:** gizli bilgi, gerçek üye adı, canlı sitenin ekran görüntüsü.
+- **Git:**
+  - `main`'e ve doğrudan `kutup-platform`'a push yok; fork'la zaten erişim yok.
+  - `--force`, `reset --hard` gibi geri dönüşsüz komutlar yok.
+- **Şifre ve token:** sen girmezsin, arkadaş ya da Batur girer.
+- **Kurulumlar:** §3'teki onaylı liste dışındaki her indirme ve kurulum için önce Batur'a sor, kodu önce oku.
+
+## 13. Sorun çıkarsa
+
+- **Temiz kurulumda test düşüyor:** Node sürümünü kontrol et; `npm ci`'yi tekrar çalıştır. Tarayıcı testi için Chrome ya da Edge yüklü mü, 3001 portu boş mu bak. Kurulum sorunuyla kod sorununu ayır, günlüğe yaz.
+- **PR yanlış tabana açılmış:** PR'da Edit'e basıp tabanı `kutup-platform` yap. Yanlışlıkla `main`'e birleşmişse kendin düzeltmeye çalışma, hemen Batur'a söyle.
+- **PR'da çatışma (conflict):** dalda `git merge origin/kutup-platform` yap, çatışmayı çöz, testleri çalıştır, push et.
+- **Batur'un `git pull`'u reddediliyor:** ondan `git status` çıktısını iste, birlikte çöz. Zorlayıcı komut önerme.
+- **`npm run deploy` giriş istiyor:** `npx wrangler login` çalıştırılır, Batur tarayıcıda onaylar.
+- **Canlı duman testi düşüyor:** çıktıyı iste ve düzeltme PR'ı hazırla.
+  - Site kullanıcılar için bozuksa ve PR'da göç **yoksa**, Batur `npx wrangler rollback` ile önceki sürüme döner.
+  - Göç varsa geri alma yapılmaz; düzeltme PR'ı hazırlanır, gerekirse `RECOVERY.md`'ye bakılır.
+- **Kararsız kaldığın bir şey:** Batur'a tek kısa soru.
+
+## Sıradaki işler
+
+Tam tanımları panoda (ve `kutup/ikinci-us/pano-veri/tasks/`). Sıra: **n31 Kara v2 → n24 Ses turu → n28 Haftalık hikâye → n29 Anında ve hızlı → n30 Masa haritası → n14 Başarımlar.** n30 ile n14'ün tanımı eksik; başlamadan Batur'a sor.

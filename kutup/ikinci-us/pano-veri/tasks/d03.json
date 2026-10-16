@@ -1,0 +1,8 @@
+{
+  "area": "Senkron",
+  "at": "2026-10-14T19:55:00+03:00",
+  "commit": "62d0fcb7",
+  "detail": "Takılan yoklama isteği 15 sn'de kesiliyor; plan formu her saat biçimini okuyor, hatayı pencerede gösteriyor.",
+  "status": "done",
+  "title": "Planların görünmemesi"
+}
