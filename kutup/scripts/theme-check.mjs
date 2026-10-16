@@ -18,6 +18,9 @@ export const PAIRS = [
   ["Yazı / zemin", "ink", "canvas", TEXT],
   ["Soluk yazı / kart", "muted", "paper", TEXT],
   ["Soluk yazı / zemin", "muted", "canvas", TEXT],
+  ["Soluk yazı / vurgu zemini", "muted", "accent-soft", TEXT],
+  ["Soluk yazı / kahraman alanı", "muted", "hero", TEXT],
+  ["Soluk yazı / çizgi tonu", "muted", "border", TEXT],
   ["Yazı / kahraman alanı", "ink", "hero", TEXT],
   ["Vurgu yazısı / vurgu zemini", "accent-deep", "accent-soft", TEXT],
   ["Vurgu rengi yazı / kart", "accent", "paper", TEXT],
@@ -25,7 +28,11 @@ export const PAIRS = [
   ["Stüdyo yazısı / stüdyo kartı", "studio-ink", "studio", TEXT],
   ["Stüdyo ikincil / stüdyo kartı", "studio-soft", "studio", TEXT],
   ["Stüdyo soluk / stüdyo kartı", "studio-faint", "studio", TEXT],
+  ["Stüdyo soluk / stüdyo düğmesi", "studio-faint", "studio+8%", TEXT],
   ["Pop üstü yazı / pop", "pop-ink", "pop", TEXT],
+  ["Pop üstü ikincil / pop", "pop-ink-soft", "pop", TEXT],
+  ["Uyarı yazısı / kart", "danger", "paper", TEXT],
+  ["Uyarı yazısı / zemin", "danger", "canvas", TEXT],
   ["Vurgu parçası / zemin", "accent", "canvas", PART],
   ["Pop parçası / stüdyo kartı", "pop", "studio", PART],
 ];
@@ -35,6 +42,12 @@ const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
 const luminance = (hex) => {
   const [r, g, b] = parseColor(hex).rgb.map((v) => toLinear(v / 255));
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+// "studio+8%": the studio card with 8% white on top (its chips and switches).
+const lift = (hex, p) => "#" + parseColor(hex).rgb.map((v) => Math.round(v + (255 - v) * p).toString(16).padStart(2, "0")).join("");
+const resolve = (tokens, name) => {
+  const m = name.match(/^(.+)\+(\d+)%$/);
+  return m ? lift(tokens[m[1]], m[2] / 100) : tokens[name];
 };
 export function contrast(a, b) {
   const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
@@ -56,6 +69,9 @@ export function readThemes(file = new URL("../src/themes.css", import.meta.url))
       });
     }
   });
+  // A theme inherits what it does not set (like --danger) from the default.
+  for (const [id, modes] of Object.entries(themes))
+    if (id !== "lilac") for (const mode of ["light", "dark"]) modes[mode] = { ...themes.lilac[mode], ...modes[mode] };
   return themes;
 }
 
@@ -65,8 +81,9 @@ export function check(themes = readThemes()) {
     for (const [what, fg, bg, min] of PAIRS) {
       const cell = (mode) => {
         const t = modes[mode];
-        const ratio = contrast(t[fg], t[bg]);
-        return { ratio, ok: ratio >= min, fg: t[fg], bg: t[bg] };
+        const [f, b] = [resolve(t, fg), resolve(t, bg)];
+        const ratio = contrast(f, b);
+        return { ratio, ok: ratio >= min, fg: f, bg: b };
       };
       rows.push({ id, what, fg, bg, min, light: cell("light"), dark: cell("dark") });
     }

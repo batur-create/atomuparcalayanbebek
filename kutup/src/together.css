@@ -15,7 +15,7 @@
   margin-left: -6px;
 }
 .desk-mates.dark {
-  color: #b9bca9;
+  color: var(--studio-soft);
 }
 .join-banner,
 .message-banner {

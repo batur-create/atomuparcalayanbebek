@@ -59,7 +59,7 @@
 .entry-sky.home-sky {
   /* dark: keep */
   --scene-w: max(100%, 1100px);
-  --sky-accent: #5c49b6;
+  --sky-accent: var(--accent-deep);
   --sky-sign: #ecd5a8;
   --sky-sign-edge: #8a6a45;
   --sky-sign-ink: #4b3a26;
@@ -72,11 +72,11 @@
 }
 .entry-sky.home-sky.is-night {
   /* dark: keep */
-  --sky-accent: #c4b9f5;
+  --sky-accent: color-mix(in oklab, var(--accent) 45%, white);
   --sky-sign: #6d5a45;
   --sky-sign-edge: #3b2f24;
   --sky-sign-ink: #f6e9cf;
-  --sky-halo: rgba(29, 28, 60, 0.85);
+  --sky-halo: color-mix(in srgb, var(--night-1) 85%, transparent);
 }
 .entry-sky .sky-scene,
 .entry-sky .sky-over {
@@ -103,6 +103,7 @@
 .entry-glow.night {
   /* dark: keep */
   background: linear-gradient(#121130, #1d1c3c 150px);
+  background: linear-gradient(color-mix(in oklab, var(--night-1) 75%, black), var(--night-1) 150px);
 }
 .entry-stars.sky-stars {
   z-index: -1;

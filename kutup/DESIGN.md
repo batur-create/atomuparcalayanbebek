@@ -14,23 +14,51 @@ Görsel bir işe başlamadan önce bunu oku. Öncelik sırası: Batur'un sözü 
 
 ## 2. Renk
 
-Bütün renkler `src/styles.css` başındaki değişkenlerden gelir. Koda yeni sabit renk yazma; gerekiyorsa önce değişken ekle ve koyu değerini de ver.
+Bütün renkler `src/themes.css`'teki jetonlardan gelir. Koda yeni sabit renk yazma. Gerekiyorsa yeni bir jeton ekle, her temaya açık ve koyu değerini ver; ardından `node scripts/theme-check.mjs` geçsin.
 
-| Değişken | Açık | Koyu | Ne için |
+**Tema bir pakettir (n23).** Altı paketin her biri açık ve koyu modda şunların hepsini değiştirir: zemin, kartlar, çizgiler, yazı, vurgu, Köy'deki koyu stüdyo kartı ve gökyüzü.
+
+| Paket | id | Ruh hâli |
+|---|---|---|
+| Lavanta | `lilac` (varsayılan) | Sıcak kâğıt, lila mürekkep, zeytin yeşili stüdyo ve limon yeşili |
+| Lacivert | `navy` | Gece kütüphanesi: serin kâğıt, pirinç lamba |
+| Petrol | `teal` | Buz mavisi kâğıt, petrol yeşili, mercan ışığı |
+| Kiremit | `clay` | Kum kâğıt, kiremit, kayısı gökyüzü, bal rengi |
+| Gül | `pink` | Gül kurusu ve mürdüm |
+| Grafit | `graphite` | Kurşun kalem, aydınger, tek turuncu iz |
+
+Eski seçimler en yakın pakete taşınır (`THEME_MOVED`, `src/api.js` ve `public/mode.js`): `mint` → Petrol, `blue` → Lacivert, `peach` ve `amber` → Kiremit.
+
+| Jeton | Lavanta açık | Lavanta koyu | Ne için |
 |---|---|---|---|
 | `--canvas` | `#f6f5f0` | `#181916` | sayfa zemini |
 | `--paper` | `#fffefb` | `#22231f` | kartlar |
 | `--ink` | `#30312f` | `#ebeae4` | ana yazı |
-| `--muted` | `#6f7169` | `#a5a69c` | ikincil yazı |
+| `--muted` | `#64665e` | `#a5a69c` | ikincil yazı; en soluk yazı tonu |
 | `--border` | `#e8e7df` | `#383933` | kenarlar |
-| `--accent` | `#7361ce` | `#8272d8` | tek vurgu (lila tema) |
-| `--accent-deep` | `#5c49b6` | `#c4b9f5` | vurgu üstünde yazı |
+| `--accent` | `#7361ce` | `#9483e8` | tek vurgu |
+| `--accent-deep` | `#5c49b6` | `#c4b9f5` | vurgu zemini üstünde yazı |
 | `--accent-soft` | `#efebfc` | `#2d2940` | vurgu zemini |
+| `--on-accent` | `#ffffff` | `#151327` | vurgu dolgusu üstünde yazı ve simge |
 | `--hero` | `#e8e3f6` | `#2b2840` | büyük alanlar |
+| `--studio`, `--studio-deep` | `#343a32`, `#262823` | aynı | koyu stüdyo kartı (odak kartı, odak ekranı, koyu düğme, bildirim) |
+| `--studio-ink` / `-text` / `-soft` / `-faint` | | | stüdyo üstünde yazı, güçlüden soluğa |
+| `--pop`, `--pop-ink` | `#d6ef9e`, `#24301a` | aynı | stüdyodaki parlak seçim ve üstündeki yazı |
+| `--sky-1..3`, `--night-1..3` | | | ana sayfa gökyüzü, gündüz ve gece |
+| `--danger` | `#ad4239` | `#f08b7f` | silme ve ayrılma (her temada aynı) |
 
-- **Üye renkleri** (pastel): `--mint`, `--peach`, `--pink`, `--blue`, `--lilac`, `--lemon`. Avatar diskleri ve kişiye ait alanlar bunlardan gelir.
-- **Temalar:** `lilac` (varsayılan), `mint`, `peach`, `pink`, `blue`; `html[data-theme]` ile değişir (`src/api.js` `THEMES`). Vurgu rengini sabitleme, temayla değişebilsin.
-- **Koyu mod:** `html[data-mode="dark"]`, değerler `src/dark.css`'te. Otomatik mod Ankara'da gün batımında koyulaşır. Her yeni ekran ve çizim koyu modda da kontrol edilir.
+- **Sabit nötrler temayı izler:** CSS'teki eski elle seçilmiş kâğıt grileri ve mürekkepler derlemede `--paper`/`--canvas`/`--border`/`--muted`/`--ink` karışımına bağlanır (`scripts/theme-css.js`, dark-css'ten sonra). Renkli sabitler (üye renkleri, altın, canlı noktalar) olduğu gibi kalır.
+- **Kontrast:**
+  - Yazı en az 4.5:1, büyük yazı (24 px ya da 18.66 px kalın) ve arayüz parçası en az 3:1.
+  - Nötr bir yazı `--muted`'dan soluk olamaz; derleme onu `--muted`'a çeker.
+  - Renkli yazı (durum çipleri, uyarılar) elle 4.5:1'e ayarlanır.
+  - Üye renginde zemin üstündeki yazı yarı saydam `--ink`'tir.
+- **Koyu tasarımlı alanlar:** dolgusu jeton olan koyu bir bileşene `/* dark: scope */` yaz, altı da koyu tasarım sayılır.
+- **Üye renkleri** (pastel): `--mint`, `--peach`, `--pink`, `--blue`, `--lilac`, `--lemon`, `--slate`, `--sand`, `--olive`. Avatar diskleri ve kişiye ait alanlar bunlardan gelir; temayla değişmez.
+- **Koyu mod:**
+  - `html[data-mode="dark"]` ile açılır. Jetonlar `src/themes.css`'te, üye renkleri `src/dark.css`'te.
+  - Otomatik mod Ankara'da gün batımında koyulaşır.
+  - Her yeni ekran ve çizim koyu modda da kontrol edilir.
 - Bir ekranda vurgu rengi tek bir şeyi öne çıkarır. Parlak, doygun, neon renk yok.
 
 ## 3. Yazı

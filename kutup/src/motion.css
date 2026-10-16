@@ -221,7 +221,7 @@ h3,
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
-  color: #ece9dd;
+  color: var(--studio-text);
   text-align: left;
 }
 .fidan-toggle > span:first-child {
@@ -238,7 +238,7 @@ h3,
   margin-top: 2px;
   font-size: 11px;
   line-height: 1.45;
-  color: #b9bca9;
+  color: var(--studio-soft);
 }
 .fidan-toggle.on {
   border-style: solid;
@@ -839,7 +839,7 @@ h3,
   margin-top: 10px;
 }
 .text-button.danger {
-  color: #b0645d;
+  color: var(--danger);
 }
 .owner-sent {
   margin-top: 10px;
@@ -970,8 +970,9 @@ h3,
   border-radius: 12px;
   background: rgba(255, 253, 247, 0.95);
   border: 1px solid rgba(80, 70, 110, 0.12);
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
   box-shadow: 0 2px 8px rgba(40, 30, 70, 0.12);
-  color: #4b4560;
+  color: var(--ink);
 }
 .village-controls .icon-button:active {
   transform: scale(0.94);
@@ -995,7 +996,7 @@ h3,
   border-radius: 12px;
   background: rgba(255, 253, 247, 0.95);
   font: 700 13px "Bricolage Grotesque Variable", "DM Sans", sans-serif;
-  color: #4b4560;
+  color: var(--ink);
   box-shadow: 0 2px 8px rgba(40, 30, 70, 0.12);
 }
 @keyframes building-card-in {
@@ -1024,7 +1025,7 @@ h3,
   right: 6px;
   width: 32px;
   height: 32px;
-  color: #8a8597;
+  color: var(--muted);
 }
 .building-card-head {
   display: flex;
@@ -1252,7 +1253,7 @@ h3,
   margin: 5px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #6b6679;
+  color: var(--muted);
 }
 .account-form {
   display: grid;
@@ -1330,7 +1331,7 @@ h3,
   margin-top: 2px;
   font-size: 12px;
   line-height: 1.45;
-  color: #6b6679;
+  color: var(--muted);
 }
 .segmented {
   grid-template-columns: repeat(3, 1fr);

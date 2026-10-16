@@ -166,12 +166,12 @@
 }
 .catalog-price em.minus,
 .receipt-card .minus {
-  color: #b85a42;
+  color: #a1452f;
 }
 .catalog-short {
   font-size: 11px;
   font-weight: 700;
-  color: #b85a42;
+  color: #a1452f;
 }
 .catalog-owned {
   position: absolute;
@@ -357,15 +357,15 @@ button.brick-pill {
 
 /* This week's building. */
 .catalog-class.weekly h3 {
-  color: #b9772a;
+  color: #8c5714;
 }
 .catalog-new {
   font-size: 11px;
   font-weight: 700;
-  color: #b9772a;
+  color: #8c5714;
 }
 .catalog-owned.soon {
-  background: #b9772a;
+  background: #8c5714;
 }
 
 /* Haftanın Ustası wears a crown for a week. */
@@ -425,6 +425,7 @@ button.brick-pill {
 }
 .awake-note.ok {
   color: #cfe3b1;
+  color: color-mix(in oklab, var(--pop) 70%, var(--studio-ink));
   background: rgba(214, 239, 158, 0.08);
   background: color-mix(in srgb, var(--pop) 8%, transparent);
 }
@@ -449,7 +450,8 @@ button.brick-pill {
   padding: 7px 10px;
   border-radius: 10px;
   background: rgba(143, 155, 196, 0.16);
-  color: #d9dcef;
+  background: color-mix(in srgb, var(--studio-ink) 12%, transparent);
+  color: var(--studio-text);
   font-size: 11.5px;
   line-height: 1.45;
   text-align: left;

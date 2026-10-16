@@ -5,6 +5,10 @@ import postcss from 'postcss';
 import { darkAt, mergeVillage, skyAt, tinter } from '../src/villageWorld.js';
 import { tileLevel } from '../src/villageView.js';
 import darkCss, { darkValue, parseColor } from '../scripts/dark-css.js';
+import themeCss from '../scripts/theme-css.js';
+import { check, readThemes } from '../scripts/theme-check.mjs';
+import { readFileSync } from 'node:fs';
+import { THEMES, THEME_MOVED, themeOf } from '../src/api.js';
 
 const raw = (rev, buildings = [], extra = {}) => ({ rev, until: rev * 1000, districts: [['d', 'm', 1, 0, 7]], buildings, ruins: [], ...extra });
 const home = (id, likes = 0, mine = 0) => [id, 'm', 'cottage', 4, 10, 11, 1, 25, 100, likes, mine];
@@ -75,6 +79,34 @@ test('dark twins sit right after their rule with no extra specificity, and skip 
   assert.match(out, /@keyframes k\{from\{background:#fff\}\}/);
   assert.doesNotMatch(out, /\.night p\{[^}]*\}:where/);
   assert.doesNotMatch(out, /\) \.b\{/);
+});
+
+test('themes (n23): neutral literals follow the theme, text never goes softer than --muted, colors stay', async () => {
+  const css = '.card{background:#fcfbf7;color:#8e8a7d}.chip{background:#d4a24c;color:#fff}.note{color:#a49c8a}.night{background:#262823}.night small{color:#a49c8a}';
+  const out = (await postcss([darkCss(), themeCss()]).process(css, { from: undefined })).css;
+  assert.match(out, /^\.card\{background:#fcfbf7;background:color-mix\(in oklab, var\(--paper\) \d+%, var\(--canvas\)\);color:#8e8a7d;color:var\(--muted\)\}/, 'paper is mixed from the theme, the literal stays as the fallback');
+  assert.match(out, /:where\(html\[data-mode="dark"\]\) \.card\{background:#[0-9a-f]{6};background:color-mix\([^;]*var\(--paper\)\);color:#[0-9a-f]{6};color:var\(--muted\)\}/, 'the dark twin follows the dark neutrals');
+  assert.match(out, /\.chip\{background:#d4a24c;color:#fff\}/, 'colors stay');
+  assert.match(out, /\.note\{color:#a49c8a;color:var\(--muted\)\}/, 'soft grey text the dark build leaves alone is tied to --muted');
+  assert.match(out, /\.night small\{color:#a49c8a\}/, 'dark-by-design scopes keep their colors');
+});
+
+test('themes (n23): every package passes its contrast pairs, light and dark', () => {
+  const rows = check();
+  assert.deepEqual(Object.keys(readThemes()).sort(), [...THEMES].sort(), 'src/themes.css has exactly the themes in THEMES');
+  const failed = rows.flatMap((r) => ['light', 'dark'].filter((m) => !r[m].ok).map((m) => `${r.id} ${m} ${r.what} ${r[m].ratio.toFixed(2)}`));
+  assert.deepEqual(failed, []);
+});
+
+test('themes (n23): old picks move to a package, and the first paint knows every page color', () => {
+  for (const [old, now] of Object.entries(THEME_MOVED)) assert.equal(themeOf(old), now);
+  assert.equal(themeOf('lilac'), 'lilac');
+  assert.equal(themeOf('nonsense'), 'lilac');
+  const mode = readFileSync(new URL('../public/mode.js', import.meta.url), 'utf8');
+  const themes = readThemes();
+  for (const id of THEMES)
+    assert.ok(mode.includes(`${id}: ["${themes[id].light.canvas}", "${themes[id].dark.canvas}"]`), `public/mode.js has the page colors of ${id}`);
+  for (const [old, now] of Object.entries(THEME_MOVED)) assert.match(mode, new RegExp(`${old}: "${now}"`), `public/mode.js moves ${old}`);
 });
 
 test('visible tiles fit the cache on phones, fullscreen displays and distant large villages', () => {

@@ -58,8 +58,8 @@
   --sky-cloud: #ffffff;
   --sky-crane: #e0b04f;
   --sky-door: #8c7a66;
-  --sky-ink: #30312f;
-  --sky-muted: #6f7169;
+  --sky-ink: var(--ink);
+  --sky-muted: color-mix(in oklab, var(--ink) 80%, var(--sky-1));
   position: relative;
   height: 236px;
   border-radius: 24px;
@@ -67,27 +67,30 @@
   border: 1px solid var(--border);
   isolation: isolate;
   background: #e9eef0;
+  background: var(--sky-2);
 }
 .home-sky.is-night {
   /* dark: keep */
   --sky-hill-back: #2f3d3a;
   --sky-hill-front: #283431;
-  --sky-wall: #4a4658;
-  --sky-lib: #47435a;
-  --sky-lib-top: #3a364b;
-  --sky-path: #8d86a8;
+  /* the town at night takes the theme's night (src/themes.css) */
+  --sky-wall: color-mix(in oklab, var(--night-2) 39%, #555555);
+  --sky-lib: color-mix(in oklab, var(--night-2) 50%, #575757);
+  --sky-lib-top: color-mix(in oklab, var(--night-2) 47%, #3c3c3c);
+  --sky-path: color-mix(in oklab, var(--night-3) 50%, #d0d0d0);
   --sky-trunk: #4d4440;
   --sky-leaf: #35513f;
   --sky-leaf-b: #2e4838;
   --sky-r1: #7a5a52;
   --sky-r2: #4c5878;
   --sky-r3: #5d4f73;
-  --sky-cloud: #8c84ad;
+  --sky-cloud: color-mix(in oklab, var(--night-3) 50%, #d0d0d0);
   --sky-crane: #9a7a3c;
-  --sky-door: #5e5266;
+  --sky-door: color-mix(in oklab, var(--night-3) 55%, #646464);
   --sky-ink: #f1efe6;
-  --sky-muted: #c9c4dc;
+  --sky-muted: color-mix(in oklab, #f1efe6 80%, var(--night-1));
   background: #2b2848;
+  background: var(--night-1);
 }
 /* The scene: 960 × 236, anchored to the bottom middle (like "xMidYMax slice"). */
 .sky-scene {
@@ -333,6 +336,7 @@
 .is-night .sky-puff {
   /* dark: keep */
   background: #6d6888;
+  background: color-mix(in oklab, var(--night-2) 64%, #dbdbdb);
 }
 .home-sky.paused *,
 .home-sky.paused *::before,
@@ -1298,8 +1302,7 @@
   transition: rotate 0.3s ease;
 }
 .home-door.danger strong {
-  /* dark: keep */
-  color: #c0584f;
+  color: var(--danger);
 }
 .door-icon {
   position: relative;
@@ -1712,6 +1715,15 @@ html[data-motion="still"] *::after {
 }
 .board .message-meta {
   gap: 7px;
+}
+/* On a member-colored bubble the text is translucent ink, so it keeps 4.5:1 on
+   every bubble color, light or dark, in every theme (n23). */
+.board .message .bubble p {
+  color: color-mix(in oklab, var(--ink) 84%, transparent);
+}
+.board .bubble .message-meta time,
+.board .bubble .seen-by {
+  color: color-mix(in oklab, var(--ink) 74%, transparent);
 }
 .board .reply-quote {
   margin: 5px 0 2px;

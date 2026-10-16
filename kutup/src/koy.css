@@ -111,6 +111,7 @@
   height: 44px;
   padding: 0;
   border: 1px solid rgba(80, 70, 110, 0.12);
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
   border-radius: 50%;
   background: rgba(255, 253, 247, 0.95);
   box-shadow: 0 2px 8px rgba(40, 30, 70, 0.12);

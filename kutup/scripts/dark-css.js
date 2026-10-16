@@ -148,7 +148,7 @@ const backgroundColors = (decl) =>
 const paintsDark = (decl) => backgroundColors(decl).some((c) => oklch(c.rgb)[0] < 0.42);
 // Does it paint a light surface that stays light (a gold chip)? Then its text
 // must stay dark too.
-const keepsLight = (decl) => backgroundColors(decl).some((c) => oklch(c.rgb)[0] > 0.6 && !surface(c, false));
+export const keepsLight = (decl) => backgroundColors(decl).some((c) => oklch(c.rgb)[0] > 0.6 && !surface(c, false));
 
 const inKeyframes = (node) => {
   for (let p = node.parent; p; p = p.parent) if (p.type === "atrule" && /keyframes$/i.test(p.name)) return true;
@@ -156,6 +156,17 @@ const inKeyframes = (node) => {
 };
 const under = (selector, scope) =>
   selector === scope || [" ", ">", ":", ".", "[", "+", "~"].some((c) => selector.startsWith(scope + c));
+export const inScope = (selector, scopes) => scopes.some((scope) => under(selector, scope));
+export const marked = (rule, word) => rule.nodes.some((n) => n.type === "comment" && new RegExp(`dark:\\s*${word}`).test(n.text));
+
+// The dark-by-design scopes among these rules: a rule that paints a dark
+// surface, or one marked dark: scope (its dark fill is a token).
+export function darkScopes(rules) {
+  const scopes = [];
+  for (const rule of rules)
+    if (marked(rule, "scope") || rule.nodes.some((n) => n.type === "decl" && paintsDark(n))) scopes.push(...rule.selectors);
+  return scopes;
+}
 
 /**
  * PostCSS plugin. Mark a rule with a comment: dark: keep leaves it alone,
@@ -175,18 +186,14 @@ export default function darkCss({ skipFiles = [], report } = {}) {
         if (!inKeyframes(rule)) rules.push(rule);
       });
       // Pass 1: dark-by-design scopes, wherever in the file they are declared.
-      const scopes = [];
-      // A rule marked /* dark: scope */ counts too: its dark fill is a token.
-      for (const rule of rules)
-        if (rule.nodes.some((n) => (n.type === "decl" && paintsDark(n)) || (n.type === "comment" && /dark:\s*scope/.test(n.text))))
-          scopes.push(...rule.selectors);
+      const scopes = darkScopes(rules);
       if (report) for (const scope of scopes) report({ file: file.split("/").pop(), scope });
       // Pass 2: the twins.
       for (const rule of rules) {
         const selectors = rule.selectors;
         if (selectors.some((s) => /^(?::root|html)\b/.test(s))) continue;
-        if (selectors.every((s) => scopes.some((scope) => under(s, scope)))) continue;
-        if (rule.nodes.some((n) => n.type === "comment" && /dark:\s*keep/.test(n.text))) continue;
+        if (selectors.every((s) => inScope(s, scopes))) continue;
+        if (marked(rule, "keep")) continue;
         const decls = [];
         const light = rule.nodes.some((n) => n.type === "decl" && keepsLight(n));
         for (const node of rule.nodes) {
@@ -198,7 +205,7 @@ export default function darkCss({ skipFiles = [], report } = {}) {
           report?.({ file: file.split("/").pop(), selector: rule.selector, prop: node.prop, from: node.value, to: value });
         }
         if (!decls.length) continue;
-        const live = selectors.filter((s) => !scopes.some((scope) => under(s, scope)));
+        const live = selectors.filter((s) => !inScope(s, scopes));
         const twin = rule.clone({ nodes: [] });
         twin.selectors = live.map((s) => `:where(${DARK}) ${s}`);
         for (const d of decls) twin.append(d);
