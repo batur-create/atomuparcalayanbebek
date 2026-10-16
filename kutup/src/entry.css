@@ -1,6 +1,5 @@
-/* n27 "Vitrin": the welcome, invite and team-founding screens (Entry.jsx).
-   Two looks to choose from: .sky-entry (1, the living sky) and .card-entry
-   (2, the library card). Surfaces use the tokens; the sky keeps its own
+/* n27 "Vitrin": the welcome, invite and team-founding screens (Entry.jsx):
+   the living sky with a paper sheet under it. Surfaces use the tokens; the sky keeps its own
    palette (home.css) and its rules skip the automatic dark twins. Motion is
    transform/opacity only; the sky's loops follow the motion setting through
    .home-sky (home.css), Kara's through kara.css. */
@@ -18,21 +17,6 @@
 }
 .entry .field-label {
   color: var(--muted);
-}
-.entry .color-options {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.entry .color-options button {
-  position: relative;
-  width: 36px;
-  height: 36px;
-}
-/* The swatch is small; the finger target is 44px. */
-.entry .color-options button::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
 }
 .entry-brand {
   display: inline-block;
@@ -67,7 +51,7 @@
   margin-top: 14px;
 }
 
-/* ======================= 1 · Gökyüzü ======================= */
+/* ---------- the sky ---------- */
 .sky-entry {
   display: flex;
   flex-direction: column;
@@ -161,19 +145,6 @@
   color: var(--sky-ink);
   text-shadow: 0 0 6px var(--sky-halo), 0 0 2px var(--sky-halo);
 }
-.entry-live > i {
-  /* dark: keep */
-  flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #b8b6ab;
-}
-.entry-live > i.on {
-  /* dark: keep */
-  background: #6fae6a;
-  box-shadow: 0 0 0 3px rgba(111, 174, 106, 0.25);
-}
 /* Faces on the path: they stand on their point, feet first. */
 .entry-over {
   z-index: 2;
@@ -210,9 +181,6 @@
   font-weight: 750;
   color: var(--sky-ink);
   text-shadow: 0 0 4px var(--sky-halo), 0 0 2px var(--sky-halo), 0 0 1px var(--sky-halo);
-}
-.path-face.inside .avatar.small {
-  box-shadow: 0 0 0 2px #ffd98a, 0 0 14px rgba(255, 217, 138, 0.7); /* dark: keep */
 }
 /* Your seat on the welcome: the one thing on the sky to press. */
 .path-face .seat {
@@ -406,6 +374,10 @@ form.sheet-page > .btn.full {
 .sky-entry.on-form .entry-live {
   display: none;
 }
+/* While filling in, the name under your own figure is the one that matters. */
+.sky-entry.on-form .path-face:not(.you) small {
+  visibility: hidden;
+}
 .sky-entry.on-form .entry-sheet {
   margin-top: 0;
   border-top: 0;
@@ -473,322 +445,6 @@ form.sheet-page > .btn.full {
   }
 }
 
-/* ======================= 2 · Okuyucu kartı ======================= */
-.card-entry {
-  --line: color-mix(in srgb, var(--accent) 9%, transparent);
-  padding: calc(18px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
-  background:
-    linear-gradient(90deg, transparent 7px, color-mix(in srgb, var(--accent) 16%, transparent) 7px 8px, transparent 8px),
-    repeating-linear-gradient(transparent 0 27px, var(--line) 27px 28px),
-    var(--canvas);
-}
-.card-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  max-width: 400px;
-  margin: 0 auto 16px;
-  padding-left: 6px;
-}
-.card-head .sky-eyebrow {
-  color: var(--muted);
-}
-.card-stage {
-  display: grid;
-  place-items: center;
-  padding: 4px 0;
-}
-.lib-card {
-  --tint: var(--hero);
-  position: relative;
-  width: min(100%, 360px);
-  padding: 10px 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--paper);
-  box-shadow: 0 16px 36px rgba(60, 45, 110, 0.11), 0 2px 0 var(--border);
-}
-.lib-card.filling {
-  background: linear-gradient(172deg, var(--paper) 52%, var(--tint));
-}
-.lib-card.lilac { --tint: var(--lilac); }
-.lib-card.mint { --tint: var(--mint); }
-.lib-card.peach { --tint: var(--peach); }
-.lib-card.blue { --tint: var(--blue); }
-.lib-card.pink { --tint: var(--pink); }
-.lib-card.lemon { --tint: var(--lemon); }
-.lib-card.slate { --tint: var(--slate, var(--blue)); }
-.lib-card.sand { --tint: var(--sand, var(--peach)); }
-.lib-card.olive { --tint: var(--olive, var(--mint)); }
-/* The lanyard slot of a real library card. */
-.lib-hole {
-  position: absolute;
-  top: 17px;
-  left: 50%;
-  z-index: 3;
-  width: 38px;
-  height: 8px;
-  margin-left: -19px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--canvas);
-}
-.lib-window.home-sky {
-  height: 164px;
-  border: 0;
-  border-radius: 14px;
-}
-.lib-body {
-  padding: 14px 8px 0;
-}
-.lib-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  color: var(--muted);
-}
-.lib-label i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  vertical-align: 1px;
-}
-.lib-no {
-  font-variant-numeric: tabular-nums;
-  color: var(--accent-deep);
-}
-.lib-team {
-  margin: 8px 0 3px;
-  font-family: "Bricolage Grotesque Variable", sans-serif;
-  font-size: 30px;
-  line-height: 1.04;
-  letter-spacing: -1px;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-.lib-sub {
-  font-size: 12.5px;
-  color: var(--muted);
-}
-.lib-faces,
-.lib-foot,
-.lib-holder {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--border);
-}
-.lib-stack {
-  display: flex;
-  flex: none;
-}
-.lib-stack > span + span {
-  margin-left: -9px;
-}
-.lib-stack .avatar.small {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--paper);
-}
-.lib-faces small {
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-.lib-faces .dot {
-  /* dark: keep */
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 3px;
-  border-radius: 50%;
-  background: #6fae6a;
-}
-.lib-foot {
-  justify-content: space-between;
-}
-.lib-foot small {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  color: var(--muted);
-}
-.lib-barcode {
-  width: 120px;
-  height: 22px;
-  fill: var(--ink);
-  opacity: 0.7;
-}
-.lib-photo {
-  display: inline-block;
-  flex: none;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--paper);
-  box-shadow: 0 4px 12px rgba(37, 36, 45, 0.1);
-}
-.lib-photo .avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  font-size: 32px;
-}
-.lib-sign {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  padding-bottom: 4px;
-  border-bottom: 1.5px solid var(--ink);
-}
-.lib-sign small {
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  color: var(--muted);
-}
-.lib-sign b {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-family: "Bricolage Grotesque Variable", sans-serif;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.5px;
-}
-.lib-stamp {
-  position: absolute;
-  top: 128px;
-  right: 16px;
-  z-index: 3;
-  padding: 6px 10px 5px;
-  border: 2.5px solid var(--accent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--paper) 72%, transparent);
-  color: var(--accent);
-  font-family: "Bricolage Grotesque Variable", sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 1.6px;
-  line-height: 1;
-}
-.lib-stamp.member {
-  border-color: var(--accent-deep);
-  color: var(--accent-deep);
-}
-.card-panel {
-  max-width: 400px;
-  margin: 22px auto 0;
-}
-.tear {
-  height: 0;
-  margin: 0 0 18px;
-  border-top: 2px dashed var(--border);
-}
-.card-intro {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.card-intro li {
-  display: grid;
-  align-content: start;
-  justify-items: start;
-  gap: 5px;
-}
-.card-intro .num {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  color: var(--accent);
-}
-.card-intro svg {
-  color: var(--accent-deep);
-}
-.card-intro b {
-  font-size: 12.5px;
-  line-height: 1.2;
-}
-.card-intro small {
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--muted);
-}
-.card-form {
-  padding: 8px 18px 20px;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: var(--paper);
-}
-.card-back {
-  min-height: 44px;
-}
-@media (min-width: 900px) {
-  .card-entry {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
-    grid-template-rows: auto 1fr;
-    column-gap: 64px;
-    align-items: center;
-    padding: 36px max(48px, calc(50vw - 560px)) 48px;
-    background:
-      linear-gradient(90deg, transparent 63px, color-mix(in srgb, var(--accent) 16%, transparent) 63px 64px, transparent 64px),
-      repeating-linear-gradient(transparent 0 31px, var(--line) 31px 32px),
-      var(--canvas);
-  }
-  .card-head {
-    grid-column: 1 / -1;
-    max-width: none;
-    width: 100%;
-    margin: 0 0 24px;
-    padding-left: 40px;
-  }
-  .card-head .entry-brand {
-    font-size: 28px;
-  }
-  .card-entry.on-form {
-    align-items: start;
-  }
-  .card-stage {
-    position: sticky;
-    top: 36px;
-  }
-  .lib-card {
-    width: min(100%, 460px);
-    padding: 12px 12px 22px;
-  }
-  .lib-window.home-sky {
-    height: 210px;
-  }
-  .lib-stamp {
-    top: 172px;
-    font-size: 15px;
-  }
-  .lib-body {
-    padding: 18px 12px 0;
-  }
-  .lib-team {
-    font-size: 42px;
-    letter-spacing: -1.6px;
-  }
-  .card-panel {
-    max-width: none;
-    margin: 0;
-  }
-}
 /* Whatever gets focus or scrolled to stays clear of the sticky sky. */
 html:has(.sky-entry.on-form) {
   scroll-padding-top: 250px;
@@ -812,18 +468,8 @@ html:has(.sky-entry.on-form) {
 .entry .swap.back {
   animation-name: entry-swap-back;
 }
-.entry .drop {
-  animation: entry-drop 0.75s cubic-bezier(0.3, 1.35, 0.5, 1) 0.05s backwards;
-}
 .entry-words .kw > span {
   animation: entry-word 0.62s cubic-bezier(0.3, 1.45, 0.5, 1) var(--d, 0s) backwards;
-}
-.lib-card {
-  transform: rotate(-1.6deg);
-}
-.lib-stamp {
-  transform: rotate(-9deg);
-  animation: entry-stamp 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) var(--d, 0s) backwards;
 }
 @keyframes entry-rise {
   from { transform: translateY(26px); opacity: 0; }
@@ -837,20 +483,14 @@ html:has(.sky-entry.on-form) {
 @keyframes entry-swap-back {
   from { transform: translateX(-18px); opacity: 0; }
 }
-@keyframes entry-drop {
-  from { transform: translateY(30px) rotate(-7deg); opacity: 0; }
-}
 @keyframes entry-word {
   from { transform: translateY(108%) rotate(4deg); }
-}
-@keyframes entry-stamp {
-  from { transform: scale(2.2) rotate(-20deg); opacity: 0; }
 }
 /* Until a motion setting is picked, the phone's "reduce motion" decides.
    (Kıpırtısız makes every animation instant in home.css; Sakin keeps these
    one-shot entrances and rests the sky's loops.) */
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-motion]) .entry :is(.rise, .pop, .swap, .drop, .lib-stamp, .kw > span) {
+  html:not([data-motion]) .entry :is(.rise, .pop, .swap, .kw > span) {
     animation: none;
   }
 }

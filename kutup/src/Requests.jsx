@@ -226,7 +226,7 @@ export function FeedbackPage({ me, requireMember, notify, onSeen }) {
             <span className="feedback-stamp">
               Batur’a
               <br />
-              <b>özel posta ↗</b>
+              <b>özel posta</b>
             </span>
             <span className="envelope-art">💌</span>
             <span className="eyebrow">KÜTÜP’ÜN MUTFAĞI</span>
@@ -348,16 +348,16 @@ export function FeedbackPage({ me, requireMember, notify, onSeen }) {
         )}
       </div>
       <aside className="feedback-aside">
-        <div className="batur-avatar">
-          👨‍💻<span>burayı yapan eleman</span>
-        </div>
+        <p className="batur-sign">
+          <span aria-hidden="true">👨‍💻</span> burayı yapan eleman
+        </p>
         <h3>Selam, ben Batur.</h3>
         <p>
           Her isteği tek tek okuyorum. Açtığım an “İncelendi” olur; kabul
           edersem yapılıyor, bitince yayında yazar. Her adımda telefonuna haber
           gelir.
         </p>
-        <ol className="request-journey">
+        <ol className="request-journey line">
           {REQUEST_STEPS.idea.map(([status, label, emoji]) => (
             <li key={status}>
               <span>{emoji}</span>

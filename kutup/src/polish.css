@@ -1,0 +1,626 @@
+/* n27 "Vitrin ve cila": the small-detail pass. Everything that looks tappable
+   now does something, so a few labels became buttons; they keep their look
+   and get a 44px finger target. Also: 16px form fields on phones, roomier
+   colour swatches, the tuğla wallet, the monument sheet. Tokens only;
+   transform/opacity for motion. Loaded after styles.css, motion.css and
+   dark.css, so plain selectors win ties. */
+
+/* A label that became a button keeps the label's look (buttons already
+   inherit the font, styles.css). */
+.page-title,
+.sky-live,
+.sky-sticker,
+.status-art.here,
+.face-btn,
+.scribble,
+.private-label,
+.system-message,
+.team-row,
+.me-card-main,
+.me-stats-row,
+.profile-preview,
+.invite-illustration > button,
+.brick-chip {
+  text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- top bar: the mark and the page's name (n27 #1, #2) ---------- */
+.page-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-left: -6px;
+  padding: 4px 12px 4px 6px;
+  border: 0;
+  border-radius: 13px;
+  background: none;
+  color: var(--ink);
+  transition: transform 0.15s var(--ease-out, ease);
+}
+.page-title:active {
+  transform: scale(0.97);
+}
+.page-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+.page-title strong {
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.page-title.spin .page-mark {
+  animation: mark-spin 0.55s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+@keyframes mark-spin {
+  from {
+    transform: rotate(-120deg) scale(0.8);
+  }
+}
+
+/* ---------- the sky: the live line and the sticker (n27 #3, #20) ---------- */
+.sky-live {
+  position: relative;
+  cursor: pointer;
+}
+.sky-live::after {
+  content: "";
+  position: absolute;
+  inset: -8px -4px;
+}
+.sky-live-go {
+  flex: none;
+  margin-left: 6px;
+  opacity: 0.55;
+}
+.sky-sticker {
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sky-sticker::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.sky-sticker.wobble {
+  animation: sticker-wobble 0.62s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+/* A tap gets its answer even while the sky's loops rest. */
+html[data-motion="calm"] .home-sky button.sky-sticker.wobble {
+  animation: sticker-wobble 0.62s cubic-bezier(0.3, 1.4, 0.5, 1) !important;
+}
+@keyframes sticker-wobble {
+  25% {
+    transform: rotate(-9deg) scale(1.08);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.04);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+/* ---------- status card: the minutes ring opens "Yerimi değiştir" (#21) ---------- */
+.status-art.here {
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-out, ease);
+}
+.status-art.here:active {
+  transform: scale(0.95);
+}
+
+/* ---------- small faces open their person's card (#22) ---------- */
+.face-btn {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.face-btn::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.avatar-stack .face-btn .avatar {
+  margin-left: 0;
+}
+.avatar-stack .face-btn + .face-btn {
+  margin-left: -6px;
+}
+.avatar-stack .face-btn::after {
+  inset: -9px -2px;
+}
+
+/* ---------- the board's header and its own lines (#9, #10, #11) ---------- */
+.scribble {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.scribble::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+.private-label {
+  position: relative;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.private-label::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+.system-message {
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.system-message:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.system-message p {
+  flex: 1;
+  min-width: 0;
+}
+/* The side note on the board page: calm, without a frame (#18). */
+.board-guideline.board-note {
+  padding: 4px 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.board-guideline.board-note > span {
+  font-size: 26px;
+}
+
+/* ---------- team card rows (#12) ---------- */
+.team-list li {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s var(--ease-out, ease);
+}
+.team-row > span:not(.status) {
+  flex: 1;
+  min-width: 0;
+}
+.team-row:active {
+  transform: scale(0.98);
+}
+@media (hover: hover) {
+  .team-row:hover {
+    border-color: var(--accent);
+  }
+}
+
+/* ---------- Ben: the card and its three numbers (#13) ---------- */
+.me-card-main {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.me-stats-row {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---------- invite drawing: the "+" copies the link (#14) ---------- */
+.invite-illustration > button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 65px;
+  height: 65px;
+  margin-left: -10px;
+  border: 3px solid var(--paper);
+  border-radius: 18px;
+  background: var(--canvas);
+  color: var(--muted);
+  font-size: 30px;
+  transform: rotate(8deg);
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-spring, ease);
+}
+.invite-illustration > button:active {
+  transform: rotate(8deg) scale(0.94);
+}
+.invite-illustration > button.copied {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  transform: rotate(0deg);
+}
+.invite-illustration > button small {
+  font-size: 10px;
+  font-weight: 750;
+}
+
+/* ---------- Batur'a ilet: quiet signs (#15–#17) ---------- */
+.batur-sign {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.batur-sign span {
+  margin-right: 4px;
+  font-size: 18px;
+}
+.request-journey.line {
+  gap: 7px;
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: 1.5px solid var(--border);
+}
+.request-journey.line li span {
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+/* ---------- profile preview: goes to the character picker (#19) ---------- */
+.profile-preview {
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+}
+.preview-go {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--accent-deep);
+}
+
+/* ---------- tuğla: the chip, the catalogue's answers, the wallet (#4–#8) ---------- */
+.brick-chip {
+  position: relative;
+  border: 0;
+  cursor: pointer;
+}
+.brick-chip::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
+}
+.catalog-price em {
+  cursor: help;
+}
+.catalog-item.blocked .building-thumb,
+.catalog-item.unseen .building-thumb {
+  filter: grayscale(0.35) opacity(0.85);
+}
+.catalog-item.blocked {
+  opacity: 0.85;
+}
+.catalog-item.unseen {
+  border-style: dashed;
+  background: var(--canvas);
+}
+.catalog-item.unseen:hover {
+  border-color: var(--border);
+}
+.catalog-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-deep);
+}
+.catalog-hint {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 8px 6px 8px 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.catalog-hint .icon-button {
+  flex: none;
+  margin-left: auto;
+}
+.wallet-balance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, var(--peach), var(--paper) 70%);
+}
+.wallet-bricks {
+  font-size: 34px;
+}
+.wallet-balance b {
+  display: block;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.wallet-balance small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.wallet-ruin {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--accent-deep);
+}
+.wallet h3 {
+  margin: 18px 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.wallet-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wallet-log li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 13px;
+}
+.wallet-log li small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.wallet-log b {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wallet-log b.minus {
+  color: var(--muted);
+}
+.wallet-empty {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---------- counts beside a heading are plain numbers (#23) ---------- */
+.count-tag,
+.section-heading .kinetic-text > .count-tag {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+/* ---------- section C ---------- */
+/* Köy and Pano tiles side by side on a phone: an old dashboard rule put
+   every ".board" in grid row 5, the Pano tile included. */
+.home-tiles > .home-tile {
+  grid-row: auto;
+}
+/* Colour swatches: a 44px finger target each, two rows when narrow. */
+.color-options {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.color-options button {
+  position: relative;
+  width: 34px;
+  height: 34px;
+}
+.color-options button::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+/* iOS Safari zooms into any field under 16px; phones get 16px everywhere. */
+@media (max-width: 760px), (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* ---------- the monument sheet: floors and who built this week's ---------- */
+.monument-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--blue), var(--paper) 80%);
+}
+.monument-tower {
+  flex: none;
+  width: 92px;
+  height: auto;
+}
+.mt-ground {
+  fill: var(--mint);
+}
+.mt-floor {
+  fill: var(--paper);
+  stroke: color-mix(in srgb, var(--ink) 30%, transparent);
+  stroke-width: 1.2;
+}
+.mt-window {
+  fill: var(--accent);
+  opacity: 0.35;
+}
+.mt-scaffold {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 2.5;
+}
+.mt-rising {
+  fill: var(--accent);
+  opacity: 0.3;
+}
+.mt-roof {
+  fill: var(--accent);
+  opacity: 0.75;
+}
+.monument-head b {
+  display: block;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 26px;
+  letter-spacing: -0.6px;
+}
+.monument-head b small {
+  font-family: "DM Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.monument-head span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.contrib-bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--canvas);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.contrib-bar i {
+  flex: none;
+  background: color-mix(in srgb, var(--lilac) 80%, var(--ink) 20%);
+}
+.contrib-bar i.mint { background: color-mix(in srgb, var(--mint) 80%, var(--ink) 20%); }
+.contrib-bar i.peach { background: color-mix(in srgb, var(--peach) 80%, var(--ink) 20%); }
+.contrib-bar i.blue { background: color-mix(in srgb, var(--blue) 80%, var(--ink) 20%); }
+.contrib-bar i.pink { background: color-mix(in srgb, var(--pink) 80%, var(--ink) 20%); }
+.contrib-bar i.lemon { background: color-mix(in srgb, var(--lemon) 80%, var(--ink) 20%); }
+.contrib-bar i.slate { background: color-mix(in srgb, var(--slate) 80%, var(--ink) 20%); }
+.contrib-bar i.sand { background: color-mix(in srgb, var(--sand) 80%, var(--ink) 20%); }
+.contrib-bar i.olive { background: color-mix(in srgb, var(--olive) 80%, var(--ink) 20%); }
+.contrib-title {
+  margin: 18px 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.contrib-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.contrib-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.contrib-list li.mine {
+  background: var(--accent-soft);
+}
+.contrib-list strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.contrib-list small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.contrib-list b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-deep);
+}
+.contrib-quiet {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}

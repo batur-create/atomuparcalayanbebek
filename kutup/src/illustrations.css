@@ -1,6 +1,6 @@
-/* n27 phase 1 samples (Samples.jsx, ?ornek=1): the iPhone guide and the
-   empty reading table. Tokens only; the few drawing colours below have their
-   own dark values. */
+/* Kütüp's small drawings (Illustrations.jsx, n27): the iPhone guide, the
+   empty states and the loading scenes. Tokens only; the few drawing colours
+   (wood, lamp, cork) have their own dark values. */
 
 /* ---------- iPhone: add to home screen, drawn ---------- */
 .ios-guide {
@@ -231,12 +231,17 @@
 }
 
 /* ---------- the empty reading table ---------- */
-.alone {
+.alone,
+.empty-state,
+.loading-art {
   /* dark: keep */
   --wood: #caa77e;
+  --cork: #e7cfa4;
   --wood-dark: #a9875f;
   --lamp: #7fa77a;
   --glow: #ffe3a3;
+}
+.alone {
   display: grid;
   gap: 14px;
   margin-top: 4px;
@@ -245,7 +250,9 @@
   border-radius: 22px;
   background: var(--paper);
 }
-:where(html[data-mode="dark"]) .alone {
+:where(html[data-mode="dark"]) :is(.alone, .empty-state, .loading-art) {
+  /* dark: keep */
+  --cork: #6b5a43;
   --wood: #7a6248;
   --wood-dark: #5f4b36;
   --lamp: #4f6f4b;
@@ -354,4 +361,178 @@
   min-height: 46px;
   margin-top: 14px;
   font-size: 13.5px;
+}
+
+/* ---------- empty states ---------- */
+/* No frame: an empty state is a picture and a sentence, not a card to press. */
+.empty-state {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  padding: 6px 2px;
+}
+.empty-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.empty-state strong {
+  display: block;
+  font-family: "Bricolage Grotesque Variable", sans-serif;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+}
+.empty-state p {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.empty-state .btn {
+  min-height: 40px;
+  margin-top: 10px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+}
+.ea-floor {
+  fill: var(--border);
+}
+.ea-wood {
+  fill: var(--wood);
+}
+.ea-wood-dark {
+  fill: var(--wood-dark);
+}
+.ea-chair {
+  fill: var(--wood-dark);
+  opacity: 0.6;
+}
+.ea-glow {
+  fill: var(--glow);
+  opacity: 0.6;
+}
+.ea-ink {
+  fill: var(--wood-dark);
+}
+.ea-lamp {
+  fill: var(--lamp);
+}
+.ea-paper,
+.ea-page {
+  fill: var(--paper);
+  stroke: color-mix(in srgb, var(--ink) 30%, transparent);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.ea-band {
+  fill: var(--accent-soft);
+  stroke: color-mix(in srgb, var(--ink) 30%, transparent);
+  stroke-width: 1;
+}
+.ea-ring {
+  fill: var(--paper);
+  stroke: color-mix(in srgb, var(--ink) 45%, transparent);
+  stroke-width: 1;
+}
+.ea-cell {
+  fill: var(--canvas);
+}
+.ea-cell.hi {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 1.6;
+}
+.ea-pencil {
+  fill: var(--lemon);
+  stroke: color-mix(in srgb, var(--ink) 35%, transparent);
+  stroke-width: 0.8;
+}
+.ea-pencil-tip {
+  fill: var(--wood);
+}
+.ea-cork {
+  fill: var(--cork);
+}
+.ea-scribble {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ink) 30%, transparent);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.ea-pin {
+  fill: var(--accent);
+}
+.ea-heart {
+  fill: var(--pink);
+  stroke: color-mix(in srgb, var(--ink) 30%, transparent);
+  stroke-width: 0.8;
+}
+
+/* ---------- loading: the library's windows light up one by one ---------- */
+.loading-art {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  text-align: center;
+}
+.loading-art svg {
+  width: 120px;
+  height: auto;
+}
+.loading-art.big svg {
+  width: 168px;
+}
+.loading-art p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.la-top {
+  fill: var(--wood);
+  opacity: 0.7;
+}
+.la-wall {
+  fill: var(--paper);
+  stroke: color-mix(in srgb, var(--ink) 25%, transparent);
+  stroke-width: 1;
+}
+.la-door {
+  fill: var(--wood-dark);
+}
+.la-window {
+  fill: var(--glow);
+  opacity: 0.25;
+  animation: la-light 2.4s ease-in-out calc(var(--i) * 0.3s) infinite;
+}
+@keyframes la-light {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  35%,
+  60% {
+    opacity: 1;
+  }
+}
+/* Rest with the motion setting: the windows simply glow. */
+html[data-motion="calm"] .la-window,
+html[data-motion="still"] .la-window {
+  animation: none;
+  opacity: 0.85;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion]) .la-window {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+/* In the village map's frame, the loader sits in the middle. */
+.village-map-wrap > .loading-art {
+  position: absolute;
+  inset: 0;
+  align-content: center;
 }

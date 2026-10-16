@@ -1,24 +1,21 @@
 // n27 "Vitrin": the first thing a friend sees after tapping an invite link,
-// and the way a new team is founded. Two looks to choose from, side by side in
-// the real app until Batur picks one:
-//   ?giris=1  Gökyüzü: the living sky fills the screen; the friends wait on the
-//             path to Milli Kütüphane; joining is three short steps and ends
-//             with your little figure walking in through the door.
-//   ?giris=2  Okuyucu kartı: a paper library card on a notebook page; the card
-//             fills in as you type (your face, your name, the team) and gets
-//             stamped "ÜYE" at the end.
-// Without the switch the old welcome stays. Phase 2 keeps the chosen look and
-// drops the switch (and this paragraph).
+// and the way a new team is founded. The living sky fills the screen; the
+// team waits on the path to Milli Kütüphane; joining is two short steps
+// (founding three) under the sky, where the team's sign goes up and your own
+// little figure appears, and it ends with that figure walking in through the
+// library door. (Batur picked this look, n27; the paper "reader card" option
+// is in the PR notes for n28.)
+//
+// Privacy: someone who has not joined sees names and faces only, never who is
+// at the library, on the way or focusing (the invite API does not send it).
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, House, KeyRound, MapPin, MessageCircle, Plus, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, House, KeyRound, MapPin, MessageCircle, Plus, ShieldCheck, Sparkles } from "lucide-react";
 import { Avatar, Busy, reducedMotion } from "./ui.jsx";
 import { COLORS, COLOR_NAMES } from "./api.js";
 import { SkyScene, at, greeting, span, useSky, useSkyPaused } from "./Home.jsx";
 import { KaraRig } from "./Kara.jsx";
 import { AvatarPicker, useJoinForm } from "./Account.jsx";
 import "./entry.css";
-
-export const ENTRY = new URLSearchParams(location.search).get("giris");
 
 // Every entrance here is a one-shot CSS animation (transform/opacity, entry.css),
 // not Motion: this page is the first impression and must show its buttons even
@@ -42,8 +39,10 @@ function Words({ text, as: Tag = "h1", className = "", at: start = 0.1 }) {
 }
 const lively = () => !reducedMotion() && !["calm", "still"].includes(document.documentElement.dataset.motion);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const names = (list) =>
-  list.length <= 4 ? list.map((x) => x.name).join(", ").replace(/, ([^,]*)$/, " ve $1") : `${list.slice(0, 3).map((x) => x.name).join(", ")} ve ${list.length - 3} kişi daha`;
+// "Ada, Ece ve Mert" or, for a bigger team, "Ada, Ece, Mert ve 9 kişi daha"
+// (the invite sends the first eight faces and the full count).
+const names = (list, count = list.length) =>
+  count <= 4 && list.length === count ? list.map((x) => x.name).join(", ").replace(/, ([^,]*)$/, " ve $1") : `${list.slice(0, 3).map((x) => x.name).join(", ")} ve ${count - 3} kişi daha`;
 
 // Kara on the library roof. Asleep on the plain welcome, awake when friends are
 // waiting; a tap gets a line that helps right now.
@@ -88,10 +87,10 @@ const KARA_WELCOME = [
   "Kimse yokken kitaplar benim. Biri gelince ilk ben duyarım.",
 ];
 const karaInvite = (info) => [
-  info?.here ? `${info.here} kişi şu an içeride. Sana da bir sandalye ayırdım!` : "Bugün kütüp sessiz. İlk sen gelirsen kapıyı ben tutarım.",
-  `${info?.name || "Ekibin"} burada buluşuyor: kim kütüpte, kim yolda, hepsi tek bakışta.`,
+  "Patikada bir yer boş. Sana ayırdım; “sen?” yazan yere dokun.",
+  `${info?.name || "Ekibin"} burada buluşuyor: kim kütüpte, kim yolda, katılınca hepsi tek bakışta.`,
   "Katılınca senin de köyde bir mahallen olur. Tabelası hazır.",
-];
+]
 
 // The intro: three things Kütüp does, said once and plainly. Nothing here is a
 // button, so nothing looks like one.
@@ -156,18 +155,18 @@ function AccountFields({ form }) {
   );
 }
 
-// ======================= 1 · Gökyüzü =======================
-// Where the waiting friends stand: along the path, the ones inside at the door.
+// Where the friends stand: along the path to the library door, in the order
+// they joined. (Who is inside right now is not shown before joining.)
 const QUEUE = [
-  [192, 199],
-  [160, 207],
-  [128, 211],
-  [96, 213],
-  [66, 214],
-  [38, 216],
-  [12, 217],
-];
-const DOOR = [[232, 175], [276, 175]];
+  [222, 186],
+  [188, 199],
+  [154, 207],
+  [120, 211],
+  [86, 213],
+  [52, 214],
+  [18, 216],
+  [-16, 218],
+]
 
 function SkyEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
   const box = useRef(null),
@@ -183,9 +182,7 @@ function SkyEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
   }, [start]);
   const at0 = step === 0,
     current = steps[step - 1];
-  const faces = inviteInfo?.faces || [];
-  const inside = faces.filter((x) => x.here).slice(0, 2),
-    outside = faces.filter((x) => !inside.includes(x)).slice(0, QUEUE.length - 1);
+  const faces = (inviteInfo?.faces || []).slice(0, QUEUE.length - 1);
   const me = { ...form.value, name: form.value.name || "Sen" };
   const night = sky.night > 0.5;
   const next = (e) => {
@@ -220,9 +217,9 @@ function SkyEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
         <SkyScene sky={sky} arrivals={walking ? [walking] : []} />
         <div className="sky-over entry-over">
           <EntryKara awake={!!invite || !at0} lines={invite ? karaInvite(inviteInfo) : KARA_WELCOME} style={{ ...at(290, 134), width: span(62) }} />
-          {/* The friends who are already in: at the door if they are inside, on the path if not. */}
-          {[...inside.map((x, i) => [x, DOOR[i], true]), ...outside.map((x, i) => [x, QUEUE[i], false])].map(([x, spot, isIn], i) => (
-            <span key={`${isIn}-${x.name}`} className={`path-face ${isIn ? "inside" : ""}`} style={at(...spot)}>
+          {/* The friends who are already in the team, on the path. */}
+          {faces.map((x, i) => (
+            <span key={x.name} className="path-face" style={at(...QUEUE[i])}>
               <span className="pop" style={delay(0.5 + i * 0.09)}>
                 <Avatar member={x} size="small" />
                 <small>{x.name}</small>
@@ -231,7 +228,7 @@ function SkyEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
           ))}
           {/* Your place: on the welcome a seat to take (it opens the steps), then you. */}
           {(invite || !at0) && !walking && (
-            <span className="path-face you" style={at(...QUEUE[Math.min(outside.length, QUEUE.length - 1)])}>
+            <span className="path-face you" style={at(...QUEUE[faces.length])}>
               {at0 ? (
                 <button type="button" className="seat" onClick={() => setStep(1)} aria-label="Yerini al: ekibe katıl">
                   <Plus size={16} />
@@ -260,11 +257,9 @@ function SkyEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
           </span>
           <span className="sky-eyebrow">{invite ? "DAVETLİSİN ✷" : `${greeting(sky.hour)} · MİLLİ KÜTÜPHANE`}</span>
           <Words key={title} text={title} at={0.15} />
-          {invite && (
+          {invite && inviteInfo && (
             <span className="entry-live">
-              <i className={inviteInfo?.here ? "on" : ""} />
-              {faces.length ? `${names(faces)} ekipte` : "Ekip seni bekliyor"}
-              {inviteInfo?.here ? ` · ${inviteInfo.here} kişi şu an kütüpte` : ""}
+              {faces.length ? `${names(inviteInfo.faces, inviteInfo.count)} ekipte` : "Ekip seni bekliyor"}
             </span>
           )}
         </div>
@@ -381,200 +376,4 @@ function SkyEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
   );
 }
 
-// ======================= 2 · Okuyucu kartı =======================
-// A library card on a notebook page. It is the preview: whatever you type
-// lands on the card.
-function Barcode() {
-  const bars = [2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 3, 1, 2, 2, 1, 3, 1, 1, 2, 1, 1, 3, 2, 1, 2];
-  let x = 0;
-  return (
-    <svg className="lib-barcode" viewBox="0 0 80 18" aria-hidden="true" preserveAspectRatio="none">
-      {bars.map((w, i) => {
-        const r = i % 2 ? null : <rect key={i} x={x} y="0" width={w * 0.9} height="18" />;
-        x += w * 1.25;
-        return r;
-      })}
-    </svg>
-  );
-}
-
-function CardEntry({ invite, inviteInfo, open, onSuccess, now, dark, start }) {
-  const box = useRef(null),
-    paused = useSkyPaused(box),
-    sky = useSky(now, dark);
-  const form = useJoinForm({ invite, onSuccess });
-  const [filling, setFilling] = useState(false),
-    [stamped, setStamped] = useState(false);
-  useEffect(() => {
-    if (start) setFilling(true);
-  }, [start]);
-  const faces = inviteInfo?.faces || [];
-  const night = sky.night > 0.5;
-  const number = String((inviteInfo?.count || 0) + 1).padStart(3, "0");
-  const team = invite ? inviteInfo?.name || "Ekibin" : filling ? form.groupName.trim() || "Ekibinizin adı" : null;
-  const submit = (e) =>
-    form.submit(e, async () => {
-      setStamped(true);
-      if (lively()) await wait(1100);
-    });
-  const card = (
-    <article className={`lib-card drop ${filling ? form.value.color : ""} ${filling ? "filling" : ""}`}>
-      <i className="lib-hole" aria-hidden="true" />
-      <div ref={box} className={`lib-window home-sky ${night ? "is-night" : ""} ${sky.lamps ? "lamps" : ""} ${paused ? "paused" : ""}`}>
-        <SkyScene sky={sky} />
-        <div className="sky-over">
-          <EntryKara awake={!!invite || filling} lines={invite ? karaInvite(inviteInfo) : KARA_WELCOME} style={{ ...at(290, 134), width: span(62) }} />
-        </div>
-      </div>
-      <div className="lib-body">
-        <div className="lib-row">
-          <span className="lib-label">
-            <i /> KÜTÜP OKUYUCU KARTI
-          </span>
-          <span className="lib-no">No {number}</span>
-        </div>
-        {team ? (
-          <>
-            <Words key={invite ? "t" : "f"} text={team} className="lib-team" at={0.2} />
-            <p className="lib-sub">{invite ? `seni bekliyor · ${inviteInfo?.count || 0} kişi yerini aldı` : "yeni bir ekip · Milli Kütüphane, Ankara"}</p>
-          </>
-        ) : (
-          <>
-            <Words text="Kim nerede, artık sormak yok." className="lib-team" at={0.2} />
-            <p className="lib-sub">Milli Kütüphane’ye giden arkadaşlar için.</p>
-          </>
-        )}
-        {filling ? (
-          <div className="lib-holder">
-            <span key={`${form.value.avatar}-${form.value.color}`} className="lib-photo pop">
-              <Avatar member={form.value} />
-            </span>
-            <span className="lib-sign">
-              <small>OKUYUCU</small>
-              <b>{form.value.name.trim() || "Senin adın"}</b>
-            </span>
-          </div>
-        ) : invite && faces.length ? (
-          <div className="lib-faces">
-            <span className="lib-stack">
-              {faces.slice(0, 5).map((x, i) => (
-                <span key={x.name} className="pop" style={{ ...delay(0.55 + i * 0.08), rotate: `${[-4, 3, -2, 4, -3][i]}deg` }}>
-                  <Avatar member={x} size="small" />
-                </span>
-              ))}
-            </span>
-            <small>
-              {names(faces)} ekipte
-              {inviteInfo?.here ? (
-                <>
-                  <br />
-                  <i className="dot" /> şu an {inviteInfo.here} kişi kütüpte
-                </>
-              ) : null}
-            </small>
-          </div>
-        ) : (
-          <div className="lib-foot">
-            <Barcode />
-            <small>ANKARA · {new Date(now).getFullYear()}</small>
-          </div>
-        )}
-      </div>
-      {(invite || stamped) && (
-        <span key={stamped ? "uye" : "davet"} className={`lib-stamp ${stamped ? "member" : ""}`} style={delay(stamped ? 0 : 0.9)} aria-hidden="true">
-          {stamped ? "ÜYE ✳" : "DAVETLİSİN"}
-        </span>
-      )}
-    </article>
-  );
-  return (
-    <main className={`entry card-entry ${filling ? "on-form" : ""}`}>
-      <header className="card-head">
-        <span className="entry-brand" aria-label="Kütüp">
-          kütüp<span>✳</span>
-        </span>
-        <span className="sky-eyebrow">{invite ? "BİR DAVETİN VAR" : greeting(sky.hour)}</span>
-      </header>
-      <div className="card-stage">{card}</div>
-      <section className="card-panel rise" style={delay(0.35)}>
-          {!filling ? (
-            <div key="intro" className="swap back">
-              <div className="tear" aria-hidden="true" />
-              <ol className="card-intro">
-                {INTRO.map(([Icon, head, body], i) => (
-                  <li key={head} className="rise" style={delay(0.5 + i * 0.08)}>
-                    <span className="num" aria-hidden="true">
-                      {i + 1}
-                    </span>
-                    <Icon size={20} aria-hidden="true" />
-                    <b>{head}</b>
-                    <small>{body}</small>
-                  </li>
-                ))}
-              </ol>
-              <div className="entry-actions">
-                <button className="btn primary full" onClick={() => setFilling(true)}>
-                  {invite ? (
-                    <>
-                      Kartımı doldur <ArrowRight size={17} />
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={17} /> Yeni ekip kur
-                    </>
-                  )}
-                </button>
-                <button className="btn ghost full" onClick={() => open("login")}>
-                  <KeyRound size={16} /> {invite ? "Zaten hesabım var, giriş yap" : "Giriş yap"}
-                </button>
-              </div>
-              <p className="entry-note">
-                {invite
-                  ? "Kartını doldur, ekibe katıl: köyde senin de bir mahallen olur. E-posta yok."
-                  : "Arkadaşından davet linki geldiyse linke dokun, doğrudan ekibine katılırsın."}
-              </p>
-            </div>
-          ) : (
-            <form key="form" className="card-form swap" onSubmit={submit}>
-              <button type="button" className="text-button card-back" onClick={() => (form.setError(""), setFilling(false))}>
-                <ArrowLeft size={15} /> Geri
-              </button>
-              {!invite && (
-                <label className="field-label">
-                  Ekibinizin adı
-                  <input required autoFocus minLength={2} maxLength={40} value={form.groupName} onChange={(e) => form.setGroupName(e.target.value)} />
-                </label>
-              )}
-              <label className="field-label">
-                Sana ne diyelim?
-                <input required autoFocus={!!invite} minLength={2} maxLength={24} placeholder="İsmin ya da takma adın" autoComplete="nickname" value={form.value.name} onChange={(e) => form.setValue({ ...form.value, name: e.target.value })} />
-              </label>
-              <span className="field-label">Kartındaki yüzün</span>
-              <AvatarPicker value={form.value} setValue={form.setValue} />
-              <span className="field-label">Kartının rengi</span>
-              <ColorOptions value={form.value} setValue={form.setValue} />
-              <fieldset className="account-fields">
-                <legend>Hesabın · her cihazdan bununla girersin</legend>
-                <AccountFields form={form} />
-              </fieldset>
-              {form.error && (
-                <p className="form-error" role="alert">
-                  {form.error}
-                </p>
-              )}
-              <Busy loading={form.busy || stamped} className="btn primary full" type="submit">
-                {invite ? "Kartımı bastır, katıl" : "Ekibimizi kuralım"} <Sparkles size={16} />
-              </Busy>
-              <p className="form-footnote">
-                <ShieldCheck size={14} /> Davet bağlantısı olanlar katılabilir; güvendiğin kişilerle paylaş.
-              </p>
-            </form>
-          )}
-      </section>
-    </main>
-  );
-}
-
-export function Entry(props) {
-  return ENTRY === "2" ? <CardEntry {...props} /> : <SkyEntry {...props} />;
-}
+export { SkyEntry as Entry };

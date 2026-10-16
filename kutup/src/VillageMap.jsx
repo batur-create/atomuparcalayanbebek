@@ -9,6 +9,7 @@ import { createView } from "./villageView.js";
 import { ConstructionScene, KINDS } from "./Village.jsx";
 import { modelOf } from "../shared/catalog.js";
 import { Modal } from "./Modal.jsx";
+import { Loading } from "./Illustrations.jsx";
 import "./koy.css";
 
 // ---------- data ----------
@@ -303,6 +304,25 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
     const target = world?.focusOf(memberId);
     if (target) map.current?.view.flyTo({ x: target[0], y: target[1], s: 9 }, 650);
   };
+  // "Köyde göster" in the collection: bring the map into view and fly to my
+  // newest building of that model, with its card open (n27).
+  const latest = useRef(village);
+  latest.current = village;
+  useEffect(() => {
+    const show = (e) => {
+      const model = e.detail?.model;
+      const b = (latest.current?.buildings || [])
+        .filter((x) => x.memberId === me?.id && x.x !== null && modelOf(x.model, x.kind).id === model)
+        .reduce((a, x) => (!a || x.created > a.created ? x : a), null);
+      if (!b) return notify("Bu yapı köyünde bulunamadı. Taşınıyor olabilir; birazdan tekrar dene.");
+      document.querySelector(".village-panel .village-map-wrap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setPicked(b.id);
+      map.current?.view.select(b.id);
+      setTimeout(() => map.current?.view.flyTo({ x: (b.x - b.y) * 0.866, y: (b.x + b.y) * 0.5, s: 14 }, 650), 350);
+    };
+    window.addEventListener("kutup:show-building", show);
+    return () => window.removeEventListener("kutup:show-building", show);
+  }, [me?.id]);
   return (
     <section className="panel village-panel">
       {error && <p className="form-error" role="status">Köy güncellenemedi. <button className="text-button" onClick={retry}>Tekrar dene</button></p>}
@@ -327,6 +347,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
       ) : (
         <>
           <div className={`village-map-wrap ${full ? "village-full" : ""}`}>
+            {!world && <Loading text={error ? "Köy gelmedi; yukarıdan tekrar dene." : "Köy çiziliyor…"} />}
             {world && (
               <VillageCanvas
                 world={world}
@@ -461,32 +482,81 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   );
 }
 
-// The team's shared monument: this week's minutes together against the goal.
-function MonumentBar({ week, members, stages }) {
-  const total = members.reduce((t, m) => t + (m.focusWeek || 0), 0),
-    goal = week.goal,
+// The monument sheet (n27): not the tile again, but what the tile cannot
+// show: how tall the monument stands (a floor for every week the team made
+// it) and who has put how many minutes into this week's floor.
+function MonumentSheet({ week, members, me, stages }) {
+  const goal = week.goal,
+    total = members.reduce((t, m) => t + (m.focusWeek || 0), 0),
+    done = !!week.monument,
+    share = Math.min(1, total / goal),
     master = members.find((m) => m.id === week.master?.memberId);
+  const ranked = members.filter((m) => m.focusWeek > 0).sort((a, b) => b.focusWeek - a.focusWeek),
+    quiet = members.filter((m) => !(m.focusWeek > 0));
+  const shown = Math.min(stages, 7);
+  const floorY = (i) => 128 - (i + 1) * 13;
+  // The roof sits on the highest floor drawn: this week's scaffold, or the last floor.
+  const top = Math.max(0, done ? shown - 1 : shown),
+    roofY = floorY(top),
+    roofX = 26 + top,
+    roofW = 68 - 2 * top;
   return (
-    <div className={`monument-bar ${week.monument ? "done" : ""}`}>
-      {week.monument ? (
-        <span>
-          🏛️ <b>Bu haftanın ortak anıtı dikildi!</b> Meydandaki Milli Kütüphane anıtı {stages}. katında; herkese +50 🧱 yattı.
-        </span>
-      ) : (
-        <span>
-          🏛️ Haftanın ortak anıtı: <b>{total} / {goal} dk</b> · hep birlikte tamamlanınca herkese +50 🧱 ve meydandaki anıt bir kat yükselir.
-        </span>
-      )}
-      {!week.monument && (
-        <div className="monument-track" aria-hidden="true">
-          <i style={{ width: `${Math.min(100, Math.round((total / goal) * 100))}%` }} />
+    <div className="monument-sheet">
+      <div className="monument-head">
+        <svg className="monument-tower" viewBox={`0 ${roofY - 22} 120 ${140 - (roofY - 22)}`} aria-hidden="true">
+          <rect className="mt-ground" x="6" y="128" width="108" height="6" rx="3" />
+          {Array.from({ length: shown }, (_, i) => (
+            <g key={i}>
+              <rect className="mt-floor" x={26 + i} y={floorY(i)} width={68 - 2 * i} height="12" rx="2" />
+              {[0, 1, 2, 3].map((k) => (
+                <rect key={k} className="mt-window" x={33 + i + k * ((54 - 2 * i) / 4)} y={floorY(i) + 3.5} width="5" height="5" rx="1" />
+              ))}
+            </g>
+          ))}
+          {!done && (
+            <g className="mt-next">
+              <rect className="mt-scaffold" x={26 + shown} y={floorY(shown)} width={68 - 2 * shown} height="12" rx="2" />
+              <rect className="mt-rising" x={26 + shown} y={floorY(shown) + 12 - 12 * share} width={68 - 2 * shown} height={12 * share} rx="2" />
+            </g>
+          )}
+          <path className="mt-roof" d={`M${roofX - 4} ${roofY} L60 ${roofY - 14} L${roofX + roofW + 4} ${roofY}Z`} />
+        </svg>
+        <div>
+          <b>
+            {stages ? `${stages} kat` : "İlk kat"}
+            {stages > shown ? <small> (çizimde {shown})</small> : null}
+          </b>
+          <span>{done ? "Bu haftanın katı dikildi, herkese +50 🧱 yattı." : `Bu haftanın katı %${Math.round(share * 100)}: ${Math.max(0, goal - total)} dk kaldı.`}</span>
         </div>
+      </div>
+      <div className="contrib-bar" role="img" aria-label={`Bu hafta ${total} / ${goal} dk`}>
+        {ranked.map((m) => (
+          <i key={m.id} className={m.color || "lilac"} style={{ width: `${Math.min(100, (m.focusWeek / Math.max(goal, total)) * 100)}%` }} />
+        ))}
+      </div>
+      <h3 className="contrib-title">Bu haftanın katına kim ne kattı</h3>
+      {ranked.length ? (
+        <ol className="contrib-list">
+          {ranked.map((m) => (
+            <li key={m.id} className={m.id === me?.id ? "mine" : ""}>
+              <Avatar member={m} size="tiny" />
+              <strong>
+                {m.name}
+                {m.id === me?.id ? " (sen)" : ""}
+              </strong>
+              <small>{minutesLabel(m.focusWeek)}</small>
+              <b>%{Math.round((m.focusWeek / goal) * 100)}</b>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="muted small">Bu hafta henüz biten seans yok. İlk 25 dakika bu katın ilk tuğlası. 🧱</p>
       )}
+      {quiet.length > 0 && ranked.length > 0 && <p className="contrib-quiet">Henüz katkısı olmayan: {quiet.map((m) => m.name).join(", ")}</p>}
       {master && (
-        <span className="monument-master">
-          {" "}
+        <p className="contrib-quiet">
           👑 Geçen haftanın ustası: <b>{master.name}</b> ({Math.round((week.master.minutes / 60) * 10) / 10} sa)
-        </span>
+        </p>
       )}
     </div>
   );
@@ -536,8 +606,8 @@ function KoyTiles({ week, members, me, stages }) {
         </button>
       </div>
       {open === "monument" && (
-        <Modal title="Haftanın ortak anıtı" subtitle="Hep birlikte odaklandıkça meydandaki Milli Kütüphane anıtı kat kat yükselir." close={() => setOpen(null)}>
-          <MonumentBar week={week} members={members} stages={stages} />
+        <Modal title="Haftanın ortak anıtı" subtitle="Ekip haftalık hedefi her tutturduğunda meydandaki Milli Kütüphane anıtına bir kat çıkar." close={() => setOpen(null)}>
+          <MonumentSheet week={week} members={members} me={me} stages={stages} />
         </Modal>
       )}
       {open === "week" && (

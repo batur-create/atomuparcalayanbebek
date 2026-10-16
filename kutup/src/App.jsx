@@ -80,10 +80,10 @@ import { FocusScreen, enterFullscreen } from "./FocusScreen.jsx";
 import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Together.jsx";
 import { VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
-import { Welcome, Onboard, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
-import { ENTRY, Entry } from "./Entry.jsx";
-import { IosGuide, SAMPLE } from "./Samples.jsx";
-import { Home, Badge, Kinetic } from "./Home.jsx";
+import { SignIn, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
+import { Entry } from "./Entry.jsx";
+import { EmptyState, IosGuide, Loading } from "./Illustrations.jsx";
+import { Home, Badge, Kinetic, FaceButton } from "./Home.jsx";
 import { MePage, TeamModal } from "./MePage.jsx";
 import { useMotionPref } from "./motionPref.js";
 import { darkAt } from "./villageWorld.js";
@@ -311,8 +311,6 @@ export default function App() {
       get(`/invites/${encodeURIComponent(invite)}`)
         .then((info) => {
           setInviteInfo(info);
-          // n27 options: the invite opens on a welcome, not straight on the form.
-          if (!ENTRY) setModal("onboard");
         })
         .catch((e) => {
           notify(e.message);
@@ -617,6 +615,12 @@ export default function App() {
     setTab(id);
     if (id !== "board") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  const [markSpin, setMarkSpin] = useState(false);
+  const topTap = () => {
+    setMarkSpin(true);
+    if (window.scrollY > 40) window.scrollTo({ top: 0, behavior: "smooth" });
+    else if (tab !== "home") navigate("home");
+  };
   // A plan notification ("?tab=plans") lands on the plans part of the home page.
   useEffect(() => {
     if (startParams.get("tab") !== "plans" || !session) return;
@@ -814,29 +818,16 @@ export default function App() {
         <span className="brand">
           kütüp<span data-door="">✳</span>
         </span>
-        <p>Bir sandalye çekiyoruz…</p>
-        <LoaderCircle className="spin" />
+        <Loading big text="Bir sandalye çekiyoruz…" />
       </div>
     );
   if (!session)
     return (
       <LazyMotion features={motionFeatures} strict>
       <MotionConfig reducedMotion={motionPick === "still" ? "always" : motionPick ? "never" : "user"}>
-        {ENTRY ? (
-          <Entry invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} onSuccess={joinSuccess} now={now} dark={dark} start={entryStart} />
-        ) : (
-          <Welcome invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} />
-        )}
+        <Entry invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} onSuccess={joinSuccess} now={now} dark={dark} start={entryStart} />
         {(modal === "onboard" || modal === "login") && (
-          <Onboard
-            invite={invite}
-            inviteInfo={inviteInfo}
-            start={modal === "login" ? "code" : undefined}
-            close={() => setModal(null)}
-            onSuccess={joinSuccess}
-            existing={false}
-            onNew={ENTRY ? () => (setModal(null), setEntryStart((n) => n + 1)) : undefined}
-          />
+          <SignIn invite={invite} close={() => setModal(null)} onSuccess={joinSuccess} onNew={() => (setModal(null), setEntryStart((n) => n + 1))} />
         )}
         {toast && (
           <div role="status" className="toast welcome-toast">
@@ -932,21 +923,21 @@ export default function App() {
                 {me ? "Profilini güzelleştir" : "Ekibine katıl, yerini al"}
               </small>
             </span>
-            <MoreHorizontal size={19} />
+            <ChevronRight size={18} />
           </button>
         </div>
       </aside>
       <main className="main-shell">
         <header className="topbar">
           <div className="topbar-left">
-            <span className="breadcrumb">
-              <span className="crumb-root">
-                Bizim alan <ChevronRight size={13} />
-              </span>{" "}
-              <strong>
-                {tab === "feedback" ? "Batur’a ilet" : nav.find((x) => x.id === tab)?.label}
-              </strong>
-            </span>
+            {/* n27: the page's name with the mark; a tap goes back to the top,
+                or (already at the top) to the home page. */}
+            <button type="button" className={`page-title ${markSpin ? "spin" : ""}`} onClick={topTap} onAnimationEnd={() => setMarkSpin(false)}>
+              <span className="page-mark" aria-hidden="true">
+                ✳
+              </span>
+              <strong>{tab === "feedback" ? "Batur’a ilet" : nav.find((x) => x.id === tab)?.label}</strong>
+            </button>
           </div>
           <div className="topbar-actions">
             <span className="today-label">
@@ -972,19 +963,6 @@ export default function App() {
             </button>
           </div>
         </header>
-        {!session && (
-          <div className="demo-banner">
-            <Sparkles size={15} />
-            <span>
-              {invite
-                ? `Bunlar örnek kişiler. ${inviteInfo?.name || "Ekibin"} seni bekliyor; katılınca gerçek ekibini görürsün.`
-                : "Bir küçük ön izleme. Gerçek hikâye senin ekibinle başlasın."}
-            </span>
-            <button onClick={() => setModal("onboard")}>
-              {invite ? "Ekibe katıl" : "Yerini al"} <ArrowUpRight size={14} />
-            </button>
-          </div>
-        )}
         {session && !connected && (
           <div className="connection-banner">
             <LoaderCircle size={14} className="spin" /> Canlı bağlantı
@@ -1091,13 +1069,19 @@ export default function App() {
                 me={me}
                 requireMember={requireMember}
                 mutate={mutate}
+                openTeam={() => setModal("team")}
+                openMember={(x) => (x.id === me?.id ? navigate("me") : setModal({ member: x }))}
+                openPlans={() => {
+                  navigate("home");
+                  setTimeout(() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "center" }), 450);
+                }}
               />
               <div className="right-stack">
                 <CoffeeCard
                   requireMember={requireMember}
                   onCoffee={() => setModal("coffee")}
                 />
-                <div className="panel board-guideline">
+                <div className="board-guideline board-note">
                   <span>🫶</span>
                   <h3>İyi ki aynı ekipteyiz.</h3>
                   <p>
@@ -1153,18 +1137,11 @@ export default function App() {
           );
         })}
       </nav>
-      {modal === "onboard" && (
-        <Onboard
-          invite={invite}
-          inviteInfo={inviteInfo}
-          close={() => setModal(null)}
-          onSuccess={joinSuccess}
-          existing={!!session}
-        />
-      )}
       {modal === "profile" && me && <ProfileModal me={me} close={() => setModal(null)} mutate={mutate} />}
       {modal === "look" && <LookModal theme={theme} setTheme={setTheme} mode={mode} setMode={setMode} motion={motion} setMotion={setMotion} close={() => setModal(null)} />}
-      {modal === "team" && <TeamModal data={data} me={me} now={now} close={() => setModal(null)} invite={() => setModal("invite")} />}
+      {modal === "team" && (
+        <TeamModal data={data} me={me} now={now} close={() => setModal(null)} invite={() => setModal("invite")} openMember={(x) => (x.id === me?.id ? (setModal(null), navigate("me")) : setModal({ member: x }))} />
+      )}
       {modal === "account" && (
         <AccountModal
           username={session?.username}
@@ -1368,9 +1345,9 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
         <span>
           <Headphones size={18} /> ODAK MODU
         </span>
-        <span className="brick-chip" title="Tuğla: odaklandıkça kazanılır, yapılara harcanır" aria-label={`${bricks} tuğla`}>
+        <button type="button" className="brick-chip" aria-label={`Tuğla kasan: ${bricks} tuğla`} onClick={() => setPicking("wallet")}>
           🧱 {bricks}
-        </span>
+        </button>
         {growing ? (
           <span className="focus-plant" aria-label={`${item.name} inşa ediliyor`}>
             {item.emoji}
@@ -1542,7 +1519,20 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
         <p className="ruin-note">Köyünde enkaz var. Bir sonraki seansın onu kaldırır ve +{ruin} 🧱 geri gelir.</p>
       )}
       {picking && (
-        <CatalogModal bricks={bricks} selected={model} pick={pick} close={() => setPicking(false)} founder={me?.badge === "dev"} maxMinutes={round ? roundMinutes : 0} />
+        <CatalogModal
+          bricks={bricks}
+          selected={model}
+          pick={pick}
+          close={() => setPicking(false)}
+          founder={me?.badge === "dev"}
+          maxMinutes={round ? roundMinutes : 0}
+          start={picking === "wallet" ? "wallet" : "shop"}
+          // A building from the collection: fly to it on the village map.
+          show={(id) => {
+            setPicking(false);
+            window.dispatchEvent(new CustomEvent("kutup:show-building", { detail: { model: id } }));
+          }}
+        />
       )}
       <Busy
         loading={busy || finishing}
@@ -1640,7 +1630,7 @@ function CoffeeCard({ requireMember, onCoffee }) {
     </section>
   );
 }
-function Board({ data, me, requireMember, mutate, compact }) {
+function Board({ data, me, requireMember, mutate, compact, openTeam, openMember, openPlans }) {
   const [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     // Any message can be answered (n18): the reply quotes it and pings its author.
@@ -1708,11 +1698,14 @@ function Board({ data, me, requireMember, mutate, compact }) {
     <section className={`panel board ${compact ? "compact-board" : ""}`}>
       <div className="section-heading">
         <h2>
-          Bizim pano <span className="scribble">✎</span>
+          Bizim pano{" "}
+          <button type="button" className="scribble" aria-label="Panoya yaz" onClick={() => requireMember(() => input.current?.focus())}>
+            ✎
+          </button>
         </h2>
-        <span className="private-label">
+        <button type="button" className="private-label" onClick={openTeam}>
           <Users size={13} /> Sadece bizim ekip
-        </span>
+        </button>
       </div>
       <div className="messages" ref={list}>
         <AnimatePresence initial={false}>
@@ -1720,14 +1713,26 @@ function Board({ data, me, requireMember, mutate, compact }) {
           const m = data.members.find((x) => x.id === msg.memberId);
           const mine = msg.memberId === me?.id,
             hearted = msg.reactions.includes(me?.id);
+          // A line from the board's own voice goes where it points: a new plan
+          // to the plans, anything else to the card of the person it is about.
+          const planLine = /plan/i.test(msg.text);
           return msg.kind === "system" ? (
-            <M.div key={msg.id} className="system-message" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 320, damping: 26 }}>
+            <M.button
+              type="button"
+              key={msg.id}
+              className="system-message"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              disabled={!planLine && !m}
+              onClick={() => (planLine ? openPlans?.() : m && openMember?.(m))}
+            >
               <span>✦</span>
               <p>
                 <strong>{m?.name}</strong> {msg.text}
               </p>
               <time>{shortTime(msg.created)}</time>
-            </M.div>
+            </M.button>
           ) : (
             <M.article
               key={msg.id}
@@ -1738,7 +1743,7 @@ function Board({ data, me, requireMember, mutate, compact }) {
               onPointerUp={(e) => tap(e, msg)}
               onDoubleClick={(e) => !e.target.closest("button, a") && heart(msg)}
             >
-              <Avatar member={m} size="small" />
+              {m ? <FaceButton member={m} size="small" onOpen={openMember} /> : <Avatar member={m} size="small" />}
               <div className="bubble">
                 <div className="message-meta">
                   <strong>{m?.name}</strong>
@@ -1799,7 +1804,12 @@ function Board({ data, me, requireMember, mutate, compact }) {
           );
         })}
         </AnimatePresence>
-        {!messages.length && (
+        {!compact && !messages.some((x) => x.kind !== "system") && (
+          <EmptyState art="board" title="Pano ilk notunu bekliyor.">
+            Bir “selam” güzel bir başlangıç. Kahve çağrısı da buraya düşer.
+          </EmptyState>
+        )}
+        {compact && !messages.length && (
           <Empty emoji="💌" title="Pano ilk notunu bekliyor.">
             Bir “selam” güzel bir başlangıç.
           </Empty>
@@ -1977,9 +1987,12 @@ function PresenceModal({ me, coming, close, mutate }) {
 function InviteModal({ group, close, notify }) {
   const url = `${location.origin}/join/${group.invite}`;
   const shareText = `Kütüpte kim var diye sormaya son. ${group.name} ekibine gel! ✳`;
+  const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2400);
       notify("Davet bağlantısı kopyalandı. Tayfaya yolla!");
     } catch {
       notify("Kopyalanamadı. Aşağıdaki bağlantıyı seçip kopyalayabilirsin.");
@@ -1995,7 +2008,16 @@ function InviteModal({ group, close, notify }) {
         <span>🪐</span>
         <span>🍒</span>
         <span>🌱</span>
-        <span>+</span>
+        <button type="button" className={copied ? "copied" : ""} onClick={copy} aria-label="Davet bağlantısını kopyala">
+          {copied ? (
+            <>
+              <Check size={18} />
+              <small>Kopyalandı</small>
+            </>
+          ) : (
+            "+"
+          )}
+        </button>
       </div>
       <h3 className="invite-group">{group.name}</h3>
       <label className="field-label">
@@ -2008,7 +2030,7 @@ function InviteModal({ group, close, notify }) {
         />
       </label>
       <button className="btn primary full" onClick={copy}>
-        <Copy size={17} /> Bağlantıyı kopyala
+        {copied ? <Check size={17} /> : <Copy size={17} />} {copied ? "Kopyalandı" : "Bağlantıyı kopyala"}
       </button>
       {navigator.share ? (
         <button
@@ -2344,57 +2366,29 @@ function MemberModal({ member, now, close, mutate }) {
 // Getting notifications working is the whole point of Kütüp, so the home screen
 // walks people through it until they turn it on (or hide the card).
 function SetupCard({ enable, busy }) {
-  const needsHomeScreen = (isIOS && !standalone) || SAMPLE;
+  const needsHomeScreen = isIOS && !standalone;
   // On an iPhone notifications only work from the home screen: the guide comes back every three days.
   const [hidden, setHidden] = useState(
     () => storage.get("kutup-setup-hidden") === "1" && !(needsHomeScreen && Date.now() - Number(storage.get("kutup-setup-hidden-at") || 0) > 3 * 86400000),
   );
-  if (hidden || (!pushSupported && !isIOS && !SAMPLE)) return null;
+  if (hidden || (!pushSupported && !isIOS)) return null;
   const hide = () => {
     storage.set("kutup-setup-hidden", "1");
     storage.set("kutup-setup-hidden-at", String(Date.now()));
     setHidden(true);
   };
-  // n27 sample (?ornek=1): the same steps, drawn.
-  if (SAMPLE && needsHomeScreen) return <IosGuide hide={hide} />;
+  // On an iPhone the four steps, drawn (n27).
+  if (needsHomeScreen) return <IosGuide hide={hide} />;
   return (
     <section className="setup-card">
-      <span className="setup-emoji">{needsHomeScreen ? "📲" : "🔔"}</span>
+      <span className="setup-emoji">🔔</span>
       <div>
-        <strong>
-          {needsHomeScreen
-            ? "iPhone’da bildirim için bir adım var."
-            : "Biri kütübe gelince haberin olsun."}
-        </strong>
-        <p>
-          {needsHomeScreen ? (
-            <>
-              Apple, bildirimleri sadece ana ekrandaki uygulamaya gönderiyor. Bir kere yapman yeter:
-              <ol className="ios-steps">
-                <li>
-                  Safari’nin altındaki <b>Paylaş</b> düğmesine dokun <span aria-hidden="true">(⬆️ kutu ve ok)</span>.
-                </li>
-                <li>
-                  Listeyi kaydırıp <b>Ana Ekrana Ekle</b>’yi seç, sonra <b>Ekle</b>.
-                </li>
-                <li>
-                  Ana ekrandaki <b>Kütüp</b> simgesinden aç, kullanıcı adın ve şifrenle gir.
-                </li>
-                <li>
-                  🔔 <b>Bildirimleri aç</b>’a bas ve <b>İzin Ver</b> de.
-                </li>
-              </ol>
-            </>
-          ) : (
-            "Arkadaşın gelince, kahveye çağırınca ya da plan yapınca telefonuna düşsün."
-          )}
-        </p>
+        <strong>Biri kütübe gelince haberin olsun.</strong>
+        <p>Arkadaşın gelince, kahveye çağırınca ya da plan yapınca telefonuna düşsün.</p>
       </div>
-      {!needsHomeScreen && (
-        <Busy loading={busy} className="btn primary" onClick={() => enable()}>
-          {!busy && <Bell size={16} />} Bildirimleri aç
-        </Busy>
-      )}
+      <Busy loading={busy} className="btn primary" onClick={() => enable()}>
+        {!busy && <Bell size={16} />} Bildirimleri aç
+      </Busy>
       <button className="icon-button setup-close" aria-label="Bu kartı gizle" onClick={hide}>
         <X size={17} />
       </button>

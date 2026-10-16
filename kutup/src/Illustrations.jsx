@@ -1,21 +1,18 @@
-// n27 phase 1 samples, shown only with ?ornek=1 so Batur can look before they
-// are built for real: the iPhone "add to home screen" guide drawn step by step,
-// and an illustrated empty state (a team of one at an empty reading table).
+// Kütüp's small drawings (n27): the iPhone "add to home screen" guide drawn
+// step by step, the empty states (a team of one at the reading table, an
+// empty filter, an empty calendar, an empty board) and the loading scenes.
+// Calm pastel paper: tokens only, thin ink lines, no gradients. Loaders move
+// with transform/opacity in their own small SVG and rest with the motion
+// setting (illustrations.css).
 import React, { useRef, useState } from "react";
 import { UserRoundPlus, X } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { KaraRig } from "./Kara.jsx";
-import "./samples.css";
-
-export const SAMPLE = new URLSearchParams(location.search).has("ornek");
+import "./illustrations.css";
 
 // iOS 26 moved Share behind the "•••" button next to the address bar; older
-// Safari keeps it in the bottom bar.
-const oldSafari = (() => {
-  const v = /Version\/(\d+)/.exec(navigator.userAgent);
-  return !!v && Number(v[1]) < 26;
-})();
-
+// Safari keeps it in the bottom bar. The browser's version string cannot be
+// trusted for this, so the guide draws the new way and names the old one.
 // ---------- the four little screens ----------
 const Screen = ({ children }) => (
   <svg className="ig" viewBox="0 0 200 140" aria-hidden="true">
@@ -128,12 +125,12 @@ const STEPS = [
   [
     StepMenu,
     "••• sonra Paylaş",
-    oldSafari ? "Safari’nin altındaki Paylaş (⬆ kutu ve ok) düğmesine dokun." : "Safari’de adres çubuğunun yanındaki ••• düğmesine, sonra Paylaş’a dokun.",
-    oldSafari ? "" : "Eski iOS’ta Paylaş doğrudan altta durur.",
+    "Safari’de adres çubuğunun yanındaki ••• düğmesine, sonra Paylaş’a dokun.",
+    "Eski iOS’ta Paylaş (kutudan çıkan ok) doğrudan altta durur.",
   ],
   [StepShare, "Ana Ekrana Ekle", "Açılan listeyi biraz aşağı kaydır, Ana Ekrana Ekle’yi seç.", ""],
   [StepAdd, "Sağ üstte Ekle", "“Web Uygulaması Olarak Aç” açık kalsın, Ekle’ye bas.", ""],
-  [StepOpen, "Kütüp’ten aç", "Ana ekrandaki Kütüp’ten gir, 🔔 Bildirimleri aç de, İzin Ver’e bas.", "Bundan sonra biri gelince telefonun titrer."],
+  [StepOpen, "Kütüp’ten aç", "Ana ekrandaki Kütüp’ten gir, 🔔 Bildirimleri aç’a dokun ve İzin Ver’e bas.", "Bundan sonra biri gelince telefonun titrer."],
 ];
 
 export function IosGuide({ hide }) {
@@ -241,3 +238,100 @@ export function AloneTable({ me, invite }) {
   );
 }
 
+
+// ---------- small scenes for empty and loading states ----------
+// 120 × 90, the same pen everywhere: paper fills, thin ink lines, one accent.
+const ART = {
+  // Nobody here yet: two empty chairs at the reading table, the lamp still on.
+  chairs: (
+    <>
+      <rect className="ea-floor" x="8" y="80" width="104" height="3" rx="1.5" />
+      <rect className="ea-wood" x="18" y="50" width="84" height="6" rx="2" />
+      <rect className="ea-wood-dark" x="24" y="56" width="4" height="24" rx="1" />
+      <rect className="ea-wood-dark" x="92" y="56" width="4" height="24" rx="1" />
+      {[30, 70].map((x) => (
+        <g key={x}>
+          <rect className="ea-chair" x={x} y="30" width="20" height="24" rx="5" />
+          <rect className="ea-wood-dark" x={x + 2} y="62" width="3" height="18" rx="1" />
+          <rect className="ea-wood-dark" x={x + 15} y="62" width="3" height="18" rx="1" />
+          <rect className="ea-chair" x={x - 2} y="58" width="24" height="5" rx="2" />
+        </g>
+      ))}
+      <ellipse className="ea-glow" cx="60" cy="50" rx="16" ry="3" />
+      <rect className="ea-ink" x="59" y="34" width="2" height="16" />
+      <path className="ea-lamp" d="M49 36 Q60 24 71 36Z" />
+      <path className="ea-page" d="M78 49 L86 45 L94 49Z" />
+    </>
+  ),
+  // No plans: a desk calendar with an empty page and a pencil.
+  calendar: (
+    <>
+      <rect className="ea-floor" x="8" y="80" width="104" height="3" rx="1.5" />
+      <path className="ea-paper" d="M30 22 h56 a4 4 0 0 1 4 4 v50 h-64 v-50 a4 4 0 0 1 4 -4z" />
+      <rect className="ea-band" x="26" y="22" width="64" height="14" rx="4" />
+      {[38, 52, 66, 80].map((x) => (
+        <circle key={x} className="ea-ring" cx={x - 2} cy="22" r="2.4" />
+      ))}
+      {[0, 1, 2].map((r) =>
+        [0, 1, 2, 3, 4].map((c) => <rect key={`${r}${c}`} className={`ea-cell ${r === 1 && c === 2 ? "hi" : ""}`} x={33 + c * 10.5} y={43 + r * 10} width="7" height="6" rx="1.5" />),
+      )}
+      <g transform="rotate(-35 98 60)">
+        <rect className="ea-pencil" x="90" y="56" width="26" height="6" rx="1.5" />
+        <path className="ea-pencil-tip" d="M90 56 L84 59 L90 62Z" />
+      </g>
+    </>
+  ),
+  // No notes: the cork board with a single blank note, pinned and waiting.
+  board: (
+    <>
+      <rect className="ea-wood" x="14" y="14" width="92" height="62" rx="6" />
+      <rect className="ea-cork" x="20" y="20" width="80" height="50" rx="3" />
+      <g transform="rotate(-6 60 45)">
+        <rect className="ea-paper" x="44" y="30" width="32" height="28" rx="2" />
+        <path className="ea-scribble" d="M50 42 q5 -3 10 0 t10 0 M50 49 q4 -2 8 0" />
+      </g>
+      <circle className="ea-pin" cx="60" cy="30" r="3.4" />
+      <path className="ea-heart" d="M88 30 c-2 -3 -6 -1 -4 2 l4 4 l4 -4 c2 -3 -2 -5 -4 -2z" />
+      <rect className="ea-floor" x="8" y="80" width="104" height="3" rx="1.5" />
+    </>
+  ),
+};
+
+/** An illustrated empty state: a small scene, a line or two, and one thing to do. */
+export function EmptyState({ art, title, children, action, onAction }) {
+  return (
+    <div className={`empty-state ${art}`}>
+      <svg className="empty-art" viewBox="0 0 120 90" aria-hidden="true">
+        {ART[art]}
+      </svg>
+      <div>
+        <strong>{title}</strong>
+        {children && <p>{children}</p>}
+        {action && (
+          <button type="button" className="btn ghost" onClick={onAction}>
+            {action}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** While something is on its way: the library's windows light up one by one. */
+export function Loading({ text = "Bir sandalye çekiyoruz…", big = false }) {
+  return (
+    <div className={`loading-art ${big ? "big" : ""}`} role="status">
+      <svg viewBox="0 0 120 70" aria-hidden="true">
+        <rect className="ea-floor" x="6" y="62" width="108" height="3" rx="1.5" />
+        <rect className="la-top" x="18" y="18" width="84" height="7" rx="2" />
+        <rect className="la-wall" x="22" y="25" width="76" height="37" rx="1.5" />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect key={i} className="la-window" style={{ "--i": i }} x={28 + i * 11.5} y="32" width="7" height="10" rx="1.2" />
+        ))}
+        <rect className="la-door" x="55" y="47" width="10" height="15" rx="1" />
+        <rect className="la-top" x="47" y="62" width="26" height="2.5" rx="1" />
+      </svg>
+      <p>{text}</p>
+    </div>
+  );
+}

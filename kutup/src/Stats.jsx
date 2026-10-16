@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { CATALOG } from "../shared/catalog.js";
 import { get, minutesLabel } from "./api.js";
+import { Loading } from "./Illustrations.jsx";
 import "./stats.css";
 
 const dayNumber = new Intl.DateTimeFormat("tr-TR", { day: "numeric", timeZone: "Europe/Istanbul" });
@@ -23,7 +24,7 @@ export function MemberStats({ memberId }) {
     };
   }, [memberId]);
   if (error) return <p className="stats-note">{error}</p>;
-  if (!s) return <p className="stats-note">İstatistikler geliyor…</p>;
+  if (!s) return <Loading text="İstatistikler geliyor…" />;
   const f = s.focus,
     top = Math.max(30, ...f.last14.map(([, m]) => m)),
     owned = Object.keys(s.builds.models).filter((id) => CATALOG.some((item) => item.id === id)).length;

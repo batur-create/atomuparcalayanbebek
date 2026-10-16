@@ -6,15 +6,19 @@ export function Modal({ title, subtitle, children, close, wide = false }) {
   const ref = useRef(null);
   const closeRef = useRef(close);
   closeRef.current = close;
+  // Whatever opened the window, read before a field inside it takes focus
+  // (autoFocus runs before effects), so closing hands focus back to it.
+  const opener = useRef(undefined);
+  if (opener.current === undefined) opener.current = document.activeElement;
   useEffect(() => {
-    const previous = document.activeElement;
+    const previous = opener.current;
     const overflow = document.body.style.overflow;
     const backdrop = ref.current.closest(".modal-backdrop");
     const siblings = [...document.body.children].filter((el) => el !== backdrop);
     const inert = siblings.map((el) => el.inert);
     siblings.forEach((el) => { el.inert = true; });
     document.body.style.overflow = "hidden";
-    ref.current.focus();
+    if (!ref.current.contains(document.activeElement)) ref.current.focus();
     const key = (e) => {
       if (e.key === "Escape") {
         e.preventDefault();

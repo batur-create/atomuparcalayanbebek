@@ -939,24 +939,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
 
   route("GET", "/invites/:invite", async ({ params }) => {
-    const now = Date.now();
     const group = await db.get(
-      "SELECT g.id, g.name, (SELECT count(*) FROM members WHERE group_id = g.id) AS count, (SELECT count(*) FROM members WHERE group_id = g.id AND status IN ('here', 'break') AND status_until > ?) AS here FROM groups g WHERE invite = ?",
-      [now, params.invite],
+      "SELECT g.id, g.name, (SELECT count(*) FROM members WHERE group_id = g.id) AS count FROM groups g WHERE invite = ?",
+      [params.invite],
     );
     if (!group) fail("Bu davet bağlantısı bulunamadı.", 404);
-    // The welcome shows who is waiting: names and faces only, people at the
-    // library first. Anyone holding the link can join and see far more.
-    const faces = await db.all(
-      "SELECT name, avatar, color, (status IN ('here', 'break') AND status_until > ?) AS here FROM members WHERE group_id = ? ORDER BY here DESC, updated DESC LIMIT 8",
-      [now, group.id],
-    );
-    return json({
-      name: group.name,
-      count: group.count,
-      here: group.here,
-      faces: faces.map((x) => ({ name: x.name, avatar: x.avatar, color: x.color, here: !!x.here })),
-    });
+    // The welcome shows who is in the team: names and faces only, in the order
+    // they joined. Nothing about who is at the library, on the way or focusing
+    // reaches someone who has not joined (n27).
+    const faces = await db.all("SELECT name, avatar, color FROM members WHERE group_id = ? ORDER BY joined, id LIMIT 8", [group.id]);
+    return json({ name: group.name, count: group.count, faces });
   }, false);
 
   async function join(request, group, body, extraStatements = []) {

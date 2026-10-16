@@ -37,6 +37,40 @@ def check(name, condition):
     results.append(name)
     print('PASS', name, flush=True)
 
+# n27: elements that look tappable (pointer cursor, a :hover rule, an arrow, a
+# button) but have no action: no button/link/field around them and no React
+# click handler on them or an ancestor. Returns short labels of the offenders.
+FAKE_TAPPABLES = r'''(() => {
+  const ACT = "button, a[href], input, select, textarea, label, summary, [role=button], [role=tab], [role=menuitemradio]";
+  const key = (el) => Object.keys(el).find((k) => k.startsWith("__reactProps$"));
+  const acts = (el) => {
+    for (let x = el; x && x !== document.body; x = x.parentElement) {
+      if (x.matches(ACT)) return true;
+      const k = key(x);
+      if (k && ["onClick", "onPointerDown", "onPointerUp", "onMouseDown"].some((h) => typeof x[k][h] === "function")) return true;
+    }
+    return false;
+  };
+  const shown = (el) => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 3 && r.height > 3 && s.visibility !== "hidden" && s.display !== "none"; };
+  const hovers = new Set();
+  const walk = (rules) => { for (const r of rules) { if (r.cssRules && !r.selectorText) walk(r.cssRules); if (r.selectorText?.includes(":hover")) for (const p of r.selectorText.split(",")) if (p.includes(":hover")) hovers.add(p.replace(/:hover/g, "").replace(/::?(before|after)/g, "").trim()); } };
+  for (const s of document.styleSheets) { try { walk(s.cssRules); } catch (e) {} }
+  const out = new Set();
+  const flag = (el, why) => shown(el) && !acts(el) && out.add(`${why}: ${el.tagName.toLowerCase()}.${String(el.className).split(" ")[0]} «${(el.innerText || "").trim().slice(0, 30)}»`);
+  for (const sel of hovers) { try { document.querySelectorAll(sel).forEach((el) => flag(el, "hover")); } catch (e) {} }
+  document.querySelectorAll("body *").forEach((el) => {
+    if (el.closest("svg") && el.tagName.toLowerCase() !== "svg") return;
+    if (getComputedStyle(el).cursor === "pointer") flag(el, "pointer");
+    if (/lucide-(chevron-right|arrow-right|arrow-up-right|external-link)/.test(el.getAttribute("class") || "")) flag(el.parentElement, "arrow");
+    if (/[›→↗]/.test([...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(""))) flag(el, "arrow");
+  });
+  document.querySelectorAll("button").forEach((b) => {
+    const k = key(b), has = k && ["onClick", "onPointerDown", "onPointerUp", "onMouseDown"].some((h) => typeof b[k][h] === "function");
+    if (!has && !(b.type === "submit" && b.form) && !b.disabled && shown(b)) out.add(`idle button: ${String(b.className).split(" ")[0]} «${b.innerText.trim().slice(0, 30)}»`);
+  });
+  return [...out];
+})()'''
+
 def json_call(page, path, body=None):
     return page.evaluate('''async ([path, body]) => {
       const r = await fetch('/api' + path, {method: body === null ? 'GET' : 'POST',
@@ -46,12 +80,20 @@ def json_call(page, path, body=None):
       return r.json();
     }''', [path, body])
 
-def signup(page, username, name):
+# n27: joining and founding are short steps under the welcome's sky.
+def steps_to_name(page, team=None):
+    page.locator('.entry-actions .btn.primary').click()
+    if team is not None:
+        page.get_by_label('Ekibinizin adı').fill(team)
+        page.locator('.sheet-page button[type=submit]').click()
+
+def finish_steps(page, username, name):
     page.get_by_label('Sana ne diyelim?').fill(name)
+    page.locator('.sheet-page button[type=submit]').click()
     page.get_by_label('Kullanıcı adı', exact=True).fill(username)
     page.get_by_label('Şifre', exact=True).fill('audit-password-123')
-    page.locator('[role=dialog] button[type=submit]').click()
-    expect(page.get_by_role('dialog')).to_have_count(0)
+    page.locator('.sheet-page button[type=submit]').click()
+    expect(page.locator('.app-shell')).to_be_visible()
 
 with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
     key = secrets.token_urlsafe(32)
@@ -77,14 +119,25 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page = context.new_page(); errors=[]
                 page.on('pageerror', lambda e: errors.append(str(e)))
                 page.goto(base)
-                page.get_by_role('button', name='Yeni ekip kur').click()
+                # n27: the welcome is the living sky with a paper sheet: two ways in, no sideways scroll.
+                expect(page.locator('.entry-sheet')).to_be_visible()
+                check('Welcome: the living sky with Kara and two ways in', page.locator('.entry-sky .sky-scene').count()==1
+                    and page.locator('.entry-kara svg.kara').count()==1
+                    and page.get_by_role('button', name='Yeni ekip kur').is_visible() and page.get_by_role('button', name='Giriş yap', exact=True).is_visible())
+                widths = []
+                for w in (375, 360):
+                    page.set_viewport_size({'width': w, 'height': 740}); page.wait_for_timeout(150)
+                    widths.append(page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+                page.set_viewport_size({'width': 375, 'height': 812})
+                check('Welcome: no horizontal overflow at 375 and 360', all(widths))
+                page.get_by_role('button', name='Giriş yap', exact=True).click()
                 page.keyboard.press('Shift+Tab')
                 check('Modal traps keyboard focus', page.get_by_role('dialog').evaluate('(d)=>d.contains(document.activeElement)'))
                 page.keyboard.press('Escape')
-                check('Modal restores focus and background', page.get_by_role('button', name='Yeni ekip kur').evaluate('(e)=>document.activeElement===e') and not page.locator('#root').evaluate('(e)=>e.inert'))
-                page.get_by_role('button', name='Yeni ekip kur').click()
-                page.get_by_label('Ekibinizin adı').fill('Denetim tayfası')
-                signup(page, 'audit_ada', 'Ada')
+                check('Modal restores focus and background', page.get_by_role('button', name='Giriş yap', exact=True).evaluate('(e)=>document.activeElement===e') and not page.locator('#root').evaluate('(e)=>e.inert'))
+                steps_to_name(page, 'Denetim tayfası')
+                check('Founding: the team sign goes up by the path', page.locator('.team-sign', has_text='Denetim tayfası').count()==1)
+                finish_steps(page, 'audit_ada', 'Ada')
                 session = json_call(page, '/session')
                 check('Mobile account creation', session['username']=='audit_ada')
                 check('A new profile starts with a drawn character', page.locator('.member-card .avatar svg.av-art').count()>=1)
@@ -135,14 +188,30 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.emulate_media(reduced_motion='reduce')
                 second = browser.new_context(viewport={'width':375,'height':812}, reduced_motion='reduce')
                 friend = second.new_page(); friend.on('pageerror', lambda e: errors.append(str(e)))
+                # n27 privacy: while Ada is at the library, the invite shows names and faces only.
+                json_call(page, '/presence', {'status': 'here', 'location': 'Gizli salon'})
                 friend.goto(base + '/join/' + session['group']['invite'])
+                expect(friend.locator('.path-face:not(.you)')).to_have_count(1)
+                invite_info = json_call(friend, '/invites/' + session['group']['invite'])
+                check('Invite: names and faces, no presence (API and screen)', sorted(invite_info) == ['count', 'faces', 'name']
+                    and all(sorted(f) == ['avatar', 'color', 'name'] for f in invite_info['faces'])
+                    and 'Gizli salon' not in json.dumps(invite_info)
+                    and 'kütüpte' not in friend.locator('.entry-copy').inner_text().lower().replace('kim kütüpte', '')
+                    and friend.locator('.path-face.inside').count()==0)
+                json_call(page, '/presence', {'status': 'away'})
+                steps_to_name(friend)
                 friend.get_by_role('button', name='Tekir', exact=True).click()
                 friend.get_by_role('button', name='Gözlük', exact=True).click()
                 friend.get_by_role('button', name='Atkı', exact=True).click()
                 check('Avatar picker: 44px touch targets, no overflow at 375px', friend.evaluate('''()=>{
                     const boxes=[...document.querySelectorAll('.avatar-options.chars button,.acc-options button,.avatar-tabs button')].map(b=>b.getBoundingClientRect());
                     return boxes.length>=30 && boxes.every(b=>b.height>=44 && b.width>=44 && b.right<=innerWidth) && document.documentElement.scrollWidth<=innerWidth}'''))
-                signup(friend, 'audit_ece', 'Ece')
+                friend.get_by_label('Sana ne diyelim?').fill('Ece')
+                friend.locator('.sheet-page button[type=submit]').click()
+                friend.get_by_label('Kullanıcı adı', exact=True).fill('audit_ece')
+                friend.get_by_label('Şifre', exact=True).fill('audit-password-123')
+                friend.locator('.sheet-page button[type=submit]').click()
+                expect(friend.locator('.app-shell')).to_be_visible()
                 check('Character with accessories is saved', any(m['avatar']=='k:tekir+gozluk+atki' for m in json_call(friend, '/state')['members']))
                 page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
                 page.get_by_role('button', name='Geldim', exact=True).click()
@@ -150,10 +219,48 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(page.get_by_role('dialog')).to_have_count(0)
                 expect(friend.locator('.member-card').filter(has=friend.get_by_text('Ada',exact=True))).to_contain_text('Kütüpte')
                 check('Presence reaches a second browser through SSE', True)
+                fakes = []
                 for name in ['Kütüp','Köy','Pano','Ben']:
                     page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+                    fakes += page.evaluate(FAKE_TAPPABLES)
+                # n27: anything with a pointer, a hover, an arrow or a button's shape does something.
+                if fakes: print('Looks tappable, does nothing:', fakes, flush=True)
+                check('No fake tappables on the four tabs (pointer, hover, arrow, idle button)', not fakes)
+                page.locator('.page-title').click()
+                expect(page.locator('.home-status')).to_be_visible()
+                page.evaluate('scrollTo(0, 700)'); page.wait_for_timeout(150)
+                page.locator('.page-title').click(); page.wait_for_function('scrollY < 5', timeout=4000)
+                check('Top-left page name goes home, and back to the top', page.locator('.page-title', has_text='Kütüp').count()==1)
+                page.locator('.sky-live').click()
+                expect(page.locator('.filter-chip.selected', has_text='Kütüpte')).to_be_visible()
+                check('The live line on the sky shows who it is about', True)
+                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
+                page.locator('.brick-chip').click()
+                expect(page.get_by_role('dialog', name='Tuğla kasan')).to_be_visible()
+                page.get_by_role('button', name='Kataloğa bak').click()
+                short = page.locator('.catalog-item.blocked').first
+                short.evaluate("e => e.scrollIntoView({block: 'center'})"); short.click(force=True)
+                expect(page.locator('.catalog-hint')).to_be_visible()
+                check('The brick chip opens the wallet; a card out of reach says why', True)
+                page.keyboard.press('Escape')
+                page.locator('.mobile-bottom').get_by_role('button', name='Pano', exact=True).click()
+                page.locator('.board .scribble').click()
+                check('The pencil on the board opens the note field', page.evaluate("!!document.activeElement?.matches('.message-form input')"))
+                page.locator('.board .private-label').click()
+                expect(page.get_by_role('dialog', name='Denetim tayfası')).to_be_visible()
+                page.locator('.team-row', has_text='Ece').click()
+                expect(page.get_by_role('dialog', name='Ece')).to_be_visible()
+                check('“Sadece bizim ekip” opens the team; a person in it opens their card', True)
+                page.keyboard.press('Escape')
+                context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=base)
+                page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                page.locator('.home-door', has_text='Arkadaşını ekibe ekle').click()
+                page.locator('.invite-illustration > button').click()
+                expect(page.locator('.invite-illustration > button')).to_contain_text('Kopyalandı')
+                check('The “+” in the invite drawing copies the link', True)
+                page.keyboard.press('Escape')
                 friend.evaluate("localStorage.setItem('kutup-mode','dark')"); friend.reload()
                 expect(friend.locator('.member-card').first).to_be_visible()
                 check('Dark mode keeps the drawn characters', friend.locator('.member-card .av-art').count()>=1)

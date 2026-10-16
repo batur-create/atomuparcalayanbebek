@@ -169,9 +169,8 @@ export function defineSuite(target) {
     assert.ok(created.data.live === "sse" || created.data.live === "poll");
     const invited = (await request(`/invites/${group.invite}`)).data;
     assert.equal(invited.count, 1);
-    // n27: the welcome shows who is waiting (names and faces only).
-    assert.deepEqual(invited.faces, [{ name: "Aylin", avatar: "🦄", color: "pink", here: false }]);
-    assert.equal(invited.here, 0);
+    // n27: the welcome shows who is in the team (names and faces only).
+    assert.deepEqual(invited.faces, [{ name: "Aylin", avatar: "🦄", color: "pink" }]);
     const second = await request("/join", { body: { invite: group.invite, name: "Deniz", avatar: "🪐" } });
     assert.equal(second.status, 201);
     people.bob = second.cookie;
@@ -211,6 +210,13 @@ export function defineSuite(target) {
     assert.ok(aylin.since > Date.now() - 60000);
     assert.equal(s.members.some((x) => "token" in x || "transfer_hash" in x), false);
     assert.ok(s.messages.some((m) => m.kind === "system" && m.text.includes("kütübe geldi")));
+    // n27 privacy: an invite link shows names and faces, never who is at the
+    // library, on the way or focusing, even while someone is there.
+    const invite = (await request(`/invites/${group.invite}`)).data;
+    assert.deepEqual(Object.keys(invite).sort(), ["count", "faces", "name"]);
+    assert.ok(invite.faces.length >= 2);
+    for (const face of invite.faces) assert.deepEqual(Object.keys(face).sort(), ["avatar", "color", "name"]);
+    assert.doesNotMatch(JSON.stringify(invite), /here|status|location|desk|since|arrival|focus|1\. kat/);
     plan = (await request("/plans", {
       cookie: people.alice,
       body: { starts: Date.now() + 3600000, note: "Test çalışma buluşması" },

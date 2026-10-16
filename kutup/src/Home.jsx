@@ -16,7 +16,7 @@ import { skyAt, sunTimes } from "./villageWorld.js";
 import { modelOf } from "../shared/catalog.js";
 import { BuildingThumb } from "./Economy.jsx";
 import { KaraHome } from "./Kara.jsx";
-import { AloneTable, SAMPLE } from "./Samples.jsx";
+import { AloneTable, EmptyState } from "./Illustrations.jsx";
 import "./home.css";
 
 // Kütüp's motion feel: playful paper. Cards settle with a little give,
@@ -32,6 +32,16 @@ const swap = {
 const names = (list, max = 2) =>
   list.length <= max ? list.map((x) => x.name).join(" ve ") : `${list.slice(0, max).map((x) => x.name).join(", ")} +${list.length - max}`;
 const hours = (min) => (min >= 60 ? `${Math.round((min / 60) * 10) / 10} sa` : `${min} dk`);
+
+// A small face that opens its person's card (n27: every avatar is a way in).
+export function FaceButton({ member, size = "tiny", onOpen }) {
+  if (!member) return null;
+  return (
+    <button type="button" className="face-btn" aria-label={`${member.name}: kartını aç`} onClick={(e) => (e.stopPropagation(), onOpen?.(member))}>
+      <Avatar member={member} size={size} />
+    </button>
+  );
+}
 
 export function Badge({ status }) {
   return (
@@ -95,23 +105,28 @@ function Count({ value, intro = false, delay = 0 }) {
 }
 
 // Live facts that take turns in one line: who is here, who is on the way,
-// who is building, the next plan, the week together.
-function Ticker({ facts }) {
+// who is building, the next plan, the week together. A tap goes to the fact
+// on show: the people filtered, the village, the plans (n27).
+function Ticker({ facts, live, go }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     if (facts.length < 2) return;
     const timer = setInterval(() => document.visibilityState === "visible" && setI((n) => n + 1), 3800);
     return () => clearInterval(timer);
   }, [facts.length]);
-  const text = facts[i % facts.length];
+  const fact = facts[i % facts.length];
   return (
-    <span className="sky-ticker" aria-live="off">
-      <AnimatePresence mode="popLayout" initial={false}>
-        <m.span key={text} initial={{ y: "110%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "-110%", opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 22 }}>
-          {text}
-        </m.span>
-      </AnimatePresence>
-    </span>
+    <button type="button" className="sky-live" onClick={() => go(fact.kind)}>
+      <i className={live ? "on" : ""} />
+      <span className="sky-ticker" aria-live="off">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <m.span key={fact.text} initial={{ y: "110%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "-110%", opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 22 }}>
+            {fact.text}
+          </m.span>
+        </AnimatePresence>
+      </span>
+      <ArrowUpRight size={13} className="sky-live-go" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -331,21 +346,22 @@ export function SkyScene({ sky, arrivals = [] }) {
   );
 }
 
-function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, intro }) {
+function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, intro, go }) {
   const box = useRef(null),
     paused = useSkyPaused(box),
-    sky = useSky(now, dark);
+    sky = useSky(now, dark),
+    [wobble, setWobble] = useState(0);
   const here = data.members.filter((x) => x.status === "here" || x.status === "break"),
     coming = data.members.filter((x) => x.status === "coming"),
     focusing = data.members.filter((x) => x.focusEnd > now).sort((a, b) => a.focusEnd - b.focusEnd),
     next = data.plans.find((p) => p.starts > now),
     week = data.members.reduce((t, x) => t + (x.focusWeek || 0), 0);
   const facts = [
-    here.length ? `${here.length} kişi kütüpte` : "Kütüp şimdilik sessiz",
-    coming.length && `${names(coming)} yolda${coming.length === 1 && coming[0].arrival ? ` · ${coming[0].arrival}` : ""}`,
-    focusing.length && `${focusing[0].name} odakta · ${Math.max(1, Math.ceil((focusing[0].focusEnd - now) / 60000))} dk kaldı`,
-    next && `${dayWord(next.starts)} ${shortTime(next.starts)} · ${next.note || "kütüp buluşması"}`,
-    week >= 30 && `Bu hafta ekipçe ${hours(week)} odak`,
+    { kind: here.length ? "here" : "all", text: here.length ? `${here.length} kişi kütüpte` : "Kütüp şimdilik sessiz" },
+    coming.length && { kind: "coming", text: `${names(coming)} yolda${coming.length === 1 && coming[0].arrival ? ` · ${coming[0].arrival}` : ""}` },
+    focusing.length && { kind: "focus", text: `${focusing[0].name} odakta · ${Math.max(1, Math.ceil((focusing[0].focusEnd - now) / 60000))} dk kaldı` },
+    next && { kind: "plan", text: `${dayWord(next.starts)} ${shortTime(next.starts)} · ${next.note || "kütüp buluşması"}` },
+    week >= 30 && { kind: "focus", text: `Bu hafta ekipçe ${hours(week)} odak` },
   ].filter(Boolean);
   const night = sky.night > 0.5;
   return (
@@ -357,18 +373,15 @@ function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, int
           {" "}
           <span className="wave" aria-hidden="true">✌️</span>
         </Kinetic>
-        <span className="sky-live">
-          <i className={here.length ? "on" : ""} />
-          <Ticker facts={facts} />
-        </span>
+        <Ticker facts={facts} live={here.length > 0} go={go} />
       </div>
       <div className="sky-over">
         <KaraHome me={me} data={data} now={now} unread={unread} navigate={navigate} arrived={arrived} style={{ ...at(290, 134), width: span(62) }} />
       </div>
-      <span className="sky-sticker" aria-hidden="true">
+      <button type="button" className={`sky-sticker ${wobble ? "wobble" : ""}`} aria-label="Ders arası hayat" onClick={() => setWobble((n) => n + 1)} onAnimationEnd={() => setWobble(0)} key={wobble ? `w${wobble}` : "still"}>
         ders arası
         <b>hayat ✷</b>
-      </span>
+      </button>
     </section>
   );
 }
@@ -408,18 +421,18 @@ function Confetti() {
 
 // The little picture on the status card: a lit library door (away), a scooter on
 // its way (coming), or a pin with a ring that fills with my hours here.
-function StatusArt({ state, minutes }) {
+function StatusArt({ state, minutes, onRing }) {
   if (state === "here") {
     const fill = clamp(minutes / 180);
     return (
-      <span className="status-art here" aria-hidden="true">
+      <button type="button" className="status-art here" aria-label={`Burada ${minutesLabel(minutes)} · yerini değiştir`} onClick={onRing}>
         <svg viewBox="0 0 80 80">
           <circle className="ring-track" cx="40" cy="40" r="32" />
           <circle className="ring-fill" cx="40" cy="40" r="32" style={{ strokeDashoffset: 201 * (1 - fill) }} />
         </svg>
         <MapPin size={26} />
         <b>{minutes >= 60 ? `${Math.floor(minutes / 60)}s ${minutes % 60}dk` : `${minutes} dk`}</b>
-      </span>
+      </button>
     );
   }
   if (state === "coming")
@@ -446,7 +459,7 @@ function StatusArt({ state, minutes }) {
   );
 }
 
-function StatusCard({ me, data, now, setModal, requireMember, mutate }) {
+function StatusCard({ me, data, now, setModal, requireMember, mutate, openMember }) {
   const state = me?.status === "break" ? "here" : me?.status === "here" || me?.status === "coming" ? me.status : "away";
   const [party, setParty] = useState(0),
     [burst, setBurst] = useState(0),
@@ -484,7 +497,7 @@ function StatusCard({ me, data, now, setModal, requireMember, mutate }) {
               <p className="status-waiting">
                 <span className="avatar-stack">
                   {waiting.slice(0, 3).map((x) => (
-                    <Avatar key={x.id} member={x} size="tiny" />
+                    <FaceButton key={x.id} member={x} onOpen={openMember} />
                   ))}
                 </span>
                 {state === "here" ? `${names(waiting)} da burada.` : `${names(waiting)} kütüpte, masan hazır.`}
@@ -498,7 +511,7 @@ function StatusCard({ me, data, now, setModal, requireMember, mutate }) {
               </a>
             )}
           </div>
-          <StatusArt state={state} minutes={minutes} key={state === "here" ? party : state} />
+          <StatusArt state={state} minutes={minutes} key={state === "here" ? party : state} onRing={() => setModal("presence")} />
           <div className={`home-acts ${state === "here" ? "even" : ""}`}>
             {state !== "here" && (
               <m.button whileTap={{ scale: 0.95 }} className="btn primary shine" onClick={() => requireMember(() => setModal("presence"))}>
@@ -681,18 +694,21 @@ function People({ members, me, now, arrived, filter, setFilter, openMember, intr
           ))}
         </AnimatePresence>
       </div>
-      {SAMPLE && members.length === 1 && me && filter === "all" && <AloneTable me={me} invite={invite} />}
+      {members.length === 1 && me && filter === "all" && <AloneTable me={me} invite={invite} />}
       {!visible.length && (
-        <Empty emoji="🪑" title="Şimdilik sakin.">
-          İlk gelenin haberi buraya düşecek.
-        </Empty>
+        <EmptyState
+          art="chairs"
+          title={filter === "coming" ? "Yolda kimse yok." : "Kütüpte şu an kimse yok."}
+        >
+          {filter === "coming" ? "Biri “Yoldayım” deyince burada görünür." : "İlk gelenin haberi buraya düşecek; masalar hazır."}
+        </EmptyState>
       )}
     </section>
   );
 }
 
 // ---------- who is coming when ----------
-function PlanRow({ plan, data, me, requireMember, mutate }) {
+function PlanRow({ plan, data, me, requireMember, mutate, openMember }) {
   const owner = data.members.find((x) => x.id === plan.memberId),
     joined = plan.attendees.includes(me?.id),
     date = new Date(plan.starts);
@@ -711,7 +727,7 @@ function PlanRow({ plan, data, me, requireMember, mutate }) {
         <span className="home-plan-who">
           <span className="avatar-stack">
             {plan.attendees.slice(0, 4).map((id) => (
-              <Avatar key={id} member={data.members.find((x) => x.id === id)} size="tiny" />
+              <FaceButton key={id} member={data.members.find((x) => x.id === id)} onOpen={openMember} />
             ))}
           </span>
           {plan.attendees.length} kişi geliyor
@@ -742,7 +758,7 @@ function PlanRow({ plan, data, me, requireMember, mutate }) {
   );
 }
 
-function Plans({ data, me, requireMember, mutate, openPlan }) {
+function Plans({ data, me, requireMember, mutate, openPlan, openMember }) {
   const [all, setAll] = useState(false);
   const shown = all ? data.plans : data.plans.slice(0, 3);
   return (
@@ -756,15 +772,14 @@ function Plans({ data, me, requireMember, mutate, openPlan }) {
       <div className="plan-line">
         <AnimatePresence initial={false}>
           {shown.map((plan) => (
-            <PlanRow key={plan.id} plan={plan} data={data} me={me} requireMember={requireMember} mutate={mutate} />
+            <PlanRow key={plan.id} plan={plan} data={data} me={me} requireMember={requireMember} mutate={mutate} openMember={openMember} />
           ))}
         </AnimatePresence>
       </div>
       {!data.plans.length && (
-        <p className="plans-empty">
-          <span aria-hidden="true">🗓️</span>
-          Takvim boş. İlk “yarın buluşuruz” senden gelsin.
-        </p>
+        <EmptyState art="calendar" title="Takvim boş.">
+          İlk “yarın buluşuruz” senden gelsin; ekip “Ben de” der.
+        </EmptyState>
       )}
       {data.plans.length > 3 && (
         <button className="text-button" onClick={() => setAll(!all)}>
@@ -867,11 +882,19 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
   );
   const rise = (i) =>
     intro ? { initial: { opacity: 0, y: 22 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.75, delay: 0.35 + i * 0.12, ease: EASE_OUT } } : {};
+  const openMember = (x) => (x.id === me?.id ? navigate("me") : requireMember(() => setModal({ member: x })));
+  // The live line on the sky goes to what it says.
+  const go = (kind) => {
+    if (kind === "focus") return navigate("focus");
+    if (kind === "plan") return document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFilter(kind === "here" || kind === "coming" ? kind : "all");
+    document.querySelector(".home-people")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
     <div className="home-stack">
-      <HomeSky me={me} data={data} arrivals={arrivals} arrived={arrived} unread={unread} navigate={navigate} dark={dark} now={now} intro={intro} />
+      <HomeSky me={me} data={data} arrivals={arrivals} arrived={arrived} unread={unread} navigate={navigate} dark={dark} now={now} intro={intro} go={go} />
       <m.div className="home-main" {...rise(0)}>
-        <StatusCard me={me} data={data} now={now} setModal={setModal} requireMember={requireMember} mutate={mutate} />
+        <StatusCard me={me} data={data} now={now} setModal={setModal} requireMember={requireMember} mutate={mutate} openMember={openMember} />
         {extras}
         <People
           members={data.members}
@@ -881,12 +904,12 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
           filter={filter}
           setFilter={setFilter}
           intro={intro}
-          openMember={(x) => (x.id === me?.id ? navigate("me") : requireMember(() => setModal({ member: x })))}
+          openMember={openMember}
           invite={() => setModal("invite")}
         />
       </m.div>
       <m.div className="home-side" {...rise(2)}>
-        <Plans data={data} me={me} requireMember={requireMember} mutate={mutate} openPlan={() => setModal("plan")} />
+        <Plans data={data} me={me} requireMember={requireMember} mutate={mutate} openPlan={() => setModal("plan")} openMember={openMember} />
         <Reveal className="home-tiles">
           <VillageTile me={me} members={data.members} village={village} week={data.week} now={now} navigate={navigate} />
           <BoardTile members={data.members} messages={data.messages} unread={unread} navigate={navigate} />

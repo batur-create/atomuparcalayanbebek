@@ -173,13 +173,19 @@ export function AvatarPicker({ value, setValue }) {
 export function ProfileFields({ value, setValue }) {
   return (
     <>
-      <div className="profile-preview">
+      {/* n27: the preview goes to what changes it: the character picker. */}
+      <button
+        type="button"
+        className="profile-preview"
+        onClick={(e) => e.currentTarget.parentElement?.querySelector(".avatar-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+      >
         <Avatar member={value} size="large" />
         <div>
           <strong>{value.name || "Senin güzel ismin"}</strong>
           <p>{value.note || "Bu köşe tamamen senin."}</p>
+          <small className="preview-go">Karakterini değiştir ↓</small>
         </div>
-      </div>
+      </button>
       <label className="field-label">
         Sana ne diyelim?
         <input
@@ -221,41 +227,6 @@ export function ProfileFields({ value, setValue }) {
     </>
   );
 }
-export function Welcome({ invite, inviteInfo, open }) {
-  return (
-    <main className="welcome">
-      <section className="welcome-card">
-        <span className="brand welcome-brand">
-          kütüp<span data-door="">✳</span>
-        </span>
-        <h1>{invite ? `${inviteInfo?.name || "Ekibin"} seni bekliyor.` : "Kim nerede, artık sormak yok."}</h1>
-        <p>
-          Milli Kütüphane’ye giden arkadaşlar için: kim kütüpte, kim yolda, kim ne zaman geliyor. Odaklandıkça ortak köyünüz büyür.
-        </p>
-        <div className="welcome-actions">
-          {invite && (
-            <button className="btn primary full" onClick={() => open("onboard")}>
-              Ekibe katıl <ArrowRight size={17} />
-            </button>
-          )}
-          <button className={`btn ${invite ? "outline" : "primary"} full`} onClick={() => open("login")}>
-            <KeyRound size={16} /> Giriş yap
-          </button>
-          {!invite && (
-            <button className="btn outline full" onClick={() => open("onboard")}>
-              <Plus size={16} /> Yeni ekip kur
-            </button>
-          )}
-        </div>
-        <p className="welcome-note">
-          {invite
-            ? "Hesabın varsa giriş yap; yoksa ekibe katılırken kullanıcı adı ve şifreni belirlersin."
-            : "Arkadaşından davet linki geldiyse linke dokun, doğrudan ekibine katılırsın. Tek başına çalışmak istersen kendi ekibini kur. Şifreni unuttuysan Batur’dan giriş kodu iste."}
-        </p>
-      </section>
-    </main>
-  );
-}
 // Joining a team (with an invite) or founding one: the profile, the team name
 // and the account, and the one request that creates them. Shared by the modal
 // below and the welcome screens (Entry.jsx).
@@ -292,12 +263,15 @@ export function useJoinForm({ invite, onSuccess }) {
   };
   return { value, setValue, groupName, setGroupName, account, setAccount, busy, error, setError, submit };
 }
-export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start, onNew }) {
-  const { value, setValue, groupName, setGroupName, account, setAccount, busy, error, setError, submit } = useJoinForm({ invite, onSuccess });
-  const [mode, setMode] = useState(start || (standalone && !invite ? "code" : "profile")),
-    [via, setVia] = useState("login"),
+// Signing in on this device: username and password, a reset code from Batur,
+// or a code from another device. Joining and founding live on the welcome
+// screen (Entry.jsx); "Yeni ekip/katıl" here goes back to it.
+export function SignIn({ invite, close, onSuccess, onNew }) {
+  const [via, setVia] = useState("login"),
     [login, setLogin] = useState({ username: "", password: "" }),
+    [account, setAccount] = useState({ username: "", password: "", code: "" }),
     [code, setCode] = useState(""),
+    [error, setError] = useState(""),
     [claimBusy, setClaimBusy] = useState(false);
   const claim = async (e) => {
     e.preventDefault();
@@ -317,8 +291,7 @@ export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start,
       setClaimBusy(false);
     }
   };
-  if (mode === "code")
-    return (
+  return (
       <Modal
         title="Zaten ekiptesin. 🔑"
         subtitle={
@@ -464,111 +437,13 @@ export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start,
           <button
             type="button"
             className="text-button centered-link"
-            onClick={() => {
-              if (onNew) return onNew();
-              setMode("profile");
-              setError("");
-            }}
+            onClick={onNew}
           >
             {invite ? "Ekibe yeni katılıyorum" : "Yeni bir ekip kuracağım"}
           </button>
         </form>
       </Modal>
     );
-  return (
-    <Modal
-      title={invite ? "Ekibin seni bekliyor. ✨" : "Güzel bir ekip kuralım. ✳"}
-      subtitle={
-        invite
-          ? `${inviteInfo?.name || "Arkadaşların"} · ${inviteInfo?.count || 0} kişi yerini aldı. Sıra sende.`
-          : "Bir isim, bir avatar. Sonra bağlantıyı arkadaşlarına at."
-      }
-      close={close}
-    >
-      <form onSubmit={submit}>
-        {!invite && (
-          <p className="form-warning">
-            Arkadaşın seni davet ettiyse buradan ekip kurma; onun attığı davet
-            linkini aç. Burası yepyeni bir ekip kurar.
-          </p>
-        )}
-        {!invite && (
-          <label className="field-label">
-            Ekibinizin adı
-            <input
-              required
-              minLength={2}
-              maxLength={40}
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-            />
-          </label>
-        )}
-        <ProfileFields value={value} setValue={setValue} />
-        <fieldset className="account-fields">
-          <legend>Hesabın · her cihazdan bununla girersin</legend>
-            <label className="field-label">
-              Kullanıcı adı
-              <input
-                required
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck={false}
-                maxLength={24}
-                placeholder="ör. batur"
-                value={account.username}
-                onChange={(e) => setAccount({ ...account, username: e.target.value })}
-              />
-            </label>
-            <label className="field-label">
-              Şifre
-              <input
-                required
-                type="password"
-                autoComplete="new-password"
-                autoCapitalize="none"
-                spellCheck={false}
-                minLength={6}
-                maxLength={128}
-                placeholder="en az 6 karakter"
-                value={account.password}
-                onChange={(e) => setAccount({ ...account, password: e.target.value })}
-              />
-            </label>
-        </fieldset>
-        {existing && (
-          <p className="form-warning">
-            Yeni ekibe katılınca bu tarayıcıdaki mevcut oturumun değişir.
-          </p>
-        )}
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-        <Busy loading={busy} className="btn primary full" type="submit">
-          {invite ? "Ben de buradayım" : "Ekibimizi kuralım"}{" "}
-          <ArrowRight size={17} />
-        </Busy>
-        <button
-          type="button"
-          className="text-button centered-link"
-          onClick={() => {
-            setMode("code");
-            setError("");
-          }}
-        >
-          <KeyRound size={15} /> Zaten hesabım var, giriş yap
-        </button>
-        <p className="form-footnote">
-          <ShieldCheck size={14} /> E-posta gerekmiyor. Kullanıcı adın ve şifrenle
-          her cihazdan aynı hesabı açabilirsin.
-          <br />
-          Davet bağlantısı olanlar katılabilir; güvendiğin kişilerle paylaş.
-        </p>
-      </form>
-    </Modal>
-  );
 }
 function DeviceTransfer({ notify }) {
   const [code, setCode] = useState(null),

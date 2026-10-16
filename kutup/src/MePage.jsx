@@ -33,13 +33,25 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave })
   if (!me) return null;
   return (
     <div className="me-page">
-      <m.button whileTap={{ scale: 0.98 }} className={`me-card ${me.color}`} onClick={() => setModal("profile")}>
-        <Avatar member={me} />
-        <span>
-          <b>{me.name}</b>
-          <small>{me.note || "Profilini, rengini ve hesabını buradan yönet."}</small>
-        </span>
-        <span className="me-stats-row">
+      <div className={`me-card ${me.color}`}>
+        <m.button whileTap={{ scale: 0.98 }} type="button" className="me-card-main" onClick={() => setModal("profile")}>
+          <Avatar member={me} />
+          <span>
+            <b>{me.name}</b>
+            <small>{me.note || "Profilini, rengini ve hesabını buradan yönet."}</small>
+          </span>
+        </m.button>
+        <m.button
+          whileTap={{ scale: 0.98 }}
+          type="button"
+          className="me-stats-row"
+          aria-label="İstatistiklerim"
+          aria-expanded={stats}
+          onClick={() => {
+            setStats(true);
+            setTimeout(() => document.querySelector(".me-stats")?.scrollIntoView({ behavior: "smooth", block: "center" }), 380);
+          }}
+        >
           <span className="me-stat">
             <b>{hours(me.focusToday || 0)}</b>
             <small>bugün odak</small>
@@ -52,8 +64,8 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave })
             <b>{me.buildings || 0}</b>
             <small>bina</small>
           </span>
-        </span>
-      </m.button>
+        </m.button>
+      </div>
       <div className="me-label">SEN</div>
       <Reveal className="me-rows">
         <Row icon={UserRound} title="Profilim" sub="Ad, karakter, renk, masa notu" onClick={() => setModal("profile")} />
@@ -88,7 +100,7 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave })
 // The team card (side bar → team name): the full name, who is where, the week
 // together, and a way to bring a friend in.
 const RANK = { here: 0, break: 0, coming: 1 };
-export function TeamModal({ data, me, now, close, invite }) {
+export function TeamModal({ data, me, now, close, invite, openMember }) {
   const members = [...data.members].sort((a, b) => (RANK[a.status] ?? 2) - (RANK[b.status] ?? 2));
   const total = data.members.reduce((t, x) => t + (x.focusWeek || 0), 0),
     goal = data.week?.goal || 600,
@@ -114,6 +126,7 @@ export function TeamModal({ data, me, now, close, invite }) {
       <ul className="team-list">
         {members.map((x, i) => (
           <m.li key={x.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 24, delay: Math.min(i, 8) * 0.04 }}>
+            <button type="button" className="team-row" onClick={() => openMember(x)}>
             <Avatar member={x} size="small" />
             <span>
               <strong>
@@ -124,6 +137,7 @@ export function TeamModal({ data, me, now, close, invite }) {
               <small>{line(x)}</small>
             </span>
             <Badge status={x.status} />
+            </button>
           </m.li>
         ))}
       </ul>
