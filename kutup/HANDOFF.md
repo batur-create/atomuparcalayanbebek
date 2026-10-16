@@ -64,9 +64,9 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (87 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (93 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
-npm run test:browser # gerçek tarayıcı, 30 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
+npm run test:browser # gerçek tarayıcı, 39 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
@@ -97,7 +97,7 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 4. **Mini oyunlar** sadece molada açılır (durum "Molada" ya da seans yeni bitmiş). İnşaat sırasında kapalıdır.
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. Paket 5 ve 6).
 
-## 6b. Durum (son güncelleme 15 Ekim 2026)
+## 6b. Durum (son güncelleme 16 Ekim 2026)
 
 > **İş akışı panosu:**
 > - Adres: https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX ("Kütüp İş Akışı").
@@ -113,7 +113,7 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
 
-**Durum (güncel, 16 Ekim 2026 gecesi):** n15 karanlık tema ve n13 özgün avatarlar bitti, canlıda (aşağıda). Sıradaki n14 başarımlar. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
+**Durum (güncel, 16 Ekim 2026 sabahı):** n15 karanlık tema, n13 özgün avatarlar ve n16 sağ üstteki tema düğmesi bitti, canlıda (aşağıda). Son commit `16e35609`, Worker `10274f0c`, şema 20. Sıradaki n17 menü akışı (panodaki sıra aşağıda). Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
 
 **Batur'un çalışma kuralları:**
 - Paketleri arka arkaya yap. Her önemli adımda: test → (göç varsa önce yedek) → deploy → canlı duman testi → commit + push → iş panosunu güncelle.
@@ -121,6 +121,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 - İş ortasında attığı fikirler ilhamdır: panoda en uygun sıraya koy, uyumlu olanları birleştir, mevcut işe devam et.
 - **iOS öncelikli** (Bensu, Zeynep, Sıla iPhone kullanıyor): iOS Safari + ana ekran PWA; Fullscreen API'ye güvenme; safe-area; ≥44px dokunma alanı; hover'a bağlı kontrol yok; push gereken yerde "Paylaş → Ana Ekrana Ekle" gibi adım adım rehber.
 - Soru yağmuru yok. Gerçekten Batur'a ait bir karar varsa seçenekli tek soru.
+- **Görsel ve karar kuralı (Batur, 16 Ekim 2026):** Her yeni oturum işe başlamadan önce sitenin kendi görünümüne bakar: önizlemeyi açar (`preview_start` "kutup"), işin dokunduğu ekranların görüntüsünü alır. Paketin kararları tam belli değilse, görsel tarzdan ya da Batur'un isteğinden emin değilsen, yayından önce ona soru sor ve **görsel ön izleme** göster: gerçek uygulamada çiz, 375px açık ve koyu, gerekirse A/B yan yana. Avatarlarda siteyi görmeden yapılan çizim sırıtmıştı, kural bu yüzden var. Teknik kararlar yine senin. Bir oturum başka bir oturuma iş tanımlarken ayrıntıları eksiksiz yazar: görünüm, yer, metinler, durumlar, neyin karara bağlandığı ve neyin açık olduğu.
+- **Net ekran görüntüsü:** Tarayıcı panelinin ekran görüntüsü ölçeği bozuk çıkabiliyor. Batur'a gösterilecek görüntüler için Playwright betiği (Python, `tests/browser_smoke.py`'deki Chrome bulucu) yerel `http://localhost:3001`'e karşı 375×812, DPR 2 ile çeker. Ekibi `fetch('/api/groups', …)` ile geçici kur. Betikleri scratchpad'e yaz; görüntüyü `SendUserFile` ile gönder.
 
 **Güvenlik (değişmez):** `ADMIN_KEY`'i (`kutup/data/batur-key-canli.txt`) asla ekrana ya da sohbete yazma, betikte dosyadan oku. Gerçek üyeleri ve verilerini koru. `main` dalına dokunma. `kutup/data/` commit'lenmez. Canlı D1'e doğrudan yazma; yalnızca API ve owner uçlarını kullan. Göçten önce yedek al (betik aşağıda). Canlı `ADMIN_KEY`'i ve davetleri değiştirme.
 
@@ -163,13 +165,24 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 - **Testler:** 93 birim (tüm karakter × aksesuar çizimi temiz), 35 tarayıcı (+4: yeni profil karakterle başlar, seçici 44px/taşma yok, karakter+aksesuar kaydı, koyu modda çizim), canlı duman testinde avatar adımı.
 - **Doğrulanmadı:** köy canvas'ındaki balon/yürüyen avatarı ekran görüntüsüyle bakılmadı (kod yolu basit, JS hatası yok); gerçek iPhone'da bakılmadı.
 
-**Sıradaki işler (panoda bu sırayla):**
-1. **n14 Başarımlar:**
+**n16 Sağ üstte tema düğmesi — 16 Ekim 2026 sabahı, canlı (commit `16e35609`, Worker `10274f0c`):**
+- Üst çubukta çanın solunda `ModeButton` (`Account.jsx`, `App.jsx` topbar). O anki seçimi lucide çizgi simgesiyle gösterir: Sun / Moon / SunMoon (Otomatik). **Batur A/B ön izlemesinde emoji yerine çizgi simgeyi seçti.**
+- Dokununca `role="menu"` mini menü açılır: başlık "Gündüz mü, gece mi?" ve üç `menuitemradio`. Her birinin kısa açıklaması var (`modeNote`); Otomatik'te bugünün gün batımı ve gün doğumu saati yazar. Seçilen satır vurgu renginde ve tikli. Ayar Benim köşem'dekiyle aynı (`useColorMode` App'te tek durum).
+- Seçince, Escape'te, Tab'da ya da dışarı dokununca kapanır. Ok tuşları seçenekler arasında gezer, odak düğmeye döner.
+- **Yerleşim:** Düğme çan boyutunda çizilir (760px altında 32, 370px altında 30), `::after` ile en az 44px dokunma alanı var (inset kenarlığın içinden sayılır, bu yüzden −8px). Menü `.topbar-actions`'ın sağ kenarına asılır, genişliği `min(300px, 100vw − 32px)`; 360px'te taşmaz. Stiller `src/dark.css` "the same switch in the top bar" bölümünde, yalnızca jetonlarla.
+- Telefonda (580px altı) üst çubuktaki "Bizim alan ›" ön eki (`.crumb-root`) gizlenir, yalnızca sayfa adı kalır; yoksa iki satıra kayıyordu.
+- **Testler:** 93 birim, 39 tarayıcı (+4: dokunma alanı, menü yerleşimi, Açık'ı seçmek, kapanma); canlı duman testinde "top-bar look switch ships" adımı.
+- **Doğrulanmadı:** gerçek iPhone.
+
+**Sıradaki işler (panoda bu sırayla, 16 Ekim 2026):**
+1. **n17 Menü akışını sadeleştirme:** Hedef, neye basacağının hep belli olması. Önce alt menü, sol menü, Benim köşem, ana sayfadaki kartlar ve kısayolların envanterini çıkar. Tekrar edenleri birleştir; her sekmenin tek net işi olsun; ana sayfa "kim nerede?" ve tek ana eylem etrafında toplansın. **Kod yazmadan önce** Batur'a mevcut ekranların görüntüleriyle 1–2 seçenekli taslak göster, onay alınca uygula. Not: üst çubukta artık tema düğmesi var, telefonda "Bizim alan ›" gizli.
+2. **n06 Kara'yı baştan tasarlama (öne alındı):** Kart ve poz düğmeleri kalkar. Kara ekranın kenarında, içeriği kapatmadan kendi hâlinde yaşar: etrafa bakar, yerleşir, uyuklar, dokununca uyanır. Doğal kara kedi, kehribar gözler, koyu temada da seçilir. Sonra köyde ve şantiyede dolaşma. Küçük denemelerle ilerle, her adımda Batur'a ön izleme göster. Ayrıntılar aşağıdaki "Kara yön değişikliği" bölümünde. Kaynak `LiveMascot.jsx`, `Mascot.jsx`, `mascot.css`.
+3. **n14 Başarımlar:**
    - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.
    - Gizli rozetler (kara delik kâşifi vb.).
    - Rozet vitrini ve kutlama anı.
    - `achievements` tablosu zaten var (göç 12).
-- n06 maskot (Kara) ayrı yürüyor; ona dokunma.
+   - Rozet çizimleri Kara'nın/avatarların çizim dilinde olmalı; önce Batur'a örnek göster.
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.
