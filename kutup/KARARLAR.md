@@ -19,7 +19,7 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda: n06 (Kara: sitede yaşayan, işlevli kedi), n14 (Başarımlar), n22 (Köy ayrıntısı), n23 (Tema revizyonu), n24 (Ses turu), n25 (Hesaplar arası geçiş). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n06 Kara, n26 Köy 2.0 (n22 köy ayrıntısı içinde), n27 Vitrin ve cila, n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|

@@ -208,14 +208,17 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 
 **n18-2 notları:** Saat (`now`) artık her saniye değil: `fastClock` (Köy sekmesi, odak ekranı, çalışan sayaç, ritim) iken 1 sn, yoksa 15 sn. Saniye gösteren yeni bir şey eklersen `fastClock`'a koşulunu ekle. Gökyüzüne yeni hareketli parça eklerken SVG'nin içine değil `sky-scene` üstüne ayrı katman olarak ekle (DESIGN.md §7). Performans ölçümü: Playwright + CDP `Emulation.setCPUThrottlingRate` 4, yerel üretim sunucusu (`node server/index.js`, `--dev` olmadan). Hareket ayarı `src/motionPref.js` ve `public/mode.js`.
 
-**Sıradaki işler (panoda bu sırayla, 16 Ekim 2026):**
-2. **n06 Kara'yı baştan tasarlama (öne alındı):** Kart ve poz düğmeleri kalkar. Kara ekranın kenarında, içeriği kapatmadan kendi hâlinde yaşar: etrafa bakar, yerleşir, uyuklar, dokununca uyanır. Doğal kara kedi, kehribar gözler, koyu temada da seçilir. Sonra köyde ve şantiyede dolaşma. Küçük denemelerle ilerle, her adımda Batur'a ön izleme göster. Ayrıntılar aşağıdaki "Kara yön değişikliği" bölümünde. Kaynak `LiveMascot.jsx`, `Mascot.jsx`, `mascot.css`.
-3. **n14 Başarımlar:**
-   - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.
-   - Gizli rozetler (kara delik kâşifi vb.).
-   - Rozet vitrini ve kutlama anı.
-   - `achievements` tablosu zaten var (göç 12).
-   - Rozet çizimleri Kara'nın/avatarların çizim dilinde olmalı; önce Batur'a örnek göster.
+**Sıradaki işler (Batur'un onayladığı plan, 16 Ekim 2026 akşamı; ayrıntılı tanımlar panoda):**
+1. **n06 Kara:** sitede yaşayan, işi olan kedi. Öneri panoda: evi gökyüzü kartında (kütüphanenin çatısı), haberci (gelişleri karşılar, mesaj notu taşır, bildirimler onun balonu), odak arkadaşı (yanında kitap okur, şantiyede baret), dokununca durum söyler. Önce 2–3 küçük video denemesi, her adımda Batur'un onayı. Kaynak `LiveMascot.jsx`, `Mascot.jsx`, `mascot.css`; geçmişi KARARLAR.md arşivinde "Kara yön değişikliği".
+2. **n26 Köy 2.0** (n22 köy ayrıntısı dahil): odak stüdyosu, saatle yaşayan harita, kutucuklar.
+3. **n27 Vitrin ve cila:** giriş/davet ekranı, iPhone ekleme rehberi, sahte basılabilir avı (sol üst "Kütüp"), çizimli boş durumlar.
+4. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
+5. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
+6. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir.
+7. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
+8. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
+9. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
+10. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.
