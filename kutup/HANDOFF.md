@@ -53,7 +53,10 @@ kutup/
   server/index.js   Node sunucusu: SSE canlı akış, statik dosyalar, --dev ile Vite
   worker/index.js   Cloudflare Worker: D1 adaptörü (binding DB), ASSETS; canlılık 5 sn'lik yoklama
   shared/requests.js İstek aşamaları ve metinleri (sunucu + arayüz ortak)
-  src/App.jsx       Ana uygulama (sekmeler: home, plans, focus, board, feedback), modallar, FocusCard, MemberCard, WeekBoard...
+  src/App.jsx       Ana uygulama (sekmeler: home, focus, board, me, feedback; eski ?tab=plans ana sayfadaki planlara kayar), modallar, FocusCard, Board, WeekBoard...
+  src/Home.jsx      Ana sayfa (n17/n18): HomeSky (saatle değişen gökyüzü), StatusCard, People + MemberCard + Badge, Plans, Doors
+  src/MePage.jsx    Ben sekmesi (profil, görünüm, istatistik, davet, Batur'a ilet, hesap, ayrıl)
+  src/home.css      Ana sayfa, Ben, alt menü işareti; src/motionFeatures.js Motion motoru (tembel yüklenir)
   src/Village.jsx   İzometrik çizim (projector, box, spec(kind, seed) deterministik), ConstructionScene (rAF, 30 fps), VillageMap, VillagePanel
   src/Requests.jsx  Batur'a ilet sayfası, RequestTracker, useRequestUpdates
   src/Owner.jsx     /batur paneli
@@ -100,7 +103,9 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 - **Yazı boyutu** telefonda 10px'in altına inmesin.
 - **`.timer-digits > span`** seçicisi altyazı içindir. Sayaç rakamları `<b className="clock">` içinde durur.
 - **Dinamik isimlerden sonra Türkçe ek kullanma** ("Batur’e" hatası). "X için not", "Köy: X" gibi kalıplar kullan.
-- **Mobil öncelikli:** 375px'te yatay taşma olmamalı. Alt menüde 5 öğe var.
+- **Mobil öncelikli:** 375px'te yatay taşma olmamalı. Alt menüde 4 öğe var (Kütüp, Köy, Pano, Ben).
+- **Taşma tuzağı:** `display: grid` kapsayıcılarda `grid-template-columns: minmax(0, 1fr)` yoksa uzun tek satırlık (`nowrap`) metin sütunu genişletir; telefonda sayfa 434 px'e açılır ve sabit alt menü ekranın dışına düşer. Kontrolü `scrollWidth > 375` ile yap (`innerWidth` de büyüdüğü için onunla karşılaştırma yetmez).
+- **Motion:** `motion/react`'tan `m` bileşeni kullanılıyor (`LazyMotion strict`, `motion.` yasak). `.map((m) => <m.div>)` yazma, parametre `m`'yi gölgeler; `x` de.
 - **Animasyon kuralı:** tek bir orkestra edilmiş açılış ve eyleme cevap veren hareketler. Kendi `transform`'u olan öğelerde yalnızca `from` tanımlı keyframe ve `animation-fill-mode: backwards` kullan. İnşaat sahnesi tek rAF döngüsünde 30 fps; ekran 75 dk açık kaldığı için pil bütçesine dikkat.
 - **Sayfa yenileme "uygulamadan çıkma" sayılmamalı.** 3 sn'lik yerel işaret bu yüzden var.
 - **Tarayıcı paneli ekran görüntüleri** bazen yanlış ölçekleniyor. Önce JS ile DOM ve taşma kontrolü yap, görsel için `zoom` kullan.
@@ -132,7 +137,7 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
 
-**Durum (güncel, 16 Ekim 2026 sabahı):** n15 karanlık tema, n13 özgün avatarlar ve n16 sağ üstteki tema düğmesi bitti, canlıda (aşağıda). Son commit `16e35609`, Worker `10274f0c`, şema 20. Sıradaki n17 menü akışı (panodaki sıra aşağıda). Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
+**Durum (güncel, 16 Ekim 2026 öğleden sonra):** n17 menü akışı (4 sekme, Ben, yeni ana sayfa) ve n18 canlı site aşama 1 (yaşayan gökyüzü, hareket anları) canlıda; Batur'un canlıda bakıp onaylaması bekleniyor (panoda "Onayını bekliyor"). Son kod commit'i `c6162645`, Worker `cfa3318b`, şema 20. Testler: 93 birim, 41 tarayıcı, canlı duman testi geçti. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
 
 **Batur'un çalışma kuralları:**
 - Paketleri arka arkaya yap. Her önemli adımda: test → (göç varsa önce yedek) → deploy → canlı duman testi → commit + push → iş panosunu güncelle.
@@ -193,8 +198,15 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - **Testler:** 93 birim, 39 tarayıcı (+4: dokunma alanı, menü yerleşimi, Açık'ı seçmek, kapanma); canlı duman testinde "top-bar look switch ships" adımı.
 - **Doğrulanmadı:** gerçek iPhone.
 
+**n17 + n18 aşama 1 — 16 Ekim 2026 öğleden sonra, canlı (commit `c6162645`, Worker `cfa3318b`):** ayrıntı KARARLAR.md `### n17` ve `### n18`.
+- Alt menü 4 sekme (Kütüp, Köy, Pano, Ben), ☰ ve üstteki davet düğmesi yok; seçili sekmenin işareti `layoutId="tab-pill"` ile kayar. Masaüstü sol menü aynı 4 sekme.
+- Ana sayfa (`Home.jsx`): gökyüzü kartı → "Bugün geliyor musun?" → (bildirim / hesap kartı) → Kim nerede? → Kim ne zaman geliyor? (planlar) → Köy ve Pano kapıları. Ben: profil, görünüm (`LookModal`), istatistik, davet, Batur'a ilet, hesap (`AccountModal`), ayrıl (`leaveTeam`). Kara kartı Köy'de (n06'ya kadar).
+- Hareket: Motion 13.5.0 (`LazyMotion` + tembel `motionFeatures.js`, `MotionConfig reducedMotion="user"`). Gökyüzü sahnesi 960 birim genişlik, telefon ortadaki 360'ı görür. Gece = `skyAt().night` ya da koyu mod. Gelen kişi: kart dönüşü (WAAPI), "GELDİ" damgası, patikada yürüyen figür (SMIL `animateMotion`), üstte haber (`notify`).
+- Ana paket 182 KB gzip (canlıdan +21 KB) + 28 KB tembel Motion parçası.
+- **Doğrulanmadı:** gerçek iPhone'da akıcılık ve pil.
+
 **Sıradaki işler (panoda bu sırayla, 16 Ekim 2026):**
-1. **n17 Menü akışını sadeleştirme:** Hedef, neye basacağının hep belli olması. Önce alt menü, sol menü, Benim köşem, ana sayfadaki kartlar ve kısayolların envanterini çıkar. Tekrar edenleri birleştir; her sekmenin tek net işi olsun; ana sayfa "kim nerede?" ve tek ana eylem etrafında toplansın. **Kod yazmadan önce** Batur'a mevcut ekranların görüntüleriyle 1–2 seçenekli taslak göster, onay alınca uygula. Not: üst çubukta artık tema düğmesi var, telefonda "Bizim alan ›" gizli.
+1. **n18 aşama 2:** Hareket dilinin Köy, Pano ve Ben sekmelerine yayılması (DESIGN.md §7). Önce Batur'un aşama 1'i canlıda onaylaması.
 2. **n06 Kara'yı baştan tasarlama (öne alındı):** Kart ve poz düğmeleri kalkar. Kara ekranın kenarında, içeriği kapatmadan kendi hâlinde yaşar: etrafa bakar, yerleşir, uyuklar, dokununca uyanır. Doğal kara kedi, kehribar gözler, koyu temada da seçilir. Sonra köyde ve şantiyede dolaşma. Küçük denemelerle ilerle, her adımda Batur'a ön izleme göster. Ayrıntılar aşağıdaki "Kara yön değişikliği" bölümünde. Kaynak `LiveMascot.jsx`, `Mascot.jsx`, `mascot.css`.
 3. **n14 Başarımlar:**
    - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.

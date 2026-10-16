@@ -70,9 +70,15 @@ Bütün karakter ve rozet çizimleri Kara'nın dilinden türer (`shared/avatars.
 
 ## 7. Hareket
 
-- Yumuşak geçişler: `src/motion.css`'teki `--ease-out` ve `--ease-spring`. Kısa ve sakin.
-- `prefers-reduced-motion` açıksa hareket kapanır ya da en aza iner.
-- Sürekli hareket yalnız canlılık veren yerlerde (duman, yürüyenler, Kara) ve içeriğin üstünde değil. Ekran dışındaki animasyon durur.
+Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" dedirten bir site. İlke: **düzen sakin, dünya canlı.**
+
+- **Düğmeler yerinde durur.** Neye basılacağı hiç yer değiştirmez; hareket düzeni bozmaz.
+- **Hareket bir şey anlatır.** Gökyüzü saati, kartlar kimin geldiğini, sayılar değişimi, köy odağı gösterir. Salt süs olan sürekli hareket yok.
+- **Her dokunuşa küçük bir cevap:** basınca hafif küçülme (`whileTap` 0.94–0.98), seçimde yaylanan işaret, sonuçta kutlama (konfeti, damga) yalnız gerçek bir olayda.
+- **His: oyunsu kâğıt.** Kartlar yay `stiffness 300, damping 24`; kutlamalar `220 / 14`; içerik geçişi 0.32 sn giriş, 0.16 sn çıkış. Kademe öğe başına 60–120 ms, toplamı 500 ms'yi geçmez. CSS'te `--ease-out` ve `--ease-spring` (`src/motion.css`).
+- **Araç:** Motion (`motion/react`, sürüm 13.5.0) yalnız `m.*` bileşenleriyle, `LazyMotion` içinde; motor `src/motionFeatures.js` ile tembel yüklenir. Basit tek seferlik hareketlerde tarayıcının kendi `element.animate` yeterli. Sürekli süs döngüleri CSS keyframes ile.
+- **Açılış** ziyaret başına bir kez oynar, sekme değişiminde tekrar etmez.
+- **Pil ve erişilebilirlik:** yalnız `transform` ve `opacity`. Ekran dışındaki ve arka plandaki döngüler durur (`.paused`). `prefers-reduced-motion` açıkken Motion hareketleri (`MotionConfig reducedMotion="user"`) ve CSS döngüleri kapanır. Odak ekranı açıkken arka plan sakin.
 
 ## 8. Metin tonu
 
@@ -89,6 +95,8 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✔ **n16 tema düğmesi:** çandaki gibi ince çizgi simge (güneş, ay, yarım güneş). Emoji seçeneği seçilmedi.
 - ✔ **n15 karanlık tema:** gün batımında otomatik koyulaşır; Kara ay ışığı dairesinin önünde durur.
 - ✔ **Kara:** doğal kara kedi, kehribar gözler, kodla yaşayan SVG. Statik görsel istenmedi.
+- ✔ **n17 menü (B):** 4 sekme (Kütüp, Köy, Pano, Ben), ☰ yok, planlar ana sayfada "Kim ne zaman geliyor?", ana eylem Geldim. A (5 sekme) seçilmedi.
+- ✔ **n18 canlı ana sayfa:** saatle değişen gökyüzü kartı (köy, Milli Kütüphane silueti, vinç, değirmen), gelişte kart dönüşü + "GELDİ" damgası + kütüphaneye yürüyen figür, Geldim'de konfeti, kayan sekme işareti. 25 sn'lik video önizlemesiyle onaylandı.
 
 ## 10. Görsel bir iş nasıl yapılır
 

@@ -19,10 +19,12 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda: n17 (Menü akışını sadeleştirme), n06 (Kara'yı baştan tasarlama: sitede yaşayan kedi), n14 (Başarımlar). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda: n18 aşama 2 (hareket dilinin diğer sekmelere yayılması), n06 (Kara'yı baştan tasarlama: sitede yaşayan kedi), n14 (Başarımlar). n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n17 | Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa | Gezinme | 16 Eki 14:30 | c6162645 |
+| n18 | Canlı site, aşama 1: yaşayan gökyüzü ve hareket anları | Tasarım | 16 Eki 14:30 | c6162645 |
 | d21 | Yeni çalışma sistemi: tasarım rehberi, karar kaydı, kodlu pano | Sistem | 16 Eki 10:05 | ef11b80d |
 | n16 | Tema düğmesi ana ekranın sağ üstünde | Tema | 16 Eki 10:05 | 16e35609 |
 | n13 | Özgün çizilmiş avatarlar | Profil | 16 Eki 01:30 | da136d96 |
@@ -60,6 +62,25 @@ Açık işler panoda: n17 (Menü akışını sadeleştirme), n06 (Kara'yı başt
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n17 · Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa
+Gezinme · 16 Ekim 2026 · c6162645 (Worker cfa3318b)
+
+**Ne yapıldı:** Telefonda alt menü 4 sekme oldu: Kütüp, Köy, Pano, Ben. ☰ menü, üst çubuktaki "Arkadaşını çağır" ve ayrı Planlar sekmesi kalktı. Ana sayfa sırası: yaşayan gökyüzü kartı (selam ve "N kişi kütüpte · M yolda") → "Bugün geliyor musun?" (ana eylem Geldim, yanında Yoldayım; yoldayken Geldim / Vazgeçtim; kütüpteyken yer, süre, Yerimi değiştir / Çıktım) → bildirim ve hesap kartları (gerekirse) → "Kim nerede?" (kütüpte olanlar önde, en son gelen başta) → "Kim ne zaman geliyor?" (planlar, en yakın 3, Ben de / Varım, Plan yap) → Köy ve Pano'ya tek satırlık kapılar. Ben sekmesi: Profilim, Görünüm, İstatistiklerim, Arkadaşını ekibe ekle, Batur'a ilet (rozet burada), Hesap ve cihazlar, Ekipten ayrıl, dev için Komuta merkezi. Kara kartı n06'ya kadar Köy'de. Pano'da telefonda kahve çağrısı en üstte; başlıkla mesajlar arasındaki boşluk (eski ana sayfanın grid-row kuralları) giderildi. Masaüstünde sol menü aynı 4 sekme; sahte basılabilir görünen "Kütüp tayfa ›" oku ve "Milli Kütüphane ↗" kaldırıldı.
+**Kararlar ve nedenleri:** Envanterde ana sayfa 375 px'te ~4 ekran boyundaydı ve "kim nerede?" 1,6 ekran aşağıdaydı; ☰ alt menüyü tekrar ediyordu; Benim köşem'in görünür yolu yoktu; Batur'a ilet 3 yerdeydi; aynı işin iki yolu ve üç farklı "çağır" vardı. Batur iki taslaktan B'yi seçti (4 sekme, planlar ana sayfada), çünkü planlar da "kim ne zaman gelecek" sorusunun parçası. Yeni ana sayfa ~2 ekran (bildirim kartı açıkken). Eski `?tab=plans` bağlantıları (plan bildirimi) ana sayfadaki planlara kayar.
+**Batur'un sözleri:** "menülerin akışı biraz karışık, ana sayfa mantığı vs. neye basacağımı şaşırıyorum bazen." · "Aga B yapalım beğendim akışı ve düzeni."
+**Denenip vazgeçilenler:** A seçeneği (5 sekme, Planlar ayrı). Kara'yı ana sayfada tutmak (n06 onu ekran kenarına taşıyacak).
+**Dosyalar:** `src/Home.jsx` (yeni ana sayfa, Badge ve MemberCard buraya taşındı), `src/MePage.jsx`, `src/home.css`, `src/App.jsx` (nav, PAGE başlıkları, Plans/PlanMini/HeroArt silindi), `src/Account.jsx` (ProfileModal üçe bölündü: ProfileModal, LookModal, AccountModal; `leaveTeam`), testler: tarayıcı 41, canlı duman testinde "four tabs and the living home ship".
+
+### n18 · Canlı site, aşama 1: yaşayan gökyüzü ve hareket anları
+Tasarım · 16 Ekim 2026 · c6162645
+
+**Ne yapıldı:** "Düzen sakin, dünya canlı" ilkesiyle ana sayfaya hareket dili. Gökyüzü kartı saati anlatır: güneş ve ay sağ üstte saate göre yer alır, gün batımında sıcak tonlar, gece (ya da koyu modda) yıldızlar ve yanan pencereler. Kayan bulutlar, kuşlar, baca dumanı, sallanan ağaçlar, vinç, iki yanda dönen değirmenler (geniş ekranda bütün köy görünür; sahne 960 birim, telefon ortadaki 360'ı görür). Biri gelince: kartı döner, "GELDİ" damgası, kart öne kayar, sayılar yuvarlanır, gökyüzünde minik biri patikadan kütüphaneye yürür ve kapı yanar, üstte "📍 Sıla kütübe geldi" haberi. Geldim'de konfeti ve düşen iğne, kendi kartın döner. Alt menüde seçili sekmenin işareti yaylanarak kayar. Açılış ziyaret başına bir kez: gökyüzü doğar, güneş yükselir, kartlar deste gibi dağılır, sayılar sıfırdan sayar. Ekran dışında ve uygulama arka plandayken döngüler durur; azaltılmış harekette hepsi kapanır.
+**Kararlar ve nedenleri:** Önce gerçek uygulamada koda dokunmadan 25 sn'lik video önizleme gösterildi, Batur onayladı. Araç taraması (Batur'un yeni kuralı): Motion (motion.dev) denendi ve kaldı: yerleşim animasyonları (kartların yer değiştirmesi, kayan sekme işareti) ve içerik geçişleri hazır geliyor. Maliyeti ana pakette +21 KB gzip, motor ayrı 28 KB'lık tembel parça (ilk boyamadan sonra yüklenir). Kart dönüşü Motion yerine tarayıcının kendi animasyonuyla (ana pakete bir motor parçası daha girmesin diye). Sürüm 13.5.0 sabit (14.x iki haftadan yeni). LottieFiles motion-design-skill rehberinden zamanlama alındı: kartlar yay 300/24, kutlamalar yay 220/14, toplam kademe 500 ms'yi geçmez. howseen-ai/claude-motion-design ileride tanıtım videosu için aday; oil-motion uygun değil (ücretli API).
+**Batur'un sözleri:** "motion grafik üzerine kurulu vay be her şey nasıl da canlı ve dinamik dedirten ve görsel şölen olan bir site istiyorum ama bu ikisini nasıl bir araya getirebiliriz." · "olur" (Motion denemesiyle başlamaya).
+**Denenip vazgeçilenler:** Güneşin bütün kartta gezmesi (selamın arkasına giriyordu). Gece = yalnız koyu mod (artık saat de belirliyor).
+**Açık (aşama 2):** Köy, Pano ve Ben sekmelerine hareketin yayılması; Kara'nın olaylara tepkisi n06 ile.
+**Dosyalar:** `src/Home.jsx` (HomeSky, Walker, Count, Confetti, StatusCard), `src/home.css`, `src/motionFeatures.js`, `src/App.jsx` (LazyMotion, MotionConfig reducedMotion="user", tab-pill).
 
 ### d21 · Yeni çalışma sistemi: tasarım rehberi, karar kaydı, kodlu pano
 Sistem · 16 Eki 10:05 · ef11b80d
