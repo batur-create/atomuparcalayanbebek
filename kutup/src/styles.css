@@ -467,6 +467,7 @@ button:active {
   font-size: 12px;
   font-weight: 550;
   padding: 0;
+  border-radius: 6px;
   background: none;
   color: #828477;
 }

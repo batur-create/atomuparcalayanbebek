@@ -271,6 +271,16 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                         && Math.max(...rgb(document.querySelector('.member-card')))<60
                         && document.querySelector('meta[name=theme-color]').content==='#181916';
                 }'''))
+                check('Home keeps its own look: team card, look button, filter pill, cards in a row line up', friend.evaluate('''()=>{
+                    const cs=(s)=>getComputedStyle(document.querySelector(s)), rows={};
+                    document.querySelectorAll('.member-slot > .member-card').forEach(c=>{
+                        const b=c.getBoundingClientRect();
+                        (rows[Math.round(b.top/8)]||=[]).push(c.querySelector('.member-name').getBoundingClientRect().top-b.top);
+                    });
+                    return cs('.group-switch').backgroundColor==='rgba(0, 0, 0, 0)' && cs('.topbar .mode-switch').display!=='grid'
+                        && document.querySelector('.filter-pill').getBoundingClientRect().width>20
+                        && Object.values(rows).every(r=>Math.max(...r)-Math.min(...r)<=3);
+                }'''))
                 check('Top-bar look button: 44px to the finger, no overflow at 375px', friend.evaluate('''()=>{
                     const r=document.querySelector('.mode-button').getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
                     return [[x-21,y],[x+21,y],[x,y-21],[x,y+21]].every(([px,py])=>document.elementFromPoint(px,py)?.closest('.mode-button'))

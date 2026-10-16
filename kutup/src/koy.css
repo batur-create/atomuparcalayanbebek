@@ -2,7 +2,7 @@
    tiles under the map. The focus card is always dark, so its colours stay. */
 
 /* İnşaat or Serbest, under the timer. */
-.mode-switch {
+.studio-mode {
   /* dark: keep */
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -12,7 +12,7 @@
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.06);
 }
-.mode-switch button {
+.studio-mode button {
   /* dark: keep */
   display: grid;
   grid-template-columns: auto 1fr;
@@ -27,30 +27,30 @@
   text-align: left;
   transition: background 0.2s ease, color 0.2s ease;
 }
-.mode-switch button > span {
+.studio-mode button > span {
   grid-row: span 2;
   font-size: 19px;
 }
-.mode-switch b {
+.studio-mode b {
   /* dark: keep */
   font-size: 13px;
   font-weight: 700;
   color: var(--studio-text);
 }
-.mode-switch small {
+.studio-mode small {
   /* dark: keep */
   font-size: 10.5px;
   color: var(--studio-faint);
 }
-.mode-switch button.on {
+.studio-mode button.on {
   /* dark: keep */
   background: var(--pop);
 }
-.mode-switch button.on b {
+.studio-mode button.on b {
   /* dark: keep */
   color: var(--pop-ink);
 }
-.mode-switch button.on small {
+.studio-mode button.on small {
   /* dark: keep */
   color: var(--pop-ink-soft);
 }

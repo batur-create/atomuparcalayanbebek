@@ -1403,7 +1403,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
         </div>
       </div>
       {!compact && !running && !finishing && (
-        <div className="mode-switch" role="group" aria-label="Çalışma şekli">
+        <div className="studio-mode" role="group" aria-label="Çalışma şekli">
           {[
             [true, "🏗️", "İnşaat", "köye bina, tam maaş"],
             [false, "🎧", "Serbest", "risk yok, yarım maaş"],

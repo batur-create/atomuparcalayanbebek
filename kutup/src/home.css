@@ -200,9 +200,13 @@
 }
 .sky-orb {
   position: absolute;
+  top: var(--orb-y);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   transition: left 1.6s ease, top 1.6s ease, opacity 1.6s ease;
+}
+.home-sky:not(.entry-sky) .sky-orb {
+  top: max(var(--orb-y), calc(100% - 236px + 6% + 4px));
 }
 .sky-orb.moon svg {
   display: block;
@@ -824,8 +828,12 @@
 }
 .home-people .filter-chip.selected {
   background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
-.filter-pill {
+.filter-chip i.filter-pill {
+  width: auto;
+  height: auto;
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -871,6 +879,19 @@
   height: 100%;
   background: radial-gradient(130% 90% at 0% 0%, var(--mc) 0, transparent 62%), var(--paper);
   transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+/* A button centres its content when it is taller than it: next to a taller card
+   (founder line, focus bar) the others slid down. Content starts at the top and
+   the bottom line sits at the bottom of every card in the row. */
+.home-people .member-slot > .member-card {
+  display: flex;
+  flex-direction: column;
+}
+.member-slot > .member-card > .member-card-bottom {
+  margin-top: auto;
+}
+.member-slot > .member-card > :nth-last-child(2) {
+  margin-bottom: 15px;
 }
 .member-slot > .member-card.here,
 .member-slot > .member-card.break {
@@ -1428,7 +1449,10 @@
 /* ---------- the team card and the library card (side bar) ---------- */
 .app-shell .group-switch {
   width: 100%;
+  padding: 8px 11px;
   border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
   text-align: left;
   color: inherit;
   cursor: pointer;

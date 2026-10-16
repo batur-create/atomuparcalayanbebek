@@ -2,6 +2,15 @@ import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+// Whether the last thing the person did was a tap or a key press: focus goes back
+// to the opener either way, but its ring only shows for the keyboard.
+let lastPointer = 0,
+  lastKey = 0;
+if (typeof document !== "undefined") {
+  document.addEventListener("pointerdown", () => (lastPointer = performance.now()), true);
+  document.addEventListener("keydown", () => (lastKey = performance.now()), true);
+}
+
 export function Modal({ title, subtitle, children, close, wide = false }) {
   const ref = useRef(null);
   const closeRef = useRef(close);
@@ -44,7 +53,13 @@ export function Modal({ title, subtitle, children, close, wide = false }) {
       document.body.style.overflow = overflow;
       siblings.forEach((el, i) => { el.inert = inert[i]; });
       document.removeEventListener("keydown", key);
-      if (previous?.isConnected) previous.focus();
+      if (previous?.isConnected) {
+        previous.focus();
+        if (lastPointer > lastKey) {
+          previous.classList.add("quiet-focus");
+          previous.addEventListener("blur", () => previous.classList.remove("quiet-focus"), { once: true });
+        }
+      }
     };
   }, []);
   return createPortal(

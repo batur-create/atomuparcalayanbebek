@@ -136,6 +136,11 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 // a wide screen all of it. Layers sit on it in percentages of the scene.
 export const at = (x, y) => ({ left: `${((x + 300) / 960) * 100}%`, top: `${(y / 236) * 100}%` });
 export const span = (w) => `${(w / 960) * 100}%`;
+// The sun and moon: top through a variable, so the home sky can keep them in view.
+const orbAt = (x, y) => {
+  const { left, top } = at(x, y);
+  return { left, "--orb-y": top };
+};
 const STARS = Array.from({ length: 34 }, (_, i) => ({
   x: ((i * 97 + 31) % 950) - 295,
   y: ((i * 53 + 17) % 118) + 6,
@@ -299,11 +304,11 @@ export function SkyScene({ sky, arrivals = [] }) {
           </svg>
         ))}
       </div>
-      <div className="sky-orb sun" style={{ ...at(...sky.sun), width: span(34), opacity: clamp(1 - sky.night * 1.6) }}>
+      <div className="sky-orb sun" style={{ ...orbAt(...sky.sun), width: span(34), opacity: clamp(1 - sky.night * 1.6) }}>
         <i className="sky-halo" />
         <i className="sky-disc" />
       </div>
-      <div className="sky-orb moon" style={{ ...at(...sky.moon), width: span(28), opacity: clamp(sky.night * 1.4 - 0.3) }}>
+      <div className="sky-orb moon" style={{ ...orbAt(...sky.moon), width: span(28), opacity: clamp(sky.night * 1.4 - 0.3) }}>
         <svg viewBox="-14 -14 28 28">
           <mask id="sky-crescent">
             <rect x="-14" y="-14" width="28" height="28" fill="#fff" />
