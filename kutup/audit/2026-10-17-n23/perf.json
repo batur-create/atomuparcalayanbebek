@@ -1,0 +1,199 @@
+{
+ "setup": "Playwright Chromium, 375x812, DPR 3, touch, CDP CPU throttle 4x, production build (node server/index.js), motion full, 6-person team. tap: pointerdown on a theme card in Ben > G\u00f6r\u00fcn\u00fcm until two frames after data-theme changed (the frame showing the new theme). home/focus: data-theme set directly, until two frames later. 18 switches each (3 rounds over 6 themes).",
+ "before_n23_accent_only": {
+  "light-tap": {
+   "tap_to_frame_ms": {
+    "median": 67.3,
+    "p95": 100.6,
+    "max": 100.6,
+    "n": 18
+   },
+   "style_and_paint_ms": {
+    "median": 11.4,
+    "p95": 25.7,
+    "max": 25.7,
+    "n": 18
+   },
+   "long_tasks": 5,
+   "longest_task_ms": 73
+  },
+  "light-home": {
+   "switch_to_frame_ms": {
+    "median": 85.5,
+    "p95": 129.0,
+    "max": 129.0,
+    "n": 18
+   },
+   "long_tasks": 18,
+   "longest_task_ms": 115,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.7,
+    "max": 33.3,
+    "n": 120
+   }
+  },
+  "light-focus": {
+   "switch_to_frame_ms": {
+    "median": 47.8,
+    "p95": 88.8,
+    "max": 88.8,
+    "n": 18
+   },
+   "long_tasks": 4,
+   "longest_task_ms": 86,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.7,
+    "max": 16.8,
+    "n": 122
+   }
+  },
+  "dark-tap": {
+   "tap_to_frame_ms": {
+    "median": 80.6,
+    "p95": 113.9,
+    "max": 113.9,
+    "n": 18
+   },
+   "style_and_paint_ms": {
+    "median": 11.2,
+    "p95": 17.8,
+    "max": 17.8,
+    "n": 18
+   },
+   "long_tasks": 13,
+   "longest_task_ms": 90
+  },
+  "dark-home": {
+   "switch_to_frame_ms": {
+    "median": 117.1,
+    "p95": 186.4,
+    "max": 186.4,
+    "n": 18
+   },
+   "long_tasks": 18,
+   "longest_task_ms": 177,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.8,
+    "max": 33.3,
+    "n": 120
+   }
+  },
+  "dark-focus": {
+   "switch_to_frame_ms": {
+    "median": 80.5,
+    "p95": 106.0,
+    "max": 106.0,
+    "n": 18
+   },
+   "long_tasks": 17,
+   "longest_task_ms": 96,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.8,
+    "max": 16.8,
+    "n": 121
+   }
+  }
+ },
+ "after_n23_packages": {
+  "light-tap": {
+   "tap_to_frame_ms": {
+    "median": 80.3,
+    "p95": 122.6,
+    "max": 122.6,
+    "n": 18
+   },
+   "style_and_paint_ms": {
+    "median": 14.7,
+    "p95": 20.2,
+    "max": 20.2,
+    "n": 18
+   },
+   "long_tasks": 12,
+   "longest_task_ms": 90
+  },
+  "light-home": {
+   "switch_to_frame_ms": {
+    "median": 89.9,
+    "p95": 121.4,
+    "max": 121.4,
+    "n": 18
+   },
+   "long_tasks": 18,
+   "longest_task_ms": 118,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.8,
+    "max": 33.4,
+    "n": 120
+   }
+  },
+  "light-focus": {
+   "switch_to_frame_ms": {
+    "median": 64.2,
+    "p95": 108.0,
+    "max": 108.0,
+    "n": 18
+   },
+   "long_tasks": 16,
+   "longest_task_ms": 103,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.8,
+    "max": 16.8,
+    "n": 121
+   }
+  },
+  "dark-tap": {
+   "tap_to_frame_ms": {
+    "median": 93.2,
+    "p95": 139.3,
+    "max": 139.3,
+    "n": 18
+   },
+   "style_and_paint_ms": {
+    "median": 15.2,
+    "p95": 25.2,
+    "max": 25.2,
+    "n": 18
+   },
+   "long_tasks": 18,
+   "longest_task_ms": 100
+  },
+  "dark-home": {
+   "switch_to_frame_ms": {
+    "median": 131.4,
+    "p95": 206.6,
+    "max": 206.6,
+    "n": 18
+   },
+   "long_tasks": 18,
+   "longest_task_ms": 198,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 33.3,
+    "max": 66.7,
+    "n": 112
+   }
+  },
+  "dark-focus": {
+   "switch_to_frame_ms": {
+    "median": 84.2,
+    "p95": 126.8,
+    "max": 126.8,
+    "n": 18
+   },
+   "long_tasks": 18,
+   "longest_task_ms": 117,
+   "idle_frames_after": {
+    "median": 16.7,
+    "p95": 16.7,
+    "max": 16.8,
+    "n": 121
+   }
+  }
+ }
+}
