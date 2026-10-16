@@ -126,11 +126,11 @@ async function checkPassword(password, stored) {
 const sameName = (a, b) =>
   a.toLocaleLowerCase("tr") === b.toLocaleLowerCase("tr");
 
+// `headers` is an object, or a list of pairs when a header repeats (Set-Cookie).
 function json(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...headers },
-  });
+  const list = new Headers({ "Content-Type": "application/json; charset=utf-8" });
+  for (const [key, value] of Array.isArray(headers) ? headers : Object.entries(headers)) list.append(key, value);
+  return new Response(JSON.stringify(data), { status, headers: list });
 }
 async function readBody(request) {
   const max = 16384;
@@ -255,7 +255,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     cookie(request, "kutup_session", token, maxAge);
   async function authenticate(request) {
     await ensureReady();
-    const token = readCookie(request, "kutup_session");
+    return memberFor(readCookie(request, "kutup_session"));
+  }
+  async function memberFor(token) {
     if (!token || token.length > 128) return null;
     return db.get(
       `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen, s.created AS session_created
@@ -264,6 +266,71 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       [await sha(token), Date.now() - SESSION_AGE],
     );
   }
+  // ---------- accounts on this device (n25) ----------
+  // A device keeps every account signed in on it, Instagram style: the active
+  // one in kutup_session, the others in kutup_accounts. Both cookies are
+  // HttpOnly, so no token reaches page scripts. The server keeps only hashes
+  // and checks every token on each read, so an account that was signed out,
+  // revoked, recovered elsewhere or expired drops out of the list by itself.
+  const MAX_ACCOUNTS = 5;
+  const TOKEN = /^[\w-]{16,128}$/;
+  const savedTokens = (request) =>
+    readCookie(request, "kutup_accounts").split(".").filter((t) => TOKEN.test(t)).slice(0, MAX_ACCOUNTS);
+  // The valid sessions this device holds, one per account, the active one first.
+  async function deviceAccounts(request) {
+    const active = readCookie(request, "kutup_session");
+    const tokens = [...new Set([active, ...savedTokens(request)])].filter((t) => TOKEN.test(t));
+    if (!tokens.length) return [];
+    const hashes = await Promise.all(tokens.map(sha));
+    const rows = await db.all(
+      `SELECT s.token AS hash, m.id, m.name, m.avatar, m.color, g.name AS team
+       FROM sessions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
+       WHERE s.token IN (${hashes.map(() => "?").join(", ")}) AND s.created > ?`,
+      [...hashes, Date.now() - SESSION_AGE],
+    );
+    const seen = new Set();
+    return tokens.flatMap((token, i) => {
+      const row = rows.find((r) => r.hash === hashes[i]);
+      if (!row || seen.has(row.id)) return [];
+      seen.add(row.id);
+      return [{ ...row, token, active: token === active }];
+    });
+  }
+  // Set-Cookie pairs: the active session ("" signs this device out of it) and,
+  // when there are any or there were before, the other saved accounts.
+  function deviceCookies(request, active, saved) {
+    const pairs = [["Set-Cookie", active ? sessionCookie(request, active) : sessionCookie(request, "", 0)]];
+    const value = saved.filter((t) => t !== active).slice(0, MAX_ACCOUNTS - 1).join(".");
+    if (value || readCookie(request, "kutup_accounts"))
+      pairs.push(["Set-Cookie", cookie(request, "kutup_accounts", value, value ? 365 * 24 * 3600 : 0, "/api")]);
+    return pairs;
+  }
+  // Before a new session is made on this device: room for one more account.
+  // An older session of the same account here is replaced, not counted.
+  async function deviceRoom(request, memberId) {
+    const held = await deviceAccounts(request);
+    const others = held.filter((a) => a.id !== memberId);
+    if (others.length >= MAX_ACCOUNTS)
+      fail(`Bu cihazda en fazla ${MAX_ACCOUNTS} hesap açık kalabilir. Önce Hesaplarım’dan birinden çık.`, 409);
+    return { others, previous: held.find((a) => a.id === memberId) };
+  }
+  // After it exists: the replaced session hands its push binding over and
+  // ends; the cookies keep every other account of the device.
+  async function signedInCookies(request, session, room) {
+    if (room.previous && room.previous.hash !== session.hash)
+      await db.batch([
+        ["UPDATE OR IGNORE subscriptions SET session_token = ? WHERE session_token = ?", [session.hash, room.previous.hash]],
+        ["DELETE FROM sessions WHERE token = ?", [room.previous.hash]],
+      ]);
+    return deviceCookies(request, session.token, room.others.map((a) => a.token));
+  }
+  const sessionData = async (member) => ({
+    memberId: member.id,
+    username: member.username || null,
+    live,
+    pushPublicKey: vapid.publicKey,
+    ...(await snapshot(member.group_id)),
+  });
   async function newSession(memberId) {
     const token = randomHex(32);
     const hash = await sha(token);
@@ -781,10 +848,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       PUSH_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`))
     );
   }
+  // A member push knows its account and team, and whether the same endpoint
+  // (one phone) also carries other accounts.
+  const pushColumns =
+    "s.endpoint, s.subscription, s.member_id, s.session_token, g.name AS team, (SELECT count(*) FROM subscriptions x WHERE x.endpoint = s.endpoint) AS accounts";
   // Everyone in the group except the sender.
   async function notify(ctx, groupId, senderId, message, options) {
     const subs = await db.all(
-      "SELECT s.endpoint, s.subscription, s.member_id, s.session_token FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND m.id <> ? AND a.created > ?",
+      `SELECT ${pushColumns} FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND m.id <> ? AND a.created > ?`,
       [groupId, senderId, Date.now() - SESSION_AGE],
     );
     await deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message }, "subscriptions", options);
@@ -792,7 +863,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // One person, on all of their devices.
   async function notifyMember(ctx, memberId, message) {
     const subs = await db.all(
-      "SELECT s.endpoint, s.subscription, s.member_id, s.session_token FROM subscriptions s JOIN sessions a ON a.token = s.session_token AND a.member_id = s.member_id WHERE s.member_id = ? AND a.created > ?",
+      `SELECT ${pushColumns} FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id JOIN sessions a ON a.token = s.session_token AND a.member_id = s.member_id WHERE s.member_id = ? AND a.created > ?`,
       [memberId, Date.now() - SESSION_AGE],
     );
     await deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message });
@@ -825,6 +896,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   async function deliver(ctx, subs, message, table = "subscriptions", options = {}) {
     if (!subs.length) return;
     const subject = config.vapidSubject || ctx.origin;
+    // n25: a tap opens the account the push is for; on a phone with several
+    // accounts the title starts with the team's name.
+    if (table === "subscriptions")
+      subs = subs.map((s) => ({
+        ...s,
+        extra: { account: s.member_id, ...(s.accounts > 1 && s.team ? { team: s.team, title: `${s.team} · ${message.title}` } : {}) },
+      }));
     const ids = await outbox.enqueue(subs, message, table, { subject, ...options });
     ctx.waitUntil(outbox.drain(ids).catch(() => console.error("Kütüp push queue: retry deferred.")));
   }
@@ -959,7 +1037,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
     const id = crypto.randomUUID(),
       now = Date.now(),
-      session = await newSession(id);
+      session = await newSession(id),
+      room = await deviceRoom(request, id);
     await retrying(async () => {
       if (await db.get("SELECT 1 FROM members WHERE username = ?", [account]))
         fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
@@ -985,7 +1064,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json(
       { memberId: id, username: account, live, pushPublicKey: vapid.publicKey, ...(await snapshot(group.id)) },
       201,
-      { "Set-Cookie": sessionCookie(request, session.token) },
+      await signedInCookies(request, session, room),
     );
   }
 
@@ -1028,6 +1107,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, username });
   });
   async function signIn(request, member) {
+    const room = await deviceRoom(request, member.id);
     const session = await newSession(member.id);
     const now = Date.now();
     await db.run("INSERT INTO sessions (token, member_id, created, seen) SELECT ?, id, ?, ? FROM members WHERE id = ? AND pass_hash = ?", [session.hash, now, now, member.id, member.pass_hash]);
@@ -1036,7 +1116,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json(
       { memberId: member.id, username: member.username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
       200,
-      { "Set-Cookie": sessionCookie(request, session.token) },
+      await signedInCookies(request, session, room),
     );
   }
   route("POST", "/login", async ({ request, body, ip }) => {
@@ -1062,6 +1142,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!member.username && (await db.get("SELECT 1 AS hit FROM members WHERE username = ?", [username])))
       fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
     const secret = await hashPassword(passwordOf(body.password));
+    const room = await deviceRoom(request, member.id);
     const session = await newSession(member.id);
     const now = Date.now();
     await db.batch([
@@ -1074,7 +1155,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     onChange(member.group_id, { removed: member.id });
     return json(
       { memberId: member.id, username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
-      200, { "Set-Cookie": sessionCookie(request, session.token) },
+      200, await signedInCookies(request, session, room),
     );
   }, false);
 
@@ -1104,6 +1185,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       [hashed, Date.now(), hashed, Date.now()],
     );
     if (!member) fail("Bu kod geçersiz ya da süresi dolmuş. Diğer cihazdan ya da Batur’dan yeni kod al.", 404);
+    const room = await deviceRoom(request, member.id);
     const session = await newSession(member.id);
     const now = Date.now();
     const recovery = member.reset_hash === hashed;
@@ -1121,30 +1203,65 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json(
       { memberId: member.id, username: member.username, live, pushPublicKey: vapid.publicKey, ...(await snapshot(member.group_id)) },
       200,
-      { "Set-Cookie": sessionCookie(request, session.token) },
+      await signedInCookies(request, session, room),
     );
   }, false);
 
   // Opening the app keeps a device signed in: once a month the year starts
   // again, on the server and in the cookie, so only an unused device expires.
-  route("GET", "/session", async ({ request, member }) => {
+  // When the active account has ended here (signed out, revoked, left), the
+  // next account saved on this device takes over, as if switched to (n25).
+  route("GET", "/session", async ({ request }) => {
     const now = Date.now();
+    let member = await authenticate(request), headers = [];
+    if (!member) {
+      const held = await deviceAccounts(request);
+      if (held[0]) member = await memberFor(held[0].token);
+      if (!member)
+        return json({ error: "Ekibine katılmak için giriş yap." }, 401, readCookie(request, "kutup_accounts") ? deviceCookies(request, "", []) : {});
+      headers = deviceCookies(request, held[0].token, held.slice(1).map((a) => a.token));
+    }
     const renew = now - member.session_created > 30 * DAY;
     if (renew)
       await db.run("UPDATE sessions SET created = ?, seen = ? WHERE token = ?", [now, now, member.session_token]);
     else if (now - member.session_seen > HOUR)
       await db.run("UPDATE sessions SET seen = ? WHERE token = ?", [now, member.session_token]);
+    if (renew && !headers.length) headers = [["Set-Cookie", sessionCookie(request, readCookie(request, "kutup_session"))]];
+    return json(await sessionData(member), 200, headers);
+  }, false);
+
+  // The accounts this device holds, for the switcher. Ended ones are pruned
+  // from the cookie as they are noticed.
+  route("GET", "/accounts", async ({ request }) => {
+    const held = await deviceAccounts(request);
+    const saved = held.filter((a) => !a.active).map((a) => a.token);
+    const pruned = saved.join(".") !== savedTokens(request).join(".");
     return json(
-      {
-        memberId: member.id,
-        username: member.username || null,
-        live,
-        pushPublicKey: vapid.publicKey,
-        ...(await snapshot(member.group_id)),
-      },
+      { max: MAX_ACCOUNTS, accounts: held.map(({ id, name, avatar, color, team, active }) => ({ id, name, avatar, color, team, current: active })) },
       200,
-      renew ? { "Set-Cookie": sessionCookie(request, readCookie(request, "kutup_session")) } : {},
+      pruned ? deviceCookies(request, readCookie(request, "kutup_session"), saved) : {},
     );
+  });
+
+  // One tap to another account, only one this device really signed in to and
+  // whose session is still valid: its token is in this device's HttpOnly cookie.
+  route("POST", "/accounts/switch", async ({ request, body }) => {
+    const held = await deviceAccounts(request);
+    const target = held.find((a) => a.id === String(body.memberId || ""));
+    const member = target && (await memberFor(target.token));
+    if (!member) fail("Bu hesap bu cihazda açık değil. “Hesap ekle” ile giriş yap.", 403);
+    return json(await sessionData(member), 200, deviceCookies(request, target.token, held.filter((a) => a !== target).map((a) => a.token)));
+  }, false);
+
+  // Signs this device out of the active account only; its other accounts stay,
+  // and the next /session opens one of them.
+  route("POST", "/logout", async ({ request, member }) => {
+    await db.batch([
+      ["DELETE FROM subscriptions WHERE session_token = ?", [member.session_token]],
+      ["DELETE FROM sessions WHERE token = ?", [member.session_token]],
+    ]);
+    const others = (await deviceAccounts(request)).length;
+    return json({ ok: true, others }, 200, [["Set-Cookie", sessionCookie(request, "", 0)]]);
   });
 
   // Cheap polling: when nothing changed since `rev`, only the revision travels.
@@ -1580,12 +1697,33 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json(statsOf({ focus, activity, built, ledger, social: social[0], bricks: target.bricks, now: Date.now() }));
   });
 
-  route("POST", "/push", async ({ member, body, ctx }) => {
+  route("POST", "/push", async ({ request, member, body, ctx }) => {
     const clean = validSubscription(body.subscription);
-    await db.run(
-      "INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET member_id = excluded.member_id, subscription = excluded.subscription, session_token = excluded.session_token",
-      [clean.endpoint, member.id, JSON.stringify(clean), member.session_token],
+    const subscription = JSON.stringify(clean);
+    // n25: one endpoint carries a row for each account signed in on this
+    // device, and never one for an account this device no longer holds.
+    const held = (await deviceAccounts(request)).map((a) => a.hash);
+    const list = (n) => Array(n).fill("?").join(", ");
+    const others = held.filter((h) => h !== member.session_token);
+    const statements = [];
+    // The browser renewed its subscription: this device's accounts move with it.
+    const previous = typeof body.previous === "string" && body.previous.length <= 2000 && body.previous !== clean.endpoint ? body.previous : "";
+    if (previous && held.length)
+      statements.push(
+        [`INSERT OR IGNORE INTO subscriptions (endpoint, member_id, subscription, session_token) SELECT ?, member_id, ?, session_token FROM subscriptions WHERE endpoint = ? AND session_token IN (${list(held.length)})`, [clean.endpoint, subscription, previous, ...held]],
+        [`DELETE FROM subscriptions WHERE endpoint = ? AND session_token IN (${list(held.length)})`, [previous, ...held]],
+      );
+    statements.push(
+      [
+        "INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint, member_id) DO UPDATE SET subscription = excluded.subscription, session_token = excluded.session_token",
+        [clean.endpoint, member.id, subscription, member.session_token],
+      ],
+      [
+        `DELETE FROM subscriptions WHERE endpoint = ? AND member_id <> ?${others.length ? ` AND (session_token IS NULL OR session_token NOT IN (${list(others.length)}))` : ""}`,
+        [clean.endpoint, member.id, ...others],
+      ],
     );
+    await db.batch(statements);
     // Switching the bell on ends with a real notification on this device only,
     // so "on" is proven, not assumed. A few per minute at most.
     let test = false;
@@ -1598,7 +1736,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (test)
       await deliver(
         ctx,
-        [{ endpoint: clean.endpoint, subscription: JSON.stringify(clean), member_id: member.id, session_token: member.session_token }],
+        [{
+          endpoint: clean.endpoint, subscription, member_id: member.id, session_token: member.session_token,
+          ...(await db.get("SELECT g.name AS team, (SELECT count(*) FROM subscriptions WHERE endpoint = ?) AS accounts FROM groups g WHERE g.id = ?", [clean.endpoint, member.group_id])),
+        }],
         { title: "Bildirimler açık 🔔", body: "Biri kütübe gelince ilk sen duyacaksın.", url: "/", tag: `test-${Date.now()}` },
         "subscriptions",
         { urgency: "high", ttl: 600 },
@@ -1617,12 +1758,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, new: result.changes === 1 });
   });
 
-  route("DELETE", "/push", async ({ member, body }) => {
-    await db.run("DELETE FROM subscriptions WHERE member_id = ? AND endpoint = ?", [
-      member.id,
-      String(body.endpoint || ""),
-    ]);
-    return json({ ok: true });
+  // Off for this account only; `others` tells the app whether another account
+  // on this device still uses the browser subscription (then it is kept).
+  route("DELETE", "/push", async ({ request, member, body }) => {
+    const endpoint = String(body.endpoint || "");
+    await db.run("DELETE FROM subscriptions WHERE member_id = ? AND endpoint = ?", [member.id, endpoint]);
+    const held = (await deviceAccounts(request)).map((a) => a.hash);
+    const others = held.length
+      ? (await db.get(`SELECT count(*) AS n FROM subscriptions WHERE endpoint = ? AND session_token IN (${held.map(() => "?").join(", ")})`, [endpoint, ...held])).n
+      : 0;
+    return json({ ok: true, others });
   });
 
   route("POST", "/leave", async ({ request, member }) => {
@@ -2167,7 +2312,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const won = await db.run("UPDATE groups SET rhythm_at = ? WHERE id = ? AND rhythm_at < ?", [boundary, g.id, boundary]);
       if (!won?.changes) continue;
       const subs = await db.all(
-        `SELECT s.endpoint, s.subscription, s.member_id, s.session_token FROM subscriptions s JOIN members m ON m.id = s.member_id
+        `SELECT ${pushColumns} FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
          JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id
          WHERE m.group_id = ? AND m.status IN ('here', 'break') AND m.status_until > ? AND a.created > ?`,
         [g.id, now, now - SESSION_AGE],

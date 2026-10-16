@@ -54,6 +54,45 @@ test("a database from the first Kütüp release upgrades in place and keeps its 
   );
 });
 
+test("migration 21 keeps push subscriptions and lets one endpoint carry several accounts (n25)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const db = sqliteAdapter(sqlite);
+  // A database as it is live before n25 (schema 20), with one phone subscribed.
+  for (const [i, statements] of migrations.slice(0, 20).entries())
+    await db.batch([
+      ...statements.map((sql) => [sql, []]),
+      ["INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [String(i + 1)]],
+    ]);
+  const now = Date.now();
+  sqlite.exec(`
+    INSERT INTO groups (id, name, invite) VALUES ('g1', 'Ana tayfa', 'invite-123456789012'), ('g2', 'İkinci tayfa', 'invite-210987654321');
+    INSERT INTO members (id, group_id, token, name, avatar, color, joined, updated) VALUES ('m1', 'g1', 't1', 'Batur', '🪐', 'lilac', 1, 1), ('m2', 'g2', 't2', 'Batur 2', '🪐', 'mint', 1, 1);
+    INSERT INTO sessions (token, member_id, created, seen) VALUES ('s1', 'm1', ${now}, ${now}), ('s2', 'm2', ${now}, ${now});
+    INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES ('https://fcm.googleapis.com/phone', 'm1', '{}', 's1');
+    INSERT INTO push_outbox (id, endpoint, subscription_table, payload, ttl, next_at, created, member_id, session_token, subject)
+      VALUES ('q1', 'https://fcm.googleapis.com/phone', 'subscriptions', '{}', 60, 0, ${now}, 'm1', 's1', 'x');
+  `);
+  await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
+  assert.equal(sqlite.prepare("SELECT value FROM settings WHERE key = 'schema'").get().value, String(SCHEMA_VERSION));
+  assert.deepEqual({ ...sqlite.prepare("SELECT * FROM subscriptions").get() }, { endpoint: "https://fcm.googleapis.com/phone", member_id: "m1", subscription: "{}", session_token: "s1" });
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM push_outbox").get().n, 1, "queued pushes survive the rebuild");
+  // The same phone now carries the second account too.
+  sqlite.exec("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES ('https://fcm.googleapis.com/phone', 'm2', '{}', 's2')");
+  assert.throws(() => sqlite.exec("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES ('https://fcm.googleapis.com/phone', 'm2', '{}', 's2')"), /UNIQUE/);
+  // Dropping the second account's row leaves the first account's queued push alone…
+  sqlite.exec("DELETE FROM subscriptions WHERE member_id = 'm2'");
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM push_outbox").get().n, 1);
+  // …and ending a session still takes its subscription and queued pushes with it.
+  sqlite.exec("DELETE FROM sessions WHERE token = 's1'");
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM subscriptions").get().n, 0);
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM push_outbox").get().n, 0);
+  assert.deepEqual(
+    sqlite.prepare("SELECT name FROM sqlite_master WHERE tbl_name = 'subscriptions' AND type IN ('index', 'trigger') AND sql IS NOT NULL ORDER BY name").all().map((r) => r.name),
+    ["subscriptions_member", "subscriptions_outbox_delete", "subscriptions_outbox_rebind", "subscriptions_session"],
+  );
+});
+
 test("without ADMIN_KEY, Batur claims the box once with a key of his own", async () => {
   const app = createApp({ db: sqliteAdapter(new DatabaseSync(":memory:")) });
   assert.equal((await call(app, "/owner/status")).data.claimed, false);

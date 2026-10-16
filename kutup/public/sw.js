@@ -17,7 +17,7 @@ self.addEventListener("push", (event) => {
       renotify: true,
       requireInteraction: !!payload.sticky,
       vibrate: payload.sticky ? [300, 120, 300, 120, 600] : [200, 100, 200],
-      data: { url: payload.url || "/" },
+      data: { url: payload.url || "/", account: payload.account || "" },
     }),
   );
 });
@@ -40,18 +40,21 @@ self.addEventListener("pushsubscriptionchange", (event) => {
         }
         subscription = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
       }
+      // Every account on this device that used the old one moves with it (n25).
       await fetch("/api/push", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Kutup": "1" },
-        body: JSON.stringify({ subscription: subscription.toJSON() }),
+        body: JSON.stringify({ subscription: subscription.toJSON(), previous: event.oldSubscription?.endpoint }),
       });
     })().catch(() => {}),
   );
 });
-// Open the tab the notification is about (board, plans…), reusing an open window.
+// Open the tab the notification is about (board, plans…), reusing an open window,
+// in the account it was sent to (?as=, when the phone holds several, n25).
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = new URL(event.notification.data?.url || "/", self.location.origin);
+  if (event.notification.data?.account) target.searchParams.set("as", event.notification.data.account);
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })

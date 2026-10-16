@@ -26,7 +26,7 @@ export function createPushOutbox({ db, send, allowed, ownerHash, sessionAge, own
         `INSERT INTO push_outbox (id, endpoint, subscription_table, payload, urgency, ttl, next_at, created, member_id, session_token, key_hash, subject)
          SELECT ?, s.endpoint, ?, ?, ?, ?, ?, ?, ${isMember ? "s.member_id" : "NULL"}, s.session_token, ${isMember ? "NULL" : "s.key_hash"}, ?
          FROM ${table} s WHERE s.endpoint = ? AND s.subscription = ? AND ${identity}`,
-        [id, table, JSON.stringify({ ...message, id }), urgency, ttl, created, created, subject,
+        [id, table, JSON.stringify({ ...message, ...sub.extra, id }), urgency, ttl, created, created, subject,
           sub.endpoint, sub.subscription, ...binding],
       ]);
     }

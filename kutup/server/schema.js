@@ -211,6 +211,21 @@ export const migrations = [
     "ALTER TABLE messages ADD COLUMN to_member TEXT",
     "ALTER TABLE messages ADD COLUMN reply_to TEXT",
   ],
+  // 21 — several accounts on one device (n25): one phone's push endpoint can
+  // carry a subscription for each account signed in on it, so the key becomes
+  // (endpoint, member). The table is rebuilt (SQLite cannot change a primary
+  // key); its indexes and outbox triggers come back, scoped to one account so
+  // dropping one account's row never cancels another account's queued push.
+  [
+    "CREATE TABLE subscriptions_v21 (endpoint TEXT NOT NULL, member_id TEXT NOT NULL REFERENCES members(id), subscription TEXT NOT NULL, session_token TEXT REFERENCES sessions(token) ON DELETE CASCADE, PRIMARY KEY (endpoint, member_id))",
+    "INSERT INTO subscriptions_v21 (endpoint, member_id, subscription, session_token) SELECT endpoint, member_id, subscription, session_token FROM subscriptions",
+    "DROP TABLE subscriptions",
+    "ALTER TABLE subscriptions_v21 RENAME TO subscriptions",
+    "CREATE INDEX subscriptions_member ON subscriptions(member_id)",
+    "CREATE INDEX subscriptions_session ON subscriptions(session_token)",
+    "CREATE TRIGGER subscriptions_outbox_delete AFTER DELETE ON subscriptions BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint AND member_id IS OLD.member_id; END",
+    "CREATE TRIGGER subscriptions_outbox_rebind AFTER UPDATE ON subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.member_id IS NOT NEW.member_id OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint AND member_id IS OLD.member_id; END",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

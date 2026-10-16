@@ -126,6 +126,10 @@ export function defineSuite(target) {
     };
   }
   const state = async (who) => (await request("/state", { cookie: people[who] })).data;
+  // One remembered owner device: the owner key's own limit (20 a minute) is
+  // spent quickly by the tests that send it with every request.
+  let ownerCookie;
+  const ownerSession = async () => (ownerCookie ||= (await request("/owner/login", { body: { key: adminKey } })).cookie);
   const member = (s, name) => s.members.find((m) => m.name === name);
 
   before(async () => {
@@ -808,7 +812,7 @@ export function defineSuite(target) {
 
   test(`[${target}] revocation closes streams, disables push and cancels issued codes`, async () => {
     const ownerPushCount = push.received.filter((p) => p.path === "/push/batur").length;
-    const owner = (await request("/owner/login", { body: { key: adminKey } })).cookie;
+    const owner = await ownerSession();
     const revoked = await request("/groups", { body: { name: "Kayıp cihaz" } });
     const friend = await request("/join", { body: { name: "Arkadaş", invite: revoked.data.group.invite } });
     const receiver = pushReceiver();
@@ -897,6 +901,108 @@ export function defineSuite(target) {
     } finally {
       await request(`/owner/members/${person.data.memberId}`, { owner: adminKey, method: "DELETE" });
     }
+  });
+
+  test(`[${target}] one device keeps several accounts, switches with one tap and gets pushes for each (n25)`, async () => {
+    // A fresh process resets the burst limiter; this test signs up nine people.
+    await stop();
+    await start();
+    // A browser-like cookie jar for one phone: every Set-Cookie is kept or dropped.
+    const jar = new Map();
+    const phone = async (path, { body, method } = {}) => {
+      const response = await fetch(`${base}/api${path}`, {
+        method: method || (body ? "POST" : "GET"),
+        headers: { "Content-Type": "application/json", "X-Kutup": "1", Cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; ") },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      for (const line of response.headers.getSetCookie()) {
+        assert.match(line, /HttpOnly/, "no session token is readable by page scripts");
+        const [name, ...value] = line.split(";")[0].split("=");
+        if (/Max-Age=0\b/.test(line)) jar.delete(name);
+        else jar.set(name, value.join("="));
+      }
+      return { status: response.status, data: await response.json() };
+    };
+    const signUp = (name, groupName) => phone("/groups", { body: { name, groupName, username: `n25_${groupName.toLowerCase().replace(/[^a-z0-9]/g, "")}`, password: "test-pass-123" } });
+    const first = await signUp("Batur", "Ana tayfa");
+    const second = await signUp("Batur 2", "Ikinci tayfa");
+    assert.equal(second.status, 201);
+    assert.ok(jar.has("kutup_accounts"), "signing up again keeps the first account on the phone");
+    const accounts = async () => (await phone("/accounts")).data.accounts;
+    assert.deepEqual((await accounts()).map((a) => [a.name, a.team, a.current]), [["Batur 2", "Ikinci tayfa", true], ["Batur", "Ana tayfa", false]]);
+    // Only an account this phone really signed in to can be switched to.
+    const stranger = await request("/groups", { body: { name: "Yabancı", groupName: "Başka" } });
+    assert.equal((await phone("/accounts/switch", { body: { memberId: stranger.data.memberId } })).status, 403);
+    assert.equal((await phone("/accounts/switch", { body: { memberId: "uydurma" } })).status, 403);
+    assert.equal((await request("/accounts/switch", { cookie: stranger.cookie, body: { memberId: first.data.memberId } })).status, 403, "another browser cannot");
+    const switched = await phone("/accounts/switch", { body: { memberId: first.data.memberId } });
+    assert.equal(switched.status, 200);
+    assert.equal(switched.data.memberId, first.data.memberId);
+    assert.equal(switched.data.group.name, "Ana tayfa");
+    assert.equal((await phone("/state")).data.group.name, "Ana tayfa", "the other team's data, nothing mixed");
+
+    // Push: both accounts on one endpoint; a renewed subscription takes both along.
+    const receiver = pushReceiver();
+    const old = push.url("/push/n25-old"), path = "/push/n25-phone", endpoint = push.url(path);
+    assert.equal((await phone("/push", { body: { subscription: receiver.subscription(old) } })).status, 200);
+    await phone("/accounts/switch", { body: { memberId: second.data.memberId } });
+    assert.equal((await phone("/push", { body: { subscription: receiver.subscription(old) } })).status, 200);
+    const off = await phone("/push", { method: "DELETE", body: { endpoint: old } });
+    assert.equal(off.data.others, 1, "the first account still uses this browser subscription");
+    await phone("/push", { body: { subscription: receiver.subscription(old) } });
+    await phone("/push", { body: { subscription: receiver.subscription(endpoint), previous: old } });
+    const friendA = await request("/join", { body: { invite: first.data.group.invite, name: "Ana arkadaş" } });
+    const friendB = await request("/join", { body: { invite: second.data.group.invite, name: "İkinci arkadaş" } });
+    await request("/presence", { cookie: friendA.cookie, body: { status: "here" } });
+    await request("/presence", { cookie: friendB.cookie, body: { status: "here" } });
+    const sent = () => push.received.filter((p) => p.path === path).map((p) => JSON.parse(receiver.decrypt(p.body)));
+    await waitFor(() => sent().length >= 2, 8000, "a push for each account");
+    assert.equal(push.received.some((p) => p.path === "/push/n25-old"), false);
+    const titles = Object.fromEntries(sent().map((p) => [p.account, p.title]));
+    assert.deepEqual(titles, {
+      [first.data.memberId]: "Ana tayfa · Ana arkadaş kütüpte! 📚",
+      [second.data.memberId]: "Ikinci tayfa · İkinci arkadaş kütüpte! 📚",
+    });
+
+    // Batur signs the first account out everywhere: it leaves the switcher and
+    // its pushes stop; the second account carries on.
+    const owner = await ownerSession();
+    assert.equal((await request(`/owner/members/${first.data.memberId}/signout`, { cookie: owner, body: {} })).status, 200);
+    assert.deepEqual((await accounts()).map((a) => a.name), ["Batur 2"]);
+    assert.equal((await phone("/accounts/switch", { body: { memberId: first.data.memberId } })).status, 403);
+    assert.equal((await phone("/state")).status, 200);
+    let seen = sent().length;
+    await request("/messages", { cookie: friendA.cookie, body: { text: "Kimse yok mu?" } });
+    await request("/messages", { cookie: friendB.cookie, body: { text: "Buradayım" } });
+    await waitFor(() => sent().length > seen, 8000, "the remaining account's push");
+    await new Promise((r) => setTimeout(r, 300));
+    assert.deepEqual(sent().slice(seen).map((p) => p.account), [second.data.memberId]);
+
+    // Five accounts at most; signing in again to one already here replaces it.
+    for (const n of [3, 4, 5, 6]) assert.equal((await signUp(`Hesap ${n}`, `Tayfa ${n}`)).status, 201);
+    const full = await signUp("Hesap 7", "Tayfa 7");
+    assert.equal(full.status, 409);
+    assert.match(full.data.error, /en fazla 5 hesap/);
+    assert.equal((await accounts()).length, 5);
+    assert.equal((await phone("/login", { body: { username: "n25_ikincitayfa", password: "test-pass-123" } })).status, 200);
+    assert.equal((await accounts()).length, 5);
+    seen = sent().length;
+    await request("/messages", { cookie: friendB.cookie, body: { text: "Hâlâ buradayım" } });
+    await waitFor(() => sent().length > seen, 8000, "push after signing in again");
+    // Signing out of one account: it stops getting pushes, the next one opens.
+    assert.equal((await phone("/logout", { body: {} })).data.others, 4);
+    const next = await phone("/session");
+    assert.equal(next.status, 200);
+    assert.notEqual(next.data.memberId, second.data.memberId);
+    assert.equal((await accounts()).length, 4);
+    seen = sent().length;
+    await request("/messages", { cookie: friendB.cookie, body: { text: "Son kez" } });
+    await new Promise((r) => setTimeout(r, 500));
+    assert.equal(sent().length, seen, "a signed-out account gets nothing on this phone");
+    // Leaving a team hands the phone to another account as well.
+    assert.equal((await phone("/leave", { body: {} })).status, 200);
+    assert.equal((await phone("/session")).status, 200);
+    assert.equal((await accounts()).length, 3);
   });
 
   test(`[${target}] data survives a restart`, async () => {

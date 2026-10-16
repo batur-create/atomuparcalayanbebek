@@ -170,6 +170,17 @@ try {
   B1 = (await call("/login", { body: { username: userB, password: pass } })).token;
   check("signed-out member can log in again", !!B1);
 
+  // 7b. n25: one device keeps two accounts; only it can switch between them.
+  const device = (path, cookie, body) => fetch(`${base}/api${path}`, {
+    method: "POST", headers: { "x-kutup": "1", "content-type": "application/json", cookie }, body: JSON.stringify(body),
+  });
+  const added = await device("/login", `kutup_session=${B1}`, { username: userA, password: newPass });
+  const jar = added.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+  check("second account kept on the device", added.status === 200 && /kutup_accounts=[\w-]/.test(jar), `status ${added.status}`);
+  const switched = await device("/accounts/switch", jar, { memberId: idB });
+  check("one-tap switch to the saved account", switched.status === 200 && (await switched.json()).memberId === idB, `status ${switched.status}`);
+  check("switch refused without the device's cookie", (await device("/accounts/switch", `kutup_session=${A5}`, { memberId: idB })).status === 403);
+
   // 8. Cleanup.
   const leftB = await call("/leave", { cookie: B1, body: {} });
   const leftA = await call("/leave", { cookie: A5, body: {} });
