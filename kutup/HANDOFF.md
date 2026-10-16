@@ -239,16 +239,22 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - Tema jetonları `src/themes.css`'te, eski kimlikler `THEME_MOVED` ile eşleniyor.
 - Yeni CSS'te renk sabitlemek yerine jeton kullan; `scripts/theme-css.js` sabit nötrleri derlemede temaya bağlıyor, `scripts/theme-check.mjs` kontrastı denetliyor.
 
+**n25 Hesaplar arası geçiş bitti (17 Ekim, Worker 812f7ef9, PR #4, göç 21):** Bir cihaz 5 hesaba kadar tutuyor, Hesaplarım'dan tek dokunuşla geçiliyor. Notlar:
+- Açık hesap `kutup_session`'da, diğerleri `kutup_accounts` çerezinde (HttpOnly, `/api`). Sunucu her istekte geçerliliği denetliyor (`deviceAccounts`).
+- Bildirim aboneliği `(endpoint, member_id)` anahtarlı. Birden fazla hesaplı telefonda başlıkta ekip adı var; tıklayınca `?as=<üye>` ile o hesap açılıyor.
+- Hesap değiştirince `App` baştan kuruluyor (`KutupApp`, `restart`); hesap başına durum tutan yeni bir şey eklerken bunu bozma. Zilin kapalı bilgisi `kutup-push-off:<üye>`.
+- Gerçek telefonda iki hesaplı bildirim denenmedi; Batur denesin.
+
 **d22 Ana sayfa hata avı (17 Ekim, Worker d2761763):** Batur'un ekran görüntüsündeki 6 hata düzeldi. Notlar:
 - Düğme olan kartlara (`<button>`) zemin, köşe ve iç boşluk ver; yoksa tarayıcının gri düğmesi görünür.
 - Yeni bileşende sınıf adı seçmeden önce `grep` ile çakışma ara (`.mode-switch` hem üst çubukta hem Köy stüdyosundaydı; stüdyonunki `.studio-mode`).
 - Kişi kartları sütun halinde (`display: flex`), yan yana kartlar hizalı. Ay ve güneşin üst konumu `--orb-y` değişkeninde; ana sayfa onu görünür alana çekiyor.
 - Pencere fareyle kapanınca odak dönen düğmede halka yok (`quiet-focus`, `Modal.jsx`).
 
-**Bulut kredisi (17 Ekim):** ~30 dolar kaldı, iş başına ~20–25 dolar gidiyor. Kalan kredi n25'e ayrıldı. Görsel ve onaya bağlı işler (Kara'nın yerleşmesi, n24, n28), Batur'un haftalık limiti perşembe sıfırlanınca yerelde yapılacak.
+**Bulut kredisi (17 Ekim gecesi):** n25'ten sonra ~13 dolar kaldı (iş başına ~20–25 dolar, n25 ~6 dolar tuttu). Yeni paket için yetmez; küçük düzeltme mesajları için yedek. Krediler 5 Kasım'da sona eriyor. Görsel ve onaya bağlı işler (Kara'nın yerleşmesi, n24, n28), Batur'un haftalık limiti perşembe sıfırlanınca yerelde yapılacak.
 
 **Sıradaki işler (Batur'un onayladığı plan; ayrıntılı tanımlar panoda):**
-1. **n25 Hesaplar arası geçiş** (bulut önerisi): bir hesap = bir ekip, Instagram tarzı geçiş.
+1. **Kara v2'nin yerleşmesi:** ChatGPT paketi (`.codex` klasöründe, KUTUP_DEVIR.md'de yolu var); incele, ölç, Batur'a sitede görüntülerle onaylat.
 2. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
 3. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir; n27'deki okuyucu kartı fikri paylaşım kartı için aday.
 4. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.

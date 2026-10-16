@@ -19,10 +19,11 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'nin yerleşmesi, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
 | n27 | Vitrin ve cila: Gökyüzü girişi, gizli davet, sahte basılabilir avı | Tasarım | 16 Eki 23:00 | 1743855a |
@@ -68,6 +69,35 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n24 Ses t
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n25 · Hesaplar arası geçiş: bir cihazda birden fazla hesap
+Hesap · 17 Eki 2026 · 76381788 (bulut oturumu, PR #4) · birleştirme eb4e2ba9 · Worker 812f7ef9 · göç 21
+
+**Ne yapıldı:**
+- **Instagram tarzı geçiş:** Bir cihaz en fazla 5 hesabı hatırlıyor. Ben sayfasında "Hesaplarım" listesi var: açık hesap üstte, diğerine tek dokunuşla geçiliyor. "Hesap ekle" açık hesabı kapatmadan giriş ekranını açıyor ("Hesabıma dön" ile geri). Masaüstünde soldaki profil satırı aynı listeyi açıyor. Geçişte uygulama o hesap için baştan kuruluyor; önceki hesabın canlı akışı, köyü, panosu ve sayaçları taşınmıyor.
+- **Güvenlik:** Oturum anahtarları sayfa betiklerine hiç açılmıyor. Açık hesap `kutup_session`'da, cihazdaki diğerleri ikinci bir HttpOnly çerezde (`kutup_accounts`, yalnız `/api`). Sunucu her istekte her anahtarı yeniden denetliyor. Bir cihaz yalnız gerçekten o cihazda açılmış ve oturumu hâlâ geçerli hesaba geçebiliyor. Kapanan, iptal edilen ya da kurtarılan hesap listeden kendiliğinden düşüyor ve sıradaki hesap açılıyor.
+- **"Bu cihazda çıkış yap":** Yalnız açık hesaptan çıkarıyor, diğer hesaplar kalıyor. Şifre kurtarma, tüm cihazlardan çıkış ve ekipten ayrılma hesap bazında eskisi gibi.
+- **Bildirimler (göç 21):** Abonelik tablosunun anahtarı `(endpoint, üye)` oldu; aynı telefon her hesap için ayrı bildirim alıyor ve bir hesabın bildirimi diğerine gitmiyor. Telefonda birden fazla hesap varsa başlığın başında ekip adı yazıyor; dokununca o hesap açılıyor (`?as=`). Zil hesap başına.
+- **Testler:**
+  - 99 birim (Node ve Worker+D1, göç testi dahil);
+  - 66 tarayıcı kontrolü (8 yeni);
+  - canlı duman testinde 7b adımı: ikinci hesap cihazda kalıyor, tek dokunuşla geçiliyor, cihaz çerezi olmadan geçiş reddediliyor.
+- **Yayın:** Göçten önce canlı yedek alındı (`data/backup-before-n25-…json`, şema 20). Göç sonrası 6 üye aboneliğinin 6'sı da yerinde.
+
+**Kararlar ve nedenleri:**
+- Bir hesap = bir ekip; binalar, tuğlalar ve istatistikler karışmasın diye (Batur'un kararı).
+- Anahtarlar sayfanın okuyabileceği yerde değil, çerezde: bir betik açığı diğer hesapları da ele geçiremesin.
+- Cihaz başına 5 hesap sınırı; ortak telefonda listenin şişmemesi için.
+- PR, d22 araya girdiği için hızlı ileri sarılamadı; birleştirme commit'iyle alındı.
+
+**Batur'un sözleri:** "iki ayrı hesap daha mantıklı. O zaman hesaplarım arası geçiş yapmamı kolaylaştırman lazım." · "dar ve tek aşamalı tut."
+
+**Açık:**
+- Gerçek telefonda (iPhone ana ekran uygulaması, Android) iki hesaplı bildirim denenmedi.
+- Tarayıcının aboneliği kendi kendine yenilemesi (`pushsubscriptionchange`) gerçekte denenmedi.
+- iPhone'da hesap ekleme ana ekran uygulamasının içinde yapılmalı (Safari ayrı çerez tutar).
+
+**Dosyalar:** `server/app.js`, `server/schema.js` (göç 21), `server/outbox.js`, `public/sw.js`, `src/Accounts.jsx` (yeni), `src/App.jsx`, `src/MePage.jsx`, `src/home.css`, `tests/suite.js`, `tests/core.test.js`, `tests/browser_smoke.py`, `tests/live-smoke.mjs`, `audit/2026-10-17-n25/`.
 
 ### d22 · Ana sayfa hata avı (Batur'un ekran görüntüsü)
 Düzeltme · 17 Eki 2026 · 4d5a5cfb · Worker d2761763
