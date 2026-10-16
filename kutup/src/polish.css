@@ -624,3 +624,13 @@ html[data-motion="calm"] .home-sky button.sky-sticker.wobble {
   line-height: 1.5;
   color: var(--muted);
 }
+
+/* The board's message list scrolls only up and down: a bubble sliding in or a
+   heart burst at the edge must not flash a sideways scrollbar. */
+.board-page .messages {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.board-page .message p {
+  overflow-wrap: anywhere;
+}
