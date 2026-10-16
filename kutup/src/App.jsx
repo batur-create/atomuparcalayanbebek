@@ -3,6 +3,7 @@ import { AnimatePresence, LazyMotion, MotionConfig, m as M } from "motion/react"
 // Motion's animation and layout engine loads after the first paint.
 const motionFeatures = () => import("./motionFeatures.js").then((r) => r.default);
 import {
+  ArrowLeft,
   ArrowUpRight,
   Expand,
   ArrowRight,
@@ -85,6 +86,7 @@ import { Entry } from "./Entry.jsx";
 import { EmptyState, IosGuide, Loading } from "./Illustrations.jsx";
 import { Home, Badge, Kinetic, FaceButton } from "./Home.jsx";
 import { MePage, TeamModal } from "./MePage.jsx";
+import { AccountsModal } from "./Accounts.jsx";
 import { useMotionPref } from "./motionPref.js";
 import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
@@ -124,14 +126,23 @@ const sameKey = (buffer, key) => {
 function Icon({ name: Component, ...props }) {
   return <Component size={19} strokeWidth={1.8} {...props} />;
 }
+// n25: switching or adding an account mounts the app afresh for that account,
+// so nothing of the previous one (live stream, village, board, timers, push
+// state) carries over. `initial` is the new account's session and state.
 export default function App() {
+  const [mount, setMount] = useState({ key: 0, initial: null });
+  const restart = (initial) => setMount((x) => ({ key: x.key + 1, initial }));
+  return <KutupApp key={mount.key} initial={mount.initial} restart={restart} />;
+}
+function KutupApp({ initial, restart }) {
   const [session, setSession] = useState(null),
     [data, setData] = useState(EMPTY),
     [loading, setLoading] = useState(true);
   const sessionEpoch = useRef(0);
   const updateData = (incoming) => setData((previous) => mergeState(previous, incoming));
+  // The address (a notification's ?tab=…) only counts on the first opening.
   const [tab, setTab] = useState(
-      TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
+      initial ? initial.tab || "home" : TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
     ),
     [modal, setModal] = useState(null),
     [toast, setToast] = useState(""),
@@ -220,7 +231,9 @@ export default function App() {
   const [receipt, setReceipt] = useState(null);
   const [focusScreen, setFocusScreen] = useState(false);
   // An invite notification opens "/?join=<friend>": offer to join their session.
-  const [joinAsk, setJoinAsk] = useState(() => startParams.get("join"));
+  const [joinAsk, setJoinAsk] = useState(() => (initial ? null : startParams.get("join")));
+  // "Hesap ekle": the welcome screen over the open account, which stays signed in.
+  const [adding, setAdding] = useState(false);
   const togetherRef = useRef(false),
     seenSent = useRef(0),
     friendsBefore = useRef(new Map());
@@ -269,6 +282,42 @@ export default function App() {
     setNotificationOn(false);
     if (message) notify(message);
   };
+  // The open account ended here (signed out, revoked, left): another account
+  // saved on this device opens if there is one, otherwise the device is signed out.
+  const ended = (message, next = "Bu hesabın oturumu kapandı; cihazdaki diğer hesabın açıldı.") =>
+    get("/session")
+      .then((d) => restart({ data: d, tab: "home", message: next }))
+      .catch(() => signedOut(message));
+  const switchAccount = async (account) => {
+    try {
+      const d = await api("/accounts/switch", { memberId: account.id });
+      restart({ data: d, tab, message: `Şimdi bu hesaptasın: ${account.name} · ${account.team}` });
+    } catch (e) {
+      notify(e.status === 403 ? "Bu hesabın oturumu kapanmış. “Hesap ekle” ile yeniden gir." : e.message);
+      if (e.status === 403) setModal(null);
+    }
+  };
+  const addAccount = (full) => {
+    if (full) return notify("Bu cihazda en fazla 5 hesap açık kalabilir. Önce birinden çıkış yap.", 6000);
+    setModal(null);
+    setAdding(true);
+  };
+  const signOutHere = async () => {
+    if (!session.username) {
+      notify("Çıkmadan önce bir kullanıcı adı ve şifre belirle; yoksa bu profile geri giremezsin.", 7000);
+      return setModal("account");
+    }
+    if (!confirm(`Bu cihazda çıkış yapılsın mı? (${me?.name || ""} · ${data.group.name}) Profilin, binaların ve mesajların yerinde kalır; kullanıcı adın ve şifrenle istediğin an geri girersin.`)) return;
+    try {
+      await api("/logout", {});
+      ended("Çıkış yapıldı. Kullanıcı adın ve şifrenle istediğin an geri gelebilirsin.", "Çıkış yapıldı; cihazdaki diğer hesabın açıldı.");
+    } catch (e) {
+      notify(e.message);
+    }
+  };
+  // The bell is per account: each account on this device turns its own on or off.
+  const pushOffKey = `kutup-push-off:${session?.memberId}`;
+  const pushOff = () => !!(storage.get(pushOffKey) ?? storage.get("kutup-push-off"));
   useEffect(() => {
     revision.current = data.group?.rev ?? null;
   }, [data]);
@@ -282,7 +331,12 @@ export default function App() {
       setLoading(false);
       return;
     }
-    get("/session")
+    // A notification for another account on this phone opens with ?as=<id>.
+    const wanted = !initial && startParams.get("as");
+    const opening = initial
+      ? Promise.resolve(initial.data)
+      : get("/session").then((d) => (wanted && wanted !== d.memberId ? api("/accounts/switch", { memberId: wanted }).catch(() => d) : d));
+    opening
       .then((d) => {
         setSession({
           memberId: d.memberId,
@@ -291,7 +345,8 @@ export default function App() {
           live: d.live,
         });
         setData(d);
-        if (startParams.get("action") === "here") setModal("presence");
+        if (initial?.message) notify(initial.message);
+        else if (!initial && startParams.get("action") === "here") setModal("presence");
       })
       .catch((e) => {
         if (e.status !== 401)
@@ -300,7 +355,7 @@ export default function App() {
       })
       .finally(() => {
         setLoading(false);
-        if (startParams.has("tab") || startParams.has("action"))
+        if (!initial && (startParams.has("tab") || startParams.has("action") || startParams.has("as")))
           history.replaceState({}, "", location.pathname);
       });
     if ("serviceWorker" in navigator)
@@ -344,7 +399,7 @@ export default function App() {
       } catch (e) {
         if (gone) return;
         if (e.status === 401)
-          signedOut("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
+          ended("Bu cihazdaki oturum kapandı. Yeniden katılabilirsin.");
         else setConnected(false);
       } finally {
         clearTimeout(timeout);
@@ -376,7 +431,7 @@ export default function App() {
         .then((r) => r.pushManager?.getSubscription())
         .then(async (s) => {
           if (gone || notificationBusy.current) return;
-          const off = !!storage.get("kutup-push-off");
+          const off = pushOff();
           const on = !!s && Notification.permission === "granted" && !off;
           if (s && !registered) {
             registered = true;
@@ -621,7 +676,7 @@ export default function App() {
   };
   // A plan notification ("?tab=plans") lands on the plans part of the home page.
   useEffect(() => {
-    if (startParams.get("tab") !== "plans" || !session) return;
+    if (initial || startParams.get("tab") !== "plans" || !session) return;
     const timer = setTimeout(() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "center" }), 700);
     return () => clearTimeout(timer);
   }, [!!session]);
@@ -647,7 +702,7 @@ export default function App() {
     slide.current = (order[tab] ?? 0) >= (order[lastTab.current] ?? 0) ? 1 : -1;
     lastTab.current = tab;
   }
-  const leave = () => me && leaveTeam(me, notify, () => signedOut("Ekipten ayrıldın. Kapımız hep açık. 🫶"));
+  const leave = () => me && leaveTeam(me, notify, () => ended("Ekipten ayrıldın. Kapımız hep açık. 🫶", "Ekipten ayrıldın. Cihazdaki diğer hesabın açıldı. 🫶"));
   // Joining a friend's timer builds the picked building if it fits, a cottage otherwise.
   const joinFriend = (m) =>
     m &&
@@ -690,6 +745,11 @@ export default function App() {
     friendsBefore.current = next;
   }, [data.members]);
   const joinSuccess = (d, welcome = "Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨") => {
+    // Added next to the open account: start afresh in the new one.
+    if (session) {
+      history.replaceState({}, "", "/");
+      return restart({ data: d, tab: "home", message: welcome });
+    }
     sessionEpoch.current++;
     setSession({
       memberId: d.memberId,
@@ -731,15 +791,16 @@ export default function App() {
   async function notificationsOff() {
     // Off on this device at once; telling the server is best effort (a stale
     // subscription is dropped on its next push, and the next visit retries).
-    storage.set("kutup-push-off", "1");
+    storage.set(pushOffKey, "1");
     setNotificationOn(false);
     try {
       const registration = await within(navigator.serviceWorker.ready, 8000);
       const sub = await registration.pushManager.getSubscription();
       if (sub) {
-        await api("/push", { endpoint: sub.endpoint }, "DELETE").catch(() => {});
-        // Batur’s owner alerts share this browser subscription; keep it for them.
-        if (!storage.get("kutup-owner-push")) await sub.unsubscribe().catch(() => {});
+        const result = await api("/push", { endpoint: sub.endpoint }, "DELETE").catch(() => null);
+        // Batur’s owner alerts, or another account on this device, share this
+        // browser subscription; keep it for them.
+        if (!storage.get("kutup-owner-push") && !result?.others) await sub.unsubscribe().catch(() => {});
       }
     } catch {}
     notify("Bildirimler kapandı. Zile dokunup istediğin an açabilirsin.");
@@ -796,7 +857,7 @@ export default function App() {
     }
     try {
       const result = await api("/push", { subscription: sub.toJSON(), test: true });
-      storage.set("kutup-push-off", "");
+      storage.set(pushOffKey, "");
       setNotificationOn(true);
       notify(
         result.test
@@ -819,11 +880,16 @@ export default function App() {
         <Loading big text="Bir sandalye çekiyoruz…" />
       </div>
     );
-  if (!session)
+  if (!session || adding)
     return (
       <LazyMotion features={motionFeatures} strict>
       <MotionConfig reducedMotion={motionPick === "still" ? "always" : motionPick ? "never" : "user"}>
         <Entry invite={invite} inviteInfo={inviteInfo} open={(next) => setModal(next)} onSuccess={joinSuccess} now={now} dark={dark} start={entryStart} />
+        {adding && (
+          <button type="button" className="adding-back" onClick={() => (setAdding(false), setModal(null))}>
+            <ArrowLeft size={17} /> Hesabıma dön
+          </button>
+        )}
         {(modal === "onboard" || modal === "login") && (
           <SignIn invite={invite} close={() => setModal(null)} onSuccess={joinSuccess} onNew={() => (setModal(null), setEntryStart((n) => n + 1))} />
         )}
@@ -912,13 +978,13 @@ export default function App() {
           </a>
           <button
             className="sidebar-profile"
-            onClick={() => requireMember(() => navigate("me"))}
+            onClick={() => requireMember(() => setModal("accounts"))}
           >
             <Avatar member={me} size="small" />
             <span>
               <strong>{me?.name || "Senin yerin hazır"}</strong>
               <small>
-                {me ? "Profilini güzelleştir" : "Ekibine katıl, yerini al"}
+                {me ? "Hesaplarım · hesap değiştir" : "Ekibine katıl, yerini al"}
               </small>
             </span>
             <ChevronRight size={18} />
@@ -1094,7 +1160,7 @@ export default function App() {
             </div>
           )}
           {tab === "me" && (
-            <MePage me={me} group={data.group} size={data.members.length} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} />
+            <MePage me={me} group={data.group} size={data.members.length} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} accounts={{ onSwitch: switchAccount, onAdd: addAccount, onSignOut: signOutHere }} />
           )}
           {tab === "feedback" && (
             <FeedbackPage
@@ -1139,6 +1205,17 @@ export default function App() {
       {modal === "look" && <LookModal theme={theme} setTheme={setTheme} mode={mode} setMode={setMode} motion={motion} setMotion={setMotion} close={() => setModal(null)} />}
       {modal === "team" && (
         <TeamModal data={data} me={me} now={now} close={() => setModal(null)} invite={() => setModal("invite")} openMember={(x) => (x.id === me?.id ? (setModal(null), navigate("me")) : setModal({ member: x }))} />
+      )}
+      {modal === "accounts" && (
+        <AccountsModal
+          memberId={session.memberId}
+          close={() => setModal(null)}
+          openMe={() => (setModal(null), navigate("me"))}
+          onProfile={() => setModal("profile")}
+          onSwitch={switchAccount}
+          onAdd={addAccount}
+          onSignOut={signOutHere}
+        />
       )}
       {modal === "account" && (
         <AccountModal

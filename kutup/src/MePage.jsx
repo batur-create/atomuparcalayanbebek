@@ -2,12 +2,13 @@
 // a menu. Profile, look and stats; inviting a friend and writing to Batur; account.
 import React, { useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { ChartColumn, ChevronRight, KeyRound, LogOut, Palette, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
+import { ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { MemberStats } from "./Stats.jsx";
 import { Modal } from "./Modal.jsx";
 import { minutesLabel } from "./api.js";
 import { Badge, Reveal } from "./Home.jsx";
+import { AccountList, useAccounts } from "./Accounts.jsx";
 
 const hours = (min) => (min >= 60 ? `${Math.round((min / 60) * 10) / 10} sa` : `${min} dk`);
 
@@ -28,8 +29,11 @@ function Row({ icon: Icon, title, sub, onClick, href, danger, count, open }) {
   );
 }
 
-export function MePage({ me, group, size, requests, setModal, navigate, leave }) {
+export function MePage({ me, group, size, requests, setModal, navigate, leave, accounts: actions }) {
   const [stats, setStats] = useState(false);
+  // n25: with more than one account on this device, they come first.
+  const accounts = useAccounts(me?.id);
+  const several = accounts?.accounts.length > 1;
   if (!me) return null;
   return (
     <div className="me-page">
@@ -66,6 +70,14 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave })
           </span>
         </m.button>
       </div>
+      {several && (
+        <>
+          <div className="me-label">HESAPLARIM</div>
+          <Reveal>
+            <AccountList list={accounts} onProfile={() => setModal("profile")} onSwitch={actions.onSwitch} onAdd={actions.onAdd} />
+          </Reveal>
+        </>
+      )}
       <div className="me-label">SEN</div>
       <Reveal className="me-rows">
         <Row icon={UserRound} title="Profilim" sub="Ad, karakter, renk, masa notu" onClick={() => setModal("profile")} />
@@ -90,6 +102,8 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave })
       <div className="me-label">HESAP</div>
       <Reveal className="me-rows" delay={0.1}>
         <Row icon={KeyRound} title="Hesap ve cihazlar" sub="Kullanıcı adı, şifre, başka cihazda aç" onClick={() => setModal("account")} />
+        {accounts && !several && <Row icon={Plus} title="Hesap ekle" sub="Başka ekibin mi var? O hesapla da gir" onClick={() => actions.onAdd(false)} />}
+        <Row icon={DoorOpen} title="Bu cihazda çıkış yap" sub={several ? "Profilin kalır; diğer hesabın açılır" : "Profilin kalır; şifrenle geri girersin"} onClick={actions.onSignOut} />
         {me.badge === "dev" && <Row icon={({ size }) => <span style={{ fontSize: size }}>✳</span>} title="Komuta merkezi" sub="Batur’un paneli" href="/batur" />}
         <Row icon={LogOut} title="Ekipten ayrıl" sub="Profilin, binaların ve mesajların silinir" danger onClick={leave} />
       </Reveal>
