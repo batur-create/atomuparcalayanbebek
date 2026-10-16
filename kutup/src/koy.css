@@ -23,7 +23,7 @@
   border: 0;
   border-radius: 12px;
   background: none;
-  color: #c9ccbb;
+  color: var(--studio-soft);
   text-align: left;
   transition: background 0.2s ease, color 0.2s ease;
 }
@@ -35,24 +35,24 @@
   /* dark: keep */
   font-size: 13px;
   font-weight: 700;
-  color: #ece9dd;
+  color: var(--studio-text);
 }
 .mode-switch small {
   /* dark: keep */
   font-size: 10.5px;
-  color: #9ea392;
+  color: var(--studio-faint);
 }
 .mode-switch button.on {
   /* dark: keep */
-  background: #d6ef9e;
+  background: var(--pop);
 }
 .mode-switch button.on b {
   /* dark: keep */
-  color: #24301a;
+  color: var(--pop-ink);
 }
 .mode-switch button.on small {
   /* dark: keep */
-  color: #4b5a39;
+  color: var(--pop-ink-soft);
 }
 .mode-hint {
   /* dark: keep */
@@ -60,7 +60,7 @@
   font-size: 11.5px;
   line-height: 1.45;
   text-align: center;
-  color: #b9bca9;
+  color: var(--studio-soft);
 }
 .focus-card .build-pick {
   margin-top: 4px;
@@ -74,8 +74,8 @@
   padding: 6px 14px;
   border: 0;
   border-radius: 99px;
-  background: #d6ef9e;
-  color: #24301a;
+  background: var(--pop);
+  color: var(--pop-ink);
   font-size: 12px;
   font-weight: 800;
 }

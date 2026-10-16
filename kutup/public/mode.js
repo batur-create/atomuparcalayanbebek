@@ -20,9 +20,22 @@
     var length = 12 + 2.9 * Math.sin((2 * Math.PI * (day - 80)) / 365);
     dark = hour < 12.8 - length / 2 || hour >= 12.8 + length / 2;
   }
+  // The page color of each theme, light and dark (--canvas in src/themes.css);
+  // themes that were merged into a package move to it (THEME_MOVED in src/api.js).
+  var canvas = {
+    lilac: ["#f6f5f0", "#181916"],
+    navy: ["#edf2f8", "#12171e"],
+    teal: ["#ebf4f4", "#10191a"],
+    clay: ["#f8f0e7", "#1c150f"],
+    pink: ["#f9f1f4", "#1c1416"],
+    graphite: ["#f1f2f4", "#151618"],
+  };
+  var moved = { mint: "teal", blue: "navy", peach: "clay", amber: "clay" };
+  if (moved[theme]) theme = moved[theme];
+  if (!canvas[theme]) theme = null;
   var root = document.documentElement;
   root.setAttribute("data-mode", dark ? "dark" : "light");
   if (theme) root.setAttribute("data-theme", theme);
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta && dark) meta.setAttribute("content", "#181916");
+  if (meta) meta.setAttribute("content", canvas[theme || "lilac"][dark ? 1 : 0]);
 })();

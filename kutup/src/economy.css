@@ -31,9 +31,11 @@
   margin: 10px 0 4px;
   padding: 8px 12px 8px 6px;
   border: 1px solid rgba(214, 239, 158, 0.45);
+  border: 1px solid color-mix(in srgb, var(--pop) 45%, transparent);
   border-radius: 14px;
   background: rgba(214, 239, 158, 0.08);
-  color: #f5f2e8;
+  background: color-mix(in srgb, var(--pop) 8%, transparent);
+  color: var(--studio-ink);
   text-align: left;
 }
 .build-pick .building-thumb {
@@ -53,20 +55,20 @@
   margin-top: 2px;
   font-size: 11px;
   line-height: 1.4;
-  color: #c9ccbb;
+  color: var(--studio-soft);
 }
 .build-pick-change {
   flex: none;
   font-size: 11.5px;
   font-weight: 700;
-  color: #d6ef9e;
+  color: var(--pop);
 }
 .free-note,
 .ruin-note {
   margin: 8px 0 2px;
   font-size: 11.5px;
   line-height: 1.45;
-  color: #c9ccbb;
+  color: var(--studio-soft);
 }
 .ruin-note {
   padding: 7px 10px;
@@ -264,11 +266,12 @@
   font-variant-numeric: tabular-nums;
 }
 .receipt-continue {
+  /* dark: scope (studio) */
   width: 100%;
   margin-top: 10px;
   justify-content: center;
-  background: #343a32;
-  color: #f5f2e8;
+  background: var(--studio);
+  color: var(--studio-ink);
 }
 @media (max-width: 760px) {
   .receipt-card {
@@ -301,7 +304,7 @@ button.brick-pill {
 }
 .brick-pill.on {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .catalog-effect {
   font-size: 11px;
@@ -324,6 +327,7 @@ button.brick-pill {
 
 /* Moving a building: the hint over the map. */
 .move-banner {
+  /* dark: scope (studio) */
   position: absolute;
   z-index: 3;
   top: 12px;
@@ -335,14 +339,15 @@ button.brick-pill {
   padding: 9px 12px;
   border-radius: 12px;
   background: rgba(52, 58, 50, 0.92);
-  color: #f5f2e8;
+  background: color-mix(in srgb, var(--studio) 92%, transparent);
+  color: var(--studio-ink);
   font-size: 12.5px;
   line-height: 1.4;
   box-shadow: 0 8px 24px #18171233;
 }
 .move-banner .text-button {
   flex: none;
-  color: #d6ef9e;
+  color: var(--pop);
   font-weight: 700;
 }
 .building-move {
@@ -421,6 +426,7 @@ button.brick-pill {
 .awake-note.ok {
   color: #cfe3b1;
   background: rgba(214, 239, 158, 0.08);
+  background: color-mix(in srgb, var(--pop) 8%, transparent);
 }
 .awake-note.warn {
   color: #f6dc9a;
@@ -454,6 +460,7 @@ button.brick-pill {
   align-items: center;
   gap: 10px;
   background: rgba(214, 239, 158, 0.1);
+  background: color-mix(in srgb, var(--pop) 10%, transparent);
   color: #e3edcb;
 }
 .rhythm-chips {
@@ -464,30 +471,32 @@ button.brick-pill {
   gap: 6px;
   margin: 10px 0 2px;
   font-size: 11.5px;
-  color: #b9bca9;
+  color: var(--studio-soft);
 }
 .rhythm-chips button {
   padding: 4px 10px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 99px;
   background: none;
-  color: #e0e2d7;
+  color: var(--studio-text);
   font-size: 11.5px;
   font-weight: 600;
 }
 .rhythm-chips button.on {
-  border-color: #d6ef9e;
+  border-color: var(--pop);
   color: #d6ef9e;
   background: rgba(214, 239, 158, 0.1);
+  background: color-mix(in srgb, var(--pop) 10%, transparent);
 }
 .tea-button {
   width: 100%;
   margin: 8px 0 2px;
   padding: 8px 10px;
   border: 1px dashed rgba(214, 239, 158, 0.5);
+  border: 1px dashed color-mix(in srgb, var(--pop) 50%, transparent);
   border-radius: 12px;
   background: none;
-  color: #d6ef9e;
+  color: var(--pop);
   font-size: 12.5px;
   font-weight: 600;
 }

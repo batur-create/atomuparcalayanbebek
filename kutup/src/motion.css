@@ -242,8 +242,9 @@ h3,
 }
 .fidan-toggle.on {
   border-style: solid;
-  border-color: #d6ef9e;
+  border-color: var(--pop);
   background: rgba(214, 239, 158, 0.1);
+  background: color-mix(in srgb, var(--pop) 10%, transparent);
 }
 @keyframes plant-pop {
   from {
@@ -457,7 +458,7 @@ h3,
   background: var(--accent);
   font-size: 11px;
   font-weight: 700;
-  color: white;
+  color: var(--on-accent);
   animation: new-pop 0.6s 0.2s var(--ease-spring) backwards;
 }
 .request-text {
@@ -676,7 +677,7 @@ h3,
 }
 .feedback-nav b {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 .mobile-bottom button {
   position: relative;
@@ -822,7 +823,7 @@ h3,
 .stage-button.active:disabled {
   border-color: var(--accent);
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   opacity: 1;
   cursor: default;
 }

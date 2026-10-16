@@ -13,6 +13,7 @@ import "@fontsource-variable/bricolage-grotesque/opsz.css";
 import "./styles.css";
 import "./motion.css";
 import "./dark.css";
+import "./themes.css";
 import "./polish.css";
 
 class ErrorBoundary extends React.Component {

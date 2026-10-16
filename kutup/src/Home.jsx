@@ -228,16 +228,17 @@ export function useSky(now, dark) {
 }
 
 // The drawing: a still SVG with small moving layers on top (see the note above).
-// Layers sit on the 960 × 236 scene with at() and span().
+// Layers sit on the 960 × 236 scene with at() and span(). The day and night
+// tones come from the theme (--sky-1..3, --night-1..3 in src/themes.css).
 export function SkyScene({ sky, arrivals = [] }) {
   return (
     <div className="sky-scene" aria-hidden="true">
       <svg className="sky-base" viewBox="-300 0 960 236" preserveAspectRatio="none">
         <defs>
           <linearGradient id="sky-day" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#cfe1f2" />
-            <stop offset=".62" stopColor="#eef1ea" />
-            <stop offset="1" stopColor="#f8f1e2" />
+            <stop offset="0" style={{ stopColor: "var(--sky-1)" }} />
+            <stop offset=".62" style={{ stopColor: "var(--sky-2)" }} />
+            <stop offset="1" style={{ stopColor: "var(--sky-3)" }} />
           </linearGradient>
           <linearGradient id="sky-warm" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#b9c3e6" />
@@ -245,9 +246,9 @@ export function SkyScene({ sky, arrivals = [] }) {
             <stop offset="1" stopColor="#f8dcb4" />
           </linearGradient>
           <linearGradient id="sky-night" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#1d1c3c" />
-            <stop offset=".6" stopColor="#352f5c" />
-            <stop offset="1" stopColor="#55456a" />
+            <stop offset="0" style={{ stopColor: "var(--night-1)" }} />
+            <stop offset=".6" style={{ stopColor: "var(--night-2)" }} />
+            <stop offset="1" style={{ stopColor: "var(--night-3)" }} />
           </linearGradient>
         </defs>
         <rect x="-300" width="960" height="236" fill="url(#sky-day)" />

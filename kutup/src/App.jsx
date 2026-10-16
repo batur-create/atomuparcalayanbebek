@@ -45,7 +45,7 @@ import {
 import {
   api,
   get,
-  THEMES,
+  themeOf,
   STATUS,
   shortTime,
   dayInput,
@@ -88,7 +88,7 @@ import { MePage, TeamModal } from "./MePage.jsx";
 import { useMotionPref } from "./motionPref.js";
 import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
-import { useColorMode } from "./colorMode.js";
+import { paintBar, useColorMode } from "./colorMode.js";
 
 // Four tabs (n17): who is where (with plans), the village, the board, and me.
 // Old "?tab=plans" links (plan notifications) open the plans on the home page.
@@ -137,10 +137,7 @@ export default function App() {
     [toast, setToast] = useState(""),
     [connected, setConnected] = useState(true);
   const [filter, setFilter] = useState("all"),
-    [theme, setTheme] = useState(() => {
-      const saved = storage.get("kutup-theme");
-      return THEMES.includes(saved) ? saved : "lilac";
-    });
+    [theme, setTheme] = useState(() => themeOf(storage.get("kutup-theme")));
   const [mode, setMode] = useColorMode();
   const [motionPick, setMotion, motion] = useMotionPref();
   const [invite, setInvite] = useState(
@@ -278,6 +275,7 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     storage.set("kutup-theme", theme);
+    paintBar();
   }, [theme]);
   useEffect(() => {
     if (ownerPage) {
@@ -1379,7 +1377,7 @@ function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen,
             cy="90"
             r="81"
             fill="none"
-            stroke="#d6ef9e"
+            stroke="var(--pop)"
             strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray="509"

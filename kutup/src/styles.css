@@ -1,35 +1,15 @@
 :root {
   font-family: "DM Sans", sans-serif;
-  color: #30312f;
-  background: #f6f5f0;
+  /* page, card, ink and accent tokens live in src/themes.css */
+  color: var(--ink);
+  background: var(--canvas);
   font-synthesis: none;
-  --canvas: #f6f5f0;
-  --paper: #fffefb;
-  --ink: #30312f;
-  --muted: #6f7169;
-  --border: #e8e7df;
-  --accent: #7361ce;
-  --accent-deep: #5c49b6;
-  --accent-soft: #efebfc;
-  --hero: #e8e3f6;
   --mint: #e4eddc;
   --peach: #f8e7d8;
   --pink: #f6e3e8;
   --blue: #e1eaf2;
   --lilac: #eae5f5;
   --lemon: #f2f0d3;
-}
-:root[data-theme="mint"] {
-  --accent: #4d7e63;
-  --accent-deep: #326a4b;
-  --accent-soft: #e5efdf;
-  --hero: #dce9d5;
-}
-:root[data-theme="peach"] {
-  --accent: #b97653;
-  --accent-deep: #a56340;
-  --accent-soft: #faebdf;
-  --hero: #f3ddcc;
 }
 * {
   box-sizing: border-box;
@@ -446,18 +426,21 @@ button:active {
 }
 .btn.primary {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 .btn.primary:hover {
   background: var(--accent-deep);
   box-shadow: 0 4px 15px #6251b521;
 }
 .btn.dark {
-  background: #34382d;
-  color: #f8f7ec;
+  /* dark: scope (studio) */
+  background: var(--studio);
+  color: var(--studio-ink);
 }
 .btn.dark:hover {
+  /* dark: scope */
   background: #484e3c;
+  background: color-mix(in oklab, var(--studio-ink) 14%, var(--studio));
 }
 .btn.outline {
   background: transparent;
@@ -723,8 +706,9 @@ button:active {
   font-weight: 750;
 }
 .focus-card {
-  background: #343a32;
-  color: #f5f2e8;
+  /* dark: scope (the studio card: src/themes.css) */
+  background: var(--studio);
+  color: var(--studio-ink);
   border-radius: 19px;
   padding: 23px 24px 19px;
   text-align: center;
@@ -735,7 +719,7 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #ced4be;
+  color: var(--studio-soft);
 }
 .focus-card-header > span:first-child {
   font-size: 10.5px;
@@ -747,14 +731,14 @@ button:active {
 }
 .focus-spark {
   font-size: 23px;
-  color: #d7e3b6;
+  color: var(--pop);
 }
 .focus-card h2 {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.2px;
   margin-top: 13px;
-  color: #e0e2d7;
+  color: var(--studio-text);
 }
 .timer-wrap {
   height: 125px;
@@ -782,14 +766,14 @@ button:active {
 }
 .timer-digits i {
   font-style: normal;
-  color: #a4b28a;
+  color: var(--studio-faint);
   margin: 0 3px;
 }
 .timer-digits > span {
   display: block;
   font-size: 10.5px;
   letter-spacing: 0.4px;
-  color: #a3ad96;
+  color: var(--studio-faint);
   margin-top: 4px;
   font-weight: 400;
 }
@@ -804,16 +788,17 @@ button:active {
   font-size: 10.5px;
   border-radius: 5px;
   background: none;
-  color: #a8ad9b;
+  color: var(--studio-faint);
 }
 .duration-options button.active {
   background: #5a604c;
-  color: #d8e4b7;
+  background: color-mix(in oklab, var(--studio-ink) 20%, var(--studio));
+  color: var(--pop);
 }
 .focus-start {
   /* dark: keep (lime on the dark focus card) */
-  background: #d7e99f;
-  color: #3c472c;
+  background: var(--pop);
+  color: var(--pop-ink);
   width: 100%;
   min-height: 35px;
   font-size: 11.5px;
@@ -822,10 +807,11 @@ button:active {
 .focus-start:hover {
   /* dark: keep */
   background: #e7f4be;
+  background: color-mix(in oklab, var(--pop) 70%, white);
 }
 .focus-bottom {
   font-size: 10.5px;
-  color: #9da792;
+  color: var(--studio-faint);
   margin-top: 12px;
   line-height: 1.5;
 }
@@ -834,7 +820,7 @@ button:active {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #b9ce8d;
+  background: var(--pop);
   vertical-align: middle;
   margin-right: 3px;
 }
@@ -1336,7 +1322,7 @@ button:active {
   width: 29px;
   flex-shrink: 0;
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   border-radius: 7px;
 }
 .send-button:hover {
@@ -1561,28 +1547,10 @@ button:active {
   border-top: 1px solid var(--border);
   padding-top: 1px;
 }
-.theme-options {
-  display: flex;
-  gap: 9px;
-}
-.theme-options button {
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  background: #f7f5ef;
-}
-.theme-options .selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
 .theme-section small {
   display: block;
   font-size: 11px;
-  color: #a49c8a;
+  color: var(--muted);
   margin-top: 8px;
 }
 .invite-illustration {
@@ -1683,13 +1651,14 @@ button:active {
   color: #aa9c80;
 }
 .toast {
+  /* dark: scope (studio) */
   position: fixed;
   bottom: 25px;
   left: calc(50% + 100px);
   transform: translateX(-50%);
-  background: #343a31;
+  background: var(--studio);
   border: 1px solid #59604d;
-  color: #f6f4e7;
+  color: var(--studio-ink);
   box-shadow: 0 10px 40px #272a2326;
   border-radius: 12px;
   display: flex;
@@ -3416,9 +3385,6 @@ button:active {
   .profile-preview {
     padding: 14px;
   }
-  .theme-options button {
-    font-size: 12px;
-  }
   .message-form input {
     font-size: 16px;
   }
@@ -4351,21 +4317,6 @@ button:active {
 }
 
 /* ---------- Kütüp v2 ---------- */
-:root[data-theme="pink"] {
-  --accent: #c4577a;
-  --accent-deep: #a8405f;
-  --accent-soft: #fbe9ef;
-  --hero: #f6dfe7;
-}
-:root[data-theme="blue"] {
-  --accent: #4a76b0;
-  --accent-deep: #345d93;
-  --accent-soft: #e4edf8;
-  --hero: #dbe7f4;
-}
-.theme-options {
-  flex-wrap: wrap;
-}
 a.btn {
   text-decoration: none;
 }

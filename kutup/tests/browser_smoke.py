@@ -168,8 +168,8 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 check('Holding Kara makes it purr',True)
                 quiet = page.evaluate("new Promise((r) => { const k = document.querySelector('.kara-home svg.kara'); let n = 0; const mo = new MutationObserver(() => k.dataset.act && n++); mo.observe(k, { attributes: true }); setTimeout(() => { mo.disconnect(); r(n); }, 3500); })")
                 check('Reduced motion keeps Kara still', quiet==0)
-                page.evaluate('document.documentElement.dataset.theme="mint"')
-                check('Kara\'s collar follows the theme',rig.locator('.k-collar>path').first.evaluate('(e)=>getComputedStyle(e).fill')=='rgb(77, 126, 99)')
+                page.evaluate('document.documentElement.dataset.theme="teal"')
+                check('Kara\'s collar follows the theme',rig.locator('.k-collar>path').first.evaluate('(e)=>getComputedStyle(e).fill')=='rgb(2, 113, 122)')
                 page.evaluate('delete document.documentElement.dataset.theme')
                 page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
                 buddy = page.locator('.kara-buddy svg.kara')
@@ -298,10 +298,17 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 friend.mouse.click(8, 400)  # the page gutter, left of the menu
                 expect(menu).to_have_count(0)
                 check('Look menu closes with Escape and with a tap outside', True)
-                # Ben → Görünüm: four bolder themes and the motion setting.
+                # Ben → Görünüm: theme packages (n23) and the motion setting.
                 friend.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
                 friend.locator('.home-door', has_text='Görünüm').click()
-                friend.locator('.theme-options button.navy').click()
+                paint = '''()=>{const bg=(e)=>getComputedStyle(e).backgroundColor;
+                    return [bg(document.documentElement), bg(document.querySelector('.modal')), getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()]}'''
+                before = friend.evaluate(paint)
+                friend.locator('.look-pick.navy').click()
+                after = friend.evaluate(paint)
+                check('A theme changes the page and the cards, not only the accent', all(a != b for a, b in zip(before, after))
+                    and friend.locator('.look-pick').count()==6 and friend.locator('.look-pick[aria-checked=true]').count()==1
+                    and friend.evaluate("document.querySelector('meta[name=theme-color]').content")=='#edf2f8')
                 friend.locator('.motion-options button', has_text='Kıpırtısız').click()
                 check('Look: Lacivert theme and Kıpırtısız motion are picked and remembered', friend.evaluate('''()=>
                     document.documentElement.dataset.theme==='navy' && document.documentElement.dataset.motion==='still'

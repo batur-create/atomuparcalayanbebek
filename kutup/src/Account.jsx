@@ -1,7 +1,7 @@
 // Account entry, profile customization and moving between devices.
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, KeyRound, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
-import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES } from "./api.js";
+import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES, THEME_INFO } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 import { sunTimes } from "./villageWorld.js";
@@ -613,13 +613,10 @@ export function LookModal({ theme, setTheme, mode, setMode, motion, setMotion, c
   return (
     <Modal title="Görünüm" subtitle="Sadece senin ekranında değişir." close={close}>
       <div className="theme-section">
-        <label className="field-label">Ekranın da senin renginde olsun</label>
-        <div className="theme-options">
-          {THEMES.map((c) => (
-            <button key={c} type="button" className={`${c} ${theme === c ? "selected" : ""}`} aria-pressed={theme === c} onClick={() => setTheme(c)}>
-              {theme === c && <Check size={13} />}
-              {COLOR_NAMES[c]}
-            </button>
+        <label className="field-label" id="look-label">Ekranın da senin renginde olsun</label>
+        <div className="look-picks" role="radiogroup" aria-labelledby="look-label">
+          {THEMES.map((id) => (
+            <LookPick key={id} id={id} on={theme === id} pick={() => setTheme(id)} />
           ))}
         </div>
       </div>
@@ -652,6 +649,32 @@ export function LookModal({ theme, setTheme, mode, setMode, motion, setMotion, c
         Tamam
       </button>
     </Modal>
+  );
+}
+
+// One theme package, drawn in its own colors (src/themes.css scopes the tokens
+// to .look-pick.<id>): page, a card with ink and accent, the studio card with
+// its pop, and the sky of the hour.
+function LookPick({ id, on, pick }) {
+  const [name, mood] = THEME_INFO[id];
+  return (
+    <button type="button" role="radio" aria-checked={on} className={`look-pick ${id} ${on ? "on" : ""}`} onClick={pick}>
+      <span className="look-mini" aria-hidden="true">
+        <i className="lm-sky" />
+        <i className="lm-card">
+          <b />
+          <em />
+        </i>
+        <i className="lm-studio">
+          <b />
+        </i>
+      </span>
+      <strong>
+        {name}
+        {on && <Check size={14} strokeWidth={2.6} />}
+      </strong>
+      <small>{mood}</small>
+    </button>
   );
 }
 

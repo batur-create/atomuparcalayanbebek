@@ -6,7 +6,12 @@ import { darkAt } from "./villageWorld.js";
 // device remembers the choice. public/mode.js applies it before the first paint;
 // this keeps it current while the app stays open past sunset or sunrise.
 export const MODES = ["auto", "light", "dark"];
-const CANVAS = { light: "#f6f5f0", dark: "#181916" };
+
+// The phone's status bar takes the page color of the current theme and mode.
+export function paintBar() {
+  const canvas = getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim();
+  if (canvas) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", canvas);
+}
 
 let wanted;
 function apply(dark, fade) {
@@ -17,7 +22,7 @@ function apply(dark, fade) {
   // have changed the choice, so the swap always reads the latest one.
   const swap = () => {
     root.dataset.mode = wanted;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", CANVAS[wanted]);
+    paintBar();
   };
   // A soft crossfade where the browser has one (Safari 18, Chrome).
   if (fade && document.startViewTransition && !reducedMotion() && document.visibilityState === "visible")

@@ -73,12 +73,21 @@ export const COLOR_NAMES = {
   slate: "Arduvaz",
   sand: "Kum",
   olive: "Zeytin",
-  navy: "Lacivert",
-  teal: "Petrol",
-  amber: "Kehribar",
-  graphite: "Grafit",
 };
-export const THEMES = ["lilac", "mint", "peach", "pink", "blue", "navy", "teal", "amber", "graphite"];
+// n23: a theme is a whole package, light and dark (src/themes.css). The
+// order here is the order in Ben → Görünüm; each has a name and a mood line.
+export const THEMES = ["lilac", "navy", "teal", "clay", "pink", "graphite"];
+export const THEME_INFO = {
+  lilac: ["Lavanta", "Kütüp'ün kendisi: sıcak kâğıt, lila mürekkep."],
+  navy: ["Lacivert", "Gece kütüphanesi: serin kâğıt, pirinç lamba."],
+  teal: ["Petrol", "Deniz kıyısında okuma: buz mavisi, mercan ışığı."],
+  clay: ["Kiremit", "Köy çatısı, çay ocağı: kum kâğıt, bal rengi."],
+  pink: ["Gül", "Gül kurusu ve mürdüm: yumuşak ama net."],
+  graphite: ["Grafit", "Mimarın masası: kurşun kalem, tek turuncu iz."],
+};
+// Themes that were merged into a package keep working (public/mode.js too).
+export const THEME_MOVED = { mint: "teal", blue: "navy", peach: "clay", amber: "clay" };
+export const themeOf = (id) => (THEMES.includes(id) ? id : THEME_MOVED[id] || "lilac");
 export const STATUS = {
   here: ["Kütüpte", "here"],
   coming: ["Yolda", "coming"],

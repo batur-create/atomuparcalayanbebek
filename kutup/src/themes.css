@@ -1,0 +1,476 @@
+/* ---------- Theme packages (n23) ----------
+   A theme is the whole page, not only the accent: page and cards, lines, ink,
+   the hero areas, the dark studio card (focus card, toasts, dark buttons) with
+   its bright "pop", and the home sky by day and by night, each in light and
+   dark. html[data-theme] picks one (src/App.jsx, public/mode.js); Lavanta is
+   the default and needs no attribute. The look sheet draws each package in a
+   small preview with .look-pick.<id>, so every block also names that class.
+
+   The hand-picked neutral literals elsewhere in the CSS follow --canvas,
+   --paper, --border, --muted and --ink through scripts/theme-css.js.
+   Contrast (text 4.5:1, parts 3:1): node scripts/theme-check.mjs.
+
+   Tokens
+     --canvas --paper --border --ink --muted     page, cards, lines, text
+     --accent --accent-deep --accent-soft --hero  the one accent; deep is text on soft
+     --on-accent                                  text and icons on an accent fill
+     --studio --studio-deep                       the dark studio card, its deeper wells
+     --studio-ink --studio-text --studio-soft --studio-faint   text on it, strongest first
+     --pop --pop-ink --pop-ink-soft               the bright pick on the studio card and text on it
+     --sky-1..3  --night-1..3                     the home sky, top to horizon */
+
+/* Lavanta: Kütüp itself. Warm paper, lilac ink, olive studio with lime. */
+:root,
+.look-pick.lilac {
+  --canvas: #f6f5f0;
+  --paper: #fffefb;
+  --ink: #30312f;
+  --muted: #6f7169;
+  --border: #e8e7df;
+  --accent: #7361ce;
+  --accent-deep: #5c49b6;
+  --accent-soft: #efebfc;
+  --hero: #e8e3f6;
+  --on-accent: #ffffff;
+  --studio: #343a32;
+  --studio-deep: #262823;
+  --studio-ink: #f5f2e8;
+  --studio-text: #e0e2d7;
+  --studio-soft: #c9ccbb;
+  --studio-faint: #9ea392;
+  --pop: #d6ef9e;
+  --pop-ink: #24301a;
+  --pop-ink-soft: #4b5a39;
+  --sky-1: #cfe1f2;
+  --sky-2: #eef1ea;
+  --sky-3: #f8f1e2;
+  --night-1: #1d1c3c;
+  --night-2: #352f5c;
+  --night-3: #55456a;
+}
+:root[data-mode="dark"],
+:root[data-mode="dark"] .look-pick.lilac {
+  --canvas: #181916;
+  --paper: #22231f;
+  --ink: #ebeae4;
+  --muted: #a5a69c;
+  --border: #383933;
+  --accent: #9483e8;
+  --accent-deep: #c4b9f5;
+  --accent-soft: #2d2940;
+  --hero: #2b2840;
+  --on-accent: #151327;
+  --studio: #343a32;
+  --studio-deep: #262823;
+  --studio-ink: #f5f2e8;
+  --studio-text: #e0e2d7;
+  --studio-soft: #c9ccbb;
+  --studio-faint: #9ea392;
+  --pop: #d6ef9e;
+  --pop-ink: #24301a;
+  --pop-ink-soft: #4b5a39;
+  --sky-1: #cfe1f2;
+  --sky-2: #eef1ea;
+  --sky-3: #f8f1e2;
+  --night-1: #1d1c3c;
+  --night-2: #352f5c;
+  --night-3: #55456a;
+}
+
+/* Lacivert: the library at night. Cool paper, navy ink, a brass lamp. */
+:root[data-theme="navy"],
+.look-pick.navy {
+  --canvas: #edf2f8;
+  --paper: #fcfdff;
+  --ink: #232e3c;
+  --muted: #5f6a7b;
+  --border: #dbe3ee;
+  --accent: #304b91;
+  --accent-deep: #1d3478;
+  --accent-soft: #e4ecfb;
+  --hero: #d6e3ff;
+  --on-accent: #ffffff;
+  --studio: #1e2b44;
+  --studio-deep: #111c34;
+  --studio-ink: #eef2fa;
+  --studio-text: #d9dee8;
+  --studio-soft: #bdc4d3;
+  --studio-faint: #979faf;
+  --pop: #eecd83;
+  --pop-ink: #33270c;
+  --pop-ink-soft: #594b2c;
+  --sky-1: #9dc1ee;
+  --sky-2: #d4e4f1;
+  --sky-3: #f7efe2;
+  --night-1: #0a1331;
+  --night-2: #172a4e;
+  --night-3: #2e4a67;
+}
+:root[data-mode="dark"][data-theme="navy"],
+:root[data-mode="dark"] .look-pick.navy {
+  --canvas: #12171e;
+  --paper: #1c222a;
+  --ink: #e4eaf2;
+  --muted: #9da7b4;
+  --border: #303740;
+  --accent: #85a3e9;
+  --accent-deep: #c2d4fd;
+  --accent-soft: #232d45;
+  --hero: #222c44;
+  --on-accent: #0d1528;
+  --studio: #273552;
+  --studio-deep: #182541;
+  --studio-ink: #eef2fa;
+  --studio-text: #d9dee8;
+  --studio-soft: #bdc4d3;
+  --studio-faint: #979faf;
+  --pop: #eecd83;
+  --pop-ink: #33270c;
+  --pop-ink-soft: #594b2c;
+  --sky-1: #9dc1ee;
+  --sky-2: #d4e4f1;
+  --sky-3: #f7efe2;
+  --night-1: #0a1331;
+  --night-2: #172a4e;
+  --night-3: #2e4a67;
+}
+
+/* Petrol: reading by the sea. Ice paper, petrol ink, a coral light. */
+:root[data-theme="teal"],
+.look-pick.teal {
+  --canvas: #ebf4f4;
+  --paper: #fafefe;
+  --ink: #1e3233;
+  --muted: #5b6f70;
+  --border: #d6e6e6;
+  --accent: #02717a;
+  --accent-deep: #00555c;
+  --accent-soft: #daf1f3;
+  --hero: #c8e8eb;
+  --on-accent: #ffffff;
+  --studio: #0e373c;
+  --studio-deep: #00272c;
+  --studio-ink: #e9f4f6;
+  --studio-text: #d4e1e3;
+  --studio-soft: #b5c8cb;
+  --studio-faint: #8da3a7;
+  --pop: #fcaf91;
+  --pop-ink: #3c2117;
+  --pop-ink-soft: #654437;
+  --sky-1: #98d8da;
+  --sky-2: #d1ede9;
+  --sky-3: #f7f0de;
+  --night-1: #001c26;
+  --night-2: #03343c;
+  --night-3: #285655;
+}
+:root[data-mode="dark"][data-theme="teal"],
+:root[data-mode="dark"] .look-pick.teal {
+  --canvas: #10191a;
+  --paper: #192425;
+  --ink: #e2ecec;
+  --muted: #99aaab;
+  --border: #2c3a3a;
+  --accent: #67b3bb;
+  --accent-deep: #b5dde2;
+  --accent-soft: #183336;
+  --hero: #19353a;
+  --on-accent: #041a1c;
+  --studio: #0e373c;
+  --studio-deep: #00272c;
+  --studio-ink: #e9f4f6;
+  --studio-text: #d4e1e3;
+  --studio-soft: #b5c8cb;
+  --studio-faint: #8da3a7;
+  --pop: #fcaf91;
+  --pop-ink: #3c2117;
+  --pop-ink-soft: #654437;
+  --sky-1: #98d8da;
+  --sky-2: #d1ede9;
+  --sky-3: #f7f0de;
+  --night-1: #001c26;
+  --night-2: #03343c;
+  --night-3: #285655;
+}
+
+/* Kiremit: village roofs and the tea stove. Sand paper, terracotta, honey. */
+:root[data-theme="clay"],
+.look-pick.clay {
+  --canvas: #f8f0e7;
+  --paper: #fffcf8;
+  --ink: #352c23;
+  --muted: #74685c;
+  --border: #ece0d4;
+  --accent: #a84d27;
+  --accent-deep: #8a3204;
+  --accent-soft: #fbe8de;
+  --hero: #f6dccd;
+  --on-accent: #ffffff;
+  --studio: #3a2a20;
+  --studio-deep: #2b1b12;
+  --studio-ink: #f9f0eb;
+  --studio-text: #e6dcd6;
+  --studio-soft: #d1c0b8;
+  --studio-faint: #ac9a91;
+  --pop: #f9c191;
+  --pop-ink: #392310;
+  --pop-ink-soft: #614730;
+  --sky-1: #eec7b6;
+  --sky-2: #fbddc1;
+  --sky-3: #fcd8a7;
+  --night-1: #241313;
+  --night-2: #44241e;
+  --night-3: #72422b;
+}
+:root[data-mode="dark"][data-theme="clay"],
+:root[data-mode="dark"] .look-pick.clay {
+  --canvas: #1c150f;
+  --paper: #271f17;
+  --ink: #ede8e4;
+  --muted: #afa49a;
+  --border: #3f342b;
+  --accent: #e28b69;
+  --accent-deep: #fbc7b3;
+  --accent-soft: #40261b;
+  --hero: #3f271c;
+  --on-accent: #250f07;
+  --studio: #3a2a20;
+  --studio-deep: #2b1b12;
+  --studio-ink: #f9f0eb;
+  --studio-text: #e6dcd6;
+  --studio-soft: #d1c0b8;
+  --studio-faint: #ac9a91;
+  --pop: #f9c191;
+  --pop-ink: #392310;
+  --pop-ink-soft: #614730;
+  --sky-1: #eec7b6;
+  --sky-2: #fbddc1;
+  --sky-3: #fcd8a7;
+  --night-1: #241313;
+  --night-2: #44241e;
+  --night-3: #72422b;
+}
+
+/* Gül: dried rose and damson. Soft, but with a clear voice. */
+:root[data-theme="pink"],
+.look-pick.pink {
+  --canvas: #f9f1f4;
+  --paper: #fffdfd;
+  --ink: #38292e;
+  --muted: #7a646c;
+  --border: #efe0e6;
+  --accent: #aa3a62;
+  --accent-deep: #8c1c49;
+  --accent-soft: #fce7ee;
+  --hero: #f8d9e2;
+  --on-accent: #ffffff;
+  --studio: #3e2336;
+  --studio-deep: #2f1527;
+  --studio-ink: #f8eff4;
+  --studio-text: #e5dbe1;
+  --studio-soft: #cfbfc9;
+  --studio-faint: #aa99a3;
+  --pop: #f8b4cd;
+  --pop-ink: #3a1f2a;
+  --pop-ink-soft: #63424e;
+  --sky-1: #dec3e5;
+  --sky-2: #f8dee5;
+  --sky-3: #fee8db;
+  --night-1: #221027;
+  --night-2: #431f3c;
+  --night-3: #6a3c51;
+}
+:root[data-mode="dark"][data-theme="pink"],
+:root[data-mode="dark"] .look-pick.pink {
+  --canvas: #1c1416;
+  --paper: #271e21;
+  --ink: #efe7ea;
+  --muted: #b3a0a7;
+  --border: #3f3337;
+  --accent: #e97e9e;
+  --accent-deep: #ffc0d0;
+  --accent-soft: #40222b;
+  --hero: #41232d;
+  --on-accent: #250e15;
+  --studio: #3e2336;
+  --studio-deep: #2f1527;
+  --studio-ink: #f8eff4;
+  --studio-text: #e5dbe1;
+  --studio-soft: #cfbfc9;
+  --studio-faint: #aa99a3;
+  --pop: #f8b4cd;
+  --pop-ink: #3a1f2a;
+  --pop-ink-soft: #63424e;
+  --sky-1: #dec3e5;
+  --sky-2: #f8dee5;
+  --sky-3: #fee8db;
+  --night-1: #221027;
+  --night-2: #431f3c;
+  --night-3: #6a3c51;
+}
+
+/* Grafit: the architect's desk. Pencil, tracing paper, one orange mark. */
+:root[data-theme="graphite"],
+.look-pick.graphite {
+  --canvas: #f1f2f4;
+  --paper: #fdfdfe;
+  --ink: #2a2c2f;
+  --muted: #676b71;
+  --border: #e1e3e7;
+  --accent: #32363c;
+  --accent-deep: #1e2227;
+  --accent-soft: #e6e8eb;
+  --hero: #dcdfe3;
+  --on-accent: #ffffff;
+  --studio: #1f2226;
+  --studio-deep: #121417;
+  --studio-ink: #edf2fa;
+  --studio-text: #d8dee7;
+  --studio-soft: #bbc5d3;
+  --studio-faint: #959fae;
+  --pop: #ff9044;
+  --pop-ink: #3a2213;
+  --pop-ink-soft: #634533;
+  --sky-1: #bdc9d2;
+  --sky-2: #dee4e8;
+  --sky-3: #edebe5;
+  --night-1: #101419;
+  --night-2: #21272e;
+  --night-3: #3c434b;
+}
+:root[data-mode="dark"][data-theme="graphite"],
+:root[data-mode="dark"] .look-pick.graphite {
+  --canvas: #151618;
+  --paper: #1f2123;
+  --ink: #e8e9eb;
+  --muted: #a3a6ab;
+  --border: #353739;
+  --accent: #b4b9c0;
+  --accent-deep: #dfe1e5;
+  --accent-soft: #2e3033;
+  --hero: #2c2e31;
+  --on-accent: #151618;
+  --studio: #303338;
+  --studio-deep: #212429;
+  --studio-ink: #edf2fa;
+  --studio-text: #d8dee7;
+  --studio-soft: #bbc5d3;
+  --studio-faint: #959fae;
+  --pop: #ff9044;
+  --pop-ink: #3a2213;
+  --pop-ink-soft: #634533;
+  --sky-1: #bdc9d2;
+  --sky-2: #dee4e8;
+  --sky-3: #edebe5;
+  --night-1: #101419;
+  --night-2: #21272e;
+  --night-3: #3c434b;
+}
+
+/* ---------- Ben → Görünüm: one card per package, in its own colors ---------- */
+.look-picks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.look-pick {
+  display: grid;
+  gap: 3px;
+  min-height: 44px;
+  padding: 7px 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--canvas);
+  color: var(--ink);
+  text-align: left;
+}
+.look-pick.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.look-mini {
+  position: relative;
+  display: block;
+  height: 64px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--canvas);
+}
+.look-mini i {
+  position: absolute;
+  display: block;
+}
+.lm-sky {
+  inset: 0 0 auto;
+  height: 34px;
+  background: linear-gradient(var(--sky-1), var(--sky-2) 62%, var(--sky-3));
+}
+:root[data-mode="dark"] .lm-sky {
+  background: linear-gradient(var(--night-1), var(--night-2) 60%, var(--night-3));
+}
+.lm-card {
+  left: 6px;
+  bottom: 6px;
+  width: 54%;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--paper);
+}
+.lm-card b,
+.lm-card em {
+  position: absolute;
+  left: 7px;
+  height: 5px;
+  border-radius: 3px;
+}
+.lm-card b {
+  top: 8px;
+  width: 58%;
+  background: var(--ink);
+}
+.lm-card em {
+  bottom: 7px;
+  width: 44%;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--accent);
+}
+.lm-studio {
+  right: 6px;
+  bottom: 6px;
+  width: calc(46% - 18px);
+  height: 34px;
+  border-radius: 7px;
+  background: var(--studio);
+}
+.lm-studio b {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  border-radius: 50%;
+  border: 2.5px solid var(--pop);
+}
+.look-pick strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.look-pick strong svg {
+  color: var(--accent);
+}
+.look-pick small {
+  margin: 0;
+  padding: 0 3px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}

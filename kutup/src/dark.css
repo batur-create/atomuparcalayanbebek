@@ -6,11 +6,7 @@
   color-scheme: dark;
   color: var(--ink);
   background: var(--canvas);
-  --canvas: #181916;
-  --paper: #22231f;
-  --ink: #ebeae4;
-  --muted: #a5a69c;
-  --border: #383933;
+  /* page, card, ink and accent tokens: src/themes.css */
   /* member colors: dim enough for a dark page, still easy to tell apart */
   --mint: #43553f;
   --peach: #5e4636;
@@ -18,35 +14,6 @@
   --blue: #3e4d5f;
   --lilac: #4b4363;
   --lemon: #57532e;
-  /* lilac, the default theme; the others follow */
-  --accent: #8272d8;
-  --accent-deep: #c4b9f5;
-  --accent-soft: #2d2940;
-  --hero: #2b2840;
-}
-:root[data-mode="dark"][data-theme="mint"] {
-  --accent: #5b9273;
-  --accent-deep: #a8d4ba;
-  --accent-soft: #233029;
-  --hero: #242f27;
-}
-:root[data-mode="dark"][data-theme="peach"] {
-  --accent: #c27f5b;
-  --accent-deep: #efbd9f;
-  --accent-soft: #34281f;
-  --hero: #352820;
-}
-:root[data-mode="dark"][data-theme="pink"] {
-  --accent: #cc6587;
-  --accent-deep: #f1adc2;
-  --accent-soft: #36252c;
-  --hero: #36262d;
-}
-:root[data-mode="dark"][data-theme="blue"] {
-  --accent: #5a86c2;
-  --accent-deep: #abc8ee;
-  --accent-soft: #212c39;
-  --hero: #222c39;
 }
 /* --accent-deep is light ink here, so hovers that used it as a fill keep the accent. */
 :root[data-mode="dark"] .btn.primary:hover,

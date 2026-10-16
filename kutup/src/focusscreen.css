@@ -8,7 +8,9 @@
   justify-content: center;
   overflow: hidden;
   background: radial-gradient(120% 90% at 50% 40%, #23261f 0%, #141612 70%);
+  background: radial-gradient(120% 90% at 50% 40%, color-mix(in oklab, var(--studio-deep) 90%, black) 0%, color-mix(in oklab, var(--studio-deep) 52%, black) 70%);
   color: #f1efe6;
+  color: var(--studio-ink);
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
@@ -57,7 +59,7 @@
 .fs-progress i {
   display: block;
   height: 100%;
-  background: #d6ef9e;
+  background: var(--pop);
   transition: width 1s linear;
 }
 
@@ -141,6 +143,7 @@
   height: 50%;
   overflow: hidden;
   background: linear-gradient(#2f322c, #262823);
+  background: linear-gradient(color-mix(in oklab, var(--studio) 55%, var(--studio-deep)), var(--studio-deep));
   box-shadow: 0 0.04em 0.08em rgba(0, 0, 0, 0.35);
 }
 .flip .half i {
@@ -175,6 +178,7 @@
 }
 .flip .bottom {
   background: linear-gradient(#262823, #20221d);
+  background: linear-gradient(var(--studio-deep), color-mix(in oklab, var(--studio-deep) 85%, black));
 }
 .flip .flap-top {
   z-index: 2;
@@ -184,6 +188,7 @@
   z-index: 2;
   transform: rotateX(90deg);
   background: linear-gradient(#262823, #20221d);
+  background: linear-gradient(var(--studio-deep), color-mix(in oklab, var(--studio-deep) 85%, black));
   animation: flap-bottom 0.3s 0.3s ease-out forwards;
 }
 .flip::after {
@@ -258,8 +263,8 @@
   color: #e8e6dc;
 }
 .fs-icon.on {
-  border-color: #d6ef9e;
-  color: #d6ef9e;
+  border-color: var(--pop);
+  color: var(--pop);
 }
 .fs-seg {
   display: inline-flex;
@@ -273,13 +278,14 @@
   border: 0;
   border-radius: 9px;
   background: none;
-  color: #c9ccbb;
+  color: var(--studio-soft);
   font-size: 12px;
   font-weight: 600;
 }
 .fs-seg button.on {
   background: rgba(214, 239, 158, 0.16);
-  color: #d6ef9e;
+  background: color-mix(in srgb, var(--pop) 16%, transparent);
+  color: var(--pop);
 }
 .fs-foot {
   position: absolute;
@@ -306,6 +312,7 @@
   padding: 14px 16px 20px;
   border-radius: 20px 20px 0 0;
   background: #1d1f1a;
+  background: color-mix(in oklab, var(--studio-deep) 80%, black);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transform: translateX(-50%);
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.45);

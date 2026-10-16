@@ -20,7 +20,7 @@ export const DARK = 'html[data-mode="dark"]';
 const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const fromLinear = (c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
 
-function oklch([r, g, b]) {
+export function oklch([r, g, b]) {
   const [lr, lg, lb] = [r, g, b].map((v) => toLinear(v / 255));
   const l = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
   const m = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
@@ -158,7 +158,9 @@ const under = (selector, scope) =>
   selector === scope || [" ", ">", ":", ".", "[", "+", "~"].some((c) => selector.startsWith(scope + c));
 
 /**
- * PostCSS plugin. Options:
+ * PostCSS plugin. Mark a rule with a comment: dark: keep leaves it alone,
+ * dark: scope makes it and everything under it a dark-by-design scope (for a
+ * dark fill that is a token, like the studio card). Options:
  *   skipFiles  – file names whose styles are dark by design (focus screen…)
  *   report     – called with every change, for reviewing the output
  */
@@ -174,8 +176,10 @@ export default function darkCss({ skipFiles = [], report } = {}) {
       });
       // Pass 1: dark-by-design scopes, wherever in the file they are declared.
       const scopes = [];
+      // A rule marked /* dark: scope */ counts too: its dark fill is a token.
       for (const rule of rules)
-        if (rule.nodes.some((n) => n.type === "decl" && paintsDark(n))) scopes.push(...rule.selectors);
+        if (rule.nodes.some((n) => (n.type === "decl" && paintsDark(n)) || (n.type === "comment" && /dark:\s*scope/.test(n.text))))
+          scopes.push(...rule.selectors);
       if (report) for (const scope of scopes) report({ file: file.split("/").pop(), scope });
       // Pass 2: the twins.
       for (const rule of rules) {

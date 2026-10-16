@@ -1025,8 +1025,8 @@
   width: 48px;
   padding: 6px 0 5px;
   border-radius: 14px;
-  background: linear-gradient(160deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #000));
-  color: #fff;
+  background: linear-gradient(160deg, var(--accent), color-mix(in srgb, var(--accent) 78%, var(--ink)));
+  color: var(--on-accent);
   line-height: 1.05;
   box-shadow: 0 8px 16px -10px var(--accent);
 }
@@ -1561,94 +1561,6 @@
   }
 }
 
-/* ---------- themes: four more, a bit bolder ---------- */
-:root[data-theme="navy"] {
-  --accent: #34508f;
-  --accent-deep: #263d72;
-  --accent-soft: #e6ebf5;
-  --hero: #dde3f0;
-}
-:root[data-theme="teal"] {
-  --accent: #1f6f78;
-  --accent-deep: #155a62;
-  --accent-soft: #dff0f1;
-  --hero: #d3e8ea;
-}
-:root[data-theme="amber"] {
-  --accent: #b06a12;
-  --accent-deep: #8a510a;
-  --accent-soft: #fbefdc;
-  --hero: #f5e3c6;
-}
-:root[data-theme="graphite"] {
-  --accent: #454c58;
-  --accent-deep: #2b313b;
-  --accent-soft: #e9ebee;
-  --hero: #dfe2e7;
-}
-:root[data-mode="dark"][data-theme="navy"] {
-  --accent: #6f8fd6;
-  --accent-deep: #b9c9f0;
-  --accent-soft: #1f2738;
-  --hero: #212a3b;
-}
-:root[data-mode="dark"][data-theme="teal"] {
-  --accent: #3fa0a8;
-  --accent-deep: #a6dde1;
-  --accent-soft: #1c2e30;
-  --hero: #1e3032;
-}
-:root[data-mode="dark"][data-theme="amber"] {
-  --accent: #d89a3e;
-  --accent-deep: #f3cf95;
-  --accent-soft: #33291b;
-  --hero: #362b1c;
-}
-:root[data-mode="dark"][data-theme="graphite"] {
-  --accent: #8f9aab;
-  --accent-deep: #d3d9e3;
-  --accent-soft: #262a31;
-  --hero: #282c33;
-}
-.app-shell .theme-options,
-.modal .theme-options {
-  flex-wrap: wrap;
-}
-.theme-options button::before {
-  content: "";
-  flex: none;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--sw, var(--accent));
-}
-.theme-options .lilac {
-  --sw: #7361ce;
-}
-.theme-options .mint {
-  --sw: #4d7e63;
-}
-.theme-options .peach {
-  --sw: #b97653;
-}
-.theme-options .pink {
-  --sw: #c45a7d;
-}
-.theme-options .blue {
-  --sw: #5a86c2;
-}
-.theme-options .navy {
-  --sw: #34508f;
-}
-.theme-options .teal {
-  --sw: #1f6f78;
-}
-.theme-options .amber {
-  --sw: #b06a12;
-}
-.theme-options .graphite {
-  --sw: #454c58;
-}
 /* Three more profile colours, calmer and less sweet. */
 :root {
   --slate: #dfe3ea;

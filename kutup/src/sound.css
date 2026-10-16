@@ -150,13 +150,13 @@ section.ambient-card .ambient-head > div + .icon-button {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.06);
-  color: #e0e2d7;
+  color: var(--studio-text);
   font-size: 12px;
   font-weight: 600;
 }
 .sound-pill.on {
-  border-color: #d6ef9e;
-  color: #d6ef9e;
+  border-color: var(--pop);
+  color: var(--pop);
 }
 .ambient-mixer.dark {
   margin-top: 0;
@@ -177,7 +177,8 @@ section.ambient-card .ambient-head > div + .icon-button {
   color: #a9ab9f;
 }
 .ambient-mixer.dark .sound-tile.on {
-  border-color: #d6ef9e;
+  border-color: var(--pop);
   background: rgba(214, 239, 158, 0.1);
+  background: color-mix(in srgb, var(--pop) 10%, transparent);
   box-shadow: none;
 }
