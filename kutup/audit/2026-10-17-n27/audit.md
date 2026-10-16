@@ -48,3 +48,63 @@ Yöntem: uydurma bir ekip (Ada, Ece, Mert, Deniz; biri odakta, biri yolda, mesaj
 ## Ekran görüntüleri
 
 Bu klasörde: `o1-*` (Seçenek 1, Gökyüzü), `o2-*` (Seçenek 2, Okuyucu kartı), `sample-*` (iPhone rehberi ve boş durum örnekleri), `o1-invite-join.mp4` ve `o2-invite-join.mp4` (davetten katılmaya kısa kayıt).
+
+---
+
+# 2. aşama: ne yapıldı (17 Ekim 2026)
+
+Batur 1 · Gökyüzü'nü seçti. Giriş artık yalnız o; `?giris=` anahtarı ve 2. seçenek kalktı. Davet bağlantısı katılmamış birine kim kütüpte, kim yolda, kim odakta bilgisini göstermiyor (API'de de yok; testle korunuyor). Görüntüler `phase2/` klasöründe, yavaş telefon ölçümü `phase2/perf.json`.
+
+## A. Önce → sonra
+
+| # | Önce | Şimdi |
+|---|---|---|
+| 1 | Telefonda sol üstte düz "Kütüp" yazısı | ✳ işareti + sayfa adı düğmesi: aşağıdaysan başa kaydırır, baştaysan ana sayfaya götürür; dokunuşta ✳ döner |
+| 2 | Masaüstünde "Bizim alan › Kütüp" | Telefonla aynı düğme; "Bizim alan ›" kalktı |
+| 3 | Gökyüzündeki "2 kişi kütüpte" hapı | Düğme: o an yazana gider (kütüpte → Kütüpte filtresi, yolda → Yolda, odakta → Köy, plan → planlar) |
+| 4 | Odak kartındaki "🧱 0" | Tuğla kasasını açar: bakiye, gelecek iade, son 20 hareket, "Kataloğa bak" |
+| 5 | Katalogda "Kasanda 0 🧱" | Aynı kasayı açar |
+| 6 | Gelecek haftanın yapısı (hover'lı kart) | Kilitli görünüm (kesik çizgi, 🔒, hover yok); dokununca "pazartesi açılıyor…" notu |
+| 7 | Parası yetmeyen yapılar (devre dışı) | Dokununca hafif "hayır" sallanması + "35 🧱 eksik: 25 dakikalık 2 seans daha." |
+| 8 | Koleksiyon kartları | Yapılmışlar "Köyde göster": pencere kapanır, harita o binaya uçar ve kartını açar; yapılmamışlar kilitli ve nedenini söyler |
+| 9 | Pano başlığındaki ✎ | Not kutusuna odaklanır |
+| 10 | "👥 Sadece bizim ekip" | Ekip kartını açar |
+| 11 | Pano sistem satırları | Plan satırı ana sayfadaki planlara, diğerleri kişinin kartına götürür |
+| 12 | Ekip kartındaki kişi satırları | Kişinin kartını açar (kendin → Ben) |
+| 13 | Ben kartındaki üç kutu | İstatistiklerim'i açıp oraya kaydırır; kartın geri kalanı Profilim |
+| 14 | Davet çizimindeki "＋" | Bağlantıyı kopyalar, "✓ Kopyalandı" olur |
+| 15 | "Batur'a özel posta ↗" | Ok kalktı, pul süs olarak kaldı |
+| 16 | "👨‍💻 burayı yapan eleman" kartı | Düz bir imza satırı |
+| 17 | Aşama hapları | İnce bir zaman çizgisi, emoji çerçevesiz |
+| 18 | "İyi ki aynı ekipteyiz" paneli | Çerçevesiz, sakin not |
+| 19 | Kesik çizgili profil önizlemesi | Dokununca karakter seçiciye kaydırır ("Karakterini değiştir ↓") |
+
+## B. Sınırda olanlar (Batur'un kararıyla)
+
+| # | Karar | Şimdi |
+|---|---|---|
+| 20 | Evet | "ders arası hayat" pulu dokununca sallanır. Kara'nın balonuna `Kara.jsx`'e dokunmadan temiz bir yoldan ulaşılamadığı için Kara cümlesi yok (yalnız sallanma). Sakin ayarda da sallanır, Kıpırtısız'da anında biter. |
+| 21 | Evet | Kütüpteyken dakika halkası "Yerimi değiştir"i açar |
+| 22 | Evet | Durum kartı, planlar ve Pano mesajlarındaki küçük yüzler kişinin kartını açar |
+| 23 | Hayır | Başlık yanındaki sayılar düz sayı oldu (dolgu yok, düğme değil) |
+| 24 | Evet | Sol menüdeki "⋯" artık "›" |
+| 25 | 12'yle | Ekip kartı satırları basılınca kişi kartı açılıyor |
+
+## C. Küçük kusurlar
+
+- Köy/Pano kutucukları telefonda yan yana (eski `.board` kuralı kutucuğu etkilemiyor).
+- Telefonda ve dokunmatik ekranlarda bütün form kutuları 16 px (iOS yakınlaşmıyor).
+- Renk düğmeleri 34 px, parmağa 44 px; dar ekranda iki satıra iner.
+- Ortak anıt penceresi artık kutucuğu tekrar etmiyor: anıtın kat çizimi ve sayısı, bu haftanın katına kimin ne kattığı (renkli parçalı çubuk + avatarlı sıralı liste, hedefin yüzdesi), henüz katkısı olmayanlar ve geçen haftanın ustası.
+
+## Bulunan ek hatalar (düzeltildi)
+
+- **Modal odak iadesi:** içinde `autoFocus` alanı olan pencereler (giriş penceresi) kapanınca odak açan düğmeye dönmüyordu; şimdi dönüyor.
+- **Yeni düğmelerde yazı boyu:** etiketten düğmeye dönen öğeler eski boyunu koruyor.
+
+## Doğrulama
+
+- `npm run test:all`: 93/93. Davet yanıtında durum alanı olmadığını sunucu testi doğruluyor (biri kütüpteyken bile).
+- `tests/browser_smoke.py`: 55/55. Yeni kontroller: karşılama (gökyüzü, Kara, iki yol, 375/360'ta taşma yok), ekip kurma adımları ve tabela, davet ekranı ve API'de varlık bilgisi yok, dört sekmede sahte basılabilir yok (imleç, hover, ok, boş düğme taraması), sol üst başlık, gökyüzü satırı, tuğla kasası ve katalog notu, Pano kalemi, "Sadece bizim ekip" → kişi kartı, davet "＋" kopyalama.
+- Yavaş telefon (375 px, DPR 3, 4x yavaş işlemci, üretim derlemesi): karşılama ve davet, gündüz ve gece 60 fps, p95 16,7 ms, ana iş parçacığı %8–14; Sakin/Kıpırtısız %2,5; açılış animasyonu sırasında 60 fps, p95 16,7 ms.
+- **Doğrulanmadı:** gerçek iPhone ve gerçek Android (bulut tarayıcısında ölçüldü); iPhone rehberi iPhone kimliği taklit edilerek çekildi.

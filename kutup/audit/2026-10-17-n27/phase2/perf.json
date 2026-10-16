@@ -1,0 +1,60 @@
+{
+  "what": "n27 welcome (Gökyüzü): the signed-out welcome and the invite screen. Local production build (node server/index.js), isolated test data.",
+  "method": "Playwright + Chromium headless (no GPU, software raster), viewport 375x812, DPR 3, CDP Emulation.setCPUThrottlingRate 4; after 2.5 s settle, 6 s of rAF frame gaps and CDP Performance.getMetrics TaskDuration; median of 3 runs. Day runs move the page clock to 13:00 Ankara.",
+  "target": "60 fps, p95 <= 17 ms",
+  "results": [
+    {
+      "screen": "welcome",
+      "time": "day",
+      "motion": "full",
+      "fps": 60.2,
+      "p95ms": 16.7,
+      "busy%": 8.2
+    },
+    {
+      "screen": "welcome",
+      "time": "night",
+      "motion": "full",
+      "fps": 60.2,
+      "p95ms": 16.7,
+      "busy%": 13.3
+    },
+    {
+      "screen": "invite",
+      "time": "day",
+      "motion": "full",
+      "fps": 60.2,
+      "p95ms": 16.7,
+      "busy%": 9.3
+    },
+    {
+      "screen": "invite",
+      "time": "night",
+      "motion": "full",
+      "fps": 60.2,
+      "p95ms": 16.7,
+      "busy%": 13.8
+    },
+    {
+      "screen": "invite",
+      "time": "day",
+      "motion": "calm",
+      "fps": 60.3,
+      "p95ms": 16.8,
+      "busy%": 2.5
+    },
+    {
+      "screen": "invite",
+      "time": "day",
+      "motion": "still",
+      "fps": 60.3,
+      "p95ms": 16.7,
+      "busy%": 2.7
+    },
+    {
+      "screen": "invite, first 2.5 s (entrance)",
+      "fps": 60.4,
+      "p95ms": 16.7
+    }
+  ]
+}
