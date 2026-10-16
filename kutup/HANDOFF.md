@@ -235,14 +235,19 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - Kara yerleşince bağlanacak açık iş: "ders arası hayat" pulu dokununca Kara'nın bir cümle söylemesi.
 - GitHub'daki Vercel işareti kırmızı: depo kökündeki eski site, commit'lenmiş `node_modules` yüzünden derlenmiyor. Kütüp'ü etkilemiyor; Batur isterse o Vercel projesi kapatılabilir.
 
-**Sıradaki işler (Batur'un onayladığı plan, 16 Ekim 2026 akşamı; ayrıntılı tanımlar panoda):**
-1. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
+**n23 Tema revizyonu bitti (17 Ekim, Worker da4c894e, PR #3):** altı kapsamlı paket.
+- Tema jetonları `src/themes.css`'te, eski kimlikler `THEME_MOVED` ile eşleniyor.
+- Yeni CSS'te renk sabitlemek yerine jeton kullan; `scripts/theme-css.js` sabit nötrleri derlemede temaya bağlıyor, `scripts/theme-check.mjs` kontrastı denetliyor.
+
+**Bulut kredisi (17 Ekim):** ~30 dolar kaldı, iş başına ~20–25 dolar gidiyor. Kalan kredi n25'e ayrıldı. Görsel ve onaya bağlı işler (Kara'nın yerleşmesi, n24, n28), Batur'un haftalık limiti perşembe sıfırlanınca yerelde yapılacak.
+
+**Sıradaki işler (Batur'un onayladığı plan; ayrıntılı tanımlar panoda):**
+1. **n25 Hesaplar arası geçiş** (bulut önerisi): bir hesap = bir ekip, Instagram tarzı geçiş.
 2. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
-3. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir; n27'deki okuyucu kartı fikri (PR #2 notları) paylaşım kartı için aday.
+3. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir; n27'deki okuyucu kartı fikri paylaşım kartı için aday.
 4. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
-5. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
-6. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
-7. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
+5. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
+6. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.

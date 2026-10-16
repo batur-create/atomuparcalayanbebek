@@ -19,10 +19,11 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
 | n27 | Vitrin ve cila: Gökyüzü girişi, gizli davet, sahte basılabilir avı | Tasarım | 16 Eki 23:00 | 1743855a |
 | n26 | Köy 2.0: odak stüdyosu ve yaşayan harita | Köy | 16 Eki 21:00 | 00990aa5 · d5651113 · f541476a |
 | n06 | Kara baştan: sevimli kara delik, çatıda yaşayan işlevli kedi | Maskot | 16 Eki 18:30 | 901347b4 |
@@ -66,6 +67,35 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n23 Tema 
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n23 · Tema revizyonu: altı kapsamlı tema paketi
+Tema · 17 Eki 2026 · 82f2136e · a0f366e1 (bulut oturumu, PR #3) · Worker da4c894e
+
+**Ne yapıldı:**
+- **Temanın kapsamı:** Tema artık sayfa zeminini, kartları, çizgileri, yazıyı ve soluk yazıyı, vurguyu, kahraman alanlarını, Köy'deki odak kartını ve pop rengini, gündüz ve gece gökyüzünü, alt ve sol menüyü ve iPhone üst çubuğunu birlikte değiştiriyor; açık ve koyu modda.
+- **Altı paket:** 9 tema 6 pakete indi: Lavanta, Lacivert, Petrol, Kiremit, Gül, Grafit. Dördü nötr ya da erkeksi.
+  - Eski seçimler en yakın pakete geçiyor (`THEME_MOVED`: mint→teal, blue→navy, peach/amber→clay).
+  - Görünüm penceresinde her paket kendi renkleriyle çizilmiş küçük bir kart.
+- **Tek kaynak:** Tema jetonları `src/themes.css`'te.
+  - `scripts/theme-css.js` derleme sırasında sabit nötr renkleri temaya bağlıyor (`color-mix`, eski renk yedekli, iOS 16.2+).
+  - `scripts/theme-check.mjs` kontrastı denetliyor.
+- **Okunabilirlik:** Soluk yazılar her temada en az 4.5:1. Ana ekranlarda Lavanta açıkta eşik altı yazı 130'dan 0'a indi; diğer 14 ekranda 3060 yazının hiçbiri eşik altında değil. Koyu Lavanta'da düğmeler açık lila üstünde koyu yazı.
+- **Lila kalıntıları:** Batur'a ilet, ses kutucukları, harita düğmeleri, giriş ekranı ve gece köyü artık temayı izliyor.
+- **Yavaş telefon:** Tema geçişi ~80–93 ms, eskisinden ~15 ms fazla; sonra 60 fps.
+- **Testler:** 96 birim, 56 tarayıcı kontrolü (tema değişince zemin ve kartların da değiştiği dahil).
+
+**Kararlar ve nedenleri:**
+- Az ama kapsamlı ve belirgin paket (Batur: "tema dediğin daha kapsamlı olur").
+- Koyu Lavanta'da okunaklı koyu yazılı düğme.
+- Soluk griler bir tık koyulaştı; sakin görünüm korunarak okunabilirlik eşiğine çekildi.
+
+**Batur'un sözleri:** "Altı tema da kalsın, adlar uygun. Koyu Lavanta'da koyu yazılı düğmeler kalsın. Soluk gri yazılar 4.5:1'e çekilsin."
+
+**Açık:** Gerçek iPhone'da bakılmadı. Degrade zeminler üstündeki yazılar otomatik ölçülmedi, gözle kontrol edildi.
+
+**Ek (acd9e75e, Worker 819da5ff):** Pano'daki mesaj listesinde yan kaydırma çubuğu çıkıp duruyordu (liste iki yöne kayıyordu; kayan balon ve kalp patlaması taşırıyordu). Artık yalnız dikey kayıyor, uzun kelimeler satıra sığıyor. Batur: "sohbet kutusunda alt slide bar çıkıp duruyor".
+
+**Dosyalar:** `themes.css`, `scripts/theme-css.js`, `scripts/theme-check.mjs`, `scripts/dark-css.js`, `api.js` (THEMES, THEME_INFO, THEME_MOVED), `public/mode.js`, `colorMode.js`, `Account.jsx` (tema kartları), çok sayıda CSS, `tests/client.test.js`, `tests/browser_smoke.py`, `audit/2026-10-17-n23/`.
 
 ### n27 · Vitrin ve cila: Gökyüzü girişi, gizli davet, sahte basılabilir avı
 Tasarım · 16 Eki 2026 · 1743855a (bulut oturumu, PR #2) · Worker f76db6c3
