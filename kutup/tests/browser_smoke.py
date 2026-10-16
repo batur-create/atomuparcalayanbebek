@@ -231,7 +231,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.get_by_role('button',name='Tekrar dene').click()
                 expect(page.get_by_text('Köy güncellenemedi.',exact=False)).to_have_count(0)
                 page.locator('.village-map-wrap').scroll_into_view_if_needed(); page.wait_for_timeout(300)
-                check('Village recovers after a failed fetch', page.locator('.village-map-wrap canvas').count()==1)
+                check('Village recovers after a failed fetch', page.locator('.village-map-wrap canvas.interactive').count()==1)
                 page.get_by_role('button',name='Temeli at 🏡',exact=True).click()
                 expect(page.locator('.village-scene')).to_be_visible()
                 json_call(page, '/__test/expire', {'name':'Ada'})
@@ -245,6 +245,21 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.get_by_role('button',name='Kartı kapat').click()
                 page.locator('.village-panel').screenshot(path=str(artifacts/'mobile-village.png'))
                 check('Focus creates a building and keyboard list opens its card', True)
+                # The new building makes a lived-in district, so a villager strolls to the square
+                # (and rests 2.5 s at each end); the whole village in view shows the stroll.
+                for _ in range(4): page.get_by_role('button', name='Uzaklaştır').click()
+                live = page.locator('.village-map-wrap canvas.village-live')
+                snap = '''(c)=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=8)h=(h*31+d[i])|0;return h}'''
+                picked = page.evaluate("document.documentElement.dataset.motion||''")
+                def frames(motion, wait):
+                    page.evaluate('(m)=>document.documentElement.dataset.motion=m', motion); page.wait_for_timeout(300)
+                    first = live.evaluate(snap); page.wait_for_timeout(wait)
+                    return first, live.evaluate(snap)
+                a, b = frames('full', 3000)
+                check('With motion on, the village map keeps moving', a != b)
+                a, b = frames('still', 900)
+                check('Kıpırtısız keeps the village map still', a == b)
+                page.evaluate('(m)=>{if(m)document.documentElement.dataset.motion=m;else delete document.documentElement.dataset.motion}', picked)
                 owner = browser.new_page(viewport={'width':375,'height':812}, reduced_motion='reduce')
                 owner.on('pageerror', lambda e: errors.append(str(e)))
                 owner.goto(base + '/batur')

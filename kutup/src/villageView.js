@@ -1,7 +1,9 @@
 // Canvas view of the village. The static world (ground, roads, buildings) is
-// painted once into 256px tiles per zoom level and cached; every frame only
-// blits the visible tiles and paints the live layer on top (smoke, walkers,
-// balloons, lamp glow). The loop sleeps whenever nothing moves.
+// painted once into 256px tiles per zoom level and cached, and blitted onto the
+// map canvas only when the camera moves. Everything alive (smoke, walkers,
+// villagers, balloons, window glow, birds, lamp light, a celebration) is painted
+// on a second, transparent canvas on top, so a puff of smoke never repaints
+// the whole map. The loop sleeps whenever nothing that moves is on screen.
 import { useCanvas, useSVG } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
 import { AVATAR_BG, avatarImage, parseAvatar } from "../shared/avatars.js";
@@ -19,13 +21,37 @@ export function tileLevel(scale, width, height) {
 }
 const screen = (x, y, z = 0) => [(x - y) * 0.866, (x + y) * 0.5 - z];
 
+// How much may move: Ben → Görünüm (html[data-motion]) or, until someone picks,
+// the phone's own setting. "calm" rests the ambient life but keeps transitions
+// and answers to real events; "still" moves nothing on its own.
+const reduceQuery = typeof window !== "undefined" ? window.matchMedia?.("(prefers-reduced-motion: reduce)") : null;
+export function motionLevel() {
+  const picked = document.documentElement.dataset.motion;
+  if (picked === "full" || picked === "calm" || picked === "still") return picked;
+  return reduceQuery?.matches ? "still" : "full";
+}
+
+// Birds: a small flock crosses the sky now and then, by day only.
+const FLOCK_EVERY = 17,
+  FLOCK_CROSS = 9;
+const CONFETTI = ["#f2c14e", "#eca0b7", "#86bf98", "#8ab2da", "#a99be0", "#efac85", "#fffdf7"];
+const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+
 export function createView(canvas, { interactive = false, onPick = () => {}, onCamera = () => {} } = {}) {
-  const ctx = canvas.getContext("2d");
+  const bg = canvas.getContext("2d");
+  // The live layer: same size, on top, never in the way of a finger.
+  const layer = document.createElement("canvas");
+  layer.className = "village-live";
+  layer.setAttribute("aria-hidden", "true");
+  layer.style.cssText = "position:absolute;left:0;top:0;pointer-events:none";
+  canvas.after(layer);
+  const ctx = layer.getContext("2d");
   let world = null,
     sky = null,
     tint = (c) => c,
     gen = 0,
-    fallback = null;
+    fallback = null,
+    painted = "";
   let W = 1,
     H = 1,
     dpr = 1;
@@ -40,8 +66,11 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     selected = null,
     flight = null,
     still = false,
-    liveTimer = 0;
-  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    liveTimer = 0,
+    liveDue = 0,
+    party = null,
+    alive = false,
+    wakeIn = 0;
   const start = performance.now();
 
   // ---------- tiles ----------
@@ -95,7 +124,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
           dy = ((j * TS) / ls - cam.y) * cam.s + H / 2;
         if (tile) {
           tile.used = performance.now();
-          ctx.drawImage(tile.c, dx, dy, size + 0.6, size + 0.6);
+          bg.drawImage(tile.c, dx, dy, size + 0.6, size + 0.6);
         } else if (missing) missing.push([i, j, Math.hypot(dx + size / 2 - W / 2, dy + size / 2 - H / 2)]);
       }
   }
@@ -106,9 +135,21 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     return [(sx - cam.x) * cam.s + W / 2, (sy - cam.y) * cam.s + H / 2];
   };
   const onScreen = ([x, y], m = 60) => x > -m && y > -m && x < W + m && y < H + m;
-  function drawLive(now) {
+  // Whether any of a box in iso units (a whole stroll) can be seen.
+  const boxShown = ([x0, y0, x1, y1]) => {
+    const hw = W / 2 / cam.s + 4,
+      hh = H / 2 / cam.s + 4;
+    return x1 > cam.x - hw && x0 < cam.x + hw && y1 > cam.y - hh && y0 < cam.y + hh;
+  };
+  // Paints the live layer. Sets `alive` when something on screen is moving and
+  // `wakeIn` (ms) when nothing moves now but something will later (birds, the
+  // end of a still celebration), so the loop can sleep in between.
+  function drawLive(now, level) {
     const time = (now - start) / 1000;
-    const s = cam.s;
+    const s = cam.s,
+      ambient = level === "full" && !still;
+    alive = false;
+    wakeIn = 0;
     // Lamp glow at night.
     if (sky?.lamps)
       for (const item of world.lamps) {
@@ -121,12 +162,33 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         ctx.fillStyle = g;
         ctx.fillRect(p[0] - r, p[1] - r, r * 2, r * 2);
       }
+    // Someone is focusing at home: their window light breathes slowly.
+    for (const glow of world.glows) {
+      const p = atScreen(glow.x, glow.y, glow.z);
+      const r = s * glow.r;
+      if (!onScreen(p, r)) continue;
+      const breath = ambient ? (Math.sin(time * 1.35 + glow.seed) + 1) / 2 : 0.5;
+      if (ambient) alive = true;
+      const a = sky?.night > 0.5 ? 0.42 + breath * 0.2 : 0.36 + breath * 0.26,
+        radius = r * (1 + breath * 0.1);
+      ctx.save();
+      ctx.translate(p[0], p[1]);
+      ctx.scale(1, 0.72);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+      g.addColorStop(0, `rgba(255,214,140,${a})`);
+      g.addColorStop(0.45, `rgba(255,190,105,${a * 0.5})`);
+      g.addColorStop(1, "rgba(255,190,105,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
     // Chimney smoke above the homes of whoever is in the library.
     for (const puff of world.smoke) {
       const base = atScreen(puff.x, puff.y, puff.z);
       if (!onScreen(base)) continue;
+      if (ambient) alive = true;
       for (let i = 0; i < 3; i++) {
-        const k = reduced ? 0.3 + i * 0.25 : (time * 0.35 + i / 3 + (puff.seed % 7) / 7) % 1;
+        const k = ambient ? (time * 0.35 + i / 3 + (puff.seed % 7) / 7) % 1 : 0.3 + i * 0.25;
         ctx.globalAlpha = 0.65 * (1 - k);
         ctx.fillStyle = tint("#f1ece2");
         ctx.beginPath();
@@ -135,14 +197,40 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       }
       ctx.globalAlpha = 1;
     }
+    const k = Math.max(0.55, Math.min(1.6, s / 9));
+    // Neighbours stroll to the square and back, resting a moment at each end.
+    for (const v of world.villagers) {
+      if (!boxShown(v.box)) continue;
+      let t = v.rest,
+        dir = 1,
+        walking = false;
+      if (ambient) {
+        alive = true;
+        const one = v.path.total / v.speed,
+          pause = 2.5,
+          cycle = 2 * (one + pause),
+          u = (time + v.phase * cycle) % cycle;
+        if (u < one) [t, walking] = [u / one, true];
+        else if (u < one + pause) t = 1;
+        else if (u < 2 * one + pause) [t, dir, walking] = [1 - (u - one - pause) / one, -1, true];
+        else [t, dir] = [0, -1];
+      }
+      const [x, y] = pointOnPath(v.path, t),
+        [nx, ny] = pointOnPath(v.path, Math.max(0, Math.min(1, t + dir * 0.01)));
+      const p = atScreen(x, y);
+      if (!onScreen(p, 30)) continue;
+      const face = nx - ny >= x - y ? 1 : -1;
+      villager(p[0], p[1], k, v, walking ? time * 7 + v.phase * 10 : null, face);
+    }
     // Friends on the way walk the road towards the square.
     for (const w of world.walkers) {
-      const t = reduced ? 0.35 : ((time / Math.max(8, w.path.total / 1.4) + (w.member.id.charCodeAt(0) % 10) / 10) % 1);
+      if (!boxShown(w.box)) continue;
+      if (ambient) alive = true;
+      const t = ambient ? ((time / Math.max(8, w.path.total / 1.4) + (w.member.id.charCodeAt(0) % 10) / 10) % 1) : 0.35;
       const [x, y] = pointOnPath(w.path, t);
       const p = atScreen(x, y);
       if (!onScreen(p)) continue;
-      const k = Math.max(0.55, Math.min(1.6, s / 9));
-      const bob = reduced ? 0 : Math.abs(Math.sin(time * 7)) * 1.6 * k;
+      const bob = ambient ? Math.abs(Math.sin(time * 7)) * 1.6 * k : 0;
       ctx.fillStyle = "rgba(40,50,30,.22)";
       ctx.beginPath();
       ctx.ellipse(p[0], p[1], 5 * k, 2 * k, 0, 0, Math.PI * 2);
@@ -153,13 +241,15 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       ctx.fill();
       bubble(p[0], p[1] - 19 * k - bob, w.member, 8.5 * k, false);
     }
-    // Avatar balloons above homes; a coffee for those on a break.
+    // Avatar balloons above homes: 🎧 for those focusing, a coffee for a break.
     for (const b of world.balloons) {
       const p = atScreen(b.x, b.y, b.z);
       if (!onScreen(p)) continue;
-      const float = reduced ? 0 : Math.sin(time * 1.6 + b.x) * 2;
+      if (ambient) alive = true;
+      const float = ambient ? Math.sin(time * 1.6 + b.x) * 2 : 0;
       const r = Math.max(9, Math.min(15, s * 0.9));
-      bubble(p[0], p[1] - r - 6 + float, b.member, r, true, b.member.status === "break");
+      const resting = b.member.status === "break" || (b.focus && b.member.focusPausedAt > 0);
+      bubble(p[0], p[1] - r - 6 + float, b.member, r, true, b.focus && !resting ? "🎧" : resting ? "☕" : null);
     }
     // District names while zoomed out (the signs carry them when close).
     if (interactive && s < 9 && s > 2)
@@ -177,7 +267,8 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       const item = world.byId.get(selected);
       if (item) {
         const p = atScreen(item.x, item.y);
-        const pulse = reduced ? 0.5 : (Math.sin(time * 4) + 1) / 2;
+        if (ambient && onScreen(p)) alive = true;
+        const pulse = ambient ? (Math.sin(time * 4) + 1) / 2 : 0.5;
         ctx.strokeStyle = `rgba(255,255,255,${0.55 + pulse * 0.4})`;
         ctx.lineWidth = 2.5;
         ctx.beginPath();
@@ -185,51 +276,253 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         ctx.stroke();
       }
     }
+    // A small flock crosses the sky now and then, by day.
+    if (ambient && sky && sky.night < 0.5) {
+      const clock = time + 12; // the first flock comes a few seconds after the map opens
+      const round = Math.floor(clock / FLOCK_EVERY),
+        u = clock - round * FLOCK_EVERY;
+      if (u < FLOCK_CROSS) {
+        alive = true;
+        birds(round, u / FLOCK_CROSS, time);
+      } else wakeIn = (FLOCK_EVERY - u) * 1000;
+    }
+    if (party) celebration(now, level);
   }
-  function bubble(x, y, member, r, pointer, coffee = false) {
-    ctx.save();
-    ctx.shadowColor = "rgba(40,30,70,.25)";
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = "#fffdf7";
+  // A neighbour: shadow, legs, coat, face and hat. `step` is the walk cycle
+  // (null while standing); `face` is 1 when heading right on screen, -1 left.
+  function villager(x, y, k, v, step, face) {
+    const bob = step === null ? 0 : Math.abs(Math.sin(step)) * 0.9 * k,
+      swing = step === null ? 0 : Math.sin(step) * 1.3 * k,
+      top = y - bob;
+    ctx.fillStyle = "rgba(40,50,30,.22)";
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    if (pointer) {
-      ctx.moveTo(x - r * 0.35, y + r * 0.85);
-      ctx.lineTo(x, y + r * 1.45);
-      ctx.lineTo(x + r * 0.35, y + r * 0.85);
+    ctx.ellipse(x, y, 4.2 * k, 1.6 * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = tint("#4b4458");
+    ctx.lineWidth = 1.4 * k;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x - 1.1 * k, top - 4.2 * k);
+    ctx.lineTo(x - 1.1 * k + swing, y - 0.4 * k);
+    ctx.moveTo(x + 1.1 * k, top - 4.2 * k);
+    ctx.lineTo(x + 1.1 * k - swing, y - 0.4 * k);
+    ctx.stroke();
+    ctx.fillStyle = tint(v.coat);
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x - 3.1 * k, top - 11.6 * k, 6.2 * k, 8 * k, 2.6 * k);
+    else ctx.rect(x - 3.1 * k, top - 11.6 * k, 6.2 * k, 8 * k);
+    ctx.fill();
+    const hx = x + face * 0.5 * k,
+      hy = top - 13.7 * k;
+    ctx.fillStyle = tint(v.skin);
+    ctx.beginPath();
+    ctx.arc(hx, hy, 2.5 * k, 0, Math.PI * 2);
+    ctx.fill();
+    if (k >= 0.7) {
+      ctx.fillStyle = "#3a3340";
+      for (const ex of [-0.85, 0.85]) {
+        ctx.beginPath();
+        ctx.arc(hx + face * 0.7 * k + ex * k, hy + 0.2 * k, 0.36 * k, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = tint(v.hatColor);
+    ctx.beginPath();
+    if (v.hat === 0) {
+      // A straw hat with a wide brim.
+      ctx.ellipse(hx, hy - 1.5 * k, 4 * k, 1.15 * k, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(hx, hy - 1.7 * k, 2.1 * k, Math.PI, Math.PI * 2);
+    } else if (v.hat === 1) {
+      // A knitted cap with a pompom.
+      ctx.arc(hx, hy - 0.6 * k, 2.65 * k, Math.PI, Math.PI * 2);
+      ctx.moveTo(hx + 0.9 * k, hy - 3.6 * k);
+      ctx.arc(hx, hy - 3.6 * k, 0.9 * k, 0, Math.PI * 2);
+    } else {
+      // A flat cap, its peak towards where they are going.
+      ctx.arc(hx, hy - 0.8 * k, 2.6 * k, Math.PI, Math.PI * 2);
+      ctx.ellipse(hx + face * 2.1 * k, hy - 0.85 * k, 1.9 * k, 0.6 * k, 0, 0, Math.PI * 2);
     }
     ctx.fill();
-    ctx.restore();
-    ctx.lineWidth = Math.max(1.5, r * 0.16);
-    ctx.strokeStyle = MEMBER_COLORS[member.color] || "#a99be0";
+  }
+  function birds(round, progress, time) {
+    // The same round always flies the same way: alternate sides, a varying height.
+    const r = (n) => {
+      const v = Math.sin(round * 12.9898 + n * 78.233) * 43758.5453;
+      return v - Math.floor(v);
+    };
+    const dir = round % 2 ? -1 : 1,
+      count = r(1) < 0.5 ? 3 : 4,
+      span = W + 140,
+      lead = dir > 0 ? -70 + progress * span : W + 70 - progress * span,
+      height = H * (0.12 + r(2) * 0.3) + (r(3) - 0.5) * H * 0.12 * progress;
+    ctx.strokeStyle = "rgba(78,72,96,.62)";
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.arc(x, y, r - ctx.lineWidth / 2, 0, Math.PI * 2);
+    for (let i = 0; i < count; i++) {
+      const row = Math.ceil(i / 2),
+        side = i % 2 ? 1 : -1,
+        bx = lead - dir * row * 13,
+        by = height + side * row * 7 + Math.sin(time * 1.3 + i) * 2,
+        size = 4.6 + r(4 + i) * 1.6,
+        flap = Math.sin(time * 9 + i * 1.9) * size * 0.55;
+      ctx.moveTo(bx - size, by - flap);
+      ctx.quadraticCurveTo(bx - size * 0.45, by - size * 0.15, bx, by + size * 0.15);
+      ctx.quadraticCurveTo(bx + size * 0.45, by - size * 0.15, bx + size, by - flap);
+    }
     ctx.stroke();
+  }
+  // A building was just finished: a ring of light opens around it and confetti
+  // flies off the roof for 2.5 s. "still" only marks the spot for a moment.
+  function celebration(now, level) {
+    const t = (now - party.t0) / 1000;
+    if (t > 2.5) {
+      party = null;
+      return;
+    }
+    if (t < 0) {
+      if (level === "still") wakeIn = Math.max(wakeIn, 16);
+      else alive = true;
+      return;
+    }
+    const s = cam.s,
+      ground = atScreen(party.x, party.y),
+      roof = atScreen(party.x, party.y, party.z),
+      rx = s * (party.hw + 1) * 1.6,
+      ry = s * (party.hw + 1) * 0.8;
+    if (level === "still") {
+      ctx.strokeStyle = "rgba(255,238,170,.85)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(ground[0], ground[1], rx * 1.25, ry * 1.25, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      const left = (2.5 - t) * 1000 + 16;
+      wakeIn = wakeIn ? Math.min(wakeIn, left) : left;
+      return;
+    }
+    alive = true;
+    // A soft flash on the building, then two rings of light spreading out.
+    if (t < 0.9) {
+      const a = 0.45 * (1 - t / 0.9),
+        r = rx * 1.4;
+      const g = ctx.createRadialGradient(roof[0], roof[1], 0, roof[0], roof[1], r);
+      g.addColorStop(0, `rgba(255,240,190,${a})`);
+      g.addColorStop(1, "rgba(255,240,190,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(roof[0] - r, roof[1] - r, r * 2, r * 2);
+    }
+    for (const [delay, strength] of [[0, 1], [0.35, 0.7]]) {
+      const q = (t - delay) / 1.6;
+      if (q < 0 || q > 1) continue;
+      const e = 1 - Math.pow(1 - q, 3);
+      ctx.strokeStyle = `rgba(255,236,170,${0.9 * strength * (1 - q)})`;
+      ctx.lineWidth = 1 + 3.5 * (1 - q);
+      ctx.beginPath();
+      ctx.ellipse(ground[0], ground[1], rx * (0.9 + e * 2.6), ry * (0.9 + e * 2.6), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    const scale = Math.max(0.7, Math.min(1.4, s / 12)),
+      drift = (1 - Math.exp(-2.2 * t)) / 2.2,
+      fade = t > 1.8 ? 1 - (t - 1.8) / 0.7 : 1;
+    ctx.globalAlpha = Math.max(0, fade);
+    for (const bit of party.bits) {
+      const x = roof[0] + (bit.vx * drift + Math.sin(t * 6 + bit.rot) * 3) * scale,
+        y = roof[1] + (bit.vy * drift + 40 * t * t) * scale;
+      ctx.fillStyle = bit.color;
+      if (bit.round) {
+        ctx.beginPath();
+        ctx.arc(x, y, bit.h * scale, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(bit.rot + bit.spin * t);
+        ctx.fillRect((-bit.w / 2) * scale, (-bit.h / 2) * scale, bit.w * scale, bit.h * scale);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  // A balloon looks the same frame after frame: keep each one as a small bitmap
+  // (the soft shadow and the avatar picture are the costly parts to paint).
+  const sprites = new Map();
+  function bubble(x, y, member, r, pointer, badge = null) {
+    r = Math.round(r * 2) / 2;
+    const key = `${member.avatar}|${member.color}|${r}|${pointer ? 1 : 0}|${badge || ""}|${dpr}`;
+    let sprite = sprites.get(key);
+    if (!sprite) {
+      const pad = 9,
+        left = r + pad,
+        top = r * 1.15 + pad;
+      const c = document.createElement("canvas");
+      c.width = Math.ceil((r * 2.45 + pad * 2) * dpr);
+      c.height = Math.ceil((r * 2.6 + pad * 2) * dpr);
+      const b = c.getContext("2d");
+      b.scale(dpr, dpr);
+      sprite = { c, left, top };
+      // An avatar picture still loading is painted without it and not kept.
+      if (paintBubble(b, left, top, member, r, pointer, badge)) {
+        sprites.set(key, sprite);
+        if (sprites.size > 48) {
+          // Safari lets go of a canvas's memory sooner once it is emptied.
+          const [oldest, old] = sprites.entries().next().value;
+          old.c.width = old.c.height = 0;
+          sprites.delete(oldest);
+        }
+      }
+    }
+    // Whole device pixels keep the bitmap sharp.
+    ctx.drawImage(sprite.c, Math.round((x - sprite.left) * dpr) / dpr, Math.round((y - sprite.top) * dpr) / dpr, sprite.c.width / dpr, sprite.c.height / dpr);
+  }
+  function paintBubble(c, x, y, member, r, pointer, badge) {
+    let ready = true;
+    c.save();
+    c.shadowColor = "rgba(40,30,70,.25)";
+    c.shadowBlur = 6;
+    c.shadowOffsetY = 2;
+    c.fillStyle = "#fffdf7";
+    c.beginPath();
+    c.arc(x, y, r, 0, Math.PI * 2);
+    if (pointer) {
+      c.moveTo(x - r * 0.35, y + r * 0.85);
+      c.lineTo(x, y + r * 1.45);
+      c.lineTo(x + r * 0.35, y + r * 0.85);
+    }
+    c.fill();
+    c.restore();
+    c.lineWidth = Math.max(1.5, r * 0.16);
+    c.strokeStyle = MEMBER_COLORS[member.color] || "#a99be0";
+    c.beginPath();
+    c.arc(x, y, r - c.lineWidth / 2, 0, Math.PI * 2);
+    c.stroke();
     // The member's color as the disc, as in the app; characters are the same SVG as in the page.
-    const inner = r - ctx.lineWidth;
-    ctx.fillStyle = AVATAR_BG[member.color] || AVATAR_BG.lilac;
-    ctx.beginPath();
-    ctx.arc(x, y, inner, 0, Math.PI * 2);
-    ctx.fill();
+    const inner = r - c.lineWidth;
+    c.fillStyle = AVATAR_BG[member.color] || AVATAR_BG.lilac;
+    c.beginPath();
+    c.arc(x, y, inner, 0, Math.PI * 2);
+    c.fill();
+    c.textAlign = "center";
+    c.textBaseline = "middle";
     if (parseAvatar(member.avatar)) {
       const img = avatarImage(member.avatar, request);
       if (img) {
-        ctx.save();
-        ctx.clip();
-        ctx.drawImage(img, x - inner, y - inner, inner * 2, inner * 2);
-        ctx.restore();
-      }
+        c.save();
+        c.clip();
+        c.drawImage(img, x - inner, y - inner, inner * 2, inner * 2);
+        c.restore();
+      } else ready = false;
     } else {
-      ctx.font = `${Math.round(r * 1.15)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(member.avatar || "🙂", x, y + r * 0.08);
+      c.font = `${Math.round(r * 1.15)}px ${EMOJI}`;
+      c.fillText(member.avatar || "🙂", x, y + r * 0.08);
     }
-    if (coffee) {
-      ctx.font = `${Math.round(r * 0.8)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-      ctx.fillText("☕", x + r * 0.95, y - r * 0.7);
+    if (badge) {
+      c.font = `${Math.round(r * 0.8)}px ${EMOJI}`;
+      c.fillText(badge, x + r * 0.95, y - r * 0.7);
     }
+    return ready;
   }
   function pill(x, y, text) {
     ctx.font = '700 11px "DM Sans", sans-serif';
@@ -245,11 +538,22 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
   }
 
   // ---------- frame loop ----------
-  const animated = () =>
-    !reduced && !still && (world?.smoke.length || world?.walkers.length || world?.balloons.length || selected);
+  // Keep going only while something that moves is actually on screen (set by drawLive).
+  const animated = () => alive && !still;
+  function wake(wait) {
+    const due = performance.now() + wait;
+    if (liveTimer && liveDue <= due + 1) return;
+    clearTimeout(liveTimer);
+    liveDue = due;
+    liveTimer = setTimeout(() => {
+      liveTimer = 0;
+      request();
+    }, wait);
+  }
   function frame(now) {
     raf = 0;
     if (destroyed || !world || document.visibilityState === "hidden") return;
+    const level = motionLevel();
     if (flight) {
       const k = Math.min(1, (now - flight.t0) / flight.ms),
         e = 1 - Math.pow(1 - k, 3);
@@ -260,38 +564,40 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       onCamera(cam);
     }
     if (inertia) stepInertia();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = tint(GROUND);
-    ctx.fillRect(0, 0, W, H);
+    // The map canvas is repainted only when the camera or the world changed.
     const L = tileLevel(cam.s, W, H);
-    if (fallback && (fallback.g !== gen || fallback.L !== L)) blit(fallback.g, fallback.L, null);
-    const missing = [];
-    blit(gen, L, missing);
-    // Paint missing tiles nearest to the centre first, within a frame budget.
-    missing.sort((a, b) => a[2] - b[2]);
-    const t0 = performance.now();
-    for (const [i, j] of missing) {
-      if (performance.now() - t0 > 14) break;
-      store(keyOf(gen, L, i, j), renderTile(L, i, j));
+    const shot = `${gen}|${L}|${cam.x}|${cam.y}|${cam.s}`;
+    let pending = false;
+    if (shot !== painted) {
+      bg.setTransform(dpr, 0, 0, dpr, 0, 0);
+      bg.fillStyle = tint(GROUND);
+      bg.fillRect(0, 0, W, H);
+      if (fallback && (fallback.g !== gen || fallback.L !== L)) blit(fallback.g, fallback.L, null);
+      const missing = [];
+      blit(gen, L, missing);
+      // Paint missing tiles nearest to the centre first, within a frame budget.
+      missing.sort((a, b) => a[2] - b[2]);
+      const t0 = performance.now();
+      for (const [i, j] of missing) {
+        if (performance.now() - t0 > 14) break;
+        store(keyOf(gen, L, i, j), renderTile(L, i, j));
+      }
+      pending = missing.length > 0 && missing.some(([i, j]) => !tiles.has(keyOf(gen, L, i, j)));
+      // Even the last newly painted tile must reach the screen before we sleep.
+      if (missing.length) blit(gen, L, null);
+      if (!pending) fallback = { g: gen, L };
+      painted = pending ? "" : shot;
     }
-    const pending = missing.length && missing.some(([i, j]) => !tiles.has(keyOf(gen, L, i, j)));
-    // Even the last newly painted tile must reach the screen before we sleep
-    // (especially with reduced motion and no live characters).
-    if (missing.length) blit(gen, L, null);
-    if (!pending) fallback = { g: gen, L };
-    drawLive(now);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    drawLive(now, level);
     if (pending || flight || inertia || gestureActive()) request();
     else if (animated() && visible) {
-      // Live layer at ~24 fps: smoke and walkers need no more, the battery thanks us.
-      if (!liveTimer) {
-        const wait = Math.max(0, 42 - (now - lastLive));
-        lastLive = now + wait;
-        liveTimer = setTimeout(() => {
-          liveTimer = 0;
-          request();
-        }, wait);
-      }
-    }
+      // Live layer at ~24 fps: smoke, strollers and birds need no more, the battery thanks us.
+      const wait = Math.max(0, 42 - (now - lastLive));
+      lastLive = now + wait;
+      wake(wait);
+    } else if (wakeIn && visible) wake(wakeIn);
   }
   function request() {
     if (!raf && !destroyed && visible && document.visibilityState !== "hidden") raf = requestAnimationFrame(frame);
@@ -446,7 +752,8 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
   }
   function flyTo(to, ms = 600) {
     const target = { ...to, s: Math.max(minS, Math.min(maxS, to.s ?? cam.s)) };
-    if (reduced || ms === 0) {
+    if (motionLevel() === "still" || ms === 0) {
+      flight = null;
       Object.assign(cam, target);
       clamp();
       onCamera(cam);
@@ -471,6 +778,10 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     }
   };
   document.addEventListener("visibilitychange", visibility);
+  // The motion setting can change while the map is open (Ben → Görünüm, or the phone's own).
+  const motionWatch = new MutationObserver(() => request());
+  motionWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });
+  reduceQuery?.addEventListener?.("change", request);
 
   return {
     cam,
@@ -492,8 +803,11 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         tiles.clear();
         fallback = null;
       }
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
+      // Setting a canvas size clears it, even to the same size.
+      canvas.width = layer.width = Math.round(W * dpr);
+      canvas.height = layer.height = Math.round(H * dpr);
+      painted = "";
+      Object.assign(layer.style, { left: `${canvas.offsetLeft}px`, top: `${canvas.offsetTop}px`, width: `${W}px`, height: `${H}px` });
       clamp();
       request();
     },
@@ -512,6 +826,37 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       selected = id;
       request();
     },
+    /** Flies to a just-finished building and celebrates it; false if the world does not have it yet. */
+    celebrate(id) {
+      const item = world?.byId.get(id);
+      if (!item?.sp || item.building?.spot) return false;
+      const level = motionLevel();
+      const [x, y] = screen(item.x, item.y, item.top * 0.45);
+      flyTo({ x, y, s: Math.max(12, Math.min(16, cam.s)) }, 750);
+      party = {
+        x: item.x,
+        y: item.y,
+        z: item.top + 0.6,
+        hw: item.sp.hw,
+        t0: performance.now() + (level === "still" ? 0 : 600),
+        bits: Array.from({ length: 42 }, (_, i) => {
+          const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.3,
+            v = 90 + Math.random() * 80;
+          return {
+            vx: Math.cos(a) * v,
+            vy: Math.sin(a) * v,
+            rot: Math.random() * 6,
+            spin: (Math.random() - 0.5) * 14,
+            color: CONFETTI[i % CONFETTI.length],
+            w: 3 + Math.random() * 2.5,
+            h: 1.6 + Math.random() * 1.4,
+            round: i % 5 === 0,
+          };
+        }),
+      };
+      request();
+      return true;
+    },
     setStill(value) {
       still = value;
       request();
@@ -522,6 +867,8 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       cancelAnimationFrame(raf);
       clearTimeout(liveTimer);
       observer?.disconnect();
+      motionWatch.disconnect();
+      reduceQuery?.removeEventListener?.("change", request);
       document.removeEventListener("visibilitychange", visibility);
       if (interactive) {
         canvas.removeEventListener("pointerdown", down);
@@ -531,6 +878,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         canvas.removeEventListener("wheel", wheel);
         canvas.removeEventListener("keydown", key);
       }
+      layer.remove();
       tiles.clear();
     },
   };

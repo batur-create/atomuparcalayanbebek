@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Expand, Heart, LocateFixed, Minus, Plus, Shrink, X } from "lucide-react";
 import { api, dateLabel, get, minutesLabel, shortTime } from "./api.js";
 import { Avatar } from "./ui.jsx";
-import { buildWorld, mergeVillage, skyAt, tinter } from "./villageWorld.js";
+import { buildWorld, focusing, mergeVillage, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene, KINDS } from "./Village.jsx";
 import { modelOf } from "../shared/catalog.js";
@@ -95,7 +95,11 @@ export function useVillageWorld({ village, members, me, groupId, spots }) {
     return () => clearTimeout(timer);
   }, [village?.ruins, expiry]);
   const tint = useMemo(() => tinter(sky), [sky.key]);
-  const people = members.map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}:${m.chainEnd || 0}`).join("|");
+  // Who is focusing is part of the picture (window light, 🎧), so starting or ending a session rebuilds it.
+  const now = Date.now();
+  const people = members
+    .map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}:${m.chainEnd || 0}:${focusing(m, now) ? (m.focusPausedAt ? "p" : "f") : ""}`)
+    .join("|");
   const world = useMemo(
     () => (village ? buildWorld({ groupKey: groupId || "demo", village, members, me, sky, spots }) : null),
     [village, people, me, sky.key, groupId, expiry, spots],
@@ -135,7 +139,13 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
   useEffect(() => {
     const v = createView(canvas.current, { interactive, onPick: (b) => pickRef.current?.(b) });
     view.current = v;
-    if (viewRef) viewRef.current = { view: v, fit: () => fitRef.current(500) };
+    if (viewRef)
+      viewRef.current = {
+        view: v,
+        fit: () => fitRef.current(500),
+        // A celebration takes the camera; the auto-fit must not pull it back to the whole village.
+        celebrate: (id) => v.celebrate(id) && (moved.current = fitted.current = true),
+      };
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       v.resize(width, height);
@@ -261,6 +271,28 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   }, [full]);
   const showScene = !!run || (outcome && Date.now() - outcome.at < 4200);
   const subject = run || outcome;
+  // When the handover scene gives way to the map, fly to my new building and
+  // celebrate it, once. If the village has not caught up yet, ask for it once
+  // and try again when it arrives. The new one is the building that was not
+  // there while it was being built (comparing timestamps would trust the phone's clock).
+  const before = useRef(null);
+  useEffect(() => {
+    if (run && village) before.current = new Set(village.buildings.filter((b) => b.memberId === me?.id).map((b) => b.id));
+  }, [run, village]);
+  const celebrated = useRef(0),
+    refetched = useRef(0);
+  useEffect(() => {
+    if (showScene || outcome?.type !== "built" || !me || celebrated.current === outcome.at) return;
+    if (Date.now() - outcome.at > 20000) return;
+    const fresh = (village?.buildings || [])
+      .filter((b) => b.memberId === me.id && b.x !== null && (before.current ? !before.current.has(b.id) : b.created > outcome.at - 10 * 60000))
+      .reduce((a, b) => (!a || b.created > a.created ? b : a), null);
+    if (fresh && map.current?.celebrate(fresh.id)) celebrated.current = outcome.at;
+    else if (refetched.current !== outcome.at) {
+      refetched.current = outcome.at;
+      retry();
+    }
+  }, [showScene, outcome?.at, village]);
   const building = picked && village?.buildings.find((b) => b.id === picked);
   const owner = building && members.find((m) => m.id === building.memberId);
   const count = village?.buildings.length || 0;

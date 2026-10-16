@@ -2,7 +2,7 @@
 // buildings, signs and lamps, each with a screen-space box and a depth, indexed
 // in a coarse grid so the map only draws what a tile or the viewport needs.
 import {
-  FOOTPRINT, LANE, PLAZA, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
+  FOOTPRINT, LANE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
   LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
@@ -23,6 +23,12 @@ const MEADOW = "#b3da88",
 export const MEMBER_COLORS = {
   lilac: "#a99be0", mint: "#86bf98", peach: "#efac85", blue: "#8ab2da", pink: "#eca0b7", lemon: "#e3cc5c",
 };
+// Villagers dress in calm village colours (none of them green enough to turn white under the winter tint).
+const COATS = ["#7f93b8", "#b98a64", "#c98577", "#9c8bbf", "#6e9e9b", "#d0a54f", "#a3a06a"],
+  SKINS = ["#f3d2b3", "#e2b48e", "#c68e66", "#9c6a4a"],
+  HATS = [["#e6c77c"], ["#e9a0a8", "#f2d07a", "#a7c7e7", "#f5f0e6"], ["#6d625a", "#8a7a6a", "#5f6b7d"]];
+/** In a session right now (a tea break inside the session counts too). */
+export const focusing = (m, now = Date.now()) => m.focusEnd > now || (m.focusEnd > 0 && m.focusPausedAt > 0);
 
 // ---------- data ----------
 const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine, model]) => ({
@@ -391,7 +397,9 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   const newest = new Map();
   for (const b of village.buildings) newest.set(b.memberId, b);
   const lit = new Set();
-  for (const m of members) if (m.status === "here" && newest.has(m.id)) lit.add(newest.get(m.id).id);
+  const now = Date.now();
+  // Lit windows: whoever is in the library, and whoever is focusing (also from home).
+  for (const m of members) if ((m.status === "here" || focusing(m, now)) && newest.has(m.id)) lit.add(newest.get(m.id).id);
 
   // Plaza
   add(ground, { pass: 0, bbox: boxOf(0, 0, PLAZA * 1.8, PLAZA * 1.8, PLAZA, PLAZA), draw: (v) => {
@@ -674,12 +682,20 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   };
   const balloons = [],
     walkers = [],
-    smoke = [];
+    smoke = [],
+    glows = [];
   for (const m of members) {
-    if (m.status === "here" || m.status === "break") {
+    const focus = focusing(m, now);
+    // A warm, breathing window light at the home of whoever is focusing.
+    const home = newest.get(m.id);
+    if (focus && home && home.x !== null) {
+      const sp = spec(home.kind, home.seed, home.model);
+      glows.push({ member: m, x: home.x, y: home.y, z: ridgeOf(sp) * 0.42, r: sp.hw + 1.6, seed: home.seed % 97 });
+    }
+    if (m.status === "here" || m.status === "break" || (focus && m.status !== "coming")) {
       const a = anchorOf(m.id);
       if (!a) continue;
-      balloons.push({ member: m, ...a });
+      balloons.push({ member: m, ...a, focus });
       if (m.status === "here" && a.building) {
         const sp = spec(a.building.kind, a.building.seed, a.building.model);
         if (sp.chimney) {
@@ -690,9 +706,46 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       }
     } else if (m.status === "coming") {
       const d = districts.find((dd) => dd.memberId === m.id);
-      if (d) walkers.push({ member: m, path: pathToPlaza(groupKey, d) });
+      if (d) {
+        const path = pathToPlaza(groupKey, d);
+        walkers.push({ member: m, path, box: pathBox(path) });
+      }
     }
   }
+  // Villagers: in up to six lived-in districts (an owner and at least one
+  // building) one neighbour strolls along the lanes to the square and back.
+  // Buildings only know their owner, so each goes to the owner's nearest district.
+  const ownDistricts = new Map(),
+    homesIn = new Map();
+  for (const d of districts)
+    if (d.memberId && people.has(d.memberId)) {
+      if (!ownDistricts.has(d.memberId)) ownDistricts.set(d.memberId, []);
+      ownDistricts.get(d.memberId).push(d);
+    }
+  for (const b of homes) {
+    let best = null,
+      gap = RADIUS + 4;
+    for (const d of ownDistricts.get(b.memberId) || []) {
+      const dist = Math.hypot(b.x - d.layout.center[0], b.y - d.layout.center[1]);
+      if (dist < gap) [best, gap] = [d, dist];
+    }
+    if (best) homesIn.set(best.id, (homesIn.get(best.id) || 0) + 1);
+  }
+  // The busiest district of each neighbour first, then the next ones, so six
+  // villagers spread over six people before anyone gets a second.
+  const turns = new Map();
+  const villagers = [...ownDistricts.values()]
+    .flat()
+    .filter((d) => homesIn.get(d.id))
+    .sort((a, b) => homesIn.get(b.id) - homesIn.get(a.id))
+    .map((d) => {
+      const turn = turns.get(d.memberId) || 0;
+      turns.set(d.memberId, turn + 1);
+      return { d, turn };
+    })
+    .sort((a, b) => a.turn - b.turn)
+    .slice(0, 6)
+    .map(({ d }) => villagerOf(groupKey, d));
   const mine = districts.filter((d) => d.memberId === me);
   // One name per person at distant zoom; repeating it on every district hides
   // the buildings once a friend owns dozens of neighbourhoods.
@@ -713,7 +766,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       area = [Math.min(area[0], sx), Math.min(area[1], sy - 4), Math.max(area[2], sx), Math.max(area[3], sy)];
     }
   return {
-    items, query, bounds, area, districts, balloons, walkers, smoke, buildings: homes, lit, farLabels,
+    items, query, bounds, area, districts, balloons, walkers, villagers, glows, smoke, buildings: homes, lit, farLabels,
     lamps: standing.filter((item) => item.type === "lamp"),
     byId: new Map(standing.filter((item) => item.id).map((item) => [item.id, item])),
     names: new Map(members.map((m) => [m.id, m.name])),
@@ -737,6 +790,36 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       return b;
     },
     detailFor,
+  };
+}
+
+// Where a path lies on screen (iso units, with room for a figure): the map
+// keeps its loop running for a walker only while their road can be seen.
+function pathBox(path) {
+  let box = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [x, y] of path.points) {
+    const [sx, sy] = screenOf(x, y);
+    box = [Math.min(box[0], sx - 3), Math.min(box[1], sy - 4), Math.max(box[2], sx + 3), Math.max(box[3], sy + 1)];
+  }
+  return box;
+}
+// A neighbour of a lived-in district: how they look, how fast they stroll and
+// where they stand when nothing moves.
+function villagerOf(groupKey, district) {
+  const r = rng(district.layout.seed + 41);
+  const path = pathToPlaza(groupKey, district);
+  const hat = Math.floor(r() * 3);
+  return {
+    id: district.id,
+    path,
+    box: pathBox(path),
+    coat: COATS[Math.floor(r() * COATS.length)],
+    skin: SKINS[Math.floor(r() * SKINS.length)],
+    hat,
+    hatColor: HATS[hat][Math.floor(r() * HATS[hat].length)],
+    speed: 0.95 + r() * 0.35, // world units a second: a stroll, slower than a friend on the way
+    phase: r(),
+    rest: 0.15 + r() * 0.5,
   };
 }
 
