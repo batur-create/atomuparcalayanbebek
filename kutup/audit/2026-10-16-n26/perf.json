@@ -1,0 +1,18 @@
+{
+  "what": "Köy tab, n26 part 2 (living village map). Local production build (node server/index.js), isolated test data.",
+  "method": "Playwright + Chromium 141 headless (no GPU, software raster), viewport 375x812, DPR 3, CDP Emulation.setCPUThrottlingRate 4, map scrolled into view; 6 s of rAF frame gaps and CDP Performance.getMetrics TaskDuration; median of 3 runs. Day runs move the page clock to 13:00 Ankara.",
+  "teams": {
+    "busy": "5 friends, 10 buildings; one in the library and focusing, one more in the library and focusing, one on the way, one without buildings",
+    "quiet": "same village, nobody around and nobody focusing"
+  },
+  "results": [
+    { "team": "busy", "time": "night", "before": { "busy%": 79.8, "p95ms": 33.4, "fps": 48.5 }, "after": { "busy%": 37.8, "p95ms": 16.7, "fps": 59.8 } },
+    { "team": "busy", "time": "day", "before": { "busy%": 75.3, "p95ms": 33.4, "fps": 50.3 }, "after": { "busy%": 34.6, "p95ms": 16.7, "fps": 60.0 } },
+    { "team": "quiet", "time": "night", "before": { "busy%": 9.5, "p95ms": 16.8, "fps": 60.0 }, "after": { "busy%": 34.9, "p95ms": 16.8, "fps": 60.2 } },
+    { "team": "quiet", "time": "day", "before": { "busy%": 9.8, "p95ms": 16.7, "fps": 60.2 }, "after": { "busy%": 32.1, "p95ms": 16.8, "fps": 59.8 } },
+    { "team": "busy", "time": "day", "motion": "calm", "after": { "busy%": 10.8, "p95ms": 16.7, "fps": 60.0 } },
+    { "team": "busy", "time": "day", "motion": "still", "after": { "busy%": 10.5, "p95ms": 16.7, "fps": 59.7 } }
+  ],
+  "baseline_page_without_map": { "busy%": 4.5 },
+  "screenshots": ["koy-light-day.jpg", "koy-dark-focus.jpg", "koy-dark-celebration.jpg"]
+}
