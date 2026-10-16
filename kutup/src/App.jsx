@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LazyMotion, MotionConfig, m as M } from "motion/react";
+import { AnimatePresence, LazyMotion, MotionConfig, m as M } from "motion/react";
 // Motion's animation and layout engine loads after the first paint.
 const motionFeatures = () => import("./motionFeatures.js").then((r) => r.default);
 import {
@@ -31,6 +31,7 @@ import {
   MoreHorizontal,
   Play,
   Plus,
+  Reply,
   Send,
   Settings2,
   Sparkles,
@@ -79,8 +80,9 @@ import { CallOverlay, DeskMates, JoinBanner, MessageBanner, seenBy } from "./Tog
 import { VillagePanel, useVillage } from "./VillageMap.jsx";
 import { Modal } from "./Modal.jsx";
 import { Welcome, Onboard, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
-import { Home, Badge } from "./Home.jsx";
-import { MePage } from "./MePage.jsx";
+import { Home, Badge, Kinetic } from "./Home.jsx";
+import { MePage, TeamModal } from "./MePage.jsx";
+import { useMotionPref } from "./motionPref.js";
 import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
 import { useColorMode } from "./colorMode.js";
@@ -137,6 +139,7 @@ export default function App() {
       return THEMES.includes(saved) ? saved : "lilac";
     });
   const [mode, setMode] = useColorMode();
+  const [motionPick, setMotion, motion] = useMotionPref();
   const [invite, setInvite] = useState(
       location.pathname.startsWith("/join/")
         ? location.pathname.split("/")[2]
@@ -310,11 +313,7 @@ export default function App() {
           setInvite("");
           history.replaceState({}, "", "/");
         });
-    const tick = setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      clearInterval(tick);
-      clearTimeout(toastTimer.current);
-    };
+    return () => clearTimeout(toastTimer.current);
   }, []);
   // Live updates: Server-Sent Events on the Node host; on Cloudflare / ChatGPT Sites
   // a light revision poll (only a number travels when nothing changed).
@@ -619,6 +618,27 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [!!session]);
   const dark = darkAt(mode, now);
+  // The clock re-draws the whole app, so it ticks every second only while a
+  // second can show (a running timer, the village tab, the focus screen) and
+  // every 15 seconds otherwise. Coming back to the app refreshes it at once.
+  const fastClock = tab === "focus" || focusScreen || me?.focusEnd > now || !!data.group.rhythm;
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), fastClock ? 1000 : 15000);
+    const wake = () => document.visibilityState === "visible" && setNow(Date.now());
+    document.addEventListener("visibilitychange", wake);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", wake);
+    };
+  }, [fastClock]);
+  // Tabs slide in from the side they sit on.
+  const order = { home: 0, focus: 1, board: 2, me: 3, feedback: 4 };
+  const lastTab = useRef(tab),
+    slide = useRef(1);
+  if (lastTab.current !== tab) {
+    slide.current = (order[tab] ?? 0) >= (order[lastTab.current] ?? 0) ? 1 : -1;
+    lastTab.current = tab;
+  }
   const leave = () => me && leaveTeam(me, notify, () => signedOut("Ekipten ayrıldın. Kapımız hep açık. 🫶"));
   // Joining a friend's timer builds the picked building if it fits, a cottage otherwise.
   const joinFriend = (m) =>
@@ -826,7 +846,7 @@ export default function App() {
   );
   return (
     <LazyMotion features={motionFeatures} strict>
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion={motionPick === "still" ? "always" : motionPick ? "never" : "user"}>
     <div
       className={`app-shell ${intro ? "intro" : ""} ${
         data.messages.some((m) => m.kind !== "system" && m.text.trim().toLocaleLowerCase("tr") === "çay" && now - m.created < 60000)
@@ -842,7 +862,7 @@ export default function App() {
         >
           kütüp<span data-door="">✳</span>
         </button>
-        <div className="group-switch">
+        <M.button whileTap={{ scale: 0.97 }} className="group-switch" title={data.group.name} onClick={() => requireMember(() => setModal("team"))}>
           <span className="group-symbol">✷</span>
           <div>
             <strong>{data.group.name}</strong>
@@ -852,7 +872,7 @@ export default function App() {
                 : "Senin ekibin, senin köşen"}
             </small>
           </div>
-        </div>
+        </M.button>
         <span className="nav-caption">BİZİM ALAN</span>
         <nav>
           {nav.map((item) => (
@@ -872,13 +892,22 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="library-note">
+          <a
+            className="library-note"
+            href="https://www.google.com/maps/search/?api=1&query=Milli+K%C3%BCt%C3%BCphane+Ankara"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Milli Kütüphane yol tarifi (haritada açılır)"
+          >
             <BookOpen size={24} />
             <div>
               <strong>Milli Kütüphane</strong>
-              <span>Ankara’da bir çalışma bahanesi.</span>
+              <span className="library-live">{here.length ? `Şu an ${here.length} kişi burada` : "Ankara’da bir çalışma bahanesi."}</span>
+              <span className="library-go">
+                <MapPin size={13} /> Yol tarifi
+              </span>
             </div>
-          </div>
+          </a>
           <button
             className="sidebar-profile"
             onClick={() => requireMember(() => navigate("me"))}
@@ -950,7 +979,20 @@ export default function App() {
           </div>
         )}
         <div className="page-content">
-          <div className="tab-stage" key={tab}>
+          <AnimatePresence mode="wait" initial={false} custom={slide.current}>
+          <M.div
+            className="tab-stage"
+            key={tab}
+            custom={slide.current}
+            variants={{
+              enter: (d) => ({ opacity: 0, x: 34 * d }),
+              show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 380, damping: 34 } },
+              leave: (d) => ({ opacity: 0, x: -22 * d, transition: { duration: 0.12, ease: "easeIn" } }),
+            }}
+            initial="enter"
+            animate="show"
+            exit="leave"
+          >
           {tab !== "home" && (
             <div className="page-heading">
               <div>
@@ -960,7 +1002,7 @@ export default function App() {
                   </button>
                 )}
                 <div className="eyebrow">{PAGE[tab][0]}</div>
-                <h1>{PAGE[tab][1]}</h1>
+                <Kinetic as="h1" when="mount" delay={0.08} text={PAGE[tab][1]} />
                 <p>{PAGE[tab][2]}</p>
               </div>
             </div>
@@ -980,6 +1022,7 @@ export default function App() {
               requireMember={requireMember}
               mutate={mutate}
               navigate={navigate}
+              village={village}
               extras={
                 <>
                   {session && !notificationOn && <SetupCard enable={enableNotifications} busy={notificationWorking} />}
@@ -1099,7 +1142,7 @@ export default function App() {
             </div>
           )}
           {tab === "me" && (
-            <MePage me={me} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} />
+            <MePage me={me} group={data.group} size={data.members.length} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} />
           )}
           {tab === "feedback" && (
             <FeedbackPage
@@ -1109,7 +1152,8 @@ export default function App() {
               onSeen={requestUpdates.clear}
             />
           )}
-          </div>
+          </M.div>
+          </AnimatePresence>
           <footer className="page-footer">
             <span>
               Biraz çalışma, biraz muhabbet. <span data-door="">kütüp ✳</span>
@@ -1149,7 +1193,8 @@ export default function App() {
         />
       )}
       {modal === "profile" && me && <ProfileModal me={me} close={() => setModal(null)} mutate={mutate} />}
-      {modal === "look" && <LookModal theme={theme} setTheme={setTheme} mode={mode} setMode={setMode} close={() => setModal(null)} />}
+      {modal === "look" && <LookModal theme={theme} setTheme={setTheme} mode={mode} setMode={setMode} motion={motion} setMotion={setMotion} close={() => setModal(null)} />}
+      {modal === "team" && <TeamModal data={data} me={me} now={now} close={() => setModal(null)} invite={() => setModal("invite")} />}
       {modal === "account" && (
         <AccountModal
           username={session?.username}
@@ -1606,10 +1651,33 @@ function CoffeeCard({ requireMember, onCoffee }) {
 }
 function Board({ data, me, requireMember, mutate, compact }) {
   const [text, setText] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    // Any message can be answered (n18): the reply quotes it and pings its author.
+    [replyTo, setReplyTo] = useState(null),
+    // A double tap on a message leaves a heart, with a big heart popping on it.
+    [burst, setBurst] = useState(null);
   const form = useRef(null),
     list = useRef(null),
-    count = useRef(0);
+    input = useRef(null),
+    count = useRef(0),
+    lastTap = useRef({ id: null, at: 0 });
+  const answer = (msg) =>
+    requireMember(() => {
+      setReplyTo(msg);
+      requestAnimationFrame(() => input.current?.focus());
+    });
+  const heart = (msg) =>
+    requireMember(() => {
+      setBurst({ id: msg.id, at: Date.now() });
+      if (!msg.reactions.includes(me?.id)) mutate(`/messages/${msg.id}/react`, {});
+    });
+  const tap = (e, msg) => {
+    if (e.pointerType === "mouse" || e.target.closest("button, a")) return;
+    const t = Date.now(),
+      last = lastTap.current;
+    lastTap.current = { id: msg.id, at: t };
+    if (last.id === msg.id && t - last.at < 380) heart(msg);
+  };
   // The board opens at its newest message, and follows new ones while you are near the end.
   useEffect(() => {
     if (compact) return;
@@ -1638,7 +1706,10 @@ function Board({ data, me, requireMember, mutate, compact }) {
     requireMember(async () => {
       if (!text.trim()) return;
       setBusy(true);
-      if (await mutate("/messages", { text })) setText("");
+      if (await mutate("/messages", replyTo ? { text, replyTo: replyTo.id } : { text })) {
+        setText("");
+        setReplyTo(null);
+      }
       setBusy(false);
     });
   };
@@ -1653,23 +1724,31 @@ function Board({ data, me, requireMember, mutate, compact }) {
         </span>
       </div>
       <div className="messages" ref={list}>
+        <AnimatePresence initial={false}>
         {messages.map((msg) => {
           const m = data.members.find((x) => x.id === msg.memberId);
+          const mine = msg.memberId === me?.id,
+            hearted = msg.reactions.includes(me?.id);
           return msg.kind === "system" ? (
-            <div key={msg.id} className="system-message">
+            <M.div key={msg.id} className="system-message" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 320, damping: 26 }}>
               <span>✦</span>
               <p>
                 <strong>{m?.name}</strong> {msg.text}
               </p>
               <time>{shortTime(msg.created)}</time>
-            </div>
+            </M.div>
           ) : (
-            <article
+            <M.article
               key={msg.id}
-              className={`message ${msg.kind === "coffee" ? "coffee-message" : ""}`}
+              className={`message ${m?.color || "lilac"} ${mine ? "mine" : ""} ${msg.kind === "coffee" ? "coffee-message" : ""}`}
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 320, damping: 24 }}
+              onPointerUp={(e) => tap(e, msg)}
+              onDoubleClick={(e) => !e.target.closest("button, a") && heart(msg)}
             >
               <Avatar member={m} size="small" />
-              <div>
+              <div className="bubble">
                 <div className="message-meta">
                   <strong>{m?.name}</strong>
                   {m?.badge === "dev" && <span className="dev-mark" title="Geliştirici">✦</span>}
@@ -1692,39 +1771,72 @@ function Board({ data, me, requireMember, mutate, compact }) {
                     const seen = seenBy(data, msg);
                     return seen.length ? <div className="seen-by">👀 {seen.length >= data.members.length - 1 ? "herkes gördü" : `${seen.map((x) => x.name).join(", ")} gördü`}</div> : null;
                   })()}
-                <button
-                  className={`reaction ${msg.reactions.includes(me?.id) ? "reacted" : ""}`}
-                  aria-label={`${m?.name} mesajına kalp ${msg.reactions.includes(me?.id) ? "kaldır" : "bırak"}`}
-                  onClick={() =>
-                    requireMember(() => mutate(`/messages/${msg.id}/react`, {}))
-                  }
-                >
-                  <Heart
-                    size={12}
-                    fill={
-                      msg.reactions.includes(me?.id) ? "currentColor" : "none"
-                    }
-                  />
-                  {msg.reactions.length || "İlk kalp"}
-                </button>
+                <div className="message-actions">
+                  <M.button
+                    whileTap={{ scale: 0.85 }}
+                    className={`reaction ${hearted ? "reacted" : ""}`}
+                    aria-label={`${m?.name} mesajına kalp ${hearted ? "kaldır" : "bırak"}`}
+                    onClick={() => requireMember(() => mutate(`/messages/${msg.id}/react`, {}))}
+                  >
+                    <Heart size={12} fill={hearted ? "currentColor" : "none"} />
+                    {msg.reactions.length || "İlk kalp"}
+                  </M.button>
+                  {!compact && (
+                    <M.button whileTap={{ scale: 0.9 }} className="reply-button" aria-label={`${m?.name} mesajına cevap ver`} onClick={() => answer(msg)}>
+                      <Reply size={12} /> Yanıtla
+                    </M.button>
+                  )}
+                </div>
+                <AnimatePresence>
+                  {burst?.id === msg.id && (
+                    <M.span
+                      key={burst.at}
+                      className="heart-burst"
+                      aria-hidden="true"
+                      initial={{ scale: 0.2, opacity: 0 }}
+                      animate={{ scale: [0.2, 1.35, 1], opacity: [0, 1, 1] }}
+                      exit={{ scale: 1.6, opacity: 0, transition: { duration: 0.3 } }}
+                      transition={{ duration: 0.45 }}
+                      onAnimationComplete={() => setTimeout(() => setBurst((x) => (x?.at === burst.at ? null : x)), 250)}
+                    >
+                      ♥
+                    </M.span>
+                  )}
+                </AnimatePresence>
               </div>
-            </article>
+            </M.article>
           );
         })}
+        </AnimatePresence>
         {!messages.length && (
           <Empty emoji="💌" title="Pano ilk notunu bekliyor.">
             Bir “selam” güzel bir başlangıç.
           </Empty>
         )}
       </div>
+      <AnimatePresence>
+        {replyTo && (
+          <M.div className="reply-chip" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
+            <span>
+              <Reply size={13} /> <b>{data.members.find((x) => x.id === replyTo.memberId)?.name || "Biri"}</b> · {replyTo.text.slice(0, 70)}
+            </span>
+            <button type="button" aria-label="Cevabı bırak" onClick={() => setReplyTo(null)}>
+              <X size={14} />
+            </button>
+          </M.div>
+        )}
+      </AnimatePresence>
       <form className="message-form" onSubmit={send} ref={form}>
         <Avatar member={me} size="tiny" />
         <input
+          ref={input}
           aria-label="Panoya mesaj"
           placeholder={
-            me
-              ? "Ekibe küçük bir not bırak…"
-              : "Kendi ekibinle muhabbete başla…"
+            replyTo
+              ? "Cevabını yaz…"
+              : me
+                ? "Ekibe küçük bir not bırak…"
+                : "Kendi ekibinle muhabbete başla…"
           }
           value={text}
           maxLength={280}

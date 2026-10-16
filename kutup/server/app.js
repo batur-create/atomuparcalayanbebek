@@ -17,7 +17,7 @@ export const AVATARS = [
 ];
 // Only the profile with the founder's badge may wear these.
 export const FOUNDER_AVATARS = ["✳", "🕳️", "🌌", "🛸", "🏗️"];
-export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
+export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon", "slate", "sand", "olive"];
 const STATUSES = ["here", "coming", "break", "away"];
 const HOUR = 3600000;
 const DAY = 24 * HOUR;

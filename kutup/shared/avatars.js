@@ -338,7 +338,7 @@ export function avatarSvg(value, size = 160) {
   return art && `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">${art}</svg>`;
 }
 // Light member colors, as the avatar discs use them (styles.css tokens).
-export const AVATAR_BG = { lilac: "#eae5f5", mint: "#e4eddc", peach: "#f8e7d8", blue: "#e1eaf2", pink: "#f6e3e8", lemon: "#f2f0d3" };
+export const AVATAR_BG = { lilac: "#eae5f5", mint: "#e4eddc", peach: "#f8e7d8", blue: "#e1eaf2", pink: "#f6e3e8", lemon: "#f2f0d3", slate: "#dfe3ea", sand: "#ede5d6", olive: "#e3e6d0" };
 
 const images = new Map();
 /** Browser only: a decoded image of the avatar for canvas drawing; null until it is ready (then onReady runs). */

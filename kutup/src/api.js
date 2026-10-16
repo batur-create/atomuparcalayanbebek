@@ -62,7 +62,7 @@ export const AVATARS = [
 ];
 // Only the profile with the founder's badge may wear these.
 export const FOUNDER_AVATARS = ["✳", "🕳️", "🌌", "🛸", "🏗️"];
-export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon"];
+export const COLORS = ["lilac", "mint", "peach", "blue", "pink", "lemon", "slate", "sand", "olive"];
 export const COLOR_NAMES = {
   lilac: "Lavanta",
   mint: "Matcha",
@@ -70,8 +70,15 @@ export const COLOR_NAMES = {
   blue: "Gökyüzü",
   pink: "Çilek",
   lemon: "Limon",
+  slate: "Arduvaz",
+  sand: "Kum",
+  olive: "Zeytin",
+  navy: "Lacivert",
+  teal: "Petrol",
+  amber: "Kehribar",
+  graphite: "Grafit",
 };
-export const THEMES = ["lilac", "mint", "peach", "pink", "blue"];
+export const THEMES = ["lilac", "mint", "peach", "pink", "blue", "navy", "teal", "amber", "graphite"];
 export const STATUS = {
   here: ["Kütüpte", "here"],
   coming: ["Yolda", "coming"],

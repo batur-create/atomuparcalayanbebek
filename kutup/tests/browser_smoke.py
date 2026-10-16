@@ -95,6 +95,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     and page.get_by_role('button', name='Geldim', exact=True).is_visible()
                     and page.evaluate("document.querySelector('.home-status').getBoundingClientRect().top < document.querySelector('.home-people').getBoundingClientRect().top"))
                 page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                page.locator('.me-page').wait_for()
                 check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
                 # Kara waits in the village until n06; her rig is exercised with reduced motion, touch/keyboard and persistent UI.
                 page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
@@ -206,11 +207,36 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 friend.mouse.click(8, 400)  # the page gutter, left of the menu
                 expect(menu).to_have_count(0)
                 check('Look menu closes with Escape and with a tap outside', True)
+                # Ben → Görünüm: four bolder themes and the motion setting.
+                friend.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                friend.locator('.home-door', has_text='Görünüm').click()
+                friend.locator('.theme-options button.navy').click()
+                friend.locator('.motion-options button', has_text='Kıpırtısız').click()
+                check('Look: Lacivert theme and Kıpırtısız motion are picked and remembered', friend.evaluate('''()=>
+                    document.documentElement.dataset.theme==='navy' && document.documentElement.dataset.motion==='still'
+                    && localStorage.getItem('kutup-motion')==='still' && localStorage.getItem('kutup-theme')==='navy' '''))
+                friend.get_by_role('button', name='Tamam', exact=True).click()
+                friend.locator('.home-door', has_text='Denetim tayfası').click()
+                check('Team card shows the full team name and everyone', friend.get_by_role('dialog', name='Denetim tayfası').is_visible()
+                    and friend.locator('.team-list li').count()==2)
+                friend.keyboard.press('Escape')
                 page.locator('.home-door', has_text='Batur’a ilet').click()
                 page.locator('.feedback-form textarea').fill('Denetim: Batur paneli ve özel geri bildirim akışı.')
                 page.locator('.feedback-form button[type=submit]').click()
                 expect(page.locator('.feedback-success')).to_be_visible()
                 check('Feedback is sent and tracked', len(json_call(page, '/feedback')) == 1)
+                # Any message can be answered; a double tap leaves a heart.
+                json_call(friend, '/messages', {'text': 'Sessiz salonda yer var'})
+                page.goto(base + '/?tab=board')
+                theirs = page.locator('.board .message:not(.mine)', has_text='Sessiz salonda yer var')
+                theirs.locator('.reply-button').click()
+                page.locator('.message-form input').fill('Geliyorum')
+                page.locator('.message-form button[type=submit]').click()
+                expect(page.locator('.board .message.mine .reply-quote', has_text='Sessiz salonda')).to_be_visible()
+                check('Replying quotes the message', True)
+                theirs.locator('.bubble p').evaluate('''(b)=>{const up=()=>b.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch'}));up();setTimeout(up,120)}''')
+                expect(theirs.locator('.reaction.reacted')).to_be_visible()
+                check('Double tap leaves a heart', True)
                 failed = [False]
                 def fail_once(route):
                     if not failed[0]: failed[0] = True; route.abort()

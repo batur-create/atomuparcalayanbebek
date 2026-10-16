@@ -719,8 +719,13 @@ export function ProfileModal({ me, close, mutate }) {
   );
 }
 
-// Ben → Görünüm: this device's colour theme and day/night look. Applies at once.
-export function LookModal({ theme, setTheme, mode, setMode, close }) {
+const MOTION_CHOICES = [
+  ["full", "🎉", "Şölen", "Gökyüzü kıpır kıpır, kartlar dans eder. Tam Kütüp modu."],
+  ["calm", "🍃", "Sakin", "Süsler dinlenir, geçişler kalır. Pil de teşekkür eder."],
+  ["still", "🧊", "Kıpırtısız", "Her şey yerinde, dümdüz. Eski telefonlar için birebir."],
+];
+// Ben → Görünüm: this device's colour theme, day/night look and how much it moves. Applies at once.
+export function LookModal({ theme, setTheme, mode, setMode, motion, setMotion, close }) {
   return (
     <Modal title="Görünüm" subtitle="Sadece senin ekranında değişir." close={close}>
       <div className="theme-section">
@@ -745,6 +750,20 @@ export function LookModal({ theme, setTheme, mode, setMode, close }) {
         </div>
         <small>{modeHint(mode)}</small>
       </div>
+      {setMotion && (
+        <div className="theme-section">
+          <label className="field-label" id="motion-label">Ne kadar kıpır kıpır?</label>
+          <div className="motion-options" role="radiogroup" aria-labelledby="motion-label">
+            {MOTION_CHOICES.map(([key, emoji, label, note]) => (
+              <button key={key} type="button" role="radio" aria-checked={motion === key} className={motion === key ? "selected" : ""} onClick={() => setMotion(key)}>
+                <span aria-hidden="true">{emoji}</span>
+                <strong>{label}</strong>
+                <small>{note}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <button type="button" className="btn primary full" onClick={close}>
         Tamam
       </button>

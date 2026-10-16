@@ -3,11 +3,15 @@
 // turns dark at sunset in Ankara and light again at sunrise.
 (function () {
   var mode = null,
-    theme = null;
+    theme = null,
+    motion = null;
   try {
     mode = localStorage.getItem("kutup-mode");
     theme = localStorage.getItem("kutup-theme");
+    motion = localStorage.getItem("kutup-motion");
   } catch (e) {}
+  // How much the page moves, when picked (src/motionPref.js); unset follows the phone.
+  if (motion === "full" || motion === "calm" || motion === "still") document.documentElement.setAttribute("data-motion", motion);
   var dark = mode === "dark";
   if (mode !== "dark" && mode !== "light") {
     var local = new Date(Date.now() + 3 * 3600000);
