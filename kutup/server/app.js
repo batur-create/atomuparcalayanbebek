@@ -4,6 +4,7 @@
 import { SCHEMA_VERSION, migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
+import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { dayStreak, statsOf } from "./stats.js";
@@ -84,10 +85,11 @@ function text(value, max, label, min = 0) {
   return clean;
 }
 function profile(body, member = null) {
-  const founder = member?.badge === "dev" && FOUNDER_AVATARS.includes(body.avatar);
+  const dev = member?.badge === "dev";
+  const founder = dev && FOUNDER_AVATARS.includes(body.avatar);
   return {
     name: text(body.name, 24, "İsim", 2),
-    avatar: AVATARS.includes(body.avatar) || founder ? body.avatar : "🪐",
+    avatar: AVATARS.includes(body.avatar) || founder || avatarAllowed(body.avatar, dev) ? body.avatar : "🪐",
     color: COLORS.includes(body.color) ? body.color : "lilac",
     note: text(body.note || "", 70, "Masa notu"),
   };

@@ -1,5 +1,7 @@
 import React from "react";
 import { LoaderCircle } from "lucide-react";
+import { avatarArt } from "../shared/avatars.js";
+import "./avatars.css";
 
 export const storage = {
   get(key) {
@@ -95,12 +97,19 @@ export function pushKey(base64url) {
 // Batur's own profile (badge "dev") carries a tiny black hole in orbit, everywhere.
 export function Avatar({ member, size = "", className = "" }) {
   const dev = member?.badge === "dev";
+  const art = avatarArt(member?.avatar);
   return (
     <span
       aria-hidden="true"
-      className={`avatar ${member?.color || "lilac"} ${size} ${className} ${dev ? "dev" : ""}`}
+      className={`avatar ${member?.color || "lilac"} ${size} ${className} ${dev ? "dev" : ""} ${art ? "art" : ""}`}
     >
-      {member?.avatar || "🪐"}
+      {art ? (
+        <span className="av-clip">
+          <svg className="av-art" viewBox="0 0 100 100" dangerouslySetInnerHTML={{ __html: art }} />
+        </span>
+      ) : (
+        member?.avatar || "🪐"
+      )}
       {dev && <i className="dev-orbit" />}
       {member?.crown && <i className="avatar-crown">👑</i>}
     </span>

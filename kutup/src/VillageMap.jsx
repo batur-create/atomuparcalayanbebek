@@ -8,6 +8,7 @@ import { buildWorld, mergeVillage, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene, KINDS } from "./Village.jsx";
 import { modelOf } from "../shared/catalog.js";
+import { avatarText } from "../shared/avatars.js";
 
 // ---------- data ----------
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
@@ -296,7 +297,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
             <div className="filter-row village-people" aria-label="Mahalleye git">
               {people.map((m) => (
                 <button key={m.id} className="filter-chip" onClick={() => flyTo(m.id)}>
-                  {m.avatar} {m.id === me?.id ? "Benim mahallem" : m.name}
+                  {avatarText(m.avatar)} {m.id === me?.id ? "Benim mahallem" : m.name}
                 </button>
               ))}
             </div>

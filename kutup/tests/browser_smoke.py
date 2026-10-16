@@ -87,6 +87,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 signup(page, 'audit_ada', 'Ada')
                 session = json_call(page, '/session')
                 check('Mobile account creation', session['username']=='audit_ada')
+                check('A new profile starts with a drawn character', page.locator('.member-card .avatar svg.av-art').count()>=1)
                 # Kara's rig is exercised with reduced motion, touch/keyboard and persistent UI.
                 cat = page.get_by_role('button', name='Kara’ya selam ver')
                 cat.scroll_into_view_if_needed()
@@ -141,7 +142,14 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 second = browser.new_context(viewport={'width':375,'height':812}, reduced_motion='reduce')
                 friend = second.new_page(); friend.on('pageerror', lambda e: errors.append(str(e)))
                 friend.goto(base + '/join/' + session['group']['invite'])
+                friend.get_by_role('button', name='Tekir', exact=True).click()
+                friend.get_by_role('button', name='Gözlük', exact=True).click()
+                friend.get_by_role('button', name='Atkı', exact=True).click()
+                check('Avatar picker: 44px touch targets, no overflow at 375px', friend.evaluate('''()=>{
+                    const boxes=[...document.querySelectorAll('.avatar-options.chars button,.acc-options button,.avatar-tabs button')].map(b=>b.getBoundingClientRect());
+                    return boxes.length>=30 && boxes.every(b=>b.height>=44 && b.width>=44 && b.right<=innerWidth) && document.documentElement.scrollWidth<=innerWidth}'''))
                 signup(friend, 'audit_ece', 'Ece')
+                check('Character with accessories is saved', any(m['avatar']=='k:tekir+gozluk+atki' for m in json_call(friend, '/state')['members']))
                 page.get_by_role('button', name='Ben geldim!', exact=True).click()
                 page.locator('[role=dialog] button[type=submit]').click()
                 expect(page.get_by_role('dialog')).to_have_count(0)
@@ -153,6 +161,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
                 friend.evaluate("localStorage.setItem('kutup-mode','dark')"); friend.reload()
                 expect(friend.locator('.member-card').first).to_be_visible()
+                check('Dark mode keeps the drawn characters', friend.locator('.member-card .av-art').count()>=1)
                 check('Dark mode darkens the page, the cards and the status bar', friend.evaluate('''()=>{
                     const rgb=(e)=>getComputedStyle(e).backgroundColor.match(/\\d+/g).slice(0,3).map(Number);
                     return document.documentElement.dataset.mode==='dark'

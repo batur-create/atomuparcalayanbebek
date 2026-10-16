@@ -6,6 +6,7 @@ import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 import { MemberStats } from "./Stats.jsx";
 import { sunTimes } from "./villageWorld.js";
+import { ACCESSORIES, AVATAR_GROUPS, CHARACTERS, FOUNDER_CHARACTERS, composeAvatar, fitsCharacter, parseAvatar, randomCharacter } from "../shared/avatars.js";
 const LOGIN_TABS = [["login", "Giriş"], ["reset", "Şifremi unuttum"], ["code", "Kodla"]];
 const MODE_CHOICES = [["auto", SunMoon, "Otomatik"], ["light", Sun, "Açık"], ["dark", Moon, "Koyu"]];
 const clock = (hours) => {
@@ -19,6 +20,85 @@ function modeHint(mode) {
   return `Güneş batınca koyulaşır, doğunca açılır. Bugün gün batımı ${clock(sunset)}, gün doğumu ${clock(sunrise)}.`;
 }
 
+const slotOf = (id) => ACCESSORIES.find((a) => a.id === id)?.slot;
+// Characters (with accessories to try on) or the old emoji, side by side.
+function AvatarPicker({ value, setValue }) {
+  const dev = value.badge === "dev";
+  const picked = parseAvatar(value.avatar);
+  const [tab, setTab] = useState(picked || !value.avatar ? "chars" : "emoji");
+  const [acc, setAcc] = useState(picked?.acc || []);
+  const groups = AVATAR_GROUPS.filter(([id]) => dev || id !== "kurucu");
+  const cast = [...CHARACTERS, ...(dev ? FOUNDER_CHARACTERS : [])];
+  const choose = (id, list = acc) => setValue({ ...value, avatar: composeAvatar(id, list) });
+  const toggle = (id) => {
+    const next = acc.includes(id) ? acc.filter((x) => x !== id) : [...acc.filter((x) => slotOf(x) !== slotOf(id)), id];
+    setAcc(next);
+    if (picked) choose(picked.ch.id, next);
+  };
+  const tabs = [["chars", "Karakterler"], ["emoji", "Emojiler"]];
+  return (
+    <>
+      <div className="avatar-tabs" role="tablist" aria-label="Avatar türü">
+        {tabs.map(([id, label]) => (
+          <button type="button" role="tab" key={id} aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "chars" ? (
+        <div className="avatar-cast">
+          {groups.map(([group, title]) => (
+            <div key={group} className="avatar-group">
+              <span className="avatar-group-title">{title}</span>
+              <div className="avatar-options chars">
+                {cast
+                  .filter((c) => c.group === group)
+                  .map((c) => {
+                    const on = picked?.ch.id === c.id;
+                    return (
+                      <button type="button" key={c.id} className={on ? "selected" : ""} aria-label={c.name} aria-pressed={on} title={c.name} onClick={() => choose(c.id)}>
+                        <Avatar member={{ avatar: composeAvatar(c.id, acc), color: value.color }} />
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          ))}
+          <div className="avatar-group">
+            <span className="avatar-group-title">
+              Aksesuarlar {picked ? <em>{picked.ch.name}</em> : <em>önce bir karakter seç</em>}
+            </span>
+            <div className="acc-options">
+              {ACCESSORIES.map((a) => {
+                const on = acc.includes(a.id);
+                return (
+                  <button type="button" key={a.id} className={on ? "selected" : ""} aria-pressed={on} disabled={picked && !fitsCharacter(picked.ch, a.id)} onClick={() => toggle(a.id)}>
+                    <span aria-hidden="true">{a.emoji}</span> {a.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="avatar-options">
+          {[...AVATARS, ...(dev ? FOUNDER_AVATARS : [])].map((a) => (
+            <button
+              type="button"
+              key={a}
+              className={value.avatar === a ? "selected" : ""}
+              aria-label={`Avatar ${a}`}
+              aria-pressed={value.avatar === a}
+              onClick={() => setValue({ ...value, avatar: a })}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 function ProfileFields({ value, setValue }) {
   return (
     <>
@@ -51,20 +131,7 @@ function ProfileFields({ value, setValue }) {
         />
       </label>
       <label className="field-label">Küçük alter egon</label>
-      <div className="avatar-options">
-        {[...AVATARS, ...(value.badge === "dev" ? FOUNDER_AVATARS : [])].map((a) => (
-          <button
-            type="button"
-            key={a}
-            className={value.avatar === a ? "selected" : ""}
-            aria-label={`Avatar ${a}`}
-            aria-pressed={value.avatar === a}
-            onClick={() => setValue({ ...value, avatar: a })}
-          >
-            {a}
-          </button>
-        ))}
-      </div>
+      <AvatarPicker value={value} setValue={setValue} />
       <label className="field-label">Senin rengin</label>
       <div className="color-options">
         {COLORS.map((c) => (
@@ -121,7 +188,7 @@ export function Welcome({ invite, inviteInfo, open }) {
 export function Onboard({ invite, inviteInfo, close, onSuccess, existing, start }) {
   const [value, setValue] = useState({
       name: "",
-      avatar: "🪐",
+      avatar: randomCharacter(),
       color: "lilac",
       note: "",
     }),

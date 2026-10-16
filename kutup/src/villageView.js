@@ -4,6 +4,7 @@
 // balloons, lamp glow). The loop sleeps whenever nothing moves.
 import { useCanvas, useSVG } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
+import { AVATAR_BG, avatarImage, parseAvatar } from "../shared/avatars.js";
 
 const TS = 256;
 const MAX_TILES = 40;
@@ -205,10 +206,26 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     ctx.beginPath();
     ctx.arc(x, y, r - ctx.lineWidth / 2, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.font = `${Math.round(r * 1.15)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(member.avatar || "🙂", x, y + r * 0.08);
+    // The member's color as the disc, as in the app; characters are the same SVG as in the page.
+    const inner = r - ctx.lineWidth;
+    ctx.fillStyle = AVATAR_BG[member.color] || AVATAR_BG.lilac;
+    ctx.beginPath();
+    ctx.arc(x, y, inner, 0, Math.PI * 2);
+    ctx.fill();
+    if (parseAvatar(member.avatar)) {
+      const img = avatarImage(member.avatar, request);
+      if (img) {
+        ctx.save();
+        ctx.clip();
+        ctx.drawImage(img, x - inner, y - inner, inner * 2, inner * 2);
+        ctx.restore();
+      }
+    } else {
+      ctx.font = `${Math.round(r * 1.15)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(member.avatar || "🙂", x, y + r * 0.08);
+    }
     if (coffee) {
       ctx.font = `${Math.round(r * 0.8)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
       ctx.fillText("☕", x + r * 0.95, y - r * 0.7);

@@ -113,7 +113,7 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
 
-**Durum (güncel):** Batur yeni sohbette "devam" dedi; n15 karanlık tema bitti ve canlıda (aşağıda). Sıradaki n13. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
+**Durum (güncel, 16 Ekim 2026 gecesi):** n15 karanlık tema ve n13 özgün avatarlar bitti, canlıda (aşağıda). Sıradaki n14 başarımlar. Yeni bir sohbete devredilirse yine Batur'un onayını bekle. *(Önceki not:)* Batur, sohbet dolduğu için devir istedi ve "ben onay vermeden kod yazma, komut çalıştırma, kredi harcama" dedi. Son commit `e7d54230` (Studying together, part 2), `origin/kutup-platform` ile eşit, çalışma ağacı temiz. Canlıda şema 20; `npm run test:all` 87/87, `npm run test:browser` 30/30, `node tests/live-smoke.mjs` geçti.
 
 **Batur'un çalışma kuralları:**
 - Paketleri arka arkaya yap. Her önemli adımda: test → (göç varsa önce yedek) → deploy → canlı duman testi → commit + push → iş panosunu güncelle.
@@ -153,9 +153,18 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 - **Renkler:** `scripts/dark-css.js` PostCSS eklentisi (vite.config'te) her sabit renkli kuralın hemen arkasına `:where(html[data-mode="dark"]) .x {…}` ikizini yazar: açık yüzey → koyu, koyu yazı → açık; canlı renkler, yarı saydamlar ve zaten koyu bileşenler (koyu arka planlı kural ve altındakiler) dokunulmaz. `:where` özgüllük eklemez, kaskad bozulmaz. Bir kuralı hariç tutmak için içine `/* dark: keep */` yaz. `focusscreen.css` ve `blackhole.css` atlanır. Elle ayarlanan jetonlar (`--paper`, `--ink`, tema vurguları, üye renkleri) ve istisnalar `src/dark.css`'te.
 - Testler: 90 birim + 31 tarayıcı (tarayıcı testi açık moda sabitlenir, ayrıca koyu kontrolü var), canlı duman testinde koyu mod adımı.
 
+**n13 Özgün avatarlar — 16 Ekim 2026 gecesi, canlı (Worker `67123d50`):**
+- **Stil kararı (Batur):** İlk deneme (kalın çizgili, çıkartma kenarlı, canlı renkli genel hayvanlar) "siteyle alakası yok" diye reddedildi. Onaylanan dil **Kara'nın çizim dili**: koyu `#25242d` kontur, sakin renkler, ana renk + bir ton açık yüz, kehribar gözler, yanak kızarıklığı ve çıkartma kenarı YOK. Kadro sitenin dünyasından.
+- **Kadro (`shared/avatars.js`, 23 + kurucu):** 8 kedi (Kara'nın kafa çizgileri ölçeklenerek: Ankara, Van, tekir, sarman, smokin, üç renkli, füme, siyam), kütüphane (kütüphaneci, kitap kurdu, uykucu, gece kuşu/kukumav, güvenlik, simitçi, çaycı), köy ve atölyeler (baretli usta, mimar, fırıncı, sahaf, değirmenci, bahçıvan), gökyüzü (astronom, kara delik). Kurucuya özel: ✳ baretli şantiye şefi (`founder: true`).
+- **Aksesuarlar:** gözlük (Kara'nın pirinç çerçevesi), kulaklık, bere, kep, atkı (Kara'nın atkısı, lila). Yuva başına bir tane (bere/kep aynı yuva). Kendi şapkası olan (`hat`) bere/kep/kulaklık takamaz, kendi gözlüğü olan (`glasses`) gözlük takamaz.
+- **Değer biçimi:** `k:<id>+<aksesuar>…` (ACCESSORIES sırasıyla, ör. `k:tekir+gozluk+atki`). Sunucu `avatarAllowed(value, dev)` ile denetler; bozuk/kurucuya özel değer 🪐 olur. Emojiler aynen geçerli, mevcut üyelerin avatarı değişmedi, göç yok (şema 20).
+- **Çizim:** `avatarArt` (satır içi SVG, `ui.jsx Avatar` → `.av-clip > svg.av-art`) ve `avatarImage` (aynı SVG, data URL, köy canvas'ında `villageView.js bubble()` → üye renginde disk + drawImage; yüklenince `request()` ile yeniden çizer). Metin gereken yerde `avatarText` (emoji karşılığı).
+- **Seçici (`Account.jsx AvatarPicker`):** Karakterler / Emojiler sekmesi, gruplar (`AVATAR_GROUPS`), aksesuarlar ızgarada canlı denenir; 375px'te 5 sütun, dokunma alanları ≥44px. Yeni katılan rastgele bir karakterle başlar.
+- **Testler:** 93 birim (tüm karakter × aksesuar çizimi temiz), 35 tarayıcı (+4: yeni profil karakterle başlar, seçici 44px/taşma yok, karakter+aksesuar kaydı, koyu modda çizim), canlı duman testinde avatar adımı.
+- **Doğrulanmadı:** köy canvas'ındaki balon/yürüyen avatarı ekran görüntüsüyle bakılmadı (kod yolu basit, JS hatası yok); gerçek iPhone'da bakılmadı.
+
 **Sıradaki işler (panoda bu sırayla):**
-1. **n13 Özgün avatarlar:** 24 elle çizilmiş SVG karakter (hayvanlar + kütüphane tipleri) ve aksesuarlar (gözlük, kulaklık, bere, atkı, şapka). Arka plan üyenin renginde olsun; köyde yürüyenler dahil (canvas) her yerde aynı görünsün. Kurucu karakteri olsun; emoji seçeneği kalsın.
-2. **n14 Başarımlar:**
+1. **n14 Başarımlar:**
    - Rozetler: ilk bina, seri günleri, gece kuşu / erkenci, maraton, imece ustası, koleksiyoncu, Haftanın Ustası, anıt.
    - Gizli rozetler (kara delik kâşifi vb.).
    - Rozet vitrini ve kutlama anı.

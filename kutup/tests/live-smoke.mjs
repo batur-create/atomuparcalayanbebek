@@ -107,6 +107,11 @@ try {
   check("board message", msg.status === 201, `status ${msg.status}`);
   const village = await call("/village", { cookie: A1 });
   check("village endpoint", village.status === 200, `status ${village.status}`);
+  // Avatars: a drawn character with accessories is kept; a founder-only one falls back for others.
+  const avatarOf = (res) => res.data?.state?.members?.find((m) => m.id === idB)?.avatar;
+  const drawn = await call("/profile", { cookie: B1, body: { name: "Duman B", avatar: "k:tekir+gozluk+atki", color: "mint", note: "" } });
+  const founderOnly = await call("/profile", { cookie: B1, body: { name: "Duman B", avatar: "k:sef", color: "mint", note: "" } });
+  check("drawn avatar saved, founder-only refused", avatarOf(drawn) === "k:tekir+gozluk+atki" && avatarOf(founderOnly) === "🪐", `${avatarOf(drawn)} / ${avatarOf(founderOnly)}`);
   // Tuğla: a newcomer starts at 0, a free cottage starts and is given up for free.
   const wallet = await call("/wallet", { cookie: A1 });
   check("wallet", wallet.status === 200 && wallet.data?.bricks === 0, `status ${wallet.status} bricks ${wallet.data?.bricks}`);

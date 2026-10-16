@@ -179,6 +179,21 @@ export function defineSuite(target) {
     assert.equal((await state("charlie")).members.length, 1);
   });
 
+  test(`[${target}] drawn characters with accessories are kept; unknown or founder-only ones are not`, async () => {
+    const save = async (avatar) => {
+      const res = await request("/profile", { cookie: people.charlie, body: { name: "Ege", avatar, color: "mint", note: "" } });
+      assert.equal(res.status, 200);
+      return (await state("charlie")).members[0].avatar;
+    };
+    assert.equal(await save("k:tekir+gozluk+atki"), "k:tekir+gozluk+atki");
+    assert.equal(await save("k:karadelik"), "k:karadelik");
+    assert.equal(await save("k:sef"), "🪐");
+    assert.equal(await save("k:tekir+atki+gozluk"), "🪐");
+    assert.equal(await save("k:tekir+bere+kep"), "🪐");
+    assert.equal(await save("k:yok"), "🪐");
+    assert.equal(await save("🦊"), "🦊");
+  });
+
   test(`[${target}] presence and plans are shared inside the group only`, async () => {
     const result = await request("/presence", {
       cookie: people.alice,

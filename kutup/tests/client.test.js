@@ -85,3 +85,23 @@ test('visible tiles fit the cache on phones, fullscreen displays and distant lar
       assert.ok(maximumVisible <= 40, `${w}x${h} at ${scale} fits`);
     }
 });
+
+test('every drawn avatar, with any accessories, renders clean markup and round-trips', async () => {
+  const A = await import('../shared/avatars.js');
+  assert.equal(A.CHARACTERS.length, 23);
+  assert.ok(A.FOUNDER_CHARACTERS.length >= 1);
+  const sets = [[], ...A.ACCESSORIES.map((a) => [a.id]), ['gozluk', 'kulaklik', 'bere', 'atki'], ['kep', 'atki', 'gozluk']];
+  for (const ch of [...A.CHARACTERS, ...A.FOUNDER_CHARACTERS])
+    for (const set of sets) {
+      const value = A.composeAvatar(ch.id, set);
+      const svg = A.avatarSvg(value);
+      assert.doesNotMatch(svg, /NaN|undefined|null/, value);
+      assert.equal(A.avatarAllowed(value, true), true, value);
+      assert.equal(A.avatarAllowed(value, false), !ch.founder, value);
+      assert.equal(A.avatarText(value), ch.emoji);
+    }
+  assert.equal(A.composeAvatar('sef', ['bere', 'kulaklik', 'gozluk']), 'k:sef+gozluk');
+  assert.equal(A.composeAvatar('tekir', ['kep', 'bere']), 'k:tekir+bere');
+  assert.equal(A.avatarArt('🦊'), null);
+  assert.equal(A.avatarText('🦊'), '🦊');
+});
