@@ -19,10 +19,11 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n27 Vitrin ve cila, n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n27 | Vitrin ve cila: Gökyüzü girişi, gizli davet, sahte basılabilir avı | Tasarım | 16 Eki 23:00 | 1743855a |
 | n26 | Köy 2.0: odak stüdyosu ve yaşayan harita | Köy | 16 Eki 21:00 | 00990aa5 · d5651113 · f541476a |
 | n06 | Kara baştan: sevimli kara delik, çatıda yaşayan işlevli kedi | Maskot | 16 Eki 18:30 | 901347b4 |
 | n18-2 | Görsel şölen turu: katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, temalar, cevaplar | Tasarım | 16 Eki 19:00 | ea86b4c4 |
@@ -65,6 +66,49 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n27 Vitri
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n27 · Vitrin ve cila: Gökyüzü girişi, gizli davet, sahte basılabilir avı
+Tasarım · 16 Eki 2026 · 1743855a (bulut oturumu, PR #2) · Worker f76db6c3
+
+**Ne yapıldı:**
+- **Giriş (Seçenek 1, Gökyüzü):** Karşılama, davet (`/join/<kod>`) ve ekip kurma artık tek bir canlı gökyüzü ekranından.
+  - Davette ekiptekiler patikada bekliyor; boş "sen?" yerine dokununca katılma başlıyor.
+  - Katılma 2 adım, ekip kurma 3 adım; sonunda yeni üyenin figürü kütüphane kapısından içeri yürüyor.
+  - Yeni dosyalar: `Entry.jsx`, `entry.css`. Seçenek 2 (okuyucu kartı) koda girmedi; PR notunda n28 paylaşım kartı için anlatılıyor.
+- **Gizlilik:** `/api/invites/<kod>` artık ekip adını, kişi sayısını ve ilk 8 kişinin adını, avatarını ve rengini döndürüyor. Kim kütüpte, yolda ya da odakta bilgisi ne sunucu yanıtında ne ekranda var. Sunucu testi ve canlı duman testi bunu koruyor.
+- **Sahte basılabilir avı (19 madde + sınırdakiler):**
+  - **Üst çubuk:** "✳ + sayfa adı" oldu; dokununca başa ya da ana sayfaya gidiyor. Masaüstündeki "Bizim alan ›" kalktı.
+  - **Köy:** Tuğla hapı tuğla kasasını açıyor (bakiye ve son hareketler). Katalogda kilitli ve parası yetmeyen kartlar gerekçesini söylüyor; koleksiyondaki bina haritada gösteriliyor.
+  - **Pano:** Kalem simgesi yazı kutusuna götürüyor, sistem satırları ilgili yere gidiyor.
+  - **Kişiler:** Ekip kartındaki satırlar ve küçük avatarlar kişinin kartını açıyor.
+  - **Ana sayfa:** Gökyüzündeki canlı hap ilgili bölüme gidiyor; dakika halkası "Yerimi değiştir"i açıyor; "ders arası hayat" pulu dokununca sallanıyor.
+  - **Davet penceresi:** "＋" bağlantıyı kopyalıyor.
+  - **Süsler:** Batur'a ilet'teki süs öğeleri sadeleşti. Sayı hapları düz sayı oldu, "⋯" "›" oldu.
+- **Kusurlar:**
+  - telefonda Köy ve Pano kutucukları yan yana;
+  - formlar 16 px, iPhone artık yakınlaştırmıyor;
+  - renk düğmeleri 44 px;
+  - anıt penceresi kat çizimini ve kimin kaç dakika kattığını gösteriyor;
+  - pencereler kapanınca odak açan düğmeye dönüyor.
+- **iPhone "Ana Ekrana Ekle" rehberi** (iOS 26 akışı, `•••` → Paylaş) ve **çizimli boş ve yükleniyor ekranları** (`Illustrations.jsx`).
+- **Testler:** 93 birim, 55 tarayıcı kontrolü (11 yeni). Yavaş telefonda giriş ekranı 60 fps, p95 16,7 ms.
+
+**Kararlar ve nedenleri:**
+- Gökyüzü seçildi: davet linkine tıklayan arkadaş ilk saniyede içeride göreceği dünyayı ve onu bekleyenleri görüyor.
+- Canlı konum yalnız katılınca görünür; link başkasına iletilebilir.
+- Sayı hapları düğme yapılmadı; az gürültü.
+- Boş durumlarda üstteki düğmeyi tekrar eden ikinci düğme yok (tekrar yok kuralı).
+
+**Batur'un sözleri:** "Seçenek 1 (Gökyüzü). Sınırdaki maddelerde ve gizlilikte senin önerilerin olsun."
+
+**Denenip vazgeçilenler:** Seçenek 2 (okuyucu kartı, damgalı defter sayfası): n28 paylaşım kartı için saklandı.
+
+**Açık:**
+- Pul dokununca Kara'nın bir cümle söylemesi (sınırdaki 20. madde): Kara dosyalarına dokunmadan bağlanamadı; yeni Kara yerleşince eklenecek.
+- Gerçek iPhone ve Android'de bakılmadı; iOS 26 menü adlarını telefonda doğrulamak gerek.
+- GitHub'daki kırmızı Vercel işareti Kütüp'ten değil: depo kökündeki eski site, commit'lenmiş `node_modules` yüzünden derlenemiyor.
+
+**Dosyalar:** `Entry.jsx`, `entry.css`, `Illustrations.jsx`, `illustrations.css`, `polish.css`, `Account.jsx`, `App.jsx`, `Home.jsx`, `Economy.jsx`, `VillageMap.jsx`, `MePage.jsx`, `Requests.jsx`, `Modal.jsx`, `server/app.js`, `tests/suite.js`, `tests/browser_smoke.py`, `tests/live-smoke.mjs`, `audit/2026-10-17-n27/`.
 
 ### n26 · Köy 2.0: odak stüdyosu ve yaşayan harita
 Köy · 16 Eki 2026 · 00990aa5 · d5651113 · f541476a

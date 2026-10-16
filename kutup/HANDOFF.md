@@ -230,15 +230,19 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - Batur kediyi beğendi; daha akıcı ve ayrıntılı animasyon, 2,5B his, easter egg'ler, aksesuar düzeltmeleri ve "sitede nasıl durur" görüntüleri istedi.
 - Sonuç gelince: dosyaları incele, bizim son `Kara.jsx` ve `kara.css` ile farkına bak, yavaş telefonda ölç, Batur'a sitede görüntü göster, yerleştir.
 
+**n27 Vitrin ve cila bitti (16 Ekim gecesi, Worker f76db6c3, PR #2):** Gökyüzü girişi, gizli davet, sahte basılabilir avı, iPhone rehberi, çizimli boş durumlar. Notlar:
+- Giriş `src/Entry.jsx`; boş ve yükleniyor çizimleri `src/Illustrations.jsx`; küçük düzeltmeler `src/polish.css`.
+- Kara yerleşince bağlanacak açık iş: "ders arası hayat" pulu dokununca Kara'nın bir cümle söylemesi.
+- GitHub'daki Vercel işareti kırmızı: depo kökündeki eski site, commit'lenmiş `node_modules` yüzünden derlenmiyor. Kütüp'ü etkilemiyor; Batur isterse o Vercel projesi kapatılabilir.
+
 **Sıradaki işler (Batur'un onayladığı plan, 16 Ekim 2026 akşamı; ayrıntılı tanımlar panoda):**
-1. **n27 Vitrin ve cila:** giriş/davet ekranı, iPhone ekleme rehberi, sahte basılabilir avı (sol üst "Kütüp"), çizimli boş durumlar.
-2. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
-3. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
-4. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir.
-5. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
-6. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
-7. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
-8. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
+1. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
+2. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
+3. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir; n27'deki okuyucu kartı fikri (PR #2 notları) paylaşım kartı için aday.
+4. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
+5. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
+6. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
+7. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.

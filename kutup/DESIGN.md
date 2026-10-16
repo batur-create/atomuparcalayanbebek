@@ -101,6 +101,8 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✘ **n13 ilk deneme:** kalın çizgi, çıkartma kenarı, canlı renkler, rastgele hayvanlar. Batur: "siteyle alakası yok". Siteye bakılmadan çizilmişti.
 - ✔ **n16 tema düğmesi:** çandaki gibi ince çizgi simge (güneş, ay, yarım güneş). Emoji seçeneği seçilmedi.
 - ✔ **n15 karanlık tema:** gün batımında otomatik koyulaşır; Kara ay ışığı dairesinin önünde durur.
+- ✔ **n27 Gökyüzü girişi:** karşılama, davet ve ekip kurma tek canlı gökyüzü ekranında; davette ekip patikada bekler, "sen?" yeri. Davet linkinde yalnız ad ve yüz, canlı konum yok.
+- ✘ **n27 Seçenek 2 (okuyucu kartı):** giriş için seçilmedi; n28 paylaşım kartı için aday.
 - ✔ **n26 Köy 2.0:** odak stüdyosu (İnşaat/Serbest seçici, masadakiler tek satır + Katıl), büyük harita, haritada yüzler, anıt ve tablo kutucukları. Batur: "Köy düzeni tamam." Yaşayan harita (köylüler, kuşlar, odak ışığı, kutlama) yayında, Batur canlıdan bakacak.
 - ✔ **n06 yeni Kara:** sevimli bir kara delik (yuvarlak, kadife siyah, altın halkalı kocaman göz bebekleri, gece ışık halkası), çatıda yaşar, haberci ve odak arkadaşı. Batur çizimi onayladı, "direkt deploy" dedi.
 - ✘ **n06 ilk deneme:** eski Kara'nın küçültülmüş çizimi; davranışlar tuttu, çizim "tipi hâlâ eski".

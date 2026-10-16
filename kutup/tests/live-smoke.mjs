@@ -91,6 +91,9 @@ const A1 = created.token, idA = created.data?.memberId, groupId = created.data?.
 const joined = await call("/join", { body: { invite, name: "Duman B", username: userB, password: pass } });
 check("join with invite", joined.status === 201 && !!joined.token, `status ${joined.status}`);
 let B1 = joined.token; const idB = joined.data?.memberId;
+// n27: an invite link shows names and faces only, never who is where.
+const invited = await call(`/invites/${invite}`);
+check("invite shows faces, no presence", invited.status === 200 && invited.data?.faces?.length === 2 && !/here|status|location|desk|focus|arrival/.test(JSON.stringify(invited.data)), `status ${invited.status}`);
 
 try {
   // 2. Push subscription is bound to B's device session.
