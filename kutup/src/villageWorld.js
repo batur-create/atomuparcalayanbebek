@@ -22,6 +22,7 @@ const MEADOW = "#b3da88",
   PLAZA_RING = "#d2c5ae";
 export const MEMBER_COLORS = {
   lilac: "#a99be0", mint: "#86bf98", peach: "#efac85", blue: "#8ab2da", pink: "#eca0b7", lemon: "#e3cc5c",
+  slate: "#98a4b6", sand: "#d2b98f", olive: "#a8ad72",
 };
 // Villagers dress in calm village colours (none of them green enough to turn white under the winter tint).
 const COATS = ["#7f93b8", "#b98a64", "#c98577", "#9c8bbf", "#6e9e9b", "#d0a54f", "#a3a06a"],
