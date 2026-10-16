@@ -23,7 +23,7 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 | H10 | Önizleme `kutup` | ☐ | |
 | H11 | Pano yayında, 49 kart, yan panelde | ☐ | |
 | H12 | PR yolu denemesi | ☐ | |
-| H13 | Kara v2 paketi `gelen/kara-v2/` | ☐ | |
+| H13 | Kara v2 kodu depoda (9 dosya) | ☐ | |
 | H14 | `get_usage` | ☐ | |
 | H15 | Hazırım raporu, Batur "başla" dedi | ☐ | |
 

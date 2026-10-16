@@ -15,7 +15,8 @@
     "test:worker": "vite build && node --test tests/worker.test.js",
     "test:all": "vite build && node --test tests/*.test.js",
     "worker:dev": "vite build && wrangler dev",
-    "deploy": "vite build && wrangler deploy"
+    "deploy": "vite build && wrangler deploy",
+    "yayin": "node scripts/yayin.mjs"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",

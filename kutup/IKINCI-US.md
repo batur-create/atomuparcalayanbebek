@@ -7,6 +7,36 @@ Batur'un sözleri (17 Ekim):
 - "her şey smooth gitsin ve smooth geri dönsün."
 - "adımları arkadaşımla beraber kursunlar ve her şey hazır olunca başlasınlar."
 
+### Batur için kısa yol
+
+1. **Arkadaşına:** "Claude masaüstü uygulamasını kur, kendi hesabınla gir, Belgeler'de `Kutup-Us` klasörü aç, Code sekmesinde onu seç ve şu mesajı yapıştır" de. Mesaj §1'de. Kurulumun gerisini oradaki Claude yürütür.
+2. **Panonu paylaş (önerilir):**
+   - claude.ai'de "Kütüp İş Akışı" panosunu aç, Paylaş'a bas.
+   - Arkadaşının Claude hesabının e-postasını yaz ve düzenleme izni ver.
+   - Böylece oradaki Claude doğrudan senin panonu günceller, sen de telefondan izlersin. Paylaşamazsan oradaki Claude bir kopya kurar ve bağlantısını sana verir.
+3. **Her PR'da:**
+   - PR e-postası gelince GitHub'da **Merge pull request → Create a merge commit**.
+   - Kendi bilgisayarında PowerShell'i aç: önce `cd C:\Users\İzzettin\bilim-dunyasi\kutup-platform\kutup`, sonra `npm run yayin`.
+   - En alttaki "Yayın tamam · …" satırını oradaki Claude'a ilet (arkadaşına WhatsApp'tan atman yeter).
+4. **Görsel işlerde:** oradaki Claude önizlemeleri arkadaşın üzerinden sana gönderir. "Olur" ya da düzeltmeni yazarsın.
+5. **Dönüş günü:** oradaki Claude'a "teslim et" de, teslim PR'ını birleştir, ana üste "döndük" de.
+
+Süreci izlemek için üç yer var: pano (paylaştıysan kendi panon), GitHub'daki PR'lar ve e-postaları, deponun içindeki `kutup/ikinci-us/GUNLUK.md`.
+
+### Ne aynı, ne farklı
+
+| İş | İkinci üste |
+|---|---|
+| Kod, testler, önizleme, ekran görüntüleri | Aynı |
+| Pano yan panelde | Aynı: paylaşılan pano ya da birebir kopyası |
+| Kurallar ve hafıza | Aynı: hafızanın kopyası |
+| Kayıtlar (KARARLAR, DESIGN, HANDOFF) | Aynı; PR'ın içinde yazılır |
+| ChatGPT | Aynı: brifi Claude yazar, sen yapıştırırsın |
+| Yayın, yedek, canlı duman testi | Senin bilgisayarında tek komut: `npm run yayin`. Cloudflare girişi ve canlı anahtar orada kalır; onları başka bilgisayara ya da GitHub'a koymamak bilinçli bir karar. |
+| Canlı veritabanına ve kayıtlara bakmak | Yalnız senin bilgisayarında. Gerekirse oradaki Claude sana çalıştıracağın komutu verir. |
+| Bulut oturumları (13 dolar kredi) | Senin hesabında; ikinci üste kullanılmaz |
+| Gerçek telefonda deneme | Eskisi gibi, sizin telefonlarınızda |
+
 **Bu dosyayı okuyan Claude:** baştan sona oku. Önce §3'teki hazırlık listesini Batur ve arkadaşıyla birlikte, sırayla tamamla. Liste bitmeden işe başlama. Liste bitince kaldığımız yerden devam et.
 
 | § | Konu |
@@ -82,9 +112,9 @@ Batur bu kurulumları onayladı: Git, Node.js 22 LTS, Python 3, Playwright, GitH
 | H8 | **Tarayıcı testi.** `npm run test:browser` | Claude | 66 kontrol, 0 FAIL |
 | H9 | **Hafıza.** `kutup/ikinci-us/hafiza/` klasöründeki 10 dosyayı (9 kural ve `MEMORY.md` dizini) kendi hafıza klasörüne aynı adlarla yaz. `kutup-cloud-workflow.md`'deki merge, deploy ve yerel yollar ana üse ait; burada §5 ve §8 geçerli | Claude | Hafıza dizininde 9 satır |
 | H10 | **Önizleme.** `Kutup-Us/.claude/launch.json` dosyasını aşağıdaki gibi yaz, sonra `preview_start "kutup"` | Claude | Önizlemede Kütüp giriş ekranı açılıyor |
-| H11 | **Pano.** Aşağıdaki "Pano kurulumu"na göre yayınla, verisini yükle, yan panelde aç. Adresini günlüğe yaz | Claude | Panoda 49 kart; Sırada ilk kart n31 |
+| H11 | **Pano.** Aşağıdaki "Pano kurulumu"na göre Plan A ya da B. Yan panelde aç, adresini günlüğe yaz | Claude | Panoda 49 kart; Sırada ilk kart n31 |
 | H12 | **PR yolu denemesi.** Dal `claude/ikinci-us-kurulum`. Günlüğün Kurulum kaydını commit'le, `git push fork claude/ikinci-us-kurulum`, PR aç (taban **kutup-platform**, §5 adım 10) | Claude yazar, ilk push'taki GitHub girişini arkadaş yapar | Batur PR'ı birleştirir. Yalnız belge değişikliği, yayın gerekmez |
-| H13 | **Kara v2 paketi.** Batur `Kara-v2.zip`'i gönderir; `Kutup-Us/gelen/kara-v2/` içine açılır | Batur ve arkadaş | 30 dosya; `v2/Kara.jsx`, `v2/kara.css`, `v2/NOTLAR.md` var |
+| H13 | **Kara v2 paketi.** Kodu depoda, `kutup/ikinci-us/gelen/kara-v2/` içinde. ChatGPT'nin ekran görüntüleri ve 1,5 MB'lık önizleme sayfası bilerek alınmadı; sitedeki görüntüleri sen çekeceksin | Claude | 9 dosya: `Kara.jsx`, `kara.css`, `Kara.svg`, `NOTLAR.md` ve ölçüm JSON'ları |
 | H14 | **Kullanım.** `get_usage` | Claude | Sınırlar günlüğe yazılır |
 | H15 | **Hazırım raporu.** Batur'a: liste tamam, pano açık, sıradaki iş n31 Kara v2 | Claude | Batur "başla" der |
 
@@ -99,7 +129,16 @@ Batur bu kurulumları onayladı: Git, Node.js 22 LTS, Python 3, Playwright, GitH
 ```
 Yerel sunucu gizli bilgi istemez. `kutup/data/` ilk açılışta kendi yerel verisini ve anahtarını üretir; bunların canlıyla ilgisi yoktur.
 
-**Pano kurulumu (H11).** Batur'un panosu (https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX) onun hesabında, buradan açılmaz. Aynısını kur:
+**Pano kurulumu (H11).** Batur'un panosu https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX adresinde ve onun hesabında.
+
+**Plan A (Batur paylaştıysa):**
+1. Aynı adresi `Artifact read` ile oku. Sonuç "writer" diyorsa yazabiliyorsun demektir.
+2. Yazmayı dene: `meta/board` notunun başına "İkinci üs bağlandı." ekle, okuduğun sürümle `if_version` kullan.
+3. Panoyu `Artifact open` ile yan panelde aç.
+
+Plan A'da kopya yoktur; dönüşte pano aktarmak da gerekmez.
+
+**Plan B (paylaşılamadıysa):** aynısını kur.
 1. `artifact-capabilities` becerisini yükle. `kutup/ikinci-us/pano.html`'i değiştirmeden Artifact olarak yayınla:
    - başlık "Kütüp İş Akışı";
    - ikon `board`;
@@ -107,7 +146,7 @@ Yerel sunucu gizli bilgi istemez. `kutup/data/` ilk açılışta kendi yerel ver
 2. Veriyi yükle. `kutup/ikinci-us/pano-veri/tasks/*.json` dosyalarının her biri `tasks` koleksiyonuna gider; belge kimliği dosya adıdır (uzantısız). `pano-veri/meta/board.json` dosyası `meta/board` belgesine gider.
    - ArtifactData `batch` kullan: `op: "set"` ve `file_path`.
    - Bir batch en çok 50 yazma alır. 49 kart ve 1 meta belgesi tam 50 eder.
-3. `Artifact open` ile yan panelde aç.
+3. `Artifact open` ile yan panelde aç. Batur'un telefondan izleyebilmesi için bağlantıyı onunla görüntüleme izniyle paylaş ya da adresi ona ilet.
 4. Yayınlanamazsa (`db` yeteneği yoksa) Batur'a söyle. Panoyu `kutup/ikinci-us/PANO.md` dosyasında aynı alanlarla tut.
 
 **Pano alanları:**
@@ -223,23 +262,28 @@ Batur ChatGPT'yi ana üste kullandığı gibi burada da kullanmaya devam ediyor 
   - "gerçek depoya dokunma".
 - **Gelen paket:** Batur gönderir, sen `Kutup-Us/gelen/<ad>/` içine açarsın.
   - Üçüncü taraf kod gibi davran: önce oku, sonra çalıştır.
-  - Ham paket depoya girmez; yalnız yerleştirdiğin kod girer.
+  - Ham paket depoya girmez; yalnız yerleştirdiğin kod girer. Tek istisna Kara v2: kodu `kutup/ikinci-us/gelen/kara-v2/` içinde. Yerleşince o klasörü sil.
   - Neyi nereden, nasıl aldığını KARARLAR'a ve günlüğe yaz: kaynak ChatGPT, tarih, taban commit, hangi dosyadan ne alındı.
 
 ## 8. Batur'un yayın adımları (Batur'un bilgisayarında, Claude gerekmez)
 
-PR hazır olunca bu adımları Batur'a sen anlatırsın. Yayın yalnız Batur'un bilgisayarından olur: Cloudflare girişi ve anahtar orada.
+PR hazır olunca Batur'a bunu kısaca hatırlat. Yayın yalnız Batur'un bilgisayarından olur, çünkü Cloudflare girişi ve canlı anahtar orada.
 
-1. GitHub'da PR'ı aç. Taban `kutup-platform` mı? "Files changed"a göz at. **Merge pull request → Create a merge commit** seç (Squash ya da Rebase değil).
-2. PowerShell'de: `cd C:\Users\İzzettin\bilim-dunyasi\kutup-platform\kutup`
-3. `git status` çalıştır; "nothing to commit" görmelisin. Görmüyorsan dur ve çıktıyı ikinci üsse ilet.
-4. `git pull origin kutup-platform`
-5. `npm ci`
-6. `npm run test:all`: hepsi geçmeli.
-7. **Yalnız PR'da göç varsa:** `node scripts/owner-backup.mjs <kod>` çalıştır; "Kaydedildi: …" görmelisin.
-8. `npm run deploy`: çıktıdaki "Current Version ID"yi kopyala. Giriş isterse `npx wrangler login` çalıştır ve tarayıcıda onayla.
-9. `node tests/live-smoke.mjs`: hepsi geçmeli, "push: members N/N bound" satırı görünmeli.
-10. Version ID'yi ve duman testinin son satırlarını ikinci üsteki Claude'a yapıştır. O bunları günlüğe ve KARARLAR'a işler, kartı `done` yapar.
+1. GitHub'da PR'ı aç. Taban `kutup-platform` mı, kontrol et. **Merge pull request → Create a merge commit** seç (Squash ya da Rebase değil).
+2. PowerShell'de önce `cd C:\Users\İzzettin\bilim-dunyasi\kutup-platform\kutup`, sonra `npm run yayin`.
+3. `npm run yayin` (`scripts/yayin.mjs`) şunları sırayla yapar ve ilk hatada durur:
+   1. dalı ve temizliği kontrol eder;
+   2. `git pull --ff-only` çalıştırır;
+   3. `npm ci` çalıştırır;
+   4. `npm run test:all` çalıştırır;
+   5. canlı yedeği alır (her yayında, göç olsun olmasın);
+   6. `npm run deploy` çalıştırır;
+   7. canlı duman testini çalıştırır.
+   
+   Durursa ne olduğunu ve bir şeyin canlıya gidip gitmediğini yazar.
+4. Başarılıysa son satır "Yayın tamam · eski → yeni commit · Worker xxxxxxxx · canlı duman testi geçti · push: members N/N bound" olur. Batur bu satırı sana iletir. Sen de onu günlüğe ve KARARLAR'a işlersin, kartı `done` yaparsın.
+5. Prova için `npm run yayin -- --kuru` kullanılır: çeker ve test eder, yayın yapmaz.
+6. Giriş isterse `npx wrangler login` çalıştırılır, Batur tarayıcıda onaylar.
 
 ## 9. Günlük: geri dönüş kaydı
 
@@ -268,7 +312,7 @@ Batur "ana üsse dönüyoruz" dediğinde ya da 22 Ekim'de iki taraf da aşağıd
 
 **İkinci üs (sen):**
 1. Açık işi bitir ya da WIP olarak push et.
-2. Panonun bütün verisini dışa al: ArtifactData `list` (`tasks`, `limit` 200) ve `get` (`meta/board`), `out_dir` = `atomuparcalayanbebek/kutup/ikinci-us/pano-veri`. Bunlar mevcut dosyaların üstüne yazar. Panodan silinen bir kart varsa onun dosyasını da sil.
+2. (Yalnız Plan B'de) panonun bütün verisini dışa al: ArtifactData `list` (`tasks`, `limit` 200) ve `get` (`meta/board`), `out_dir` = `atomuparcalayanbebek/kutup/ikinci-us/pano-veri`. Bunlar mevcut dosyaların üstüne yazar. Panodan silinen bir kart varsa onun dosyasını da sil.
 3. GUNLUK.md'ye "Teslim" kaydı yaz:
    - açık PR'lar ve dalları;
    - yarım işler ve sıradaki adım;
@@ -280,7 +324,7 @@ Batur "ana üsse dönüyoruz" dediğinde ya da 22 Ekim'de iki taraf da aşağıd
 **Ana üs (Batur'un Claude'u, dönüşte):**
 1. `git pull`, sonra GUNLUK.md'yi baştan sona oku.
 2. Birleşen her PR yayında mı? `npx wrangler deployments list` çıktısıyla karşılaştır. KARARLAR'daki "PR #n" satırlarına birleştirme commit'ini ve Worker kimliğini ekle.
-3. `pano-veri`'yi Batur'un panosuna aktar: kartlar `if_version` ile, yeni kartlar oluşturularak; `meta/board` da.
+3. Plan B kullanıldıysa `pano-veri`'yi Batur'un panosuna aktar: kartlar `if_version` ile, yeni kartlar oluşturularak; `meta/board` da.
 4. İkinci üste öğrenilenleri hafızaya işle. Bu dosyanın başına "Kapandı (tarih)" yaz, HANDOFF §0'daki notu kaldır, `KUTUP_DEVIR.md`'yi güncelle.
 5. `npm run test:all`, tarayıcı testi ve canlı duman testi çalıştır.
 
