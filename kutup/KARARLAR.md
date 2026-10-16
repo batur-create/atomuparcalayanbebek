@@ -19,10 +19,11 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n06 Kara, n26 Köy 2.0 (n22 köy ayrıntısı içinde), n27 Vitrin ve cila, n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. n06'nın geçmişi aşağıda, Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n26 Köy 2.0 (n22 köy ayrıntısı içinde), n27 Vitrin ve cila, n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n06 | Kara baştan: sevimli kara delik, çatıda yaşayan işlevli kedi | Maskot | 16 Eki 18:30 | 901347b4 |
 | n18-2 | Görsel şölen turu: katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, temalar, cevaplar | Tasarım | 16 Eki 19:00 | ea86b4c4 |
 | n17 | Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa | Gezinme | 16 Eki 14:30 | c6162645 |
 | n18 | Canlı site, aşama 1: yaşayan gökyüzü ve hareket anları | Tasarım | 16 Eki 14:30 | c6162645 |
@@ -63,6 +64,34 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n06 Kara,
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n06 · Kara baştan: sevimli bir kara delik, çatıda yaşayan işlevli kedi
+Maskot · 16 Eki 2026 · 901347b4
+
+**Ne yapıldı:**
+- Kara sıfırdan çizildi: simsiyah, yumuşak, yuvarlak bir kedi. Göz bebekleri hep yuvarlak ve kocaman; irisin yalnız ince altın halkası ve altta açık bir hilal kalıyor (kara delik fotoğrafındaki parlak yarı gibi). Gece silueti sıcak bir ışık halkasıyla parlıyor (foton halkası); gündüz bu ışık hafif. Tasma tema renginde, boyna oturuyor, çene ve kürk kenarına düşüyor; künyesi minik bir kara delik.
+- Evi ana sayfa gökyüzünde kütüphanenin çatısı (sağ köşe, kuyruğu cepheye sarkar); odak kartında sayacın sağ altında oturur. Eski kart, poz düğmeleri ve tanışma penceresi kalktı.
+- Pozu ekibin durumunu söyler: kütüpte kimse yoksa somun gibi kıvrılıp uyur; biri yoldaysa patikayı izler; biri içerideyse uyanık; sen odaktayken gözlük + kitap, inşaatta baret (✳). Biri gelince kuyruğu dik karşılar; Pano notunu ağzında getirir; bina bitince iki kez zıplar (^^ gözler, kıvılcım); çökünce kulakları düşer; basılı tutunca mırlar.
+- Haberci: ana sekmede geliş, yola çıkış ve yeni Pano notu Kara'nın balonu olur. Dokununca o anın en işe yarar cümlesini söyler ve tek eylem verir (Oku, Planlar); uyurken önce tek gözünü açar.
+- 18 küçük hareket poza göre rastgele gelir: bakınma, gökyüzüne bakma, baş eğme, yavaş göz kırpma, kulak, kuyruk, pati yalama, esneme, göz bebeklerinin kara delik gibi açılması, nefes, sayfa çevirme, gözlük üstünden bakma, uyuklama, onaylama, rüya, iç çekme, av kıpırtısı. Arada göz kırpar. Fareyle gözler imleci izler.
+- Yan düzeltme: mesaj bannerındaki avatar uzuyordu, düzeldi.
+
+**Kararlar ve nedenleri:**
+- Kimlik Batur'un referansından: yuvarlak göz bebekli kara kedi fotoğrafları. Kara delik çağrışımı fantastik desenle değil, gerçek kedi davranışıyla (karanlıkta açılan göz bebeği) ve ışıkla (kenar halkası) kuruldu; eski "doğal kedi, kehribar göz" kuralı korunuyor.
+- Kara'nın çizimi avatarlardan ayrıldı (kontursuz kadife siyah, kendi stili). Avatarlar n13'teki çizgide kalıyor.
+- Ana sekmede aynı haberi iki kez söylememek için "kütübe geldi" bildirimi ve yeni mesaj bannerı orada gösterilmiyor; Kara söylüyor.
+- Basılabilir görünen her şey iş yapar: Kara'ya dokunmak bilgi + eylem verir. Balon altındakine dokunmayı engellemez; yalnız eylem düğmesi basılır. Dokunma alanı yalnız gövde; sarkan kuyruk alttaki düğmeyi örtmez.
+- Sürekli döngü yok: hareketler 1–3 sn'lik küçük anlar. 4x yavaşlatılmış telefonda sayfa 60 fps (p95 16.8 ms), Kara'nın ek yükü ~6 puan. Sakin ayarında yalnız poz geçişleri, Kıpırtısız'da her şey anında; telefonda azaltılmış hareket açıksa Kara kendiliğinden kıpırdamaz.
+
+**Batur'un sözleri:** "karanın tipi hala eski ya bana daha çok yakışan ve daha detaylı kaliteli çizilmiş bir kara yapalım mı" · "sıfırdan tasarlayalım maskotu. maskot bi kedi olsun ve kara deliği anımsatsın" · "round beautiful eyes, like a cute black hole" (referans: yuvarlak göz bebekli kara kedi fotoğrafları) · "tmm daha detaylandır ve hareketleri çeşitlendir ve uygula" · "tasma falan doğal dursun, vücudunun bir parçası gibi" · "direkt deploy, videoya gerek yok ben bakarım canlıdan".
+
+**Denenip vazgeçilenler:**
+- İlk deneme: eski Kara'nın küçültülmüş çizimi (konturlu, atkılı) çatıda. Davranışlar (haberci, odak arkadaşı, dokununca cümle) tuttu, çizim "tipi hâlâ eski" bulundu.
+- Gösterilmeden bırakılan taslaklar: üç stil (gerçekçi gece kedisi, afiş, tüylü) ve üç kara delik konsepti (ışık halkası, kıvrılınca kara delik, tutulma). Batur'un referansı gelince sevimli + yuvarlak göz yönü seçildi; ışık halkası ve somun duruşu bu taslaklardan kaldı.
+- Sürekli döngüler (kuyruk, nefes, künye): yavaş telefonda ana iş parçacığı yükünü %62'den %81'e çıkardı; küçük anlara çevrildi.
+- Göz kapağını clipPath ile kırpmak: Chrome'da kapak hareket edince maske yanlış konumlandı; kapak, gözün üstünden açılan yuvarlak perde oldu.
+
+**Dosyalar:** `src/Kara.jsx` (KaraRig, KaraSpot, KaraHome, KaraBuddy), `src/kara.css`; `Home.jsx` (`.sky-over` katmanı), `App.jsx` (FocusCard'da KaraBuddy; ana sekmede geliş bildirimi yok), `Together.jsx` (ana sekmede banner yok), `together.css`, `dark.css`; silinen `Mascot.jsx`, `LiveMascot.jsx`, `mascot.css`; `tests/browser_smoke.py`, `tests/live-smoke.mjs`. Worker 7c65ff28.
 
 ### n18-2 · Görsel şölen turu: katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, temalar, cevaplar
 Tasarım · 16 Ekim 2026 · ea86b4c4 (Worker e3c0ea53)

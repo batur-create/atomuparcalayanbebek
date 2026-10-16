@@ -47,9 +47,9 @@ Bütün renkler `src/styles.css` başındaki değişkenlerden gelir. Koda yeni s
 - **Gölge:** neredeyse yok; varsa çok hafif (saydamlık %3–9). Kalın, koyu gölge kullanma.
 - **Küçük süsler:** eğik damga etiketi (yaklaşık −8°), kesik çizgili yörünge dairesi, vurgu renginde küçük yıldız. Ölçülü kullan.
 
-## 5. Çizim dili (Kara, avatarlar, rozetler, maskot sahneleri)
+## 5. Çizim dili (avatarlar, rozetler, Kara)
 
-Bütün karakter ve rozet çizimleri Kara'nın dilinden türer (`shared/avatars.js` başı):
+Avatar ve rozet çizimleri n13'te onaylanan çizgide (`shared/avatars.js` başı). Kara'nın kendi stili var (aşağıda).
 
 - Koyu kontur `#25242d`, kalınlık 2.2–2.4 (100'lük kutuda), uçlar ve köşeler yuvarlak.
 - Sakin, düz renkler. Aydınlık yüz için tek bir açık ton; degrade yok.
@@ -59,10 +59,13 @@ Bütün karakter ve rozet çizimleri Kara'nın dilinden türer (`shared/avatars.
 - Küçük boyda okunur olmalı: 42, 32 ve 25 px'te, açık ve koyu modda kontrol et.
 - Yeni çizimler `shared/avatars.js`'teki kalemleri (`p`, `line`, `circ`, `ell`) kullanır.
 
-**Kara (maskot):**
-- Doğal bir kara kedi; siyah ya da füme tüy, kehribar gözler. Kara deliği anımsatır ama gerçek hayatta görülebilecek bir kedidir.
-- Fantastik galaksi deseni ya da doğa dışı göz yok. Statik resim ya da GIF değil, kodla yaşayan bir SVG (`src/LiveMascot.jsx`).
-- Batur'un en güçlü isteği: "canlı yaşaması en çok etkiliyor bence."
+**Kara (maskot, n06): sevimli bir kara delik.**
+- Simsiyah (`#0b0a0f`), yumuşak, yuvarlak bir kedi; kontur yok, biçimi kadife parlaklıklar verir. Gerçek hayatta görülebilecek bir kedi; fantastik desen yok.
+- **Gözler kimliktir:** göz bebekleri hep yuvarlak ve kocaman, irisin yalnız ince altın halkası ve altta açık bir hilal kalır (Batur: "round beautiful eyes, like a cute black hole"). Heyecanda bebekler daha da açılır.
+- Gece siluetin kenarına sıcak bir ışık halkası vurur (foton halkası); gündüz bu ışık hafif.
+- Tasma tema renginde ve vücudun parçası gibi durur: boyna oturur, çene ve kürk kenarına düşer; künyesi minik bir kara delik. Aksesuarlar (gözlük, baret, kitap, not) da vücuda oturur.
+- Kodla yaşayan SVG (`src/Kara.jsx`), 200 × 240 kutuda; oturduğu çizgi y = 171. Evi ana sayfa gökyüzünde kütüphanenin çatısı; odak kartında sayacın yanında.
+- Hareketleri küçük anlardır (bakınma, yavaş göz kırpma, pati yalama, esneme...); sürekli döngü yok. Batur'un en güçlü isteği: "canlı yaşaması en çok etkiliyor bence."
 
 ## 6. Köy ve şantiye
 
@@ -98,7 +101,9 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✘ **n13 ilk deneme:** kalın çizgi, çıkartma kenarı, canlı renkler, rastgele hayvanlar. Batur: "siteyle alakası yok". Siteye bakılmadan çizilmişti.
 - ✔ **n16 tema düğmesi:** çandaki gibi ince çizgi simge (güneş, ay, yarım güneş). Emoji seçeneği seçilmedi.
 - ✔ **n15 karanlık tema:** gün batımında otomatik koyulaşır; Kara ay ışığı dairesinin önünde durur.
-- ✔ **Kara:** doğal kara kedi, kehribar gözler, kodla yaşayan SVG. Statik görsel istenmedi.
+- ✔ **n06 yeni Kara:** sevimli bir kara delik (yuvarlak, kadife siyah, altın halkalı kocaman göz bebekleri, gece ışık halkası), çatıda yaşar, haberci ve odak arkadaşı. Batur çizimi onayladı, "direkt deploy" dedi.
+- ✘ **n06 ilk deneme:** eski Kara'nın küçültülmüş çizimi; davranışlar tuttu, çizim "tipi hâlâ eski".
+- ✔ **Kara:** doğal kara kedi, kodla yaşayan SVG. Statik görsel istenmedi.
 - ✔ **n17 menü (B):** 4 sekme (Kütüp, Köy, Pano, Ben), ☰ yok, planlar ana sayfada "Kim ne zaman geliyor?", ana eylem Geldim. A (5 sekme) seçilmedi.
 - ✔ **n18-2 görsel şölen turu:** Batur: "Abi çok beğendim ... Temiz iş çıkarmışsın." Hareket animasyonları beğenildi.
 - ✘ **n18 temaları:** yalnız vurgu rengi değişiyor, tonlar soft ve birbirine yakın ("tema dediğin daha kapsamlı olur"). Revizyon n23.

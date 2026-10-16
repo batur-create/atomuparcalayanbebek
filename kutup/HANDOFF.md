@@ -208,17 +208,23 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 
 **n18-2 notları:** Saat (`now`) artık her saniye değil: `fastClock` (Köy sekmesi, odak ekranı, çalışan sayaç, ritim) iken 1 sn, yoksa 15 sn. Saniye gösteren yeni bir şey eklersen `fastClock`'a koşulunu ekle. Gökyüzüne yeni hareketli parça eklerken SVG'nin içine değil `sky-scene` üstüne ayrı katman olarak ekle (DESIGN.md §7). Performans ölçümü: Playwright + CDP `Emulation.setCPUThrottlingRate` 4, yerel üretim sunucusu (`node server/index.js`, `--dev` olmadan). Hareket ayarı `src/motionPref.js` ve `public/mode.js`.
 
+**n06 Kara bitti (16 Ekim akşamı, 901347b4, Worker 7c65ff28):** sevimli bir kara delik; çatıda yaşar, haberci, odak arkadaşı. Notlar:
+- Rig `src/Kara.jsx`: `KaraRig` (çizim; poz `data-pose`, küçük an `data-act`, `data-blink`, `data-wink`), `KaraSpot` (balon, dokunuş, basılı tutma, rastgele an ve göz kırpma zamanlayıcısı, fareyle göz takibi), `KaraHome` (çatı; ekip durumundan poz, haberci), `KaraBuddy` (odak kartı; okuma, baret, bitti/çöktü).
+- Hareket kuralı: sürekli CSS döngüsü ekleme; SVG içindeki her döngü telefonda ana iş parçacığında her kare çalışır (ölçüldü: %62 → %81). Yeni hareket = `ACTS`/`LASTS`'a bir an + `kara.css`'te `[data-act]` kuralı.
+- SVG içinde CSS transform'larında `px` = çizim birimi. Kara'nın göz kapağında clipPath kullanma (Chrome hareket eden öğede maskeyi yanlış konumluyor); kapak, `transform-box: fill-box` ile üstten ölçeklenen daire.
+- Ana sekmede geliş bildirimi ve mesaj bannerı gösterilmez; haberi Kara verir.
+
 **Sıradaki işler (Batur'un onayladığı plan, 16 Ekim 2026 akşamı; ayrıntılı tanımlar panoda):**
-1. **n06 Kara:** sitede yaşayan, işi olan kedi. Öneri panoda: evi gökyüzü kartında (kütüphanenin çatısı), haberci (gelişleri karşılar, mesaj notu taşır, bildirimler onun balonu), odak arkadaşı (yanında kitap okur, şantiyede baret), dokununca durum söyler. Önce 2–3 küçük video denemesi, her adımda Batur'un onayı. Kaynak `LiveMascot.jsx`, `Mascot.jsx`, `mascot.css`; geçmişi KARARLAR.md arşivinde "Kara yön değişikliği".
-2. **n26 Köy 2.0** (n22 köy ayrıntısı dahil): odak stüdyosu, saatle yaşayan harita, kutucuklar.
-3. **n27 Vitrin ve cila:** giriş/davet ekranı, iPhone ekleme rehberi, sahte basılabilir avı (sol üst "Kütüp"), çizimli boş durumlar.
-4. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
-5. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
-6. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir.
-7. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
-8. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
-9. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
-10. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
+1. **n26 Köy 2.0** (n22 köy ayrıntısı dahil): odak stüdyosu, saatle yaşayan harita, kutucuklar.
+2. **n27 Vitrin ve cila:** giriş/davet ekranı, iPhone ekleme rehberi, sahte basılabilir avı (sol üst "Kütüp"), çizimli boş durumlar.
+3. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
+4. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
+5. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir.
+6. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
+7. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
+8. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
+9. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
+10. Olası ek: avatarları yeni Kara'nın diline yaklaştırmak (Batur istemedi, sorulabilir).
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.
