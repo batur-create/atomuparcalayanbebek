@@ -214,17 +214,31 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 - SVG içinde CSS transform'larında `px` = çizim birimi. Kara'nın göz kapağında clipPath kullanma (Chrome hareket eden öğede maskeyi yanlış konumluyor); kapak, `transform-box: fill-box` ile üstten ölçeklenen daire.
 - Ana sekmede geliş bildirimi ve mesaj bannerı gösterilmez; haberi Kara verir.
 
+**n26 Köy 2.0 bitti (16 Ekim gecesi, Worker edee3e53):** odak stüdyosu + yaşayan harita. Notlar:
+- Köy haritası iki katman: `villageView.js` asıl haritayı yalnız kamera değişince çizer, hareket edenleri üstteki `canvas.village-live` katmanında ~24 fps çizer. Yeni canlı şey eklerken `drawLive` içinde `alive` bayrağını yalnız gerçekten görünürken kaldır.
+- Hareket ayarı haritada her karede okunur (`motionLevel`).
+
+**Bulutla çalışma düzeni (Batur, 16 Ekim):** "cloud sessiona yaptıralım işleri, sen sadece yayınla".
+- İşleri bulut oturumları yapar: `origin/kutup-platform`'dan kendi dalını açar (`claude/...`), test eder, `kutup-platform`'a PR açar.
+- Yayın bulutta olmaz (Cloudflare girişi yok); canlı veriye ve `kutup/data/`'ya dokunulmaz.
+- Bu oturum PR'ı inceler, `git merge --ff-only` ile birleştirir, testleri yerelde de koşar, yayınlar, canlı duman testini çalıştırır ve kayıtları yazar.
+- Bulut bitince haber gelmez; Batur "PR hazır" der.
+- İki bulut oturumu aynı dosyalara aynı anda dokunmaz.
+
+**Kara'nın yeni çizimi ChatGPT'de (16 Ekim gecesi):**
+- ChatGPT, mevcut `Kara.jsx` ve `kara.css`'in üstüne çizimi yenileyen bir sürüm üretti: tombul, tüylü kedi, aynı arayüz. Çıktılar `C:\Users\İzzettin\.codex\.chatgpt-projects\...\output\kara\selected-design` klasöründe; bir sonraki tur aynı yere gelecek.
+- Batur kediyi beğendi; daha akıcı ve ayrıntılı animasyon, 2,5B his, easter egg'ler, aksesuar düzeltmeleri ve "sitede nasıl durur" görüntüleri istedi.
+- Sonuç gelince: dosyaları incele, bizim son `Kara.jsx` ve `kara.css` ile farkına bak, yavaş telefonda ölç, Batur'a sitede görüntü göster, yerleştir.
+
 **Sıradaki işler (Batur'un onayladığı plan, 16 Ekim 2026 akşamı; ayrıntılı tanımlar panoda):**
-1. **n26 Köy 2.0** (n22 köy ayrıntısı dahil): odak stüdyosu, saatle yaşayan harita, kutucuklar.
-2. **n27 Vitrin ve cila:** giriş/davet ekranı, iPhone ekleme rehberi, sahte basılabilir avı (sol üst "Kütüp"), çizimli boş durumlar.
-3. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
-4. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
-5. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir.
-6. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
-7. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
-8. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
-9. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
-10. Olası ek: avatarları yeni Kara'nın diline yaklaştırmak (Batur istemedi, sorulabilir).
+1. **n27 Vitrin ve cila:** giriş/davet ekranı, iPhone ekleme rehberi, sahte basılabilir avı (sol üst "Kütüp"), çizimli boş durumlar.
+2. **n23 Tema revizyonu:** kapsamlı, belirgin, uyumu kontrol edilmiş tema paketleri.
+3. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
+4. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir.
+5. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
+6. **n25 Hesaplar arası geçiş:** bir hesap = bir ekip, Instagram tarzı geçiş.
+7. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
+8. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.

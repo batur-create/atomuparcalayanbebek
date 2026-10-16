@@ -19,10 +19,11 @@ Her biten işin ne yaptığı, hangi kararların neden verildiği ve Batur'un ne
 
 ## Dizin
 
-Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n26 Köy 2.0 (n22 köy ayrıntısı içinde), n27 Vitrin ve cila, n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
+Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n27 Vitrin ve cila, n23 Tema revizyonu, n24 Ses turu, n28 Haftalık hikâye, n29 Anında ve hızlı, n25 Hesaplar arası geçiş, n30 Masa haritası, n14 Başarımlar. Kara'nın eski geçmişi Arşiv'deki "Kara yön değişikliği" bölümünde.
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n26 | Köy 2.0: odak stüdyosu ve yaşayan harita | Köy | 16 Eki 21:00 | 00990aa5 · d5651113 · f541476a |
 | n06 | Kara baştan: sevimli kara delik, çatıda yaşayan işlevli kedi | Maskot | 16 Eki 18:30 | 901347b4 |
 | n18-2 | Görsel şölen turu: katmanlı gökyüzü, zengin ana sayfa, hareket ayarı, temalar, cevaplar | Tasarım | 16 Eki 19:00 | ea86b4c4 |
 | n17 | Menü akışı: 4 sekme, Ben sayfası, yeni ana sayfa | Gezinme | 16 Eki 14:30 | c6162645 |
@@ -64,6 +65,39 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): n26 Köy 
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n26 · Köy 2.0: odak stüdyosu ve yaşayan harita
+Köy · 16 Eki 2026 · 00990aa5 · d5651113 · f541476a
+
+**Ne yapıldı:**
+- **1. kısım (Claude, 00990aa5):** Odak kartı stüdyo oldu:
+  - uzun inşaat modu kutusu yerine İnşaat/Serbest seçici ve tek satırlık kural;
+  - ses mikseri ses düğmesinin yanındaki ayar simgesinden açılıyor;
+  - masadakiler tek satırda, Katıl düğmesiyle;
+  - alt satırda bugünün dakikası.
+
+  Ayrı ses kartı, haftalık tablo kartı, "Beraber odaktayız" paneli ve günlük not kalktı. Harita büyüdü; kişiler haritanın içinde küçük yüzler oldu (odaktakinde kulaklık). Anıt ve haftalık tablo haritanın altında iki kutucuk; dokununca ayrıntısı açılıyor. Sayfa telefonda 3,2 ekrandan 2,4 ekrana indi.
+- **2. kısım (bulut oturumu, PR #1, d5651113):** Yaşayan harita:
+  - binası olan en fazla 6 mahallede birer köylü meydana yürüyüp dönüyor;
+  - odaktakilerin evinde nefes alan sıcak pencere ışığı, balonda 🎧 (çay molasında ☕);
+  - gündüz kuş sürüleri;
+  - bina bitince harita binaya uçuyor, ışık halkası ve konfeti çıkıyor (yeni bina, inşaattan önce olmayan bina olarak bulunuyor; saate güvenilmiyor).
+  - Hareket ayarı her karede okunuyor: Sakin ve Kıpırtısız'da harita durağan, Kıpırtısız'da konfeti yerine sabit halka.
+- **Performans (bulut ölçümü, 375 px, 4x yavaş işlemci):** Harita iki katmana ayrıldı. Asıl harita yalnız kamera oynayınca çiziliyor, hareket eden her şey üstteki şeffaf katmanda; balonlar bir kez çizilip saklanıyor. Dolu bir köyde yük %75–80'den (p95 33 ms, ~49 fps) %35–38'e indi (p95 16,7 ms, 60 fps). Kimse yokken köylüler yürüdüğü için yük %10'dan %32–35'e çıkıyor, 60 fps korunuyor. Sakin ve Kıpırtısız'da ~%10.
+- Yan düzeltme (f541476a): Arduvaz, Kum ve Zeytin renkleri haritada lila görünüyordu.
+
+**Kararlar ve nedenleri:**
+- Sadelik = tekrar yok: aynı bilgi tek yerde. "Kim odakta" masadakiler satırı ve haritadaki yüzler; ses odak kartında.
+- Basılabilir görünen her şey iş yapar: kutucuklar ve haritadaki yüzler bir şey açıyor ya da bir yere götürüyor.
+- Uygulama işi bulut oturumuna verildi; Claude PR'ı inceleyip birleştirdi, testleri yerelde de koşup yayınladı. Bulutta Cloudflare girişi yok, bu yüzden yayın burada.
+
+**Batur'un sözleri:** "Köy düzeni tamam. Yaşayan haritaya geç: yürüyen köylüler, duman, kuşlar, odaktakiler, bina bitince kutlama." · "aga cloud sessiona yaptıralım işleri deneyelim sen sadece yayınla".
+
+**Denenip vazgeçilenler:** Bina bitince kutlama, bulutta test kancasıyla (`/__test/expire`) tetiklenemedi; kanca istemciye haber vermediği için bitiş "vazgeçme" sanılıyor. Gerçek akışta istemci süre dolunca bitişi kendisi çağırıyor.
+
+**Açık:** Gerçek iPhone'da bakılmadı (ölçümler ekran kartı olmayan bulut tarayıcısında). Gündüz kutlaması görsel olarak denenmedi.
+
+**Dosyalar:** `App.jsx` (FocusCard), `Together.jsx` (DeskMates Katıl), `VillageMap.jsx` (yüzler, KoyTiles, WeekList, kutlama), `koy.css`, `villageWorld.js` (villagers, glows, focusing), `villageView.js` (iki katman, köylü, kuş, ışık, kutlama, balon önbelleği), `tests/browser_smoke.py` (+2 kontrol), `audit/2026-10-16-n26/`.
 
 ### n06 · Kara baştan: sevimli bir kara delik, çatıda yaşayan işlevli kedi
 Maskot · 16 Eki 2026 · 901347b4
