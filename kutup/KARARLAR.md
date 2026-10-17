@@ -23,9 +23,9 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | PR (claude/n36-insaat-sov) |
-| n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-2) |
-| n36c | İnşaat tam şov, 3. tur: yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, şantiyede yakınlaştırma | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-3) |
+| n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | 825c5561 (PR #22 via #24, Worker b690b171) |
+| n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | 825c5561 (PR #23 via #24, Worker b690b171) |
+| n36c | İnşaat tam şov, 3. tur: yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, şantiyede yakınlaştırma | Şantiye | 17 Eki | 825c5561 (PR #24, Worker b690b171) |
 | d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | 62386ef8 (PR #21) |
 | n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | 62386ef8 (PR #20) |
 | n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | 62386ef8 (PR #19) |
@@ -89,7 +89,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 ## Kayıtlar (yeniden eskiye)
 
 ### n36c · İnşaat tam şov, 3. tur: denetim, metraj, TBDY, yakınlaştırma
-Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-3, 1. ve 2. turun üstüne) · göç yok
+Şantiye · 17 Eki 2026 · 825c5561 (PR #24, Worker b690b171) · göç yok
 
 **Ne yapıldı:**
 - **Yapı denetim:** üstü kapanacak her işin son kısmında beyaz baretli, klipsli denetçi gelir: temel, kolon (kulede kolon ve perde), kiriş/döşeme donatısı; yığmada duvar, lento ve hatıl donatısı; ahşapta karkas ve bağlantılar; çelikte bulon sıkma torku. Başlık önce "Yapı denetim: 1. kat kiriş ve döşeme donatısı", sonra "Denetim onayı ✓ beton dökülebilir"; denetçinin başında yeşil onay işareti (`src/quality.js`).
@@ -109,7 +109,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 **Dosyalar:** `src/quality.js` (yeni), `src/metraj.js` (yeni), `src/zoom.js` (yeni), `src/construction.js`, `src/crew.js`, `src/Village.jsx`, `src/VillageMap.jsx`, `src/FocusScreen.jsx`, `src/motion.css`, `tests/site.test.js`.
 
 ### n36b · İnşaat tam şov, 2. tur: yapım sistemleri
-Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-2, 1. turun üstüne) · göç yok
+Şantiye · 17 Eki 2026 · 825c5561 (PR #23, #24 ile, Worker b690b171) · göç yok
 
 **Ne yapıldı:** Her yapı duvarının söylediği sistemle yapılıyor (`systemOf` in `src/construction.js`). Temel (hafriyat, grobeton, su yalıtımı, radye) hepsinde aynı; katlar ve cephe değişiyor. Taşıyıcı sistemin bittiği an betonarmede 0,55, diğerlerinde 0,68 (betonarmenin dolgu duvarı da o an biter); çatıdan sonrası herkeste aynı zamanda.
 - **Betonarme** (krem, adaçayı: Konak, Kır Kahvesi, Çiçekçi, Yel Değirmeni, Deniz Feneri): değişmedi. Dolgu duvar kalemi "Dolgu duvar: gazbeton bloklar ve lentolar" oldu.
@@ -129,7 +129,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 **Dosyalar:** `src/construction.js`, `src/Village.jsx`, `src/crane.js`, `src/crew.js`, `src/sitedetail.js`, `tests/site.test.js`.
 
 ### n36 · İnşaat tam şov, 1. tur
-Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov) · göç yok
+Şantiye · 17 Eki 2026 · 825c5561 (PR #22, #24 ile, Worker b690b171) · göç yok
 
 **Ne yapıldı:** Batur inşaatın baştan incelenmesini istedi (rapor: `/mnt/project-files/kutup/insaat-inceleme/RAPOR.md`) ve "Tam şov" kademesini seçti. Üç turun ilki:
 - **Pil:** Sahne üst üste duran SVG sayfalarından oluşuyor; makineler, işçiler ve vinç kendi katmanlarında, yalnızca değişen parça yeniden çiziliyor, 12 kare/sn. Vincin direği bir kez çiziliyor. Sahne ekranda görünmezken, sekme arkadayken ve odak ekranı açıkken (altında kalan kopya) duruyor. Ölçüm (4x yavaş işlemci, 375 px, kulübe): hafriyat %46 → %38, döşeme betonu %57 → %45, duvar %49 → %38 meşgul. Odak ekranı açıkken artık tek sahne çalışıyor (önce iki).
