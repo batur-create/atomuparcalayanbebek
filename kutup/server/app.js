@@ -8,6 +8,8 @@ import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { dayStreak, statsOf, storyOf, storyWeek } from "./stats.js";
+import { achievementsOf } from "./achievements.js";
+import { REPORTED } from "../shared/achievements.js";
 import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
@@ -36,7 +38,6 @@ const PUSH_COOLDOWN = 45 * 60000;
 // A real arrival (from away or on the way) always notifies; this only stops
 // someone from pinging everyone by flipping away/here in a loop.
 const ARRIVAL_REPEAT = 5 * 60000;
-const ACHIEVEMENTS = ["black-hole"];
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
@@ -1794,13 +1795,36 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // Hidden badges, from an allowlist. "black-hole": found Batur's door.
   route("POST", "/achievements", async ({ member, body }) => {
-    if (!ACHIEVEMENTS.includes(body.key)) fail("Böyle bir rozet yok.");
+    if (!REPORTED.includes(body.key)) fail("Böyle bir rozet yok.");
     limit(`${member.id}:achievement`, 20);
     const result = await db.run(
       "INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)",
       [member.id, body.key, Date.now()],
     );
     return json({ ok: true, new: result.changes === 1 });
+  });
+
+  // n14: a member's badges, worked out from the logs for anyone in the same
+  // team. Newly earned ones are written down, so they stay once earned.
+  route("GET", "/achievements/:id", async ({ member: m, params }) => {
+    const target = await db.get("SELECT id, group_id FROM members WHERE id = ? AND group_id = ?", [params.id, m.group_id]);
+    if (!target) fail("Kişi bulunamadı.", 404);
+    const id = target.id;
+    const [focus, buildings, ledger, masters, arrivals, messages, stored] = await db.read([
+      ["SELECT minutes, created FROM focus_log WHERE member_id = ? ORDER BY created", [id]],
+      ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, likes, created FROM buildings WHERE member_id = ? ORDER BY created", [id]],
+      ["SELECT reason, created FROM bricks_log WHERE member_id = ? AND reason IN ('imece', 'monument') ORDER BY created", [id]],
+      ["SELECT created FROM weekly WHERE member_id = ? AND kind = 'master' AND group_id = ? ORDER BY created", [id, target.group_id]],
+      ["SELECT created FROM activity WHERE member_id = ? AND kind = 'arrive' ORDER BY created", [id]],
+      ["SELECT text, created FROM messages WHERE member_id = ? AND kind = 'message' ORDER BY created", [id]],
+      ["SELECT key, created FROM achievements WHERE member_id = ?", [id]],
+    ]);
+    const list = achievementsOf({ focus, buildings, ledger, masters, arrivals, messages, stored, now: Date.now() });
+    const known = new Set(stored.map((s) => s.key));
+    const fresh = list.filter((a) => a.at !== null && !known.has(a.key));
+    if (fresh.length)
+      await db.batch(fresh.map((a) => ["INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)", [id, a.key, a.at]]));
+    return json({ list });
   });
 
   // Off for this account only; `others` tells the app whether another account

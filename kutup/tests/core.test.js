@@ -9,6 +9,8 @@ import { createApp, dayStart, weekStart } from "../server/app.js";
 import { sqliteAdapter } from "../server/sqlite.js";
 import { SCHEMA_VERSION, migrations } from "../server/schema.js";
 import { CAPACITY, cellLayout, chooseCell, placeIn, ringOf } from "../shared/village.js";
+import { achievementsOf } from "../server/achievements.js";
+import { ACHIEVEMENTS, shouting, teaCall } from "../shared/achievements.js";
 import { ROOMS, deskNumber, elsewhere, headcount, roomOf, seatsOf, seating, tablesOf } from "../shared/rooms.js";
 
 const call = (app, path, { method = "GET", body, headers = {} } = {}) =>
@@ -801,4 +803,88 @@ test("the desk map: numbered chairs, typed desks placed, the rest listed (n30)",
   assert.deepEqual(elsewhere(members).map((x) => x.id), ["g", "h"]);
   assert.equal(headcount(members, adnan), 3);
   assert.equal(headcount(members, mujgan), 1);
+});
+
+// ---------- n14: achievements ----------
+test("achievements are worked out from the logs, with the moment each was earned (n14)", () => {
+  const monday = Date.UTC(2026, 9, 5) - 3 * H; // Monday 5 Oct 2026, 00:00 in Türkiye
+  const at = (day, hour, minute = 0) => monday + day * D + hour * H + minute * 60000;
+  const none = { focus: [], buildings: [], ledger: [], masters: [], arrivals: [], messages: [], stored: [], now: at(40, 12) };
+  const empty = achievementsOf(none);
+  assert.deepEqual(empty.map((a) => a.key), ACHIEVEMENTS.map((a) => a.key));
+  assert.ok(empty.every((a) => a.at === null && a.have === 0));
+
+  // Eight days in a row (one day skipped is bridged by the week's freeze), sessions ending at 10:00.
+  const focus = [];
+  for (const d of [0, 1, 2, 4, 5, 6, 7, 8]) focus.push({ minutes: 50, created: at(d, 10) });
+  focus.push({ minutes: 200, created: at(8, 15) }); // 250 that day: a marathon
+  for (let i = 0; i < 5; i++) focus.push({ minutes: 40, created: at(10 + i, 8, 30) }); // began 07:50
+  for (let i = 0; i < 4; i++) focus.push({ minutes: 45, created: at(10 + i, 23, 50) }); // began 23:05
+  focus.push({ minutes: 20, created: at(15, 22) }); // too short to count as a night session
+  focus.sort((a, b) => a.created - b.created);
+  const models = ["kulube", "bostan", "cicekci", "kahve", "ev", "sahaf", "firin", "konak", "kulube"];
+  const buildings = models.map((model, i) => ({ model, likes: i === 3 ? 5 : 1, created: at(20 + i, 18) }));
+  const ledger = [
+    ...Array.from({ length: 10 }, (_, i) => ({ reason: "imece", created: at(21 + i, 12) })),
+    { reason: "monument", created: at(27, 19) },
+  ];
+  const arrivals = Array.from({ length: 22 }, (_, i) => ({ created: at(Math.floor(i / 1.1), 9) }));
+  const messages = [
+    { text: "Selam", created: at(30, 9) },
+    { text: "SESSİZ OLUN", created: at(31, 9) },
+    { text: " Çay ", created: at(32, 9) },
+  ];
+  const list = achievementsOf({ focus, buildings, ledger, masters: [{ created: at(14, 0, 5) }], arrivals, messages, stored: [{ key: "black-hole", created: at(3, 3) }], now: at(40, 12) });
+  const got = Object.fromEntries(list.map((a) => [a.key, a]));
+  assert.equal(got["first-build"].at, at(20, 18));
+  assert.equal(got["week-streak"].at, at(7, 10), "the seventh day of focus: the skipped day is bridged, not counted");
+  assert.equal(got["month-streak"].at, null);
+  assert.equal(got["month-streak"].have, 0, "the streak is over by day 40");
+  assert.equal(got.marathon.at, at(8, 15));
+  assert.equal(got.early.at, at(14, 8, 30));
+  assert.equal(got.night.at, null, "four long night sessions; the short one does not count");
+  assert.equal(got.night.have, 4);
+  assert.equal(got.hundred.at, null);
+  assert.equal(got.hundred.have, 50 * 8 + 200 + 40 * 5 + 45 * 4 + 20);
+  assert.equal(got.collector.at, at(27, 18), "the eighth kind");
+  assert.equal(got.loved.at, at(40, 12), "likes carry no time: earned when first seen");
+  assert.equal(got.imece.at, at(30, 12));
+  assert.equal(got.master.at, at(14, 0, 5));
+  assert.equal(got.monument.at, at(27, 19));
+  assert.equal(got.regular.at, at(19, 9), "the twentieth library day");
+  assert.equal(got.shush.at, at(31, 9));
+  assert.equal(got.tea.at, at(32, 9));
+  assert.equal(got["black-hole"].at, at(3, 3));
+
+  // Once earned, kept: the stored moment wins even when the logs no longer show it.
+  const kept = achievementsOf({ ...none, stored: [{ key: "first-build", created: at(1, 1) }] });
+  assert.equal(kept.find((a) => a.key === "first-build").at, at(1, 1));
+
+  assert.ok(shouting("SESSİZ OLUN") && !shouting("Sessiz") && !shouting("OK!") && !shouting("😀😀😀"));
+  assert.ok(teaCall("çay") && teaCall(" ÇAY ") && !teaCall("çay?") && !teaCall("çay içelim"));
+});
+
+test("the achievements route answers for the team, and keeps what was earned (n14)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "k".repeat(24) } });
+  const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", groupName: "Rozetler", username: "ada_badge", password: "badge-123" } });
+  const invite = (await call(app, "/session", { headers: { Cookie: ada.cookie } })).data.group.invite;
+  const bora = await call(app, "/join", { method: "POST", body: { invite, name: "Bora", username: "bora_badge", password: "badge-123" } });
+  const other = await call(app, "/groups", { method: "POST", body: { name: "Ece", groupName: "Başka", username: "ece_badge", password: "badge-123" } });
+  const now = Date.now();
+  sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)").run("f1", ada.data.memberId, 250, now - H);
+  const list = async (who, id) => call(app, `/achievements/${id}`, { headers: { Cookie: who.cookie } });
+  const seen = await list(bora, ada.data.memberId);
+  assert.equal(seen.status, 200);
+  const marathon = seen.data.list.find((a) => a.key === "marathon");
+  assert.equal(marathon.at, now - H, "earned by the session that tipped it over");
+  assert.equal(seen.data.list.find((a) => a.key === "hundred").have, 250);
+  assert.equal(sqlite.prepare("SELECT created FROM achievements WHERE member_id = ? AND key = 'marathon'").get(ada.data.memberId).created, now - H, "written down");
+  sqlite.prepare("DELETE FROM focus_log").run();
+  assert.notEqual((await list(ada, ada.data.memberId)).data.list.find((a) => a.key === "marathon").at, null, "kept once earned");
+  assert.equal((await list(other, ada.data.memberId)).status, 404, "another team cannot look");
+  assert.equal((await call(app, `/achievements/${ada.data.memberId}`)).status, 401);
+  await call(app, "/messages", { method: "POST", headers: { Cookie: bora.cookie }, body: { text: "çay" } });
+  assert.notEqual((await list(bora, bora.data.memberId)).data.list.find((a) => a.key === "tea").at, null);
 });

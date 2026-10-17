@@ -124,6 +124,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 16 Ekim 2026)
 
+> **n14 (ikinci üs, 17 Eki):** Başarımlar: liste ve eşikler `shared/achievements.js`, hesap `server/achievements.js` `achievementsOf()` (kayıtlardan, geriye dönük; kazanılan `achievements` tablosuna yazılır ve kalır), çizimler `src/achievementArt.js`. Yeni rozet eklerken: listeye ekle, hesabı `achievementsOf()`'a yaz, çizimi `ART`'a koy, testteki sayıyı (16) güncelle. Görüntü almak için `kutup/araclar/badge_shots.py` (yerel deneme verisi).
+>
 > **n30 (ikinci üs, 17 Eki):** Masa haritası `DeskMap.jsx` (tembel), salon düzeni `shared/rooms.js` (temsilî; Batur'un krokisi gelince sıra sayısı ve kenar başına sandalye buradan değişir). Sunucu değişmedi: harita `members.location` ve `members.desk` içindeki ilk sayıyı okur (`deskNumber()`). Görüntü almak için `kutup/araclar/map_shots.py` (yerel deneme verisi).
 >
 > **n28 (ikinci üs, 17 Eki):** Haftanın hikâyesi `Story.jsx` (tembel), hesap `server/stats.js` `storyOf()`, hafta `shared/week.js`. Pazar 18.00 bildirimi `tick()` içinde, `weekly` tablosunda `story` satırıyla bir kez. Yeni kart eklerken `cardsOf()` sırasına ve `Card` içine ekle; açık zeminli kartı `tone` listesine yaz. Görüntü almak için `kutup/araclar/story_shots.py` (yerel deneme verisi).
@@ -270,8 +272,8 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
 2. **n24 Ses turu:** daha gerçekçi, kaliteli sesler; önce eski/yeni dinletilir.
 3. **n28 Haftalık hikâye (Kütüp Wrapped):** Pazar akşamı hikâye, paylaşılabilir; n27'deki okuyucu kartı fikri paylaşım kartı için aday.
 4. **n29 Anında ve hızlı:** Durable Objects + WebSocket, App.jsx'i bölmek, tembel yükleme, cihazda saklama.
-5. **n30 Masa haritası:** salon krokisi Batur'dan alınacak (tanım eksik).
-6. **n14 Başarımlar:** liste ve eşikler Batur'a sorulacak (tanım eksik).
+5. **n30 Masa haritası:** ikinci üste yapıldı (PR); gerçek salon krokisi hâlâ Batur'dan bekleniyor.
+6. **n14 Başarımlar:** ikinci üste yapıldı (PR); liste ve eşikler KARARLAR n14'te.
 
 **Bilinen açıklar:**
 - Wake Lock video yedeği gerçek telefonda denenmedi.

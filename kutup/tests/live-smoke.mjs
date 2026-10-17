@@ -134,6 +134,9 @@ try {
   check("week's story answers", story.status === 200 && story.data?.team?.size === 2 && !!story.data?.me, `status ${story.status}`);
   const msg = await call("/messages", { cookie: B1, body: { text: "duman testi, birazdan silinecek" } });
   check("board message", msg.status === 201, `status ${msg.status}`);
+  // n14: a teammate's badges answer; the smoke message is no secret, so none is earned.
+  const badges = await call(`/achievements/${idB}`, { cookie: A1 });
+  check("badges answer", badges.status === 200 && badges.data?.list?.length >= 16, `status ${badges.status}`);
   const village = await call("/village", { cookie: A1 });
   check("village endpoint", village.status === 200, `status ${village.status}`);
   // Avatars: a drawn character with accessories is kept; a founder-only one falls back for others.

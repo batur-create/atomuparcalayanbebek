@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
 | n30 | Masa haritası: salonların kuşbakışı krokisi, arkadaşlar masalarında, boş sandalyeye dokununca "Geldim" | Kütüphane | 17 Eki 05:25 | PR (ikinci üs) |
 | n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | PR (ikinci üs) |
 | n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | PR (ikinci üs) |
@@ -74,6 +75,30 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n14 · Başarımlar: rozet vitrini ve kazanma anı
+Başarım · 17 Eki 2026 · PR (ikinci üs) · göç yok (göç 12'deki `achievements` tablosu kullanılıyor)
+
+**Ne yapıldı:**
+- **16 başarım (`shared/achievements.js`):** İlk tuğla (ilk yapı) · Bir hafta (7 gün seri) · Bir ay (30 gün seri) · Sabah erkencisi (09.00'dan önce başlayan 5 oturum, 30 dk+) · Gece kuşu (21.00–04.00 arası başlayan 5 oturum, 30 dk+) · Maraton (bir günde 4 saat) · Yüz saat (toplam 100 saat) · İmece ustası (arkadaşlarla aynı anda 10 oturum) · Koleksiyoncu (8 farklı yapı) · Gönüllerin mimarı (bir yapıya 5 beğeni) · Müdavim (20 ayrı gün kütüpte) · Haftanın Ustası (bir taç) · Anıt ustası (bir anıt). Gizli üç: Kara delik kâşifi (eski rozet), Şşşt! (panoda tamamı büyük harf), Çay saati (panoya yalnız "çay").
+- **Sunucu hesaplar, geçmiş sayılır (`server/achievements.js`):** rozetler kayıtlardan (odak, binalar, tuğla defteri, haftalık taç, gelişler, mesajlar) çıkarılır; her rozetin tarihi onu kazandıran oturum, bina ya da gündür. İlk kez görülen rozet `achievements` tablosuna yazılır, sonra kayıtlar değişse de kalır. Yeni yol: `GET /api/achievements/:id` (yalnız aynı ekip).
+- **Vitrin (Ben → Başarımlar):** 16 rozet üç sütunda; açılanlar renkli ve tarihli, açılmayanlar soluk, nasıl açılacağı ve ilerleme çubuğu ("12 / 30 gün"). Gizliler bulunana kadar "?".
+- **Kişi kartı:** arkadaşın açtığı rozetler, en yenisi önde, "Başarımlar 4 / 16".
+- **Kazanma anı:** alt menünün üstünde koyu küçük bir kart, rozet zıplayarak gelir, kıvılcım saçılır; dokununca vitrin açılır, 12 sn sonra kendi kapanır. Uygulama tuğla, durum ya da kendi pano mesajın değişince 20 sn'de bir en fazla bir kez sorar. İlk açılışta geçmişten gelenler tek kartta toplanır: "Geçmişinden 6 başarım açıldı".
+- **Çizimler (`src/achievementArt.js`):** DESIGN.md §5 çizgisi; her rozet kendi pastel madalyonunda Kütüp dünyasından bir şey (tuğla ve bayrak, takvim, gün doğumu, ay, kum saati, saat, ince belli çay bardakları, üç ev, kalpli ev, kütüphane cephesi, taç, anıt, kara delik, "Şşşt" balonu, çay).
+
+**Kararlar ve nedenleri (tanım eksikti; Batur "kararları sen ver, geri alınabilir olsun" dedi):**
+- **Liste ve eşikler:** panodaki öneri listesi, sayılar yukarıdaki gibi. Eşikler tek dosyada; değiştirmek bir sayı (kazanılmış rozetler gitmez).
+- **Tuğla ödülü yok:** ekonomi dengesine dokunmamak için. İstenirse rozet başına ödül ayrı iş.
+- **Başkaları görür:** açılan rozetler kişi kartında herkese açık; açılmayanlar ve ilerleme yalnız sahibine.
+- **Kutlama ölçülü:** tam ekran değil, alt kartta küçük bir an; Pano'ya mesaj ve bildirim yok (geriye dönük açılan onlarca rozet panoyu doldurmasın).
+- **Paket 4'ün "n/12 gizli rozet" fikri:** gizliler 3 ile başladı; diğer easter egg'ler (Kedi dostu, Gizli not) rozete bağlanınca listeye eklenir.
+
+**Batur'un sözleri:** kayıtlarda bu işi anlatan bir mesaj yok; liste Claude'un önerisi (eski Paket 4 ile birleşti). "inisiyatif alarak ... kararları sen ver ... geri dönülebilir olsun" (17 Ekim).
+**Önizleme:** proje klasöründe `kutup/onizleme/n14/` (kutlama, vitrin, yeni rozet, arkadaş kartı; açık ve koyu) ve `rozetler.png` (bütün çizimler).
+**Geri alma:** eşikler ve liste `shared/achievements.js`; kutlama için `App.jsx`'teki `useAchievementWatch` ve `AchievementCheer` satırları; kişi kartı için `Modals.jsx`'teki `AchievementShelf`; tamamı için `Achievements.jsx`, `achievementArt.js`, `achievements.css`, `achievementWatch.js` ve `/achievements/:id` yolu. Tabloya yazılan satırlar zararsız; istenirse `DELETE FROM achievements WHERE key <> 'black-hole'`.
+**Açık:** Batur'un görsel onayı (çizimler ve kutlama).
+**Dosyalar:** shared/achievements.js, shared/pano.js, server/achievements.js, server/app.js, src/Achievements.jsx, src/achievementArt.js, src/achievementWatch.js, src/achievements.css, src/App.jsx, src/MePage.jsx, src/Modals.jsx, src/later.jsx, tests/core.test.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
 ### n30 · Masa haritası: kim hangi masada
 Kütüphane · 17 Eki 2026 · PR (ikinci üs) · göç yok (mevcut `location` + `desk` alanlarıyla çalışır, sunucuda değişiklik yok)

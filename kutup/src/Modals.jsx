@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ArrowUpRight, CalendarDays, Check, Coffee, Copy, Flame, Map as MapIcon, MapPin, Plus, Send, Trophy } from "lucide-react";
 import { STATUS, shortTime, dayInput, dayWord, sinceLabel, minutesLabel } from "./api.js";
 import { Avatar, Busy } from "./ui.jsx";
-import { MemberStats } from "./later.jsx";
+import { AchievementShelf, MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
 import { Badge } from "./Home.jsx";
 import { ROOMS, roomOf } from "../shared/rooms.js";
@@ -495,6 +495,7 @@ export function MemberModal({ member, now, close, mutate }) {
           </div>
         </div>
       </div>
+      <AchievementShelf memberId={member.id} />
       <MemberStats memberId={member.id} />
       <button
         className="btn primary full"

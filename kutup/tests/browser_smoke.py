@@ -445,6 +445,16 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(page.locator('.week-story')).to_have_count(0)
                 check("The week's story: tap on, tap back, hold pauses, Escape closes, 44px close, no overflow (n28)",
                       total >= 3 and held == f'1 / {total}' and not wide and close_box['width'] >= 44 and close_box['height'] >= 44)
+                # n14: the badge case opens from Ben; every badge shows, nothing overflows at 375 px.
+                page.goto(base + '/?tab=me')
+                page.get_by_role('button', name='Başarımlar', exact=False).first.click()
+                badges = page.get_by_role('dialog', name='Başarımlar')
+                expect(badges.locator('.badge-tile')).to_have_count(16)
+                badges_wide = badges.evaluate('el => el.scrollWidth > el.clientWidth')
+                tile = badges.locator('.badge-tile').first.bounding_box()
+                page.keyboard.press('Escape')
+                expect(page.locator('.badges-modal')).to_have_count(0)
+                check('Badge case: all 16 badges, no overflow at 375 px (n14)', not badges_wide and tile['width'] >= 90)
                 # n30: the desk map opens from "Kim nerede?", a free chair says "Geldim" with that desk.
                 page.goto(base)
                 page.locator('.map-open').click()

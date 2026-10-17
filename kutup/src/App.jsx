@@ -41,8 +41,10 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { DeskMap, FocusScreen, OwnerPage, VillagePanel, WeekStory, prefetchScreens } from "./later.jsx";
+import { AchievementCheer, AchievementsModal, DeskMap, FocusScreen, OwnerPage, VillagePanel, WeekStory, prefetchScreens } from "./later.jsx";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
+import { shouting, teaCall } from "../shared/pano.js";
+import { useAchievementWatch } from "./achievementWatch.js";
 import { CoffeeCard, FocusCard, onComputer, pickedModel } from "./Focus.jsx";
 import { Board } from "./Board.jsx";
 import { CoffeeModal, InviteModal, MemberModal, PlanModal, PresenceModal } from "./Modals.jsx";
@@ -236,6 +238,9 @@ function KutupApp({ initial, restart }) {
   const me = data.members.find((m) => m.id === session?.memberId);
   const { village, like, error: villageError, retry: retryVillage } = useVillage(session, data.group.villageRev);
   useSoundFollowsFocus(!!me?.focusEnd && me.focusEnd > now);
+  // n14: ask about badges again after whatever can earn one.
+  const lastSaid = data.messages.findLast?.((x) => x.memberId === me?.id && x.kind !== "system")?.id || "";
+  const [cheer, endCheer] = useAchievementWatch(session ? me : null, `${me?.bricks}|${me?.status}|${lastSaid}`);
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
   const toastTimer = useRef(),
@@ -686,7 +691,7 @@ function KutupApp({ initial, restart }) {
       if (epoch !== sessionEpoch.current) return false;
       updateData(state);
       const said = path === "/messages" ? String(body?.text || "") : "";
-      if (/\p{L}{3}/u.test(said) && said === said.toLocaleUpperCase("tr") && said !== said.toLocaleLowerCase("tr"))
+      if (shouting(said))
         notify("Şşşt! Burası kütüphane 🤫");
       else if (success) notify(success);
       return result;
@@ -952,7 +957,7 @@ function KutupApp({ initial, restart }) {
     <MotionConfig reducedMotion={motionPick === "still" ? "always" : motionPick ? "never" : "user"}>
     <div
       className={`app-shell ${intro ? "intro" : ""} ${
-        data.messages.some((m) => m.kind !== "system" && m.text.trim().toLocaleLowerCase("tr") === "çay" && now - m.created < 60000)
+        data.messages.some((m) => m.kind !== "system" && teaCall(m.text) && now - m.created < 60000)
           ? "tea-time"
           : ""
       }`}
@@ -1302,6 +1307,17 @@ function KutupApp({ initial, restart }) {
           mutate={mutate}
           requireMember={requireMember}
           openMember={(x) => requireMember(() => setModal({ member: x }))}
+        />
+      )}
+      {modal === "achievements" && me && <AchievementsModal me={me} close={() => setModal(null)} />}
+      {cheer && !focusScreen && (
+        <AchievementCheer
+          cheer={cheer}
+          close={endCheer}
+          open={() => {
+            endCheer();
+            setModal("achievements");
+          }}
         />
       )}
       {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}
