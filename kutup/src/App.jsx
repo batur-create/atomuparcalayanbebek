@@ -47,7 +47,7 @@ import { shouting, teaCall } from "../shared/pano.js";
 import { useAchievementWatch } from "./achievementWatch.js";
 import { CoffeeCard, FocusCard, onComputer, pickedModel } from "./Focus.jsx";
 import { Board } from "./Board.jsx";
-import { CoffeeModal, InviteModal, MemberModal, PlanModal, PresenceModal } from "./Modals.jsx";
+import { CoffeeModal, InviteModal, MemberModal, PlanCardModal, PlanModal, PresenceModal } from "./Modals.jsx";
 import { SignIn, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
 import { Entry } from "./Entry.jsx";
 import { IosGuide, Loading } from "./Illustrations.jsx";
@@ -75,6 +75,9 @@ const PAGE = {
   feedback: ["BU PLATFORM BİRAZ DA SENİN", "Söz sende.", "Fikirler, takılan şeyler, güzel iki kelime. Hepsi Batur’a."],
 };
 const startParams = new URLSearchParams(location.search);
+// n34: a shared plan link (/?plan=…) opens that plan's card once someone is
+// signed in, even if signing in comes first (the app may mount afresh for it).
+let sharedPlan = startParams.get("plan");
 let introPlayed = false;
 // Nothing is shown before signing in: no sample people, no sample village.
 const EMPTY = { group: { name: "", invite: "", rev: 0 }, members: [], messages: [], plans: [] };
@@ -328,6 +331,7 @@ function KutupApp({ initial, restart }) {
         if (initial?.message) notify(initial.message);
         else if (!initial && startParams.get("action") === "here") setModal("presence");
         if (!initial && startParams.has("story")) setStory(true);
+        openSharedPlan(d);
       })
       .catch((e) => {
         if (e.status === 401 && cached) signedOut();
@@ -338,7 +342,7 @@ function KutupApp({ initial, restart }) {
       })
       .finally(() => {
         setLoading(false);
-        if (!initial && (startParams.has("tab") || startParams.has("action") || startParams.has("as") || startParams.has("story")))
+        if (!initial && (startParams.has("tab") || startParams.has("action") || startParams.has("as") || startParams.has("story") || startParams.has("plan")))
           history.replaceState({}, "", location.pathname);
       });
     if ("serviceWorker" in navigator)
@@ -804,7 +808,13 @@ function KutupApp({ initial, restart }) {
     setInviteInfo(null);
     history.replaceState({}, "", "/");
     notify(welcome);
+    openSharedPlan(d);
   };
+  function openSharedPlan(d) {
+    if (!sharedPlan || !d?.memberId) return;
+    setModal({ plan: sharedPlan });
+    sharedPlan = null;
+  }
   // The bell: one tap, one answer. Every step has a deadline and its own message,
   // and turning on ends with a real test notification on this device.
   async function enableNotifications() {
@@ -1283,7 +1293,10 @@ function KutupApp({ initial, restart }) {
         />
       )}
       {modal === "plan" && (
-        <PlanModal close={() => setModal(null)} mutate={mutate} />
+        <PlanModal close={() => setModal(null)} mutate={mutate} onSaved={(id) => setModal({ plan: id, fresh: true })} />
+      )}
+      {modal?.plan && (
+        <PlanCardModal planId={modal.plan} fresh={modal.fresh} data={data} me={me} close={() => setModal(null)} mutate={mutate} notify={notify} />
       )}
       {modal === "coffee" && (
         <CoffeeModal close={() => setModal(null)} mutate={mutate} />

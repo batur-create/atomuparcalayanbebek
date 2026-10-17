@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | PR (ikinci üs) |
 | n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
 | n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
 | d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | PR #15 (ikinci üs) |
@@ -81,6 +82,29 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n34 · Plan paylaşma: plan linki gruba, linkten "Varım" ya da "Gelemem"
+Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç 22 (`plan_skips` tablosu, otomatik)
+
+**Ne yapıldı:**
+- **Plan kartı (`PlanCardModal`, `src/Modals.jsx`):** bir planı tek başına gösterir: gün, saat, ad, kim planladı; "Varım" / "Gelemem" düğmeleri; "Geliyor" ve "Gelemiyor" listeleri; "Gruba gönder" düğmesi.
+- **Link:** `/?plan=<id>`. Açan kişi giriş yapmışsa kart hemen açılır; giriş yapmamışsa önce girer, kart sonra açılır. Plan silinmiş ya da zamanı geçmişse "Bu plan artık yok." der.
+- **Gruba gönder (`src/planShare.js`):** telefonda paylaşım menüsü açılır (WhatsApp dahil). Menü yoksa (bilgisayar) metin ve link panoya kopyalanır. Metin: "🗓️ Ada kütüp planı yaptı: Yarın 16:00 · Sınav haftası. Geliyor musun? Buradan söyle: <link>". Böylece grupta linke basmadan da ne zaman olduğu okunur.
+- **Plan yapınca:** "Plan yap" kaydedince kart "Plan takvimde." başlığıyla açılır ve gruba atmayı önerir.
+- **Ana sayfa:** plan adına dokununca kart açılır; planın sahibinde çöp kutusunun yanında gönder simgesi var. Biri "Gelemem" dediyse satırda "2 geliyor · 1 gelemiyor" yazar.
+- **Sunucu:** `POST /plans/:id/answer {going}` cevabı ayarlar (aç/kapa değil; iki kez basmak bir şey değiştirmez). "Ben de" düğmesi eski "Gelemem"i siler. Plan, üye ve eski plan temizliklerinde `plan_skips` da silinir; yedek/geri yüklemeye eklendi.
+
+**Kararlar ve nedenleri (Batur "geri alınabilir kararları sen ver" dedi):**
+- **Link giriş ister:** planlar ekibe özel. Herkese açık önizleme yerine bilgiyi paylaşım metnine koydum; gruptaki herkes saati linke basmadan görüyor.
+- **"Gelemem" ayrı tabloda:** "kaç kişi geliyor" sayan her yer (istatistikler, başarımlar) olduğu gibi kalsın diye `attendees`a dokunmadım.
+- **Arkadaş satırında gönder simgesi yok:** telefonda "Ben de" ile yan yana sığmıyordu, başlık kısalıyordu. Arkadaşlar plana dokunup karttan gönderebiliyor.
+- **Bildirim yok:** "Gelemem" kimseye bildirim atmaz; plan sahibi kartta görür.
+
+**Batur'un sözleri:** "bir tane plan yaptım ... takvime koydum ama insanlara paylaşamıyorum ... bildirimi görmemiş olma ihtimallerine karşı ... WhatsApp'tan gruba atmak istiyorum. Millet o linkten girip plana katılıp katılmayacağını ... girebilir." (17 Ekim)
+**Önizleme:** proje klasöründe `kutup/onizleme/n34/` (plan yapıldı, linkten açıldı, gelemem, ana sayfa, sahibin kartı; açık ve koyu). Araç: `kutup/araclar/plan_share_shots.py`.
+**Geri alma:** `PlanModal`daki `onSaved` (kart açılmasın), `App.jsx` `openSharedPlan`, `Home.jsx` `home-plan-open` ve gönder simgesi. Tablo kalabilir; boşken bir şey değiştirmez.
+**Açık:** Batur'un görsel onayı; gerçek iPhone'da WhatsApp paylaşımı denenmedi.
+**Dosyalar:** server/schema.js, server/app.js, server/restore.js, src/planShare.js, src/Modals.jsx, src/App.jsx, src/Home.jsx, src/home.css, src/styles.css, tests/suite.js
 
 ### n32 · Çalışma eşi: kiminle beraberken en verimlisin
 Birlikte · 17 Eki 2026 · PR (ikinci üs, #16'dan sonra) · göç yok

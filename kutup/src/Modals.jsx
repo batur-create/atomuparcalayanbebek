@@ -1,13 +1,14 @@
 // The small sheets of the app: where am I, invite, plan, coffee call and a
 // friend's card. Split out of App.jsx (n29).
 import React, { useState } from "react";
-import { ArrowUpRight, CalendarDays, Check, Coffee, Copy, Flame, Map as MapIcon, MapPin, Plus, Send, Trophy } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Check, Coffee, Copy, Flame, Map as MapIcon, MapPin, Plus, Send, Trophy, X } from "lucide-react";
 import { STATUS, shortTime, dayInput, dayWord, sinceLabel, minutesLabel } from "./api.js";
 import { Avatar, Busy } from "./ui.jsx";
 import { AchievementShelf, MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
 import { Badge } from "./Home.jsx";
 import { ROOMS, roomOf } from "../shared/rooms.js";
+import { sharePlan } from "./planShare.js";
 
 // The tayfa's two reading rooms at Milli Kütüphane (Adnan is home), plus break
 // spots. Old free-text places still work through "Başka bir yer…".
@@ -235,7 +236,7 @@ function untilWords(ms) {
   if (hours < 24) return `${hours} saat sonra`;
   return `${Math.round(hours / 24)} gün sonra`;
 }
-export function PlanModal({ close, mutate }) {
+export function PlanModal({ close, mutate, onSaved }) {
   const firstFree = (day) => PLAN_TIMES.find((t) => planStart(day, t) > Date.now() + 10 * 60000);
   const today = dayInput(),
     startDay = firstFree(today) ? today : dayInput(1);
@@ -284,11 +285,13 @@ export function PlanModal({ close, mutate }) {
           }
           setError("");
           setBusy(true);
-          const saved = await mutate("/plans", { starts, note }, "Plan panoda. Ekibin katılabilir! 🗓️", "POST", (message) =>
+          // n34: a new plan opens its own card, ready to send to a group chat.
+          const saved = await mutate("/plans", { starts, note }, onSaved ? "" : "Plan panoda. Ekibin katılabilir! 🗓️", "POST", (message) =>
             setError(`Plan kaydedilemedi: ${message}`),
           );
           setBusy(false);
-          if (saved) close();
+          if (saved?.id && onSaved) onSaved(saved.id);
+          else if (saved) close();
         }}
       >
         <span className="plan-step">Hangi gün?</span>
@@ -405,6 +408,104 @@ export function PlanModal({ close, mutate }) {
     </Modal>
   );
 }
+// n34: one plan on its own, opened from a shared link (/?plan=…), by tapping a
+// plan, or right after making one. Members answer "Varım" or "Gelemem" here and
+// send the plan on to a group chat.
+export function PlanCardModal({ planId, fresh, data, me, close, mutate, notify }) {
+  const plan = data.plans.find((x) => x.id === planId);
+  const [copied, setCopied] = useState(false),
+    [busy, setBusy] = useState("");
+  if (!plan)
+    return (
+      <Modal title="Bu plan artık yok." subtitle="Zamanı geçmiş ya da silinmiş olabilir. Takvimde başka planlar var mı bir bak." close={close}>
+        <button className="btn primary full" onClick={close}>
+          <CalendarDays size={17} /> Takvime bak
+        </button>
+      </Modal>
+    );
+  const owner = data.members.find((x) => x.id === plan.memberId),
+    mine = plan.memberId === me?.id,
+    answer = plan.attendees.includes(me?.id) ? "yes" : plan.skips?.includes(me?.id) ? "no" : "",
+    date = new Date(plan.starts);
+  const people = (ids) => ids.map((id) => data.members.find((x) => x.id === id)).filter(Boolean);
+  const coming = people(plan.attendees),
+    skipping = people(plan.skips || []);
+  const say = async (going) => {
+    if (busy || answer === (going ? "yes" : "no")) return;
+    setBusy(going ? "yes" : "no");
+    await mutate(`/plans/${plan.id}/answer`, { going }, going ? "Sen de varsın. Harika!" : "Tamam, haber verdin. Bir dahakine! 👋");
+    setBusy("");
+  };
+  const share = async () => {
+    const result = await sharePlan(plan, owner);
+    if (result === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2400);
+      notify("Plan bağlantısı kopyalandı. Gruba yapıştırman yeterli.");
+    } else if (result === "failed") notify("Paylaşılamadı. Bir daha dener misin?");
+  };
+  return (
+    <Modal
+      title={fresh ? "Plan takvimde. 🗓️" : "Kütüp planı 🗓️"}
+      subtitle={
+        fresh
+          ? "Bildirimi kaçıran olabilir. WhatsApp grubuna da at; linke basan “Varım” ya da “Gelemem” desin."
+          : mine
+            ? "Senin planın. Gruba atarsan bildirimi kaçıranlar da görür."
+            : `${owner?.name || "Biri"} planladı. Geliyor musun?`
+      }
+      close={close}
+    >
+      <div className="plan-card">
+        <div className="plan-tile">
+          <span>{date.toLocaleDateString("tr-TR", { month: "short", timeZone: "Europe/Istanbul" })}</span>
+          <b>{date.toLocaleDateString("tr-TR", { day: "numeric", timeZone: "Europe/Istanbul" })}</b>
+          <small>{shortTime(plan.starts)}</small>
+        </div>
+        <div>
+          <strong>{plan.note || "Kütüpte buluşalım"}</strong>
+          <small>
+            {dayWord(plan.starts)} {shortTime(plan.starts)} · {owner?.name || "Biri"} planladı
+          </small>
+        </div>
+      </div>
+      {!mine && (
+        <div className="plan-answer" role="group" aria-label="Geliyor musun?">
+          <Busy className={`btn ${answer === "yes" ? "joined" : "primary"}`} aria-pressed={answer === "yes"} loading={busy === "yes"} disabled={!!busy} onClick={() => say(true)}>
+            {busy !== "yes" && <Check size={16} />} Varım
+          </Busy>
+          <Busy className={`btn ${answer === "no" ? "declined" : "outline"}`} aria-pressed={answer === "no"} loading={busy === "no"} disabled={!!busy} onClick={() => say(false)}>
+            {busy !== "no" && <X size={16} />} Gelemem
+          </Busy>
+        </div>
+      )}
+      <div className="plan-people">
+        <span>
+          <b>Geliyor · {coming.length}</b>
+          {coming.map((x) => (
+            <i key={x.id}>
+              <Avatar member={x} size="tiny" /> {x.id === me?.id ? "Sen" : x.name}
+            </i>
+          ))}
+        </span>
+        {skipping.length > 0 && (
+          <span className="no">
+            <b>Gelemiyor · {skipping.length}</b>
+            {skipping.map((x) => (
+              <i key={x.id}>
+                <Avatar member={x} size="tiny" /> {x.id === me?.id ? "Sen" : x.name}
+              </i>
+            ))}
+          </span>
+        )}
+      </div>
+      <button className={`btn ${fresh || mine ? "primary" : "outline"} full`} onClick={share}>
+        {copied ? <Check size={17} /> : <Send size={17} />} {copied ? "Kopyalandı" : "Gruba gönder"}
+      </button>
+    </Modal>
+  );
+}
+
 export function CoffeeModal({ close, mutate }) {
   const [text, setText] = useState(
       "10 dakika sonra kafeteryada kahve? Gelen kalp atsın ☕",

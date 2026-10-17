@@ -228,6 +228,22 @@ export function defineSuite(target) {
     assert.equal((await request(`/plans/${plan}/join`, { cookie: people.charlie, body: {} })).status, 404);
     assert.equal((await request(`/plans/${plan}/join`, { cookie: people.bob, body: {} })).status, 200);
     assert.equal((await state("bob")).plans[0].attendees.length, 2);
+    // n34: a shared plan link answers "Gelemem" too; the answer is set, not toggled.
+    const answer = (who, going) => request(`/plans/${plan}/answer`, { cookie: people[who], body: { going } });
+    assert.equal((await answer("bob", false)).status, 200);
+    assert.equal((await answer("bob", false)).status, 200);
+    let shared = (await state("alice")).plans[0];
+    assert.equal(shared.attendees.length, 1);
+    assert.equal(shared.skips.length, 1);
+    assert.equal((await answer("bob", true)).status, 200);
+    shared = (await state("alice")).plans[0];
+    assert.deepEqual([shared.attendees.length, shared.skips.length], [2, 0]);
+    await answer("bob", false);
+    assert.equal((await request(`/plans/${plan}/join`, { cookie: people.bob, body: {} })).status, 200);
+    shared = (await state("alice")).plans[0];
+    assert.deepEqual([shared.attendees.length, shared.skips.length], [2, 0], "Ben de clears an earlier Gelemem");
+    assert.equal((await answer("alice", true)).status, 400, "the planner does not answer their own plan");
+    assert.equal((await answer("charlie", false)).status, 404, "another team cannot see the plan");
     assert.equal((await request(`/plans/${plan}`, { cookie: people.bob, method: "DELETE", body: {} })).status, 404);
     assert.equal((await state("alice")).plans.length, 1);
     assert.equal((await request("/plans", { cookie: people.bob, body: { starts: Date.now() - 86400000 } })).status, 400);
