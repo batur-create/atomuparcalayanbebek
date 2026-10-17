@@ -29,6 +29,14 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 04:55 · d24 görsel cila (PR #9)
+
+- **d24 · PR #9** (`claude/d24-gorsel-cila`, taban `kutup-platform` a37f3f0): denetimin V1 (zarf yazıyı kapatıyordu), V3 (Batur paneli telefonda) ve V4 (44 px dokunma alanları) bulguları. Durum: review. Göç yok.
+- Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d24/`.
+- **Bekleyen:** V2 (pencere başlığında tek kalan emoji) n29 birleşince.
+
+---
+
 ## 17 Ekim 2026 03:30 · İkinci üs: kurulum
 
 - **Nerede:** Claude bulut oturumu, claude.ai projesi "Kütüp ikinci üs", Ediz'in hesabı. Arkadaşın bilgisayarına kurulum gerekmedi.

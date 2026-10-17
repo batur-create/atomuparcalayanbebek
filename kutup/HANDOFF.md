@@ -136,6 +136,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 > - Her yayından önce iki dalı birleştir (`git fetch` ve `git merge origin/astra/gorevler`); aksi hâlde birinin işi geri gider.
 > - Göç numaraları sırayla, en son yayınlananın arkasına eklenir.
 
+> **d24 (ikinci üs, 17 Eki):** Yeni küçük bir düğme 44 px dokunma alanını `src/polish.css` sonundaki d24 listesinden alır (görünmez `::after` katmanı); kendi `::after`'ı olan öğeyi o listeye ekleme. `tests/browser_smoke.py`'deki `SHORT_REACH` aynı listeyi dört sekmede denetler.
+
 Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler, Kara yön değişikliği) ve ilk paket planı KARARLAR.md arşivine taşındı.
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU

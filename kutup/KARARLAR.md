@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | PR #9 (ikinci üs) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -69,6 +70,26 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d24 · Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları
+Cila · 17 Eki 2026 · PR #9 (ikinci üs) · göç yok
+
+**Ne yapıldı:** 17 Ekim dış denetiminin görsel bulguları V1, V3, V4 (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
+- **V1:** "Batur'a ilet" kartında zarf artık yazının üstüne binmiyor. Paragraf zarfın yanında bitiyor (her ekran boyunda `.envelope-art` ölçüsüyle eşleşen `padding-right`); zarf yerinde ve aynı boyda. 320'den 1600 px'e 14 genişlikte ölçüldü.
+- **V3:** Batur paneli telefonda: "Yenile" ve zil tek satırı dolduruyor (Yenile solda, zil kalanını kaplıyor), "Bu cihazdan çık" altında. Yedi aşama filtresi tek satırda yana kayıyor (kenardan kenara); seçili olan (çoğu zaman en sondaki "Hepsi") açılışta görünür kaydırılıyor, sayfa kaymıyor. Liste boşken Kara delik düğmesinin payı boş durum notunun altına geçiyor: not düğmenin altında kalmıyor, filtreyle not arasındaki fazla boşluk da kapandı.
+- **V4:** 12 küçük denetim türüne görünmez, ortalanmış, en az 44 px dokunma katmanı (`::after`, n27'deki `.face-btn`/`.scribble` yöntemi): üst çubuk ikonları, metin düğmeleri, filtre çipleri, bildirim kapatma çarpısı, masa ritmi seçenekleri, ses düğmeleri, kalp ve "Yanıtla", gönder, "Ekibe seslen", yol tarifi bağlantısı, "Binalara göz at". Görünüm değişmedi: önce/sonra 38 ekran görüntüsü piksel piksel karşılaştırıldı; fark yalnız sayaç ve köy gibi kendiliğinden değişen yerlerde (iki "önce" çekimi arasında da aynı fark var).
+- **Testler:** 99 birim (değişmedi), 70 tarayıcı (4 yeni: dokunma alanları, zarf, Batur çubuğu, Kara delik), tema 252/252.
+
+**Kararlar ve nedenleri:**
+- Dokunma katmanı `:where()` ile yazıldı (özgüllük sıfır): köşeye yerleşmiş düğmeler (`position: absolute`) yerinde kalıyor. Kendi katmanı olan Görünüm düğmesi listede yok.
+- Zilin katmanı sola değil sağa büyüyor: Görünüm düğmesinin katmanı aradaki 8 px'i zaten dolduruyor, ikisi üst üste binmiyor (Görünüm'ün 44 px testi geçiyor).
+- Aşama filtresi yana kayıyor, üç satıra sarılmıyor: Batur'un listesi yukarı çıkıyor; düzen Plan penceresindeki gün satırıyla aynı.
+- Zarfı küçültmek ya da taşımak yerine yazı daraltıldı: kartın çizimi aynen kalıyor.
+
+**Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
+**Vazgeçilenler:** V2 (pencere başlığının sonundaki emojinin tek başına alt satıra düşmesi) bu PR'da yok: pencereler n29 PR'ında `Modals.jsx`'e taşınıyor, n29 birleşince yapılacak.
+**Geri alma:** `src/polish.css` sonundaki "d24" bölümü; `src/styles.css`'te `.feedback-intro p` `padding-right` satırları ve telefondaki `.owner-toolbar`/`.owner-filters` kuralları; `src/blackhole.css`'te `.owner-requests:empty` kuralları; `src/Owner.jsx`'te `stages` kaydırması silinir.
+**Dosyalar:** `src/styles.css`, `src/polish.css`, `src/blackhole.css`, `src/Owner.jsx`, `tests/browser_smoke.py`.
 
 ### n25 · Hesaplar arası geçiş: bir cihazda birden fazla hesap
 Hesap · 17 Eki 2026 · 76381788 (bulut oturumu, PR #4) · birleştirme eb4e2ba9 · Worker 812f7ef9 · göç 21
