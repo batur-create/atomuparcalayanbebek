@@ -74,21 +74,23 @@ function storeySteps(sp, i) {
         ["brace", "çapraz bağlantılar", 0.5],
         ...(top ? [] : [["steelDeck", "trapez sac ve döşeme betonu", 0.9]]),
       ];
-    default:
+    default: {
+      const v = sp.kind === "tower" ? "kolon ve perde" : "kolon";
       return [
-        ["colRebar", "kolon donatısı", 0.8],
-        ["colForm", "kolon kalıbı", 0.5],
-        ["colPour", "kolon betonu ve kalıp söküm", 0.6],
+        ["colRebar", `${v} donatısı`, 0.8],
+        ["colForm", `${v} kalıbı`, 0.5],
+        ["colPour", `${v} betonu ve kalıp söküm`, 0.6],
         ["deckForm", "dikmeler, kiriş ve döşeme kalıbı", 0.9],
         ["deckRebar", "kiriş ve döşeme donatısı", 0.9],
         ["deckPour", "kiriş ve döşeme betonu", 0.8],
       ];
+    }
   }
 }
 
 export function sitePlan(sp) {
   const steps = [
-    ["mobilize", "Mobilizasyon: çit ve konteyner", 1],
+    ["mobilize", "Mobilizasyon: çit, konteyner ve ruhsat tabelası", 1],
     ["layout", "Aplikasyon: kazık ve ip iskelesi", 1.2],
     ["dig", "Hafriyat", 2.2],
     ["lean", "Grobeton", 0.9],
@@ -202,6 +204,12 @@ export function siteSVG(P, sp, plan, shown) {
     back += box(P, -2.6, -2.27, -2.2, -2.24, 0.3, 0.55, ["#6f8fb3", "#5d7ea3", "#4c6c90"]);
     // "İş güvenliği önce!" board on the fence.
     back += box(P, -2.93, 1.2, -2.9, 2.1, 0.45, 0.85, BARRIER);
+    // The permit board on the back fence: building, permit number, owner,
+    // contractor, site engineer, inspection firm.
+    back += seg(P(0.45, -F + 0.03, 0), P(0.45, -F + 0.03, 0.4), "#7a838d", 1.2) + seg(P(1.35, -F + 0.03, 0), P(1.35, -F + 0.03, 0.4), "#7a838d", 1.2);
+    back += poly([P(0.4, -F + 0.04, 0.4), P(1.4, -F + 0.04, 0.4), P(1.4, -F + 0.04, 1.05), P(0.4, -F + 0.04, 1.05)], "#fbfaf6");
+    back += poly([P(0.4, -F + 0.045, 0.9), P(1.4, -F + 0.045, 0.9), P(1.4, -F + 0.045, 1.05), P(0.4, -F + 0.045, 1.05)], "#2f62a6");
+    for (let z = 0.5; z < 0.86; z += 0.08) back += seg(P(0.5, -F + 0.05, z), P(z > 0.8 ? 1.0 : 1.3, -F + 0.05, z), "#9aa3ad", 0.8);
   }
   if (k.mobilize > 0.8 && handover < 1)
     for (const [x0, y0, x1, y1] of [[2.6, -2.6, 2.7, 2.7], [-2.6, 2.6, 2.6, 2.7]]) front += box(P, x0, y0, x1, y1, 0.15, 0.32, BARRIER);
@@ -243,7 +251,7 @@ export function siteSVG(P, sp, plan, shown) {
   const d = D * k.dig;
   // Starter bars for the columns (or a masonry building's tie columns); a
   // steel frame gets anchor bolts instead, a timber one is bolted down later.
-  const cols = { rc: columnsOf(sp), masonry: columnsOf(sp), steel: steelColumns(sp) }[systemOf(sp)] || [],
+  const cols = { rc: rcColumnsOf(sp), masonry: columnsOf(sp), steel: steelColumns(sp) }[systemOf(sp)] || [],
     bolts = systemOf(sp) === "steel";
   const formZ = bottom + (0.32 - bottom) * k.footForm,
     struck = k.footPour > 0.8,
@@ -284,7 +292,7 @@ export function siteSVG(P, sp, plan, shown) {
       }
     }
     pit += mesh(-d + 0.15, clamp(k.footRebar / 0.5) * bars * 2);
-    if (!bolts) for (let i = 0; i < starters; i++) pit += cage(P, cols[i][0], cols[i][1], bottom + 0.1, 0, false);
+    if (!bolts) for (let i = 0; i < starters; i++) pit += cage(P, cols[i][0], cols[i][1], bottom + 0.1, 0, false, (cols[i][2] || 0.11) - 0.04, (cols[i][3] || 0.11) - 0.04);
     if (k.footForm > 0 && !struck) {
       const top = Math.min(0, formZ);
       pit += box(P, -wf - 0.06, -wf - 0.06, -wf, wf + 0.06, bottom, top, PLY) + box(P, -wf - 0.06, -wf - 0.06, wf + 0.06, -wf, bottom, top, PLY);
@@ -303,7 +311,7 @@ export function siteSVG(P, sp, plan, shown) {
 
   // Above ground: starter bars, the back of the formwork, the top mesh, the
   // concrete as it rises (wet grey curing to pale), then the front formwork.
-  for (let i = 0; i < starters; i++) above += bolts ? anchorBolts(P, cols[i][0], cols[i][1]) : cage(P, cols[i][0], cols[i][1], 0, 0.95, false);
+  for (let i = 0; i < starters; i++) above += bolts ? anchorBolts(P, cols[i][0], cols[i][1]) : cage(P, cols[i][0], cols[i][1], 0, 0.95, false, (cols[i][2] || 0.11) - 0.04, (cols[i][3] || 0.11) - 0.04);
   if (k.footForm > 0 && !struck && formZ > 0)
     above += box(P, -wf - 0.06, -wf - 0.06, -wf, wf + 0.06, 0, formZ, PLY) + box(P, -wf - 0.06, -wf - 0.06, wf + 0.06, -wf, 0, formZ, PLY);
   if (k.footRebar > 0.75) above += mesh(0.2, clamp((k.footRebar - 0.75) / 0.25) * bars * 2);
@@ -360,21 +368,41 @@ function beamCage(P, b, under, soffit) {
   for (const o of [-0.05, 0.05])
     s += along ? seg(P(b.x0, cy + o, soffit + 0.04), P(b.x1, cy + o, soffit + 0.04), REBAR, 1) : seg(P(cx + o, b.y0, soffit + 0.04), P(cx + o, b.y1, soffit + 0.04), REBAR, 1);
   const len = along ? b.x1 - b.x0 : b.y1 - b.y0;
-  for (let t = 0.12; t < len - 0.05; t += 0.22) {
+  // Closer stirrups for twice the beam's depth from each column face.
+  for (let t = 0.12; t < len - 0.05; t += t < 0.6 || t > len - 0.6 ? 0.1 : 0.22) {
     const q = (dx, dy, z) => (along ? P(b.x0 + t, cy + dy, z) : P(cx + dx, b.y0 + t, z));
     s += outline([q(-0.06, -0.06, under + 0.04), q(0.06, 0.06, under + 0.04), q(0.06, 0.06, soffit + 0.05), q(-0.06, -0.06, soffit + 0.05)], "#a5654a", 0.7);
   }
   return s;
 }
-// A column's rebar cage: four longitudinal bars and stirrups.
-function cage(P, x, y, z0, z1, stirrups) {
+// A column's (or shear wall's) rebar cage: longitudinal bars round the edge
+// and closed stirrups with 135° hooks. Stirrups are closer at both ends, in
+// the confinement zones TBDY 2018 asks for, than in the middle.
+function cage(P, x, y, z0, z1, stirrups, hx = 0.07, hy = 0.07) {
   let s = "";
-  for (const [dx, dy] of [[-0.07, -0.07], [0.07, -0.07], [-0.07, 0.07], [0.07, 0.07]])
-    s += seg(P(x + dx, y + dy, z0), P(x + dx, y + dy, z1), REBAR, 1);
-  if (stirrups)
-    for (let z = z0 + 0.15; z < z1 - 0.2; z += 0.28)
-      s += outline([P(x - 0.08, y - 0.08, z), P(x + 0.08, y - 0.08, z), P(x + 0.08, y + 0.08, z), P(x - 0.08, y + 0.08, z)], "#a5654a", 0.7);
+  const bars = [];
+  for (const sy of [-1, 1]) for (let u = -hx; u <= hx + 1e-6; u += Math.max(0.14, (2 * hx) / Math.ceil((2 * hx) / 0.2))) bars.push([u, sy * hy]);
+  for (const sx of [-1, 1]) for (let u = -hy + 0.2; u < hy - 0.1; u += 0.2) bars.push([sx * hx, u]);
+  for (const [dx, dy] of bars) s += seg(P(x + dx, y + dy, z0), P(x + dx, y + dy, z1), REBAR, 1);
+  if (stirrups) {
+    const zone = Math.min(0.45, (z1 - z0) / 4),
+      ex = hx + 0.01,
+      ey = hy + 0.01;
+    for (let z = z0 + 0.08; z < z1 - 0.15; z += z < z0 + zone || z > z1 - 0.3 - zone ? 0.1 : 0.25) {
+      s += outline([P(x - ex, y - ey, z), P(x + ex, y - ey, z), P(x + ex, y + ey, z), P(x - ex, y + ey, z)], "#a5654a", 0.7);
+      s += seg(P(x + ex, y + ey, z), P(x + ex - 0.05, y + ey - 0.05, z - 0.04), "#a5654a", 0.6);
+    }
+  }
   return s;
+}
+// Columns as [x, y, half width in x, half width in y]: the corners, mid-side
+// columns on a wider plan, and in a concrete tower two shear walls on the
+// back faces to carry the earthquake load.
+export function rcColumnsOf(sp) {
+  const cols = columnsOf(sp).map(([x, y]) => [x, y, 0.11, 0.11]);
+  if (sp.kind !== "tower") return cols;
+  const c = sp.hw - 0.14;
+  return [...cols, [-c, 0, 0.11, 0.42], [0, -c, 0.42, 0.11]].sort((a, b) => a[0] + a[1] - (b[0] + b[1]));
 }
 
 // ---------- storeys ----------
@@ -412,6 +440,13 @@ function deckSVG(P, sp, beams, under, soffit, zs, df, dr, dp) {
   if (dr > 0 && !(dp >= 1)) {
     const cages = Math.ceil(clamp(dr / 0.45) * beams.length);
     for (let j = 0; j < cages; j++) s += beamCage(P, beams[j], under, soffit);
+    // Spacers on the deck keep the mesh 3 cm clear for its concrete cover.
+    if (dr > 0.45)
+      for (let a = -w + 0.5; a < w; a += w - 0.5)
+        for (let b = -w + 0.5; b < w; b += w - 0.5) {
+          const [cx, cy] = P(a, b, soffit + 0.015);
+          s += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.3" fill="#9a968d"/>`;
+        }
     const bars = Math.floor((2 * w) / 0.3),
       n = clamp((dr - 0.45) / 0.55) * bars * 2;
     for (let j = 0; j < n; j++) {
@@ -438,24 +473,26 @@ function deckSVG(P, sp, beams, under, soffit, zs, df, dr, dp) {
 function rcStorey(P, sp, i, k, z0, zs, shown) {
   const soffit = zs - 0.14,
     under = soffit - BEAM_DEPTH,
-    cols = columnsOf(sp);
+    cols = rcColumnsOf(sp);
   const cr = k[`colRebar${i}`],
     cf = k[`colForm${i}`],
     cp = k[`colPour${i}`],
     df = k[`deckForm${i}`];
   if (!(cr > 0)) return null;
   let s = propsSVG(P, sp, df, z0, soffit, shown);
-  cols.forEach(([x, y], j) => {
+  cols.forEach(([x, y, hx, hy], j) => {
     const order = (j + 0.5) / cols.length;
-    if (cp >= order) s += box(P, x - 0.11, y - 0.11, x + 0.11, y + 0.11, z0, under, CONCRETE);
+    if (cp >= order) s += box(P, x - hx, y - hy, x + hx, y + hy, z0, under, CONCRETE);
     else if (cf >= order) {
-      // Column formwork held by steel clamps, kept plumb by a push-pull prop.
-      s += box(P, x - 0.15, y - 0.15, x + 0.15, y + 0.15, z0, under, PLY);
+      // Formwork held by steel clamps, kept plumb by a push-pull prop.
+      const fx = hx + 0.04,
+        fy = hy + 0.04;
+      s += box(P, x - fx, y - fy, x + fx, y + fy, z0, under, PLY);
       for (let zc = z0 + 0.25; zc < under - 0.1; zc += 0.42)
-        s += outline([P(x - 0.16, y - 0.16, zc), P(x + 0.16, y - 0.16, zc), P(x + 0.16, y + 0.16, zc), P(x - 0.16, y + 0.16, zc)], "#5b6168", 1.2);
+        s += outline([P(x - fx - 0.01, y - fy - 0.01, zc), P(x + fx + 0.01, y - fy - 0.01, zc), P(x + fx + 0.01, y + fy + 0.01, zc), P(x - fx - 0.01, y + fy + 0.01, zc)], "#5b6168", 1.2);
       const out = x + y > 0 ? 1 : -1;
-      s += seg(P(x + out * 0.15, y, under - 0.45), P(x + out * 0.95, y, z0), "#6e7c8c", 1.1);
-    } else if (cr >= order) s += cage(P, x, y, z0, soffit + 0.3, true);
+      s += seg(P(x + out * fx, y, under - 0.45), P(x + out * 0.95, y, z0), "#6e7c8c", 1.1);
+    } else if (cr >= order) s += cage(P, x, y, z0, soffit + 0.3, true, hx - 0.04, hy - 0.04);
   });
   return s + deckSVG(P, sp, beamsOf(sp), under, soffit, zs, df, k[`deckRebar${i}`], k[`deckPour${i}`]);
 }

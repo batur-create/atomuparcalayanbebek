@@ -6,6 +6,7 @@
 import { box, poly, seg } from "./iso.js";
 import { phaseAt } from "./construction.js";
 import { blockPallets } from "./sitedetail.js";
+import { LAB, approvedSVG, checkAt, slumpSVG } from "./quality.js";
 
 const YELLOW = ["#f6c945", "#dcae2c", "#c0951f"],
   STEEL = ["#9aa4ae", "#7f8994", "#68727c"],
@@ -63,6 +64,10 @@ function worker(P, x, y, z, time, phase, helmet, tool = "none") {
   } else if (tool === "roller") {
     hand = [fx + 6, top + 4 + swing * 4];
     gear = `<line x1="${n1(hand[0])}" y1="${n1(hand[1])}" x2="${n1(hand[0] + 4)}" y2="${n1(hand[1] - 9)}" stroke="#6b7480" stroke-width="1.2"/><rect x="${n1(hand[0] + 1)}" y="${n1(hand[1] - 13)}" width="7" height="3.5" rx="1.5" fill="#f4f2ea"/>`;
+  } else if (tool === "clip") {
+    // The inspector's clipboard, held up to read, ticking now and then.
+    hand = [fx + 5, top + 9];
+    gear = `<rect x="${n1(fx + 3.5)}" y="${n1(top + 5)}" width="5.5" height="7" rx="0.8" fill="#8b5e36"/><rect x="${n1(fx + 4.3)}" y="${n1(top + 6.2)}" width="3.9" height="5" fill="#fbfaf6"/>`;
   } else if (tool === "survey") {
     hand = [fx + 5, top + 8];
     gear = `<rect x="${n1(fx + 4)}" y="${n1(top + 6)}" width="5" height="6" rx="1" fill="#f4f2ea" stroke="#6b7480" stroke-width="0.6"/>`;
@@ -419,6 +424,14 @@ export function crewSVG(P, sp, plan, shown, time) {
   else if (p.key === "footWater") crew.push([-w + 0.5, w * 0.3, -0.5, "carry"], [w * 0.2, -w + 0.5, -0.5, "roller"]);
   else if (p.key === "handover") crew.push([w + 1.0, w + 1.2, 0, "shovel"]);
   const people = crew.map(([x, y, z, tool], i) => worker(P, x, y, z, time, i * 1.7, i % 2 ? "#f4f2ea" : "#f6d24a", tool));
+  // Quality control: the inspector (white helmet, clipboard) at the work to be
+  // covered up; the lab technician's slump test and cubes at every pour.
+  const check = checkAt(plan, shown);
+  if (check?.kind === "inspect") {
+    const z = p.floor < 0 ? 0 : p.key === "deckRebar" ? 0.3 + (p.floor + 1) * hf - 0.14 : 0.3 + p.floor * hf;
+    const [ix, iy] = [w * 0.35, w * 0.55];
+    people.push(worker(P, ix, iy, z, time * 0.3, 0.4, "#ffffff", "clip") + (check.k >= 0.7 ? approvedSVG(P, ix, iy, z) : ""));
+  } else if (check?.kind === "slump") people.push(slumpSVG(P, check.k) + worker(P, LAB[0] + 0.25, LAB[1] - 0.25, 0, time * 0.6, 2.1, "#7fb2e5", check.k < 0.55 ? "tie" : "survey"));
   return { behind, front: [...machines, ...people, ...extra] };
 }
 

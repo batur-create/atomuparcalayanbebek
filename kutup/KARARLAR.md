@@ -25,6 +25,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 |---|---|---|---|---|
 | n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | PR (claude/n36-insaat-sov) |
 | n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-2) |
+| n36c | İnşaat tam şov, 3. tur: yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, şantiyede yakınlaştırma | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-3) |
 | d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | 62386ef8 (PR #21) |
 | n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | 62386ef8 (PR #20) |
 | n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | 62386ef8 (PR #19) |
@@ -86,6 +87,26 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n36c · İnşaat tam şov, 3. tur: denetim, metraj, TBDY, yakınlaştırma
+Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-3, 1. ve 2. turun üstüne) · göç yok
+
+**Ne yapıldı:**
+- **Yapı denetim:** üstü kapanacak her işin son kısmında beyaz baretli, klipsli denetçi gelir: temel, kolon (kulede kolon ve perde), kiriş/döşeme donatısı; yığmada duvar, lento ve hatıl donatısı; ahşapta karkas ve bağlantılar; çelikte bulon sıkma torku. Başlık önce "Yapı denetim: 1. kat kiriş ve döşeme donatısı", sonra "Denetim onayı ✓ beton dökülebilir"; denetçinin başında yeşil onay işareti (`src/quality.js`).
+- **Slump ve küp:** her beton dökümünün (temel, kolon, döşeme, trapez sac) ilk kısmında konteyner önünde laborant: slump hunisi üç katta doldurulup şişlenir, kaldırılır, beton çöker, şiş ile çökme ölçülür; yanında üç 15 cm küp kalıbı sırayla dolar. Başlık "Slump testi ve küp numuneleri".
+- **Ruhsat tabelası:** mobilizasyonda arka çite mavi başlıklı yapı ruhsatı tabelası; kalem adı "Mobilizasyon: çit, konteyner ve ruhsat tabelası".
+- **Canlı metraj ve hakediş:** başlığın altı "Hakediş %53 · Beton 63,9 m³ · Donatı 5,54 t". Hakediş artık zamanın yüzdesi değil, iş kalemlerinin maliyet ağırlıklı toplamı (temel ucuz, doğrama ve cephe pahalı; ağırlıklar `src/metraj.js` COST). Metraj çizimden: 1 birim = 1,6 m, radye 0,8 m kalın; donatı t/m³: radye 0,08, kolon ve perde 0,16, kiriş-döşeme 0,11, hatıl 0,12. İkinci kalem sisteme göre: donatı, sonra duvar m² (betonarme dolgu ve yığma), kereste m³ (ahşap), çelik t (sera; HEA ~20 kg/m, çapraz 8 kg/m).
+- **TBDY ayrıntıları:** kolon etriyeleri iki uçta sarılma bölgesinde sık (10 cm'e karşılık ortada 25), etriyelerde 135° kanca; kiriş etriyeleri mesnetten kiriş derinliğinin iki katı boyunca sık; döşeme hasırının altında pas payı takozları; betonarme kulede (Yel Değirmeni, Deniz Feneri, krem kule) arka iki yüzde perde duvar: filiz, donatı, kalıp, beton kolonlarla birlikte.
+- **Yakınlaştırma:** Köy panelindeki şantiye de odak ekranı gibi büyüyor: iki parmak, çift dokunma, + ve − düğmeleri; büyükken sürükleyince kayar. Büyütülmemişken sayfa üstünden kaydırılabilir, fare tekerleği sayfayı kaydırır. Ortak kanca `src/zoom.js` (odak ekranından taşındı).
+- **Testler:** 3 yeni: denetim her temel/döşeme donatısının sonunda ve onayla biter, her dökümde slump; hakediş 0'dan 100'e hiç düşmeden, metraj sayıları sonlu; betonarme kulede 2 perde, evde yok.
+
+**Kararlar ve nedenleri:**
+- Hakediş maliyet ağırlıklı: gerçek hakediş yapılan işin bedelidir; temel uzun sürer ama toplam bedelin küçük bir kısmıdır.
+- Ruhsat tabelasında okunur yazı yok: telefonda 4–5 px'e düşerdi; başlık bandı ve satırlar yeter.
+- Panelde fare tekerleği yakınlaştırmıyor: sayfa kaydırmayı kaçırmasın diye.
+
+**Geri alma:** dalı geri al; göç yok, veri değişmedi.
+**Dosyalar:** `src/quality.js` (yeni), `src/metraj.js` (yeni), `src/zoom.js` (yeni), `src/construction.js`, `src/crew.js`, `src/Village.jsx`, `src/VillageMap.jsx`, `src/FocusScreen.jsx`, `src/motion.css`, `tests/site.test.js`.
 
 ### n36b · İnşaat tam şov, 2. tur: yapım sistemleri
 Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-2, 1. turun üstüne) · göç yok

@@ -1476,3 +1476,32 @@ h3,
 .place-chips button:last-child {
   grid-column: 1 / -1;
 }
+
+/* The Köy panel's site zooms in place; the page still scrolls over it. */
+.scene-zoom-wrap {
+  position: relative;
+  margin: -6px 0 0;
+}
+.scene-zoom {
+  overflow: hidden;
+  border-radius: 14px;
+}
+.scene-zoom .village-scene {
+  margin: 0;
+}
+.scene-zoom-inner {
+  transform-origin: 50% 50%;
+  transition: transform 0.08s linear;
+}
+.village-controls.scene-controls {
+  top: auto;
+  bottom: 8px;
+  right: 8px;
+  flex-direction: row;
+}
+.scene-controls .icon-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  opacity: 0.88;
+}

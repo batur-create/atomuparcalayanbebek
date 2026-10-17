@@ -76,3 +76,42 @@ test('every drawing stays finite through the whole build', () => {
     }
   }
 });
+
+test('the inspector checks the rebar before every pour, and every pour starts with a slump test', async () => {
+  const { checkAt } = await import('../src/quality.js');
+  const sp = spec('house', 3, 'konak');
+  const plan = sitePlan(sp);
+  for (const p of plan.filter((q) => q.key === 'footRebar' || q.key === 'deckRebar')) {
+    assert.equal(checkAt(plan, p.a + (p.b - p.a) * 0.9)?.kind, 'inspect', p.label);
+    assert.match(checkAt(plan, p.a + (p.b - p.a) * 0.99).label, /Denetim onayı ✓ beton dökülebilir/);
+  }
+  for (const p of plan.filter((q) => /Pour$/.test(q.key))) assert.equal(checkAt(plan, p.a + (p.b - p.a) * 0.1)?.kind, 'slump', p.label);
+  assert.equal(checkAt(plan, 0.95), null);
+});
+
+test('the progress payment weighs work by cost and the quantities only grow', async () => {
+  const { metraj } = await import('../src/metraj.js');
+  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen']) {
+    const item = CATALOG.find((c) => c.id === id);
+    const sp = spec(item.kind, 5, id);
+    const plan = sitePlan(sp);
+    let last = -1;
+    for (const shown of steps) {
+      const m = metraj(sp, plan, shown);
+      assert.ok(m.hakedis >= last, `${id} at ${shown}`);
+      assert.equal(m.items.length, 2);
+      assert.ok(!/NaN|undefined|Infinity/.test(m.items.join()));
+      last = m.hakedis;
+    }
+    assert.equal(metraj(sp, plan, 0).hakedis, 0);
+    assert.equal(metraj(sp, plan, 1).hakedis, 100);
+    assert.ok(parseFloat(metraj(sp, plan, 1).items[0].replace(/[^\d,]/g, '').replace(',', '.')) > 5, id);
+  }
+});
+
+test('a concrete tower gets two shear walls; houses only columns', async () => {
+  const { rcColumnsOf } = await import('../src/construction.js');
+  const walls = (sp) => rcColumnsOf(sp).filter(([, , hx, hy]) => Math.max(hx, hy) > 0.3).length;
+  assert.equal(walls(spec('tower', 1, 'degirmen')), 2);
+  assert.equal(walls(spec('house', 1, 'konak')), 0);
+});

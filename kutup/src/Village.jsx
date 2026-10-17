@@ -15,6 +15,8 @@ import { FRAME_END, phaseAt, rendered, sitePlan, siteSVG, systemOf, workHeight }
 import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
+import { checkAt } from "./quality.js";
+import { metraj } from "./metraj.js";
 import { skyAt } from "./villageWorld.js";
 
 export const KINDS = {
@@ -518,12 +520,16 @@ export function ConstructionScene({ run, outcome, idle = false }) {
         patch(crewFront, []);
         crewKey = "";
       }
-      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : phaseAt(plan, shown).label;
-      const text = `${label}|${Math.round(shown * 100)}|${daylight.night > 0.4}`;
+      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : checkAt(plan, shown)?.label || phaseAt(plan, shown).label;
+      // The progress payment weighs each work item by its cost; beside it,
+      // what has gone into the building so far.
+      const m = metraj(sp, plan, mode === "done" ? 1 : shown);
+      const line = `Hakediş %${m.hakedis} · ${m.items.join(" · ")}`;
+      const text = `${label}|${line}|${daylight.night > 0.4}`;
       if (text !== caption.dataset.text) {
         caption.dataset.text = text;
         const dark = daylight.night > 0.4;
-        caption.innerHTML = `<text x="22" y="40" fill="${dark ? "#f1efe6" : "#4f4a3f"}" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="${dark ? "#b9bdd4" : "#8a8170"}" font-size="20" font-family="DM Sans, sans-serif">Hakediş %${Math.round(shown * 100)}</text>`;
+        caption.innerHTML = `<text x="22" y="40" fill="${dark ? "#f1efe6" : "#4f4a3f"}" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="${dark ? "#b9bdd4" : "#8a8170"}" font-size="20" font-family="DM Sans, sans-serif">${escapeText(line)}</text>`;
       }
     };
     // Nothing is drawn while nobody can see it: scrolled away, or covered by

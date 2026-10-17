@@ -8,6 +8,7 @@ import { Avatar } from "./ui.jsx";
 import { buildWorld, focusing, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene } from "./Village.jsx";
+import { useZoom } from "./zoom.js";
 import { modelOf } from "../shared/catalog.js";
 import { Modal } from "./Modal.jsx";
 import { Loading } from "./Illustrations.jsx";
@@ -178,6 +179,8 @@ function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
 export function VillagePanel({ me, members, groupId, village, like, run, outcome, idle = false, notify, session, error, retry, week }) {
   const [moving, setMoving] = useState(null); // { building, spots } while moving one's own building
   const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId, spots: moving?.spots });
+  // The site zooms like the focus screen's: pinch, double tap or the buttons.
+  const zoom = useZoom({ wheel: false });
   const [picked, setPicked] = useState(null),
     [full, setFull] = useState(false),
     [listOpen, setListOpen] = useState(false),
@@ -275,7 +278,23 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
       </div>
       {showScene ? (
         <>
-          <ConstructionScene run={run} outcome={outcome} idle={idle} />
+          <div className="scene-zoom-wrap">
+            <div className="scene-zoom" ref={zoom.box} {...zoom.handlers} style={{ touchAction: zoom.view.s > 1 ? "none" : "pan-y" }}>
+              <div className="scene-zoom-inner" style={{ transform: `translate(${zoom.view.x}px, ${zoom.view.y}px) scale(${zoom.view.s})` }}>
+                <ConstructionScene run={run} outcome={outcome} idle={idle} />
+              </div>
+            </div>
+            <div className="village-controls scene-controls">
+              <button className="icon-button" aria-label="Şantiyeye yakınlaş" onClick={zoom.zoomIn}>
+                <Plus size={15} />
+              </button>
+              {zoom.view.s > 1 && (
+                <button className="icon-button" aria-label="Şantiyeden uzaklaş" onClick={zoom.zoomOut}>
+                  <Minus size={15} />
+                </button>
+              )}
+            </div>
+          </div>
           <p className="village-caption">
             {run
               ? "Odaklandıkça yükseliyor. Uygulamadan çıkarsan yıkılır."

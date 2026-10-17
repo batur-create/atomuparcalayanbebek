@@ -127,6 +127,7 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 
 - ✔ **n36 inşaat tam şov:** Batur "Tam şov" kademesini seçti: gerçek iş sırası, kirişler, yalıtım katmanları, kulübe/evde mobil vinç (kırmızı taşıyıcı, sarı teleskopik bom), mantolama levhaları ve dübeller. Kule vinç yalnız kulede.
 - ✔ **n36b yapım sistemleri:** duvar sistemi belirler: krem/adaçayı betonarme + mantolama, tuğla/taş yığma kagir (düşey ve yatay hatıllar, lentolar), ahşap karkas (dikmeler, OSB, rüzgâr bariyeri), cam çelik karkas (I-kolonlar, çaprazlar, cam çatı).
+- ✔ **n36c şantiye denetimi ve metraj:** yapı denetim onayı, slump ve küp numunesi, ruhsat tabelası, canlı metraj ve maliyet ağırlıklı hakediş, TBDY sarılma bölgeleri ve perdeler, Köy panelinde şantiye yakınlaştırma.
 
 - ✔ **n13 avatarlar:** Kara'nın çizim dili, sitenin dünyasından kadro. 4 örnek gösterildi, Batur onayladı.
 - ✘ **n13 ilk deneme:** kalın çizgi, çıkartma kenarı, canlı renkler, rastgele hayvanlar. Batur: "siteyle alakası yok". Siteye bakılmadan çizilmişti.
