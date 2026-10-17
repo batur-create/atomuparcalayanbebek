@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | PR (ikinci üs) |
 | n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
 | n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
 | d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | PR #15 (ikinci üs) |
@@ -81,6 +82,24 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n35 · Anket sonrası dört ekleme
+Anket · 17 Eki 2026 · PR (ikinci üs) · göç 22 (`sessions.device`)
+
+**Ne yapıldı:** Batur 17 Ekim'de canlı sitede 12 anketi tek tek cevapladı (`/mnt/project-files/kutup/anket-cevaplari.md`). "İyi + fikir" seçtiği dördü:
+- **Rozet Pano duyurusu (n14):** bir gün içinde kazanılan rozet Pano'ya "“Maraton” rozetini kazandı 🏅" diye düşer; gizliler "gizli bir rozet buldu 🤫". Aynı anda ikiden fazla açılan (geçmişin sayılması) sessiz. İki kişi kartı aynı anda açarsa satır bir kez yazılır (rozet satırından önce, yokken).
+- **Zarf sallanması (d24):** isteğine yeni cevap gelince Ben'deki "Batur'a ilet" simgesi ve kartın 💌 zarfı bir kez sallanır; hareketi azalt ve Kıpırtısız'da durur.
+- **Cihaz adları (d27):** Açık cihazlar kutusunda her cihaz kendi satırında ("iPhone · Safari", "Windows · Chrome", "iPhone · ana ekran") ve son görülmesiyle; tek tek "Çık". Birden çok cihazda "Hepsinden çık". Ad, uygulama her açıldığında tarayıcı bilgisinden yazılır.
+- **Şifre değişince sor:** yeni şifre kaydedilince başka cihaz açıksa "onlardan da çıkayım mı?" sorulur.
+
+**Kararlar ve nedenleri:**
+- Cihaz kimliği saklanan özetin ilk 16 karakteri; çerezin kendisi hiç dönmez. Başkasının cihazı 404.
+- Eski oturumların adı o cihaz bir sonraki açılışta dolar; o zamana kadar "Bilinmeyen cihaz".
+- Rozet duyurusu bildirim göndermez, yalnız Pano satırı.
+
+**Batur'un sözleri:** "iyi güzel tamam da ... alternatif eğer aklında bir fikir varsa ... onu bana söyleyebilirsin" (17 Ekim, anket).
+**Geri alma:** rozet: `server/app.js` `badgeNews` ve iki duyuru bloğu; zarf: `src/polish.css` sondaki "Anket" bölümleri ve iki `wiggle` sınıfı; cihaz adları: `/devices` yolları ve `Account.jsx` `OtherDevices` (sütun zararsız); şifre: `AccountBox`'taki `if (value.password)` bloğu.
+**Dosyalar:** `server/app.js`, `server/schema.js`, `src/Account.jsx`, `src/MePage.jsx`, `src/Requests.jsx`, `src/polish.css`, `tests/core.test.js`, `tests/browser_smoke.py`.
 
 ### n32 · Çalışma eşi: kiminle beraberken en verimlisin
 Birlikte · 17 Eki 2026 · PR (ikinci üs, #16'dan sonra) · göç yok
