@@ -7,6 +7,8 @@ Batur'un sözleri (17 Ekim):
 - "her şey smooth gitsin ve smooth geri dönsün."
 - "adımları arkadaşımla beraber kursunlar ve her şey hazır olunca başlasınlar."
 
+> **Güncelleme (17 Ekim, Batur'un kararı):** İkinci üs arkadaşın bilgisayarında değil, Ediz'in hesabındaki Claude bulut oturumunda (claude.ai projesi "Kütüp ikinci üs") çalışıyor. Fork yok: Batur EdizGn'yi depoya ortak ekledi; Claude `claude/*` dallarını doğrudan depoya push eder, PR tabanı yine `kutup-platform`. Pano Plan B kopyası: https://claude.ai/artifact/Ui7VSL5pHurEG3fftxS5xu. Yayın, canlı anahtar ve Cloudflare girişi §8 ve §12'deki gibi yalnız Batur'da. §1, §3 (H1–H6, H10, H14) ve §5 adım 10'daki fork ve masaüstü adımları bu düzende atlanır; ayrıntı `ikinci-us/GUNLUK.md` Kurulum kaydında.
+
 ### Batur için kısa yol
 
 1. **Arkadaşına:** "Claude masaüstü uygulamasını kur, kendi hesabınla gir, Belgeler'de `Kutup-Us` klasörü aç, Code sekmesinde onu seç ve şu mesajı yapıştır" de. Mesaj §1'de. Kurulumun gerisini oradaki Claude yürütür.
