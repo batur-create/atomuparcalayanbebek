@@ -23,7 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | PR #12 (ikinci üs) |
+| d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | PR #13 (ikinci üs) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -72,7 +72,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 ## Kayıtlar (yeniden eskiye)
 
 ### d26 · Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti
-Cila · 17 Eki 2026 · PR #12 (ikinci üs) · göç yok
+Cila · 17 Eki 2026 · PR #13 (ikinci üs) · göç yok
 
 **Ne yapıldı:** Kütüp'ün telefon ana ekranındaki simgesi her gün görülen ilk şey; tasarımı (mor zeminde K ve yeşil nokta) aynı kaldı, telefonların istediği biçimlere getirildi.
 - **iPhone:** `apple-touch-icon` köşeleri saydam, yuvarlak 192 px'lik simgeydi. iOS saydam yeri siyaha boyuyor ve kendi köşesini üstüne kesiyor; köşelerde ince siyah kenarlar kalıyordu. Yeni: 180×180, köşesiz, saydamlıksız `apple-touch-icon.png` (iOS köşeyi kendisi yuvarlıyor).

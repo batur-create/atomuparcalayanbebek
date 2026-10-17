@@ -29,9 +29,9 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
-## 17 Ekim 2026 05:10 · d26 ana ekran simgesi (PR #12)
+## 17 Ekim 2026 05:10 · d26 ana ekran simgesi (PR #13)
 
-- **d26 · PR #12** (`claude/d26-ana-ekran-simgesi`, taban `kutup-platform` a37f3f0): iPhone simgesinin köşelerindeki siyah kenar, Android'de daireye kesilen simge, durum çubuğu rozeti. Tasarım aynı. Durum: review. Göç yok.
+- **d26 · PR #13** (`claude/d26-ana-ekran-simgesi`, taban `kutup-platform` a37f3f0): iPhone simgesinin köşelerindeki siyah kenar, Android'de daireye kesilen simge, durum çubuğu rozeti. Tasarım aynı. Durum: review. Göç yok.
 - Önce/sonra görüntüsü proje klasöründe `kutup/denetim/d26/`.
 
 ---
