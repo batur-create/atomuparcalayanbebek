@@ -129,6 +129,9 @@ try {
     ws.onerror = () => stop(null);
   });
   check("live room rings (write + ring under 2 s)", heard !== null && heard < 2000, heard === null ? "no ring" : `${heard} ms`);
+  // n28: the week's story answers for the team (a fresh smoke team has a quiet week).
+  const story = await call("/story", { cookie: A1 });
+  check("week's story answers", story.status === 200 && story.data?.team?.size === 2 && !!story.data?.me, `status ${story.status}`);
   const msg = await call("/messages", { cookie: B1, body: { text: "duman testi, birazdan silinecek" } });
   check("board message", msg.status === 201, `status ${msg.status}`);
   const village = await call("/village", { cookie: A1 });

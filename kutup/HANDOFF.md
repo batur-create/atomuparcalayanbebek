@@ -124,6 +124,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 16 Ekim 2026)
 
+> **n28 (ikinci üs, 17 Eki):** Haftanın hikâyesi `Story.jsx` (tembel), hesap `server/stats.js` `storyOf()`, hafta `shared/week.js`. Pazar 18.00 bildirimi `tick()` içinde, `weekly` tablosunda `story` satırıyla bir kez. Yeni kart eklerken `cardsOf()` sırasına ve `Card` içine ekle; açık zeminli kartı `tone` listesine yaz. Görüntü almak için `kutup/araclar/story_shots.py` (yerel deneme verisi).
+>
 > **n24 (ikinci üs, 17 Eki):** Odak sesleri `Sound.jsx`'te yeniden yazıldı (yağmur, kütüphane, şömine, orman, dalgalar, kafe). Yeni ses eklerken: olaylar `EVENTS`, yavaş şekiller (rüzgâr, dalga) `SHAPES` + `follow()`, yankı `space()`; düzeyi eskilerle eşlemek için `TRIM`. Ölçüm ve eski/yeni örnek araçları proje klasöründe `kutup/araclar/sound_render.py`.
 >
 > **n29 (ikinci üs, 17 Eki):** Cloudflare'de canlılık artık ekip başına bir Durable Object (`LiveRoom`): `/api/live` WebSocket, oturum çerezinden doğrulanır, oda yalnız "changed"/"removed" der, veri hep `/state`ten gelir. Yeni yazma uç noktası eklerken `changed()` ya da `onChange()` çağırmayı unutma, yoksa telefonlar ancak yoklamada görür. App.jsx bölündü: odak kartı `Focus.jsx`, Pano `Board.jsx`, küçük pencereler `Modals.jsx`. Nadir açılan ekranlar `later.jsx` ile tembel yüklenir; yeni ağır ekran eklersen oraya koy. Son durum `localStorage` `kutup-last` anahtarında (`lastState.js`).

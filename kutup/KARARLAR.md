@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | PR (ikinci üs) |
 | n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | PR (ikinci üs) |
 | n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 04:10 | PR (ikinci üs) |
 | n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 03:50 | PR (ikinci üs, davet bekliyor) |
@@ -72,6 +73,31 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n28 · Haftanın hikâyesi: dokundukça ilerleyen haftalık özet
+Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok (`weekly` tablosuna yeni bir tür satır: `story`)
+
+**Ne yapıldı:**
+- **Hikâye ekranı (`src/Story.jsx`, ihtiyaç anında yüklenir):** tam ekran kartlar; sağa dokun ilerler, sola dokun geri gelir, basılı tut durur, aşağı kaydır ya da ✕ kapatır, klavyede ok tuşları ve Esc. Üstte kart sayısı kadar ilerleme çizgisi.
+- **Kartlar (söyleyecek sözü olmayan kart çıkmaz):** kapak (Kara kitap okuyor) · ekipçe odak (büyük sayı, geçen haftayla kıyas, günlere göre çubuklar) · Haftanın Ustası (taç düşer) · kütübün müdavimi (gelinen günlere "GELDİ" damgası) · sabah erkencisi / gece kuşu · rekorlar (en uzun seri, en uzun oturum, Pano mesajları) · köyde bu hafta (yeni binalar, en sevilen bina, "ANIT TAMAM" damgası) · senin haftan (yalnız sana) · kapanış. Sessiz bir haftada kapak, "Bu hafta sessiz geçti" ve kapanış.
+- **Hareket:** sayılar büyükten "vurarak" iner, satırlar tek tek gelir, çubuklar sırayla yükselir, damgalar basılır. Yalnız `transform` ve `opacity`. Hareketi azalt ve Kıpırtısız'da her şey sade solarak gelir; ilerleme çizgisi ise Kıpırtısız'da da saat gibi yürür.
+- **Paylaş:** o anki karta göre ekibin ya da senin "okuyucu kartı"n 1080 × 1920 PNG olarak çizilir (temanın renkleriyle, gün damgaları, kütüp mührü). Telefon paylaşma menüsünü açar (Instagram hikâyesi dahil); açamazsa resim iner.
+- **Pazar 18.00 bildirimi:** "📖 Haftanın hikâyesi hazır · Ekipçe X saat odak…". O hafta odak yapan her ekibe bir kez gider (`weekly` tablosunda `story` satırı kilit görevi görür). Dokununca hikâye açılır.
+- **Girişler:** Pazar 18.00'den sonra ana sayfada "Haftanın hikâyesi hazır" kartı (açılınca ya da iki gün geçince kaybolur); Ben → Ekip → "Haftanın hikâyesi" her zaman.
+- **Sunucu:** `GET /api/story?week=` (son 8 hafta, yalnız kendi ekibin), hesap `server/stats.js` `storyOf()` içinde; hafta hesabı `shared/week.js`'te ortak.
+
+**Kararlar ve nedenleri (Batur'un açık soruları):**
+- **Hangi kartlar:** öneri listesindekilerin hepsi; "en çok kim geldi" kütübe gelinen gün sayısıyla, gece kuşu 21.00 sonrası, sabah erkencisi 09.00 öncesi başlayan oturumlarla (en az 30 dk).
+- **Kişiye özel kart herkese mi?** Hayır: "Senin haftan" yalnız sahibine görünür, kartın üstünde yazar. Ekip kartlarındaki isimler zaten herkesin gördüğü istatistikler.
+- **Video mu görsel mi?** Şimdilik görsel (PNG). Telefonda ek indirme olmadan çalışır, her telefonda paylaşılır. Video (hikâyenin hareketli kaydı) ayrı iş olarak eklenebilir.
+- **Hangi hafta:** Pazar 18.00'den itibaren o hafta, öncesinde geçen hafta. Hafta bitmeden açılırsa usta kartı "şimdilik önde" der.
+- **Rekabet tonu:** sıralama listesi yok; öne çıkanlar kutlanır, "senin haftan"da yalnız ekip odağındaki payın yazar.
+
+**Batur'un sözleri:** "Instagram'da paylaşıp vay be dedirteceğin bir şeyler" · "bir şeyler giriyor, vuruyor, çıkıyor, tak tuk tuk böyle ekranda yazılar" (16 Ekim). Kararlar: "inisiyatif alarak ... kararları sen ver ... geri dönülebilir olsun" (17 Ekim).
+**Önizleme:** proje klasöründe `kutup/onizleme/n28/` (kartlar açık ve koyu, paylaşım kartları, 51 sn'lik oynayan kayıt).
+**Geri alma:** bildirim için `server/app.js` `tick()` içindeki n28 bloğu; ana sayfa kartı için `App.jsx`'teki `StoryNudge` satırı; tamamı için `Story.jsx`, `storyLink.jsx` ve `/story` yolu.
+**Açık:** Batur'un görsel onayı; gerçek iPhone'da paylaşma menüsü (iOS Safari dosya paylaşımını destekliyor, denenmedi).
+**Dosyalar:** src/Story.jsx, src/story.css, src/storyLink.jsx, src/home.css, src/App.jsx, src/MePage.jsx, src/later.jsx, server/app.js, server/stats.js, shared/week.js, tests/core.test.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
 ### n24 · Ses turu: altı odak sesi yeniden, daha gerçekçi
 Ses · 17 Eki 2026 · PR (ikinci üs) · göç yok

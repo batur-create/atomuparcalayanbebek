@@ -138,6 +138,7 @@ Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu
 - ✔ **n17 menü (B):** 4 sekme (Kütüp, Köy, Pano, Ben), ☰ yok, planlar ana sayfada "Kim ne zaman geliyor?", ana eylem Geldim. A (5 sekme) seçilmedi.
 - ✔ **n18-2 görsel şölen turu:** Batur: "Abi çok beğendim ... Temiz iş çıkarmışsın." Hareket animasyonları beğenildi.
 - ✔ **n31 Kara v2:** 34 küçük hareket ve 6 nadir sürpriz; tip, oranlar, kenar ışığı ve kürk tonları önceki Kara'nınki. "Ders arası hayat" pulu Kara'nın cümlesi. Batur'un onayı bekleniyor (ikinci üs).
+- ✔ **n28 Haftanın hikâyesi:** tam ekran hikâye kartları, her kart bir temalı zemin (gece göğü, stüdyo, kahraman, kâğıt, gündüz göğü, kişinin rengi); sayılar vurarak iner, satırlar tek tek gelir, damgalar basılır. Paylaşım kartı n27'de saklanan "okuyucu kartı" fikri: damgalı kütüphane kartı. Batur'un onayı bekleniyor (ikinci üs).
 - ✔ **n25 Hesaplarım:** Ben sayfasının başında hesap listesi (açık olan işaretli, diğerine ⇄ ile geçiş, "Hesap ekle"); masaüstünde soldaki profil satırı aynı listeyi açar. Birden fazla hesaplı telefonda bildirim başlığı ekip adıyla başlar.
 - ✔ **d22 düzeltmeleri:** düğme olan her kart kendi zeminini, köşesini ve iç boşluğunu tanımlar (yoksa tarayıcı gri kutu çizer); sınıf adı yeni bileşende tekrar kullanılmaz (`.mode-switch` çakışması); gökyüzündeki ay ve güneş geniş ekranda da görünür alanda kalır.
 - ✔ **n23 temaları:** altı kapsamlı paket (Lavanta, Lacivert, Petrol, Kiremit, Gül, Grafit), her biri zemin, kart, yazı, gökyüzü ve odak kartıyla; soluk yazılar 4.5:1. Batur onayladı.
