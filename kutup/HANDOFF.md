@@ -136,6 +136,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 > - Her yayından önce iki dalı birleştir (`git fetch` ve `git merge origin/astra/gorevler`); aksi hâlde birinin işi geri gider.
 > - Göç numaraları sırayla, en son yayınlananın arkasına eklenir.
 
+> **d25 (ikinci üs, 17 Eki):** Gövde `text-wrap: pretty`, başlıklar `text-wrap: balance` (`src/styles.css` başı). Bir başlığın sonuna emoji koyarken `&nbsp;` gerekmez; `tests/browser_smoke.py`'deki `LONE_LAST` başlıkları denetler.
+
 Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler, Kara yön değişikliği) ve ilk paket planı KARARLAR.md arşivine taşındı.
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU

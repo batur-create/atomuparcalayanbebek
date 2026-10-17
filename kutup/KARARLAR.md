@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d25 | Satır sonları: tek kalan kelime ve emoji yok | Cila | 17 Eki 05:05 | PR #11 (ikinci üs) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -69,6 +70,23 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d25 · Satır sonları: tek kalan kelime ve emoji yok
+Cila · 17 Eki 2026 · PR #11 (ikinci üs) · göç yok
+
+**Ne yapıldı:** Uygulamanın her yerinde bir paragrafın ya da başlığın son satırına tek bir kelime ya da emoji düşmesi önlendi. Denetimin V2 bulgusu ("Yolun kütübe mi düşüyor?" ve altında yalnız 🛵) da bununla kapandı, `Modals.jsx`'e (n29) dokunmadan.
+- Başlıklar (h1–h3) `text-wrap: balance`: satırlar eşit bölünüyor ("Yolun kütübe / mi düşüyor? 🛵").
+- Gövde `text-wrap: pretty`: tarayıcı son satırı tek kelimeye bırakmıyor ("köye bina, / tam maaş", "cam kenarı / boş 🌤️", "Küçük adımlar / da ilerlemedir.").
+- Ölçüm: 4 sekme, Batur'a ilet, 14 pencere, karşılama ve davet ekranı; 375 ve 390 px'te 22 tek kalan satır vardı. Sonra 320–430 px'te 3 kaldı (320 px'te iki kısa etiket ve bilerek iki satır yazılmış "özel posta" pulu).
+- **Testler:** 99 birim (değişmedi), 68 tarayıcı (2 yeni: "Yolun kütübe mi düşüyor? 🛵" penceresi ve dört sekmenin başlıkları; ilki eski kodda kırmızı), tema 252/252.
+
+**Kararlar ve nedenleri:**
+- Tek tek `&nbsp;` eklemek yerine iki CSS satırı: yeni yazılan her metin de kendiliğinden düzgün kırılıyor.
+- Desteklemeyen tarayıcıda (eski iOS) hiçbir şey değişmiyor, yalnız bugünkü gibi kırılıyor.
+
+**Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
+**Geri alma:** `src/styles.css` başındaki `body` içindeki `text-wrap: pretty` satırı ve hemen altındaki `h1, h2, h3 { text-wrap: balance; }` kuralı silinir.
+**Dosyalar:** `src/styles.css`, `tests/browser_smoke.py`.
 
 ### n25 · Hesaplar arası geçiş: bir cihazda birden fazla hesap
 Hesap · 17 Eki 2026 · 76381788 (bulut oturumu, PR #4) · birleştirme eb4e2ba9 · Worker 812f7ef9 · göç 21

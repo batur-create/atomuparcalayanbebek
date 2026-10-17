@@ -29,6 +29,13 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 05:05 · d25 satır sonları (PR #11)
+
+- **d25 · PR #11** (`claude/d25-satir-sonlari`, taban `kutup-platform` a37f3f0): son satırda tek kalan kelime ve emoji (V2 dahil). Durum: review. Göç yok.
+- Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d25/`.
+
+---
+
 ## 17 Ekim 2026 03:30 · İkinci üs: kurulum
 
 - **Nerede:** Claude bulut oturumu, claude.ai projesi "Kütüp ikinci üs", Ediz'in hesabı. Arkadaşın bilgisayarına kurulum gerekmedi.
