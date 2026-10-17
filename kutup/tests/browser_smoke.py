@@ -71,6 +71,20 @@ FAKE_TAPPABLES = r'''(() => {
   return [...out];
 })()'''
 
+# d25: headings whose last line is a single word or emoji (h1–h3 are balanced).
+LONE_LAST = r'''(() => [...document.querySelectorAll("h1, h2, h3")].filter((h) => {
+  const r = h.getBoundingClientRect(); if (r.width < 2) return false;
+  const words = [], walk = document.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+  while (walk.nextNode()) for (const m of walk.currentNode.textContent.matchAll(/\S+/g)) {
+    const range = document.createRange(); range.setStart(walk.currentNode, m.index); range.setEnd(walk.currentNode, m.index + m[0].length);
+    const rects = range.getClientRects(), b = rects[rects.length - 1]; if (b) words.push([(b.top + b.bottom) / 2, b.height]);
+  }
+  // A word is on the last line when its middle sits inside that line's height.
+  const [mid, height] = words.reduce((a, w) => (w[0] > a[0] ? w : a), [-1, 0]);
+  const onLast = words.filter(([m]) => Math.abs(m - mid) < height / 2).length;
+  return words.length > 2 && onLast < words.length && onLast === 1;
+}).map((h) => h.innerText.trim().slice(0, 40)))()'''
+
 def json_call(page, path, body=None):
     return page.evaluate('''async ([path, body]) => {
       const r = await fetch('/api' + path, {method: body === null ? 'GET' : 'POST',
@@ -214,20 +228,30 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(friend.locator('.app-shell')).to_be_visible()
                 check('Character with accessories is saved', any(m['avatar']=='k:tekir+gozluk+atki' for m in json_call(friend, '/state')['members']))
                 page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
+                page.get_by_role('button', name='Yoldayım', exact=True).click()
+                expect(page.get_by_role('dialog')).to_be_visible()
+                lone = page.evaluate(LONE_LAST)
+                if lone: print('Heading with a lone last word:', lone, flush=True)
+                check('A window title keeps its emoji next to a word: “Yolun kütübe mi düşüyor? 🛵” (d25)', not lone)
+                page.keyboard.press('Escape')
+                expect(page.get_by_role('dialog')).to_have_count(0)
                 page.get_by_role('button', name='Geldim', exact=True).click()
                 page.locator('[role=dialog] button[type=submit]').click()
                 expect(page.get_by_role('dialog')).to_have_count(0)
                 expect(friend.locator('.member-card').filter(has=friend.get_by_text('Ada',exact=True))).to_contain_text('Kütüpte')
                 check('Presence reaches a second browser through SSE', True)
-                fakes = []
+                fakes, lone = [], []
                 for name in ['Kütüp','Köy','Pano','Ben']:
                     page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
                     fakes += page.evaluate(FAKE_TAPPABLES)
+                    lone += page.evaluate(LONE_LAST)
                 # n27: anything with a pointer, a hover, an arrow or a button's shape does something.
                 if fakes: print('Looks tappable, does nothing:', fakes, flush=True)
                 check('No fake tappables on the four tabs (pointer, hover, arrow, idle button)', not fakes)
+                if lone: print('Heading with a lone last word:', lone, flush=True)
+                check('Headings on the four tabs never leave a word or emoji alone on the last line (d25)', not lone)
                 page.locator('.page-title').click()
                 expect(page.locator('.home-status')).to_be_visible()
                 page.evaluate('scrollTo(0, 700)'); page.wait_for_timeout(150)

@@ -16,6 +16,8 @@
 }
 body {
   margin: 0;
+  /* No word or emoji left alone on a paragraph's last line (d25). */
+  text-wrap: pretty;
 }
 button,
 input,
@@ -63,6 +65,12 @@ h2,
 h3,
 .brand {
   font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+}
+/* Headings break into even lines, so a closing emoji never drops alone. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 input,
 textarea,
