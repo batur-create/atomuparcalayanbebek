@@ -29,7 +29,7 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
-## 17 Ekim 2026 05:00 · Dış denetim ve d23 (PR #8)
+## 17 Ekim 2026 04:25 · Dış denetim ve d23 (PR #8)
 
 - **İstek (Batur, 04:06):** bütün sistemi dışarıdan denetle, açıkları ve geliştirmeleri bul, sonra açıkları düzelt, kararları not et, kredi kalırsa projeyi bir sonraki seviyeye taşıyacak iyileştirmeler yap. Batur uyurken soru sorulmuyor; kararlar geri alınabilir ve not ediliyor.
 - **Rapor:** proje klasöründe `kutup/denetim/DENETIM-RAPORU.md` (karar günlüğü `kutup/denetim/KARAR-GUNLUGU.md`). Kritik ya da yüksek açık yok; 1 orta (G1), 3 düşük (G2–G4), 3 görsel kusur, küçük dokunma alanları.
