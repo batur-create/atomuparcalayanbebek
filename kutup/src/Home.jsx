@@ -9,7 +9,7 @@
 // drawing is never repainted frame by frame.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { ArrowUpRight, Check, Headphones, MapPin, Moon, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, Check, Headphones, Map as MapIcon, MapPin, Moon, Plus, Trash2 } from "lucide-react";
 import { Avatar, Empty, reducedMotion } from "./ui.jsx";
 import { STATUS, dayWord, shortTime, minutesLabel } from "./api.js";
 import { skyAt, sunTimes } from "./villageWorld.js";
@@ -512,6 +512,11 @@ function StatusCard({ me, data, now, setModal, requireMember, mutate, openMember
             ) : (
               <p>{state === "here" ? (minutes >= 1 ? `Burada · ${minutesLabel(minutes)}` : "Şimdi geldin ✨ İlk sandalye senin.") : state === "coming" ? "Ekip haberdar, yolun açık olsun." : "İlk sandalye senin. Gelince ekibine haber gider."}</p>
             )}
+            {state === "here" && (
+              <button type="button" className="status-route" onClick={() => setModal({ map: me.location || true })}>
+                <MapIcon size={13} /> Masa haritasında gör
+              </button>
+            )}
             {state !== "here" && (
               <a className="status-route" href="https://www.google.com/maps/search/?api=1&query=Milli+K%C3%BCt%C3%BCphane+Ankara" target="_blank" rel="noopener noreferrer">
                 <MapPin size={13} /> Milli Kütüphane yol tarifi
@@ -649,7 +654,7 @@ function MemberCard({ member, mine, now, onClick, arrived }) {
 // People at the library first (latest arrival first), then those on the way.
 const RANK = { here: 0, break: 0, coming: 1 };
 const rank = (x) => RANK[x.status] ?? 2;
-function People({ members, me, now, arrived, filter, setFilter, openMember, intro, invite }) {
+function People({ members, me, now, arrived, filter, setFilter, openMember, intro, invite, openMap }) {
   const sorted = useMemo(
     () => [...members].sort((a, b) => rank(a) - rank(b) || (rank(a) === 0 ? (b.since || 0) - (a.since || 0) : 0)),
     [members],
@@ -664,6 +669,9 @@ function People({ members, me, now, arrived, filter, setFilter, openMember, intr
           {" "}
           <span className="count-tag">{members.length}</span>
         </Kinetic>
+        <button type="button" className="map-open" onClick={openMap}>
+          <MapIcon size={15} /> Masa haritası
+        </button>
       </div>
       <div className="filter-row">
         {[
@@ -913,6 +921,7 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
           intro={intro}
           openMember={openMember}
           invite={() => setModal("invite")}
+          openMap={() => setModal({ map: true })}
         />
       </m.div>
       <m.div className="home-side" {...rise(2)}>

@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n30 | Masa haritası: salonların kuşbakışı krokisi, arkadaşlar masalarında, boş sandalyeye dokununca "Geldim" | Kütüphane | 17 Eki 05:25 | PR (ikinci üs) |
 | n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | PR (ikinci üs) |
 | n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | PR (ikinci üs) |
 | n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 04:10 | PR (ikinci üs) |
@@ -73,6 +74,30 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n30 · Masa haritası: kim hangi masada
+Kütüphane · 17 Eki 2026 · PR (ikinci üs) · göç yok (mevcut `location` + `desk` alanlarıyla çalışır, sunucuda değişiklik yok)
+
+**Ne yapıldı:**
+- **Harita penceresi (`src/DeskMap.jsx`, ihtiyaç anında yüklenir):** üstte salon seçimi (📚 Adnan · 📖 Müjgan, içerideki kişi sayısıyla), altında salonun kuşbakışı krokisi: üst duvarda raflar, solda pencereler, iki sıra okuma masası ve aralarında koridor, altta giriş. Her masanın iki uzun kenarında üçer sandalye.
+- **Arkadaşlar masalarında:** "Geldim"de masa alanına sayı yazanlar ("24", "masa 24", "24 pencere yanı") o sandalyede avatarı ve adıyla görünür; moladakiler soluk ve ☕ ile. Sandalyeye dokununca kişinin kartı açılır. Aynı masayı iki kişi yazarsa ikisi de görünür (+1).
+- **Boş sandalyeye dokun:** sandalye seçilir, altta koyu bir şerit çıkar: "Masa 14 · Adnan salonu · Buraya oturdum". Onaylayınca "Geldim" o salon ve masayla gönderilir (bildirim, Pano satırı, istatistik her zamanki gibi). Zaten içerideysen "Buraya geçtim" der.
+- **Haritaya sığmayanlar:** masası sayı olmayanlar ("pencere yanı") "Salonda, masası haritada yok" altında; Kafeterya, Bahçe ya da başka yerdekiler "Başka yerde" altında.
+- **Girişler:** Ana sayfa "Kim nerede?" başlığının yanında "Masa haritası" düğmesi; kütüpteyken durum kartında "Masa haritasında gör"; "Geldim" penceresinde salon seçiliyken "Masanı haritadan seç".
+- **Kroki veri olarak:** `shared/rooms.js` içinde her salon için sıra sayısı ve kenar başına sandalye. Değiştirmek bütün numaraları ve haritayı değiştirir; kayıtlı bir şey bozulmaz.
+
+**Kararlar ve nedenleri (tanım eksikti; Batur "kararları sen ver, geri alınabilir olsun" dedi):**
+- **Salon düzeni temsilî:** gerçek kroki ya da fotoğraf gelmediği için Adnan 60, Müjgan 36 sandalyelik basit bir düzen. Haritanın altında "Kroki temsilî" yazıyor. Batur bir fotoğraf ya da kroki gönderince `shared/rooms.js` düzeltilir (birkaç satır).
+- **Numaralandırma:** masa masa, sıra sıra; her masada önce üst kenar soldan sağa, sonra alt kenar. Gerçek numaralandırma farklıysa yine `rooms.js`.
+- **Dokununca hemen "Geldim":** tanımdaki gibi; ama yanlış dokunuşa karşı bir onay şeridiyle (tek dokunuş seçer, ikinci dokunuş gönderir).
+- **Masa alanı serbest kaldı:** yazıyla "pencere yanı" demek hâlâ mümkün; harita yalnız sayıları yerleştirir. Sunucu ve veritabanı değişmedi.
+- **Telefonda:** pencere kenarları daraltıldı, sandalyeler 46 px (dokunma hedefi ≥ 44 px), yatay taşma yok.
+
+**Batur'un sözleri:** Claude'un 5 önerisinden 4. madde, onaylandı (16 Ekim). "inisiyatif alarak ... kararları sen ver ... geri dönülebilir olsun" (17 Ekim).
+**Önizleme:** proje klasöründe `kutup/onizleme/n30/` (telefon açık ve koyu, masaüstü).
+**Geri alma:** salon düzeni için `shared/rooms.js`; girişler için `Home.jsx`'teki `map-open` düğmesi ve `status-route` bağlantısı, `Modals.jsx`'teki `map-pick`; tamamı için `DeskMap.jsx`, `deskmap.css` ve `App.jsx`'teki `modal?.map` bloğu.
+**Açık:** Batur'un görsel onayı; salonların gerçek düzeni ve masa numaraları (bir fotoğraf ya da kroki yeter).
+**Dosyalar:** shared/rooms.js, src/DeskMap.jsx, src/deskmap.css, src/home.css, src/Home.jsx, src/Modals.jsx, src/Modal.jsx, src/App.jsx, src/later.jsx, src/Requests.jsx, tests/core.test.js, tests/browser_smoke.py
 
 ### n28 · Haftanın hikâyesi: dokundukça ilerleyen haftalık özet
 Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok (`weekly` tablosuna yeni bir tür satır: `story`)

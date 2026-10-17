@@ -11,7 +11,7 @@ if (typeof document !== "undefined") {
   document.addEventListener("keydown", () => (lastKey = performance.now()), true);
 }
 
-export function Modal({ title, subtitle, children, close, wide = false }) {
+export function Modal({ title, subtitle, children, close, wide = false, className = "" }) {
   const ref = useRef(null);
   const closeRef = useRef(close);
   closeRef.current = close;
@@ -64,7 +64,7 @@ export function Modal({ title, subtitle, children, close, wide = false }) {
   }, []);
   return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
-      <section ref={ref} tabIndex={-1} className={`modal ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+      <section ref={ref} tabIndex={-1} className={`modal ${wide ? "wide" : ""} ${className}`} role="dialog" aria-modal="true" aria-label={title}>
         <button className="icon-button modal-close" aria-label="Kapat" onClick={close}><X size={21} /></button>
         <h2>{title}</h2>
         {subtitle && <p className="modal-subtitle">{subtitle}</p>}

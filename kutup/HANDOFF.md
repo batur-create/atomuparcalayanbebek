@@ -124,6 +124,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 16 Ekim 2026)
 
+> **n30 (ikinci üs, 17 Eki):** Masa haritası `DeskMap.jsx` (tembel), salon düzeni `shared/rooms.js` (temsilî; Batur'un krokisi gelince sıra sayısı ve kenar başına sandalye buradan değişir). Sunucu değişmedi: harita `members.location` ve `members.desk` içindeki ilk sayıyı okur (`deskNumber()`). Görüntü almak için `kutup/araclar/map_shots.py` (yerel deneme verisi).
+>
 > **n28 (ikinci üs, 17 Eki):** Haftanın hikâyesi `Story.jsx` (tembel), hesap `server/stats.js` `storyOf()`, hafta `shared/week.js`. Pazar 18.00 bildirimi `tick()` içinde, `weekly` tablosunda `story` satırıyla bir kez. Yeni kart eklerken `cardsOf()` sırasına ve `Card` içine ekle; açık zeminli kartı `tone` listesine yaz. Görüntü almak için `kutup/araclar/story_shots.py` (yerel deneme verisi).
 >
 > **n24 (ikinci üs, 17 Eki):** Odak sesleri `Sound.jsx`'te yeniden yazıldı (yağmur, kütüphane, şömine, orman, dalgalar, kafe). Yeni ses eklerken: olaylar `EVENTS`, yavaş şekiller (rüzgâr, dalga) `SHAPES` + `follow()`, yankı `space()`; düzeyi eskilerle eşlemek için `TRIM`. Ölçüm ve eski/yeni örnek araçları proje klasöründe `kutup/araclar/sound_render.py`.

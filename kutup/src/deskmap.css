@@ -1,0 +1,402 @@
+/* ---------- Masa haritası (n30) ----------
+   A reading room seen from above: shelves along the top wall, windows down the
+   left, two columns of reading tables with an aisle between, the door at the
+   bottom. Only theme tokens, so every theme and the dark mode follow. */
+.modal.desk-map {
+  width: 560px;
+}
+.desk-map h2 {
+  max-width: 85%;
+}
+
+/* the two rooms */
+.dm-rooms {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+}
+.dm-rooms button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.dm-rooms button.selected {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--ink) 14%, transparent);
+  outline: 1px solid var(--border);
+}
+.dm-rooms i {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* the room itself */
+.dm-room {
+  position: relative;
+  margin-bottom: 34px;
+  padding: 28px 10px 34px 18px;
+  border: 1.5px solid color-mix(in oklab, var(--ink) 22%, transparent);
+  border-radius: 18px;
+  background: var(--canvas);
+}
+.dm-room small {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.dm-shelves {
+  position: absolute;
+  top: 8px;
+  left: 18px;
+  right: 10px;
+  height: 9px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--peach) 0 7px,
+    var(--mint) 7px 12px,
+    var(--lilac) 12px 20px,
+    var(--blue) 20px 25px,
+    var(--lemon) 25px 31px
+  );
+  box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--ink) 18%, transparent);
+}
+.dm-shelves small {
+  top: -17px;
+  background: var(--paper);
+}
+.dm-windows {
+  position: absolute;
+  top: 30px;
+  bottom: 30px;
+  left: 5px;
+  width: 6px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(180deg, var(--sky-1) 0 30px, transparent 30px 38px);
+  opacity: 0.9;
+}
+:root[data-mode="dark"] .dm-windows {
+  opacity: 0.4;
+}
+.dm-door {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 64px;
+  height: 4px;
+  translate: -50% 0;
+  background: var(--paper);
+}
+.dm-door::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  width: 24px;
+  height: 24px;
+  border: 1.5px dashed color-mix(in oklab, var(--ink) 25%, transparent);
+  border-width: 1.5px 1.5px 0 0;
+  border-top-right-radius: 24px;
+}
+.dm-door small {
+  top: 8px;
+}
+
+.dm-floor {
+  display: grid;
+  gap: 16px;
+}
+.dm-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dm-table {
+  display: grid;
+  gap: 3px;
+}
+.dm-side {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.dm-wood {
+  display: grid;
+  place-items: center;
+  height: 20px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--peach) 70%, var(--ink) 14%);
+  box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--ink) 12%, transparent);
+}
+.dm-wood i {
+  width: 40%;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--paper) 55%, transparent);
+}
+
+/* a chair: its back away from the table */
+.dm-seat {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 46px;
+  padding: 0;
+  border-radius: 13px 13px 7px 7px;
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+.dm-side.bottom .dm-seat {
+  border-radius: 7px 7px 13px 13px;
+}
+.dm-seat.free {
+  border-style: dashed;
+  border-color: color-mix(in oklab, var(--muted) 38%, transparent);
+  background: color-mix(in oklab, var(--paper) 70%, transparent);
+  color: color-mix(in oklab, var(--muted) 85%, transparent);
+  font-size: 11px;
+}
+.dm-seat.taken {
+  align-content: center;
+  gap: 1px;
+  border-color: color-mix(in oklab, var(--muted) 35%, transparent);
+  box-shadow: 0 2px 6px color-mix(in oklab, var(--ink) 10%, transparent);
+}
+.dm-name {
+  max-width: calc(100% - 4px);
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dm-seat.free:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+.dm-seat.free:active {
+  transform: scale(0.94);
+}
+.dm-seat.picked {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  animation: dm-picked 1.4s ease-in-out infinite;
+}
+.dm-seat.taken:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.dm-seat.taken .avatar {
+  animation: dm-sit 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.dm-seat.mine {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.dm-seat.resting .avatar,
+.dm-seat.resting .dm-name {
+  opacity: 0.6;
+}
+.dm-num {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  font-size: 8.5px;
+  line-height: 1.2;
+  color: var(--muted);
+}
+.dm-break {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  color: var(--muted);
+}
+.dm-more {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 10px;
+  line-height: 18px;
+}
+@keyframes dm-sit {
+  from {
+    transform: translateY(-6px) scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes dm-picked {
+  50% {
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+}
+
+/* the chosen chair, waiting for a yes */
+.dm-pick {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 18px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 16px;
+  background: var(--studio);
+  color: var(--studio-ink);
+  box-shadow: 0 10px 30px color-mix(in oklab, var(--ink) 22%, transparent);
+  animation: dm-pick-in 0.22s ease-out;
+}
+.dm-pick > span {
+  display: grid;
+  margin-right: auto;
+  line-height: 1.25;
+}
+.dm-pick b {
+  font-size: 15px;
+}
+.dm-pick small {
+  color: var(--studio-soft);
+  font-size: 11px;
+}
+.dm-pick .btn {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dm-pick .btn.ghost {
+  background: transparent;
+  color: var(--studio-text);
+  border-color: color-mix(in oklab, var(--studio-ink) 28%, transparent);
+}
+.dm-pick .btn.primary {
+  background: var(--pop);
+  color: var(--pop-ink);
+}
+@keyframes dm-pick-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+/* people the map can't place */
+.dm-list {
+  margin-bottom: 14px;
+}
+.dm-list h3 {
+  margin-bottom: 8px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dm-list > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dm-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 6px 12px 6px 7px;
+  border-radius: 13px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.dm-chip:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.dm-chip > span {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.dm-chip b {
+  font-size: 13px;
+}
+.dm-chip small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dm-note {
+  margin-top: 6px;
+}
+
+@media (max-width: 580px) {
+  .modal-backdrop:has(.desk-map) {
+    padding: 8px;
+  }
+  .modal.desk-map {
+    padding: 26px 12px 14px;
+    max-height: calc(100dvh - 16px);
+  }
+  .desk-map .modal-subtitle {
+    margin-bottom: 16px;
+  }
+  .dm-pick .btn.ghost {
+    padding: 0 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-seat.picked,
+  .dm-seat.taken .avatar,
+  .dm-pick {
+    animation: none;
+  }
+}
