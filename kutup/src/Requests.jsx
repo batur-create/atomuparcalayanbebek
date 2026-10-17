@@ -228,7 +228,7 @@ export function FeedbackPage({ me, requireMember, notify, onSeen }) {
               <br />
               <b>özel posta</b>
             </span>
-            <span className="envelope-art">💌</span>
+            <span className={`envelope-art${fresh.length ? " wiggle" : ""}`}>💌</span>
             <span className="eyebrow">KÜTÜP’ÜN MUTFAĞI</span>
             <h2>
               “Aga, aklıma

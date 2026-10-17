@@ -693,3 +693,33 @@ html[data-motion="calm"] .home-sky button.sky-sticker.wobble {
   height: auto;
   transform: none;
 }
+
+/* Anket (17 Eki): a reply from Batur makes the envelope wiggle once, on the
+   "Batur'a ilet" row in Ben and on the feedback card. Once, then still. */
+.envelope-art.wiggle {
+  animation: envelope-wiggle 0.9s ease-in-out 0.4s 1;
+}
+.door-icon.wiggle svg {
+  animation: door-wiggle 0.8s ease-in-out 0.3s 1;
+}
+@keyframes envelope-wiggle {
+  0%, 100% { transform: rotate(-11deg); }
+  20% { transform: rotate(-19deg); }
+  45% { transform: rotate(-4deg); }
+  70% { transform: rotate(-15deg); }
+}
+@keyframes door-wiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  45% { transform: rotate(11deg); }
+  70% { transform: rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .envelope-art.wiggle,
+  .door-icon.wiggle svg {
+    animation: none;
+  }
+}
+html[data-motion="still"] :is(.envelope-art.wiggle, .door-icon.wiggle svg) {
+  animation: none;
+}
