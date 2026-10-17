@@ -1,7 +1,7 @@
 // Account entry, profile customization and moving between devices.
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, KeyRound, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
-import { api, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES, THEME_INFO } from "./api.js";
+import { ArrowRight, Check, KeyRound, LogOut, MonitorSmartphone, Moon, Plus, ShieldCheck, Smartphone, Sparkles, Sun, SunMoon } from "lucide-react";
+import { api, get, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES, THEME_INFO } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 import { sunTimes } from "./villageWorld.js";
@@ -489,17 +489,65 @@ function DeviceTransfer({ notify }) {
     </div>
   );
 }
+// The other devices this account is open on, signed out with one tap (d27).
+function OtherDevices({ username, notify }) {
+  const [others, setOthers] = useState(null),
+    [busy, setBusy] = useState(false);
+  useEffect(() => {
+    get("/devices").then((d) => setOthers(d.others), () => {});
+  }, []);
+  const signOut = async () => {
+    const back = username
+      ? "Oralarda yeniden girmek için kullanıcı adın ve şifren gerekecek."
+      : "Henüz şifren yok; oralarda yeniden açmak için buradan “Giriş kodu al” demen gerekecek.";
+    if (!confirm(`Diğer ${others} cihazdan çıkış yapılsın mı? Bu cihaz açık kalır. ${back}`)) return;
+    setBusy(true);
+    try {
+      const r = await api("/devices/signout", {});
+      setOthers(0);
+      notify(r.closed ? `${r.closed} cihazdan çıkış yapıldı. Hesabın artık yalnız bu cihazda açık. 🔐` : "Hesabın zaten yalnız bu cihazda açıktı.");
+    } catch (e) {
+      notify(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (others === null) return null;
+  return (
+    <div className="device-transfer device-sessions">
+      <div>
+        <strong>
+          <MonitorSmartphone size={16} /> Açık cihazlar
+        </strong>
+        <p>
+          {others
+            ? `Hesabın bu cihazdan başka ${others} cihazda daha açık. Telefonun kaybolduysa ya da bir yerde açık kaldıysa hepsinden buradan çık.`
+            : "Hesabın yalnız bu cihazda açık."}
+        </p>
+      </div>
+      {others > 0 && (
+        <Busy type="button" loading={busy} className="btn outline" onClick={signOut}>
+          <LogOut size={15} /> Diğerlerinden çık
+        </Busy>
+      )}
+    </div>
+  );
+}
 function AccountBox({ username, notify, onSaved }) {
-  const [value, setValue] = useState({ username: username || "", password: "" }),
+  const [value, setValue] = useState({ username: username || "", password: "", current: "" }),
     [busy, setBusy] = useState(false),
     [open, setOpen] = useState(!username);
   const save = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const r = await api("/account", { username: value.username, ...(value.password ? { password: value.password } : {}) });
+      const r = await api("/account", {
+        username: value.username,
+        ...(value.password ? { password: value.password } : {}),
+        ...(username ? { current: value.current } : {}),
+      });
       onSaved(r.username);
-      setValue({ username: r.username, password: "" });
+      setValue({ username: r.username, password: "", current: "" });
       setOpen(false);
       notify("Hesabın hazır. Artık her cihazdan kullanıcı adın ve şifrenle girebilirsin. 🔐");
     } catch (error) {
@@ -544,6 +592,19 @@ function AccountBox({ username, notify, onSaved }) {
             value={value.password}
             onChange={(e) => setValue({ ...value, password: e.target.value })}
           />
+          {/* d23: an account with a password changes only with it. */}
+          {username && (
+            <input
+              required
+              type="password"
+              aria-label="Şu anki şifren"
+              placeholder="şu anki şifren"
+              autoComplete="current-password"
+              maxLength={128}
+              value={value.current}
+              onChange={(e) => setValue({ ...value, current: e.target.value })}
+            />
+          )}
           <Busy loading={busy} className="btn primary" type="submit">
             Kaydet
           </Busy>
@@ -684,6 +745,7 @@ export function AccountModal({ username, onAccount, notify, close }) {
     <Modal title="Hesap ve cihazlar" subtitle="Başka bir telefondan girince profilin seni beklesin." close={close}>
       <AccountBox username={username} notify={notify} onSaved={onAccount} />
       <DeviceTransfer notify={notify} />
+      <OtherDevices username={username} notify={notify} />
     </Modal>
   );
 }

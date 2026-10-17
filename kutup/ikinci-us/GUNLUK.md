@@ -37,6 +37,8 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Not:** haftalık paylaşım hâlâ görsel kart (PNG), video değil; eş o kartlara eklendi.
 - **Kararlar:** KARARLAR n32. Önizleme `kutup/onizleme/n32/`.
 
+---
+
 ## 17 Ekim 2026 05:35 · n14 Başarımlar
 
 - **Dal:** `claude/n14-basarimlar` (n30 dalının üstünde).
@@ -45,6 +47,17 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Batur'un kararı:** tanım eksikti; "kararları sen ver, geri alınabilir olsun". Verilen kararlar KARARLAR n14'te.
 - **Canlı duman testi:** "badges answer" adımı eklendi.
 - **Pano:** n14 → review. Sıradaki işlerin hepsi PR'da; Batur'un birleştirmesi ve yayını bekleniyor.
+
+---
+
+## 17 Ekim 2026 05:30 · d27 diğer cihazlardan çıkış (PR #15)
+
+- **d27 · PR #15** (`claude/d27-diger-cihazlar`, d26'nın üstünde): Ben → Hesap ve cihazlar'da açık cihaz sayısı ve "Diğerlerinden çık". Durum: review. Göç yok.
+- Şifre değişince otomatik çıkış yok; denetimdeki soru Batur'da.
+- PR'lar üst üste: #8 → #10 → #11 → #13 → #15. Yalnız #15'i birleştirmek beşini getirir.
+- Görüntüler proje klasöründe `kutup/denetim/d27/`.
+
+---
 
 ## 17 Ekim 2026 05:25 · n30 Masa haritası
 
@@ -55,6 +68,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Canlı duman testi:** yeni yol yok; adım eklenmedi (harita mevcut `/presence` ve `/state` ile çalışıyor).
 - **Pano:** n30 → review.
 
+---
+
+## 17 Ekim 2026 05:10 · d26 ana ekran simgesi (PR #13)
+
+- **d26 · PR #13** (`claude/d26-ana-ekran-simgesi`, taban `kutup-platform` a37f3f0): iPhone simgesinin köşelerindeki siyah kenar, Android'de daireye kesilen simge, durum çubuğu rozeti. Tasarım aynı. Durum: review. Göç yok.
+- Önce/sonra görüntüsü proje klasöründe `kutup/denetim/d26/`.
+
+---
+
 ## 17 Ekim 2026 05:06 · n28 Haftanın hikâyesi
 
 - **Dal:** `claude/n28-hikaye` (n24 dalının üstünde).
@@ -64,6 +86,23 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Canlı duman testi:** "week's story answers" adımı eklendi.
 - **Pano:** n28 → review.
 
+---
+
+## 17 Ekim 2026 05:05 · d25 satır sonları (PR #11)
+
+- **d25 · PR #11** (`claude/d25-satir-sonlari`, taban `kutup-platform` a37f3f0): son satırda tek kalan kelime ve emoji (V2 dahil). Durum: review. Göç yok.
+- Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d25/`.
+
+---
+
+## 17 Ekim 2026 04:55 · d24 görsel cila (PR #10)
+
+- **d24 · PR #10** (`claude/d24-gorsel-cila`, taban `kutup-platform` a37f3f0): denetimin V1 (zarf yazıyı kapatıyordu), V3 (Batur paneli telefonda) ve V4 (44 px dokunma alanları) bulguları. Durum: review. Göç yok.
+- Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d24/`.
+- V2 (pencere başlığında tek kalan emoji) ayrı iş: d25 (PR #11).
+
+---
+
 ## 17 Ekim 2026 04:40 · n24 Ses turu
 
 - **Dal:** `claude/n24-sesler` (n29 dalının üstünde).
@@ -71,6 +110,17 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Dinleme:** eski/yeni sayfası Batur'a verildi; MP3'ler `kutup/onizleme/n24/`.
 - **Batur'un kararı:** "kararları sen ver, geri alınabilir olsun"; varsayılan yeni sesler (KARARLAR n24).
 - **Pano:** n24 → review.
+
+---
+
+## 17 Ekim 2026 04:25 · Dış denetim ve d23 (PR #8)
+
+- **İstek (Batur, 04:06):** bütün sistemi dışarıdan denetle, açıkları ve geliştirmeleri bul, sonra açıkları düzelt, kararları not et, kredi kalırsa projeyi bir sonraki seviyeye taşıyacak iyileştirmeler yap. Batur uyurken soru sorulmuyor; kararlar geri alınabilir ve not ediliyor.
+- **Rapor:** proje klasöründe `kutup/denetim/DENETIM-RAPORU.md` (karar günlüğü `kutup/denetim/KARAR-GUNLUGU.md`). Kritik ya da yüksek açık yok; 1 orta (G1), 3 düşük (G2–G4), 3 görsel kusur, küçük dokunma alanları.
+- **d23 · PR #8** (`claude/d23-hesap-guvenligi`, taban `kutup-platform` a37f3f0): G1–G4. Durum: review. Göç yok.
+- **Batur'a sorular:** E1 (son dakikada katılma bonusu) ve şifre değişince diğer cihazlardan çıkış.
+
+---
 
 ## 17 Ekim 2026 04:10 · n29 Anında ve hızlı
 
@@ -80,6 +130,8 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Yayında dikkat:** ilk yayında Cloudflare `LiveRoom` Durable Object sınıfını oluşturur. Canlı duman testine "live room rings" adımı eklendi.
 - **Pano:** n29 → review.
 
+---
+
 ## 17 Ekim 2026 03:50 · n31 Kara v2
 
 - **Dal:** `claude/n31-kara-v2` (kurulum dalının üstünde). PR: davet gelince açılacak.
@@ -88,6 +140,8 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Ölçüm:** v2 meşguliyeti şimdikinden düşük ya da eşit (KARARLAR n31). Önizlemeler ve ölçüm dosyaları proje klasöründe: `kutup/onizleme/n31/`.
 - **Pano:** n31 → doing.
 - **ChatGPT:** Kara-v2 paketinden `Kara.jsx` ve `kara.css` alındı; `ikinci-us/gelen/kara-v2/` silindi.
+
+---
 
 ## 17 Ekim 2026 03:30 · İkinci üs: kurulum
 

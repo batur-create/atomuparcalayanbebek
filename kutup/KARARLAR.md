@@ -25,9 +25,14 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 |---|---|---|---|---|
 | n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
 | n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
+| d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | PR #15 (ikinci üs) |
 | n30 | Masa haritası: salonların kuşbakışı krokisi, arkadaşlar masalarında, boş sandalyeye dokununca "Geldim" | Kütüphane | 17 Eki 05:25 | PR (ikinci üs) |
+| d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | PR #13 (ikinci üs) |
 | n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | PR (ikinci üs) |
+| d25 | Satır sonları: tek kalan kelime ve emoji yok | Cila | 17 Eki 05:05 | PR #11 (ikinci üs) |
+| d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | PR #10 (ikinci üs) |
 | n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | PR (ikinci üs) |
+| d23 | Hesap güvenliği: şifre değişikliğinde şu anki şifre, deneme ve bildirim sınırları | Güvenlik | 17 Eki 04:25 | PR #8 (ikinci üs) |
 | n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 04:10 | PR (ikinci üs) |
 | n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 03:50 | PR (ikinci üs, davet bekliyor) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
@@ -122,6 +127,25 @@ Başarım · 17 Eki 2026 · PR (ikinci üs) · göç yok (göç 12'deki `achieve
 **Açık:** Batur'un görsel onayı (çizimler ve kutlama).
 **Dosyalar:** shared/achievements.js, shared/pano.js, server/achievements.js, server/app.js, src/Achievements.jsx, src/achievementArt.js, src/achievementWatch.js, src/achievements.css, src/App.jsx, src/MePage.jsx, src/Modals.jsx, src/later.jsx, tests/core.test.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
+### d27 · Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar
+Güvenlik · 17 Eki 2026 · PR #15 (ikinci üs) · göç yok
+
+**Ne yapıldı:** Ben → Hesap ve cihazlar'da üçüncü kutu, "Açık cihazlar". Hesabın bu cihazdan başka kaç cihazda açık olduğunu söylüyor; **Diğerlerinden çık** onay sorup hepsini kapatıyor. Kaybolan telefon, arkadaşın bilgisayarında açık kalan hesap için. Önceden bunu yalnız Batur panelden yapabiliyordu (ve o, bu cihazı da kapatıyor).
+- Sunucu: `GET /api/devices` → `{ others }` (süresi dolmamış diğer oturumlar), `POST /api/devices/signout` → o oturumlar ve onlara bağlı bildirim abonelikleri silinir, `{ ok, closed }`. Bu cihazın oturumu ve bu cihazdaki diğer hesaplar (n25) kalır.
+- Kapanan cihaz bir sonraki istekte 401 alır; n25'teki akışla o cihazdaki başka hesaba ya da giriş ekranına düşer. Canlıda (Worker, yoklama) bu bir sonraki yoklamada olur; Node sunucusundaki SSE bağlantısı bir sonraki yayında ya da kalp atışında kapanır.
+- Arayüz `Account.jsx`'te `OtherDevices`; "Başka cihazda da aç" kutusunun sınıfını (`device-transfer`) kullanıyor, temalarda onunla aynı görünür.
+- **Testler:** 1 yeni birim testi (iki cihaz kapanır, bu cihaz ve takım arkadaşı açık kalır, kapanan cihazın aboneliği silinir, oturumsuz 401), 1 yeni tarayıcı kontrolü (dizüstünden giriş, "1 cihazda daha açık", onay, dizüstü 401). Dal d26'nın üstünde: 103 birim, 75 tarayıcı, tema 252/252.
+
+**Kararlar ve nedenleri:**
+- **Şifre değişince otomatik çıkış yok** (denetimdeki soru, Batur'un cevabı bekleniyor). Önerilen "kişi seçsin, varsayılan açık kalsın" bu düğmeyle karşılandı; şifre değiştiren kişi hemen altındaki düğmeyle diğerlerini kapatabilir. Batur otomatik isterse `/account`'ta tek satırlık değişiklik.
+- **Şifre sorulmuyor.** Kötü niyetli biri en fazla sahibini diğer cihazlardan çıkarabilir; sahip şifresiyle geri girer. Kaybolan telefon anında, başka cihazdan hızlı çıkmak daha önemli.
+- **Cihaz adı ya da son görülme yok.** Oturumlar cihaz bilgisi tutmuyor; yalnız sayı. Safari ve ana ekran uygulaması aynı iPhone'da iki ayrı "cihaz" sayılır (uygulamanın "Başka cihazda da aç" diliyle aynı).
+- Şifresi olmayan hesapta da çalışıyor; onay metni oralarda yeniden açmak için "Giriş kodu al" gerektiğini söylüyor.
+
+**Batur'un sözleri:** "Projeyi bir sonraki seviyeye taşıyacak iyileştirmeler. Ve özellikler."
+**Geri alma:** `Account.jsx`'te `<OtherDevices … />` satırı silinir (sunucu yolları zararsız, kalabilir).
+**Dosyalar:** `server/app.js`, `src/Account.jsx`, `tests/core.test.js`, `tests/browser_smoke.py`.
+
 ### n30 · Masa haritası: kim hangi masada
 Kütüphane · 17 Eki 2026 · PR (ikinci üs) · göç yok (mevcut `location` + `desk` alanlarıyla çalışır, sunucuda değişiklik yok)
 
@@ -145,6 +169,24 @@ Kütüphane · 17 Eki 2026 · PR (ikinci üs) · göç yok (mevcut `location` + 
 **Geri alma:** salon düzeni için `shared/rooms.js`; girişler için `Home.jsx`'teki `map-open` düğmesi ve `status-route` bağlantısı, `Modals.jsx`'teki `map-pick`; tamamı için `DeskMap.jsx`, `deskmap.css` ve `App.jsx`'teki `modal?.map` bloğu.
 **Açık:** Batur'un görsel onayı; salonların gerçek düzeni ve masa numaraları (bir fotoğraf ya da kroki yeter).
 **Dosyalar:** shared/rooms.js, src/DeskMap.jsx, src/deskmap.css, src/home.css, src/Home.jsx, src/Modals.jsx, src/Modal.jsx, src/App.jsx, src/later.jsx, src/Requests.jsx, tests/core.test.js, tests/browser_smoke.py
+
+### d26 · Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti
+Cila · 17 Eki 2026 · PR #13 (ikinci üs) · göç yok
+
+**Ne yapıldı:** Kütüp'ün telefon ana ekranındaki simgesi her gün görülen ilk şey; tasarımı (mor zeminde K ve yeşil nokta) aynı kaldı, telefonların istediği biçimlere getirildi.
+- **iPhone:** `apple-touch-icon` köşeleri saydam, yuvarlak 192 px'lik simgeydi. iOS saydam yeri siyaha boyuyor ve kendi köşesini üstüne kesiyor; köşelerde ince siyah kenarlar kalıyordu. Yeni: 180×180, köşesiz, saydamlıksız `apple-touch-icon.png` (iOS köşeyi kendisi yuvarlıyor).
+- **Android:** "maskable" simge saydam köşeli aynı resimdi; Android onu daireye kesince yeşil nokta kenara dayanıyordu. Yeni `icon-maskable-512.png`: zemin kenardan kenara, K ve nokta güvenli dairenin (çapın %80'i) içinde.
+- **Bildirim rozeti:** Android'de durum çubuğunda Kütüp bildirimi artık genel bir simge yerine beyaz K ile görünüyor (`badge-96.png`, `sw.js`).
+- Simgeler `public/icon.svg`'deki çizimden üretildi (aynı yollar; iPhone için `rx` yok, maskable'da %90 ölçek, rozette yalnız K).
+- **Testler:** 99 birim (değişmedi), 67 tarayıcı (1 yeni: iPhone simgesi 180 px ve köşeleri dolu, maskable işaret güvenli dairede, rozet var; eski dosyalarla kırmızı), tema 252/252.
+
+**Kararlar ve nedenleri:**
+- Simgenin tasarımı değişmedi. Uygulamanın içindeki marka ✳ (kütüp✳), ana ekrandaki K; bu ayrılık Batur'un kararı, raporda öneri olarak duruyor.
+- `icon-192.png`/`icon-512.png` ("any") ve tarayıcı sekmesi simgesi aynen kaldı.
+
+**Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
+**Geri alma:** `index.html`'de `apple-touch-icon` yeniden `/icon-192.png`, manifest'te maskable yeniden `/icon-512.png`, `sw.js`'te `badge` satırı silinir; üç yeni PNG silinir.
+**Dosyalar:** `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/apple-touch-icon.png`, `public/icon-maskable-512.png`, `public/badge-96.png`, `tests/browser_smoke.py`.
 
 ### n28 · Haftanın hikâyesi: dokundukça ilerleyen haftalık özet
 Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok (`weekly` tablosuna yeni bir tür satır: `story`)
@@ -171,6 +213,43 @@ Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok (`weekly` tablosuna yeni
 **Açık:** Batur'un görsel onayı; gerçek iPhone'da paylaşma menüsü (iOS Safari dosya paylaşımını destekliyor, denenmedi).
 **Dosyalar:** src/Story.jsx, src/story.css, src/storyLink.jsx, src/home.css, src/App.jsx, src/MePage.jsx, src/later.jsx, server/app.js, server/stats.js, shared/week.js, tests/core.test.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
+### d25 · Satır sonları: tek kalan kelime ve emoji yok
+Cila · 17 Eki 2026 · PR #11 (ikinci üs) · göç yok
+
+**Ne yapıldı:** Uygulamanın her yerinde bir paragrafın ya da başlığın son satırına tek bir kelime ya da emoji düşmesi önlendi. Denetimin V2 bulgusu ("Yolun kütübe mi düşüyor?" ve altında yalnız 🛵) da bununla kapandı, `Modals.jsx`'e (n29) dokunmadan.
+- Başlıklar (h1–h3) `text-wrap: balance`: satırlar eşit bölünüyor ("Yolun kütübe / mi düşüyor? 🛵").
+- Gövde `text-wrap: pretty`: tarayıcı son satırı tek kelimeye bırakmıyor ("köye bina, / tam maaş", "cam kenarı / boş 🌤️", "Küçük adımlar / da ilerlemedir.").
+- Ölçüm: 4 sekme, Batur'a ilet, 14 pencere, karşılama ve davet ekranı; 375 ve 390 px'te 22 tek kalan satır vardı. Sonra 320–430 px'te 3 kaldı (320 px'te iki kısa etiket ve bilerek iki satır yazılmış "özel posta" pulu).
+- **Testler:** 99 birim (değişmedi), 68 tarayıcı (2 yeni: "Yolun kütübe mi düşüyor? 🛵" penceresi ve dört sekmenin başlıkları; ilki eski kodda kırmızı), tema 252/252.
+
+**Kararlar ve nedenleri:**
+- Tek tek `&nbsp;` eklemek yerine iki CSS satırı: yeni yazılan her metin de kendiliğinden düzgün kırılıyor.
+- Desteklemeyen tarayıcıda (eski iOS) hiçbir şey değişmiyor, yalnız bugünkü gibi kırılıyor.
+
+**Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
+**Geri alma:** `src/styles.css` başındaki `body` içindeki `text-wrap: pretty` satırı ve hemen altındaki `h1, h2, h3 { text-wrap: balance; }` kuralı silinir.
+**Dosyalar:** `src/styles.css`, `tests/browser_smoke.py`.
+
+### d24 · Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları
+Cila · 17 Eki 2026 · PR #10 (ikinci üs) · göç yok
+
+**Ne yapıldı:** 17 Ekim dış denetiminin görsel bulguları V1, V3, V4 (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
+- **V1:** "Batur'a ilet" kartında zarf artık yazının üstüne binmiyor. Paragraf zarfın yanında bitiyor (her ekran boyunda `.envelope-art` ölçüsüyle eşleşen `padding-right`); zarf yerinde ve aynı boyda. 320'den 1600 px'e 14 genişlikte ölçüldü.
+- **V3:** Batur paneli telefonda: "Yenile" ve zil tek satırı dolduruyor (Yenile solda, zil kalanını kaplıyor), "Bu cihazdan çık" altında. Yedi aşama filtresi tek satırda yana kayıyor (kenardan kenara); seçili olan (çoğu zaman en sondaki "Hepsi") açılışta görünür kaydırılıyor, sayfa kaymıyor. Liste boşken Kara delik düğmesinin payı boş durum notunun altına geçiyor: not düğmenin altında kalmıyor, filtreyle not arasındaki fazla boşluk da kapandı.
+- **V4:** 12 küçük denetim türüne görünmez, ortalanmış, en az 44 px dokunma katmanı (`::after`, n27'deki `.face-btn`/`.scribble` yöntemi): üst çubuk ikonları, metin düğmeleri, filtre çipleri, bildirim kapatma çarpısı, masa ritmi seçenekleri, ses düğmeleri, kalp ve "Yanıtla", gönder, "Ekibe seslen", yol tarifi bağlantısı, "Binalara göz at". Görünüm değişmedi: önce/sonra 38 ekran görüntüsü piksel piksel karşılaştırıldı; fark yalnız sayaç ve köy gibi kendiliğinden değişen yerlerde (iki "önce" çekimi arasında da aynı fark var).
+- **Testler:** 99 birim (değişmedi), 70 tarayıcı (4 yeni: dokunma alanları, zarf, Batur çubuğu, Kara delik), tema 252/252.
+
+**Kararlar ve nedenleri:**
+- Dokunma katmanı `:where()` ile yazıldı (özgüllük sıfır): köşeye yerleşmiş düğmeler (`position: absolute`) yerinde kalıyor. Kendi katmanı olan Görünüm düğmesi listede yok.
+- Zilin katmanı sola değil sağa büyüyor: Görünüm düğmesinin katmanı aradaki 8 px'i zaten dolduruyor, ikisi üst üste binmiyor (Görünüm'ün 44 px testi geçiyor).
+- Aşama filtresi yana kayıyor, üç satıra sarılmıyor: Batur'un listesi yukarı çıkıyor; düzen Plan penceresindeki gün satırıyla aynı.
+- Zarfı küçültmek ya da taşımak yerine yazı daraltıldı: kartın çizimi aynen kalıyor.
+
+**Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
+**Vazgeçilenler:** V2 (pencere başlığının sonundaki emojinin tek başına alt satıra düşmesi) bu PR'da yok; `Modals.jsx`'e (n29) dokunmadan bütün uygulama için d25'te (PR #11) çözüldü.
+**Geri alma:** `src/polish.css` sonundaki "d24" bölümü; `src/styles.css`'te `.feedback-intro p` `padding-right` satırları ve telefondaki `.owner-toolbar`/`.owner-filters` kuralları; `src/blackhole.css`'te `.owner-requests:empty` kuralları; `src/Owner.jsx`'te `stages` kaydırması silinir.
+**Dosyalar:** `src/styles.css`, `src/polish.css`, `src/blackhole.css`, `src/Owner.jsx`, `tests/browser_smoke.py`.
+
 ### n24 · Ses turu: altı odak sesi yeniden, daha gerçekçi
 Ses · 17 Eki 2026 · PR (ikinci üs) · göç yok
 
@@ -195,6 +274,27 @@ Ses · 17 Eki 2026 · PR (ikinci üs) · göç yok
 **Geri alma:** tek bir sesi eskiye döndürmek için o sesin `RECIPES` girdisini önceki commit'ten alıp `TRIM`'deki satırını silmek yeter; hepsi için `src/Sound.jsx`'i önceki hâline almak.
 **Açık:** Batur'un kulağı ve gerçek iPhone'da dinleme.
 **Dosyalar:** src/Sound.jsx, tests/browser_smoke.py
+
+### d23 · Hesap güvenliği: şu anki şifre, deneme ve bildirim sınırları
+Güvenlik · 17 Eki 2026 · PR #8 (ikinci üs) · göç yok
+
+**Ne yapıldı:** 17 Ekim dış denetiminin güvenlik bulguları (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
+- **G1 (orta):** Şifresi olan hesapta kullanıcı adı ya da şifre yalnız şu anki şifreyle değişiyor ("Hesap ve cihazlar → Değiştir" formunda "Şu anki şifren" alanı). Yanlış deneme dakikada 6. Güncelleme eski şifre özetine bağlı; iki cihazdan aynı anda değiştirmede yalnız biri kazanır.
+- **G2:** Girişte kullanıcı adı başına saatte en fazla 30 yanlış şifre (yalnız yanlışlar sayılır; `auth_limits`, anahtar `wrong:<ad>`). Var olmayan adda da aynı PBKDF2 işi yapılıyor.
+- **G3:** Kişi başı dakikada 20 pano mesajı ve 6 plan (veritabanında, Worker kopyaları arasında ortak).
+- **G4:** Zamanlayıcının gönderdiği masa ritmi bildirimleri, sitenin gerçek `https` adresiyle imzalanıyor (`settings.origin`, adres değişince bir kez yazılır).
+- **Testler:** 102 birim (3 yeni), 67 tarayıcı (1 yeni), canlı duman testinin 4. adımına bir kontrol.
+
+**Kararlar ve nedenleri:**
+- Şifre değişince diğer cihazlar açık kalıyor (eskisi gibi). Kaybolan telefon için Batur'un "tüm cihazlardan çıkış" düğmesi ve kurtarma kodu zaten var; "diğer cihazlardan da çık" seçeneği Batur'a soruldu.
+- Saatlik sınır, birinin bir arkadaşının hesabını bir saat kilitlemesine izin veriyor (30 yanlış deneme). Kabul edildi: hesap sahibi Batur'un koduyla ya da başka cihazdan "Giriş kodu al" ile yine girebilir; sınırsız tahminden daha az zararlı.
+- Mesaj ve plan sınırları normal kullanımın çok üstünde seçildi; amaç yalnız yağmuru durdurmak.
+
+**Batur'un sözleri:** "Sistemdeki açıkları falan varsa bulacaksın ... ondan sonra bu açıklardan düzeltmeye başlayacaksın. Verdiğin kararları yine not ederek."
+**Vazgeçilenler:** `PUBLIC_ORIGIN`'i `wrangler.jsonc`'ye yazmak (yazma isteklerindeki köken kontrolünü de değiştirirdi; ileride özel alan adında yazmaları kırabilirdi).
+**Açık:** E1 (arkadaşın seansına son dakikada katılınca günün ilk seans bonusu) Batur'un kararı; raporda.
+**Geri alma:** `server/app.js`'te `/account` içindeki d23 bloğu, `tooManyWrong`/`countWrong` çağrıları ve `message:`/`plan:` sınırları silinir; `src/Account.jsx`'te "Şu anki şifren" alanı kaldırılır.
+**Dosyalar:** `server/app.js`, `src/Account.jsx`, `tests/core.test.js`, `tests/suite.js`, `tests/browser_smoke.py`, `tests/live-smoke.mjs`.
 
 ### n29 · Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış
 Altyapı · 17 Eki 2026 · PR (ikinci üs) · göç yok (D1 değişmedi; Cloudflare'de yeni Durable Object sınıfı)
