@@ -1296,6 +1296,25 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, others }, 200, [["Set-Cookie", sessionCookie(request, "", 0)]]);
   });
 
+  // Ben → Hesap ve cihazlar: how many other devices this account is open on,
+  // and signing them all out at once (a lost phone, a friend's laptop). This
+  // device and the other accounts on it stay as they are (d27).
+  const otherSessions = (member) =>
+    db.get("SELECT count(*) AS n FROM sessions WHERE member_id = ? AND token <> ? AND created > ?", [
+      member.id,
+      member.session_token,
+      Date.now() - SESSION_AGE,
+    ]);
+  route("GET", "/devices", async ({ member }) => json({ others: (await otherSessions(member)).n }));
+  route("POST", "/devices/signout", async ({ member }) => {
+    const { n } = await otherSessions(member);
+    await db.batch([
+      ["DELETE FROM subscriptions WHERE member_id = ? AND (session_token IS NULL OR session_token <> ?)", [member.id, member.session_token]],
+      ["DELETE FROM sessions WHERE member_id = ? AND token <> ?", [member.id, member.session_token]],
+    ]);
+    return json({ ok: true, closed: n });
+  });
+
   // Cheap polling: when nothing changed since `rev`, only the revision travels.
   route("GET", "/state", async ({ member, url }) => {
     const known = url.searchParams.get("rev");

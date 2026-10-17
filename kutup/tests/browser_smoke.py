@@ -13,6 +13,7 @@ import socket
 import subprocess
 import tempfile
 import time
+import urllib.error
 import urllib.request
 from playwright.sync_api import sync_playwright, expect
 
@@ -201,6 +202,15 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
                 page.locator('.me-page').wait_for()
                 check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
+                # d27: the account is also open on a laptop; Hesap ve cihazlar signs it out from here.
+                laptop = browser.new_context()
+                laptop.request.post(base + '/api/login', headers={'X-Kutup': '1'}, data={'username': 'audit_ada', 'password': 'audit-password-123'})
+                laptop_token = next(c['value'] for c in laptop.cookies() if c['name'] == 'kutup_session')
+                laptop.close()
+                def laptop_status():
+                    try:
+                        with urllib.request.urlopen(urllib.request.Request(base + '/api/session', headers={'Cookie': 'kutup_session=' + laptop_token}), timeout=5) as r: return r.status
+                    except urllib.error.HTTPError as e: return e.code
                 # d23: an account that has a password changes only with the current one.
                 page.locator('.home-door', has_text='Hesap ve cihazlar').click()
                 page.locator('.account-box').get_by_role('button', name='Değiştir', exact=True).click()
@@ -212,6 +222,15 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.account-form button[type=submit]').click()
                 expect(page.locator('.account-form')).to_have_count(0)
                 check('Changing the account asks for the current password', page.locator('.account-box', has_text='@audit_ada').count()==1)
+                expect(page.locator('.device-sessions')).to_contain_text('1 cihazda daha açık')
+                asked, before = [], laptop_status()
+                page.once('dialog', lambda d: (asked.append(d.message), d.accept()))
+                page.locator('.device-sessions').get_by_role('button', name='Diğerlerinden çık').click()
+                expect(page.locator('.toast', has_text='1 cihazdan çıkış yapıldı')).to_be_visible()
+                check('Hesap ve cihazlar signs the other devices out; this one stays (d27)',
+                    'Bu cihaz açık kalır' in asked[0] and before == 200 and laptop_status() == 401
+                    and json_call(page, '/session')['username'] == 'audit_ada'
+                    and page.locator('.device-sessions', has_text='yalnız bu cihazda açık').count() == 1)
                 page.keyboard.press('Escape')
                 # Kara lives on the library roof (n06): asleep while nobody is at the library; a tap wakes it and it says something useful.
                 page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
