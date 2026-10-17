@@ -45,6 +45,16 @@ const BADGE_NEWS_WINDOW = DAY; // a badge earned within a day is news on the Pan
 const BADGE_NEWS_MAX = 2; // more at once is the past being counted
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
+/** A short, readable device label from the browser's user agent ("iPhone · Safari"). */
+export function deviceName(agent) {
+  const ua = String(agent || "");
+  if (!ua) return null;
+  const kind = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? (/Mobile/.test(ua) ? "Android telefon" : "Android tablet") : /Windows/.test(ua) ? "Windows" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /CrOS/.test(ua) ? "Chromebook" : /Linux/.test(ua) ? "Linux" : "Cihaz";
+  // On iPhone and iPad the home screen app drops "Safari" from the agent.
+  if ((kind === "iPhone" || kind === "iPad") && !/Safari\//.test(ua)) return `${kind} · ana ekran`;
+  const browser = /Edg\//.test(ua) ? "Edge" : /OPR\/|Opera/.test(ua) ? "Opera" : /SamsungBrowser/.test(ua) ? "Samsung" : /Firefox\/|FxiOS/.test(ua) ? "Firefox" : /Chrome\/|CriOS/.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : null;
+  return browser ? `${kind} · ${browser}` : kind;
+}
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
 const RUIN_TIME = RUIN_DAYS * 24 * 3600000; // rubble waits this long for the next session to clear it
 
@@ -283,7 +293,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   async function memberFor(token) {
     if (!token || token.length > 128) return null;
     return db.get(
-      `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen, s.created AS session_created
+      `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen, s.created AS session_created, s.device AS session_device
        FROM sessions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
        WHERE s.token = ? AND s.created > ?`,
       [await sha(token), Date.now() - SESSION_AGE],
@@ -1265,10 +1275,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       headers = deviceCookies(request, held[0].token, held.slice(1).map((a) => a.token));
     }
     const renew = now - member.session_created > 30 * DAY;
+    const device = deviceName(request.headers.get("user-agent"));
     if (renew)
-      await db.run("UPDATE sessions SET created = ?, seen = ? WHERE token = ?", [now, now, member.session_token]);
-    else if (now - member.session_seen > HOUR)
-      await db.run("UPDATE sessions SET seen = ? WHERE token = ?", [now, member.session_token]);
+      await db.run("UPDATE sessions SET created = ?, seen = ?, device = ? WHERE token = ?", [now, now, device, member.session_token]);
+    else if (now - member.session_seen > HOUR || member.session_device !== device)
+      await db.run("UPDATE sessions SET seen = ?, device = ? WHERE token = ?", [now, device, member.session_token]);
     if (renew && !headers.length) headers = [["Set-Cookie", sessionCookie(request, readCookie(request, "kutup_session"))]];
     return json(await sessionData(member), 200, headers);
   }, false);
@@ -1316,8 +1327,28 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       member.session_token,
       Date.now() - SESSION_AGE,
     ]);
-  route("GET", "/devices", async ({ member }) => json({ others: (await otherSessions(member)).n }));
-  route("POST", "/devices/signout", async ({ member }) => {
+  // Each other device by name and last visit (anket, 17 Eki). The id is the
+  // start of the stored hash, enough to pick one, never the cookie itself.
+  route("GET", "/devices", async ({ member }) => {
+    const list = await db.all(
+      "SELECT substr(token, 1, 16) AS id, device, seen FROM sessions WHERE member_id = ? AND token <> ? AND created > ? ORDER BY seen DESC",
+      [member.id, member.session_token, Date.now() - SESSION_AGE],
+    );
+    return json({ others: list.length, list: list.map((d) => ({ id: d.id, name: d.device || "Bilinmeyen cihaz", seen: d.seen })) });
+  });
+  route("POST", "/devices/signout", async ({ member, body }) => {
+    // One device by id, or all the others.
+    if (body.id !== undefined) {
+      const id = String(body.id);
+      if (!/^[0-9a-f]{16}$/.test(id)) fail("Cihaz bulunamadı.", 404);
+      const row = await db.get("SELECT token FROM sessions WHERE member_id = ? AND token <> ? AND substr(token, 1, 16) = ?", [member.id, member.session_token, id]);
+      if (!row) fail("Cihaz bulunamadı.", 404);
+      await db.batch([
+        ["DELETE FROM subscriptions WHERE member_id = ? AND session_token = ?", [member.id, row.token]],
+        ["DELETE FROM sessions WHERE token = ?", [row.token]],
+      ]);
+      return json({ ok: true, closed: 1 });
+    }
     const { n } = await otherSessions(member);
     await db.batch([
       ["DELETE FROM subscriptions WHERE member_id = ? AND (session_token IS NULL OR session_token <> ?)", [member.id, member.session_token]],

@@ -226,6 +226,9 @@ export const migrations = [
     "CREATE TRIGGER subscriptions_outbox_delete AFTER DELETE ON subscriptions BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint AND member_id IS OLD.member_id; END",
     "CREATE TRIGGER subscriptions_outbox_rebind AFTER UPDATE ON subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.member_id IS NOT NEW.member_id OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint AND member_id IS OLD.member_id; END",
   ],
+  // 22 — open devices by name (anket, 17 Eki): a short label from the
+  // browser ("iPhone · Safari"), filled in as each device opens the app.
+  ["ALTER TABLE sessions ADD COLUMN device TEXT"],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

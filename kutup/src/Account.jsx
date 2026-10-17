@@ -4,6 +4,7 @@ import { ArrowRight, Check, KeyRound, LogOut, MonitorSmartphone, Moon, Plus, Shi
 import { api, get, AVATARS, COLORS, COLOR_NAMES, FOUNDER_AVATARS, THEMES, THEME_INFO } from "./api.js";
 import { isIOS, standalone, Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
+import { ago } from "./Requests.jsx";
 import { sunTimes } from "./villageWorld.js";
 import { ACCESSORIES, AVATAR_GROUPS, CHARACTERS, FOUNDER_CHARACTERS, composeAvatar, fitsCharacter, parseAvatar, randomCharacter } from "../shared/avatars.js";
 const LOGIN_TABS = [["login", "Giriş"], ["reset", "Şifremi unuttum"], ["code", "Kodla"]];
@@ -491,28 +492,30 @@ function DeviceTransfer({ notify }) {
 }
 // The other devices this account is open on, signed out with one tap (d27).
 function OtherDevices({ username, notify }) {
-  const [others, setOthers] = useState(null),
+  const [list, setList] = useState(null),
     [busy, setBusy] = useState(false);
   useEffect(() => {
-    get("/devices").then((d) => setOthers(d.others), () => {});
+    get("/devices").then((d) => setList(d.list || []), () => {});
   }, []);
-  const signOut = async () => {
-    const back = username
-      ? "Oralarda yeniden girmek için kullanıcı adın ve şifren gerekecek."
-      : "Henüz şifren yok; oralarda yeniden açmak için buradan “Giriş kodu al” demen gerekecek.";
-    if (!confirm(`Diğer ${others} cihazdan çıkış yapılsın mı? Bu cihaz açık kalır. ${back}`)) return;
-    setBusy(true);
+  const others = list?.length ?? 0;
+  const back = username
+    ? "Oralarda yeniden girmek için kullanıcı adın ve şifren gerekecek."
+    : "Henüz şifren yok; oralarda yeniden açmak için buradan “Giriş kodu al” demen gerekecek.";
+  const signOut = async (device) => {
+    const ask = device ? `${device.name} kapatılsın mı? Bu cihaz açık kalır. ${back}` : `Diğer ${others} cihazdan çıkış yapılsın mı? Bu cihaz açık kalır. ${back}`;
+    if (!confirm(ask)) return;
+    setBusy(device?.id || true);
     try {
-      const r = await api("/devices/signout", {});
-      setOthers(0);
-      notify(r.closed ? `${r.closed} cihazdan çıkış yapıldı. Hesabın artık yalnız bu cihazda açık. 🔐` : "Hesabın zaten yalnız bu cihazda açıktı.");
+      const r = await api("/devices/signout", device ? { id: device.id } : {});
+      setList((l) => (device ? l.filter((d) => d.id !== device.id) : []));
+      notify(device ? `${device.name} kapatıldı. 🔐` : r.closed ? `${r.closed} cihazdan çıkış yapıldı. Hesabın artık yalnız bu cihazda açık. 🔐` : "Hesabın zaten yalnız bu cihazda açıktı.");
     } catch (e) {
       notify(e.message);
     } finally {
       setBusy(false);
     }
   };
-  if (others === null) return null;
+  if (list === null) return null;
   return (
     <div className="device-transfer device-sessions">
       <div>
@@ -521,13 +524,28 @@ function OtherDevices({ username, notify }) {
         </strong>
         <p>
           {others
-            ? `Hesabın bu cihazdan başka ${others} cihazda daha açık. Telefonun kaybolduysa ya da bir yerde açık kaldıysa hepsinden buradan çık.`
+            ? `Hesabın bu cihazdan başka ${others} cihazda daha açık. Telefonun kaybolduysa ya da bir yerde açık kaldıysa buradan kapat.`
             : "Hesabın yalnız bu cihazda açık."}
         </p>
+        {others > 0 && (
+          <ul className="device-list">
+            {list.map((d) => (
+              <li key={d.id}>
+                <span>
+                  {d.name}
+                  <small>{d.seen ? ago(d.seen) : ""}</small>
+                </span>
+                <button type="button" className="text-button" disabled={!!busy} onClick={() => signOut(d)}>
+                  Çık
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-      {others > 0 && (
-        <Busy type="button" loading={busy} className="btn outline" onClick={signOut}>
-          <LogOut size={15} /> Diğerlerinden çık
+      {others > 1 && (
+        <Busy type="button" loading={busy === true} className="btn outline" onClick={() => signOut()}>
+          <LogOut size={15} /> Hepsinden çık
         </Busy>
       )}
     </div>

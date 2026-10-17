@@ -1046,15 +1046,28 @@ test("Hesap ve cihazlar signs the account out of its other devices; this one sta
   const devices = (cookie) => call(app, "/devices", { headers: { Cookie: cookie } });
   const session = (cookie) => call(app, "/session", { headers: { Cookie: cookie } });
 
-  assert.deepEqual((await devices(me.cookie)).data, { others: 2 });
-  assert.deepEqual((await devices(friend.cookie)).data, { others: 0 });
+  const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+  const windows = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36";
+  await call(app, "/session", { headers: { Cookie: laptop.cookie, "User-Agent": windows } });
+  await call(app, "/session", { headers: { Cookie: tablet.cookie, "User-Agent": iphone } });
+  const seen = (await devices(me.cookie)).data;
+  assert.equal(seen.others, 2);
+  assert.deepEqual(seen.list.map((d) => d.name).sort(), ["Windows · Chrome", "iPhone · Safari"], "each device by name (anket)");
+  assert.ok(seen.list.every((d) => /^[0-9a-f]{16}$/.test(d.id) && d.seen > 0));
+  assert.deepEqual((await devices(friend.cookie)).data, { others: 0, list: [] });
+  const iphoneRow = seen.list.find((d) => d.name === "iPhone · Safari");
+  assert.equal((await call(app, "/devices/signout", { method: "POST", headers: { Cookie: friend.cookie }, body: { id: iphoneRow.id } })).status, 404, "not someone else's device");
+  assert.deepEqual((await call(app, "/devices/signout", { method: "POST", headers: { Cookie: me.cookie }, body: { id: iphoneRow.id } })).data, { ok: true, closed: 1 });
+  assert.equal((await session(tablet.cookie)).status, 401, "that one device is signed out");
+  assert.equal((await session(laptop.cookie)).status, 200, "the others stay");
+  const tablet2 = await login();
   const out = await call(app, "/devices/signout", { method: "POST", headers: { Cookie: me.cookie }, body: {} });
   assert.deepEqual(out.data, { ok: true, closed: 2 });
   assert.equal((await session(laptop.cookie)).status, 401);
-  assert.equal((await session(tablet.cookie)).status, 401);
+  assert.equal((await session(tablet2.cookie)).status, 401);
   assert.equal((await session(me.cookie)).status, 200, "this device stays signed in");
   assert.equal((await session(friend.cookie)).status, 200, "teammates are untouched");
-  assert.deepEqual((await devices(me.cookie)).data, { others: 0 });
+  assert.deepEqual((await devices(me.cookie)).data, { others: 0, list: [] });
   assert.deepEqual(
     sqlite.prepare("SELECT endpoint FROM subscriptions").all().map((s) => s.endpoint),
     ["https://fcm.googleapis.com/fcm/send/mine"],

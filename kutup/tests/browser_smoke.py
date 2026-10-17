@@ -225,8 +225,9 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(page.locator('.device-sessions')).to_contain_text('1 cihazda daha açık')
                 asked, before = [], laptop_status()
                 page.once('dialog', lambda d: (asked.append(d.message), d.accept()))
-                page.locator('.device-sessions').get_by_role('button', name='Diğerlerinden çık').click()
-                expect(page.locator('.toast', has_text='1 cihazdan çıkış yapıldı')).to_be_visible()
+                check('Open devices are listed by name (anket)', page.locator('.device-list li').count() == 1)
+                page.locator('.device-list').get_by_role('button', name='Çık').click()
+                expect(page.locator('.toast', has_text='kapatıldı')).to_be_visible()
                 check('Hesap ve cihazlar signs the other devices out; this one stays (d27)',
                     'Bu cihaz açık kalır' in asked[0] and before == 200 and laptop_status() == 401
                     and json_call(page, '/session')['username'] == 'audit_ada'
