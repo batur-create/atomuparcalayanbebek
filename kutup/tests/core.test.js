@@ -609,6 +609,7 @@ test("Batur's dev badge is one per team, visible in state, and the black hole ba
   const earn = (key) => call(app, "/achievements", { method: "POST", headers: { Cookie: friend.cookie }, body: { key } });
   assert.equal((await earn("black-hole")).data.new, true);
   assert.equal((await earn("black-hole")).data.new, false, "awarded once");
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM messages WHERE kind = 'system' AND text = 'gizli bir rozet buldu 🤫'").get().n, 1, "one secret Pano line");
   assert.equal((await earn("made-up")).status, 400);
   assert.equal((await call(app, "/leave", { method: "POST", headers: { Cookie: friend.cookie }, body: {} })).status, 200);
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM achievements").get().n, 0, "leaving removes badges too");
@@ -949,12 +950,23 @@ test("the achievements route answers for the team, and keeps what was earned (n1
   assert.equal(marathon.at, now - H, "earned by the session that tipped it over");
   assert.equal(seen.data.list.find((a) => a.key === "hundred").have, 250);
   assert.equal(sqlite.prepare("SELECT created FROM achievements WHERE member_id = ? AND key = 'marathon'").get(ada.data.memberId).created, now - H, "written down");
+  const news = (id) => sqlite.prepare("SELECT text FROM messages WHERE member_id = ? AND kind = 'system' ORDER BY created").all(id).map((m) => m.text).filter((t) => t.includes("rozet"));
+  assert.deepEqual(news(ada.data.memberId), ["“Maraton” rozetini kazandı 🏅"], "a new badge is Pano news");
+  await list(ada, ada.data.memberId);
+  assert.equal(news(ada.data.memberId).length, 1, "announced once");
   sqlite.prepare("DELETE FROM focus_log").run();
   assert.notEqual((await list(ada, ada.data.memberId)).data.list.find((a) => a.key === "marathon").at, null, "kept once earned");
   assert.equal((await list(other, ada.data.memberId)).status, 404, "another team cannot look");
   assert.equal((await call(app, `/achievements/${ada.data.memberId}`)).status, 401);
   await call(app, "/messages", { method: "POST", headers: { Cookie: bora.cookie }, body: { text: "çay" } });
   assert.notEqual((await list(bora, bora.data.memberId)).data.list.find((a) => a.key === "tea").at, null);
+  assert.deepEqual(news(bora.data.memberId), ["gizli bir rozet buldu 🤫"], "a hidden badge keeps its secret");
+
+  // The past counted at once (old sessions, or many badges together) stays quiet.
+  const old = now - 40 * 24 * H;
+  for (let i = 0; i < 5; i++) sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)").run(`o${i}`, other.data.memberId, 50, old - (4 - i) * 24 * H);
+  await list(other, other.data.memberId);
+  assert.equal(news(other.data.memberId).length, 0, "old badges are not news");
 });
 
 test("changing a username or password needs the current password; wrong ones are counted (d23)", async () => {

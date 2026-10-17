@@ -9,7 +9,7 @@ import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.j
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
-import { REPORTED } from "../shared/achievements.js";
+import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
 import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
@@ -41,6 +41,8 @@ const ARRIVAL_REPEAT = 5 * 60000;
 // Çalışma eşi on your statistics: the last 30 days, three shared days at least.
 const PARTNER_DAYS = 30;
 const PARTNER_MIN = 3;
+const BADGE_NEWS_WINDOW = DAY; // a badge earned within a day is news on the Pano
+const BADGE_NEWS_MAX = 2; // more at once is the past being counted
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
@@ -367,6 +369,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   const bump = (groupId) => ["UPDATE groups SET rev = rev + 1 WHERE id = ?", [groupId]];
   // The village has its own revision so the map is only refetched when it changed.
   const bumpVillage = (groupId) => ["UPDATE groups SET village_rev = village_rev + 1 WHERE id = ?", [groupId]];
+  // n14 + anket (17 Eki): a new badge gets one Pano line; hidden ones stay secret.
+  const badgeNews = (key) => {
+    const badge = ACHIEVEMENTS.find((a) => a.key === key);
+    return !badge || badge.hidden ? "gizli bir rozet buldu 🤫" : `“${badge.name}” rozetini kazandı 🏅`;
+  };
   const systemMessage = (groupId, memberId, value) => [
     "INSERT INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, 'system', ?)",
     [crypto.randomUUID(), groupId, memberId, value, Date.now()],
@@ -1870,6 +1877,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       "INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)",
       [member.id, body.key, Date.now()],
     );
+    if (result.changes === 1) await db.batch([systemMessage(member.group_id, member.id, badgeNews(body.key)), bump(member.group_id)]);
     return json({ ok: true, new: result.changes === 1 });
   });
 
@@ -1891,8 +1899,22 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const list = achievementsOf({ focus, buildings, ledger, masters, arrivals, messages, stored, now: Date.now() });
     const known = new Set(stored.map((s) => s.key));
     const fresh = list.filter((a) => a.at !== null && !known.has(a.key));
+    // Pano news for badges earned just now. A pile at once is the past being
+    // counted (first look, or a long absence), so that stays quiet.
+    const now = Date.now();
+    const news = fresh.filter((a) => now - a.at < BADGE_NEWS_WINDOW);
+    const announce = news.length <= BADGE_NEWS_MAX ? news : [];
     if (fresh.length)
-      await db.batch(fresh.map((a) => ["INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)", [id, a.key, a.at]]));
+      await db.batch([
+        // Written before the badge row and only while it is missing, so two
+        // teammates opening the card at once announce it once.
+        ...announce.map((a) => [
+          "INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, ?, ?, ?, 'system', ? WHERE NOT EXISTS (SELECT 1 FROM achievements WHERE member_id = ? AND key = ?)",
+          [crypto.randomUUID(), target.group_id, id, badgeNews(a.key), now, id, a.key],
+        ]),
+        ...fresh.map((a) => ["INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)", [id, a.key, a.at]]),
+        ...(announce.length ? [bump(target.group_id)] : []),
+      ]);
     return json({ list });
   });
 
