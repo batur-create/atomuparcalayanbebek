@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | PR #15 (ikinci üs) |
 | d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | PR #13 (ikinci üs) |
 | d25 | Satır sonları: tek kalan kelime ve emoji yok | Cila | 17 Eki 05:05 | PR #11 (ikinci üs) |
 | d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | PR #10 (ikinci üs) |
@@ -73,6 +74,25 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d27 · Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar
+Güvenlik · 17 Eki 2026 · PR #15 (ikinci üs) · göç yok
+
+**Ne yapıldı:** Ben → Hesap ve cihazlar'da üçüncü kutu, "Açık cihazlar". Hesabın bu cihazdan başka kaç cihazda açık olduğunu söylüyor; **Diğerlerinden çık** onay sorup hepsini kapatıyor. Kaybolan telefon, arkadaşın bilgisayarında açık kalan hesap için. Önceden bunu yalnız Batur panelden yapabiliyordu (ve o, bu cihazı da kapatıyor).
+- Sunucu: `GET /api/devices` → `{ others }` (süresi dolmamış diğer oturumlar), `POST /api/devices/signout` → o oturumlar ve onlara bağlı bildirim abonelikleri silinir, `{ ok, closed }`. Bu cihazın oturumu ve bu cihazdaki diğer hesaplar (n25) kalır.
+- Kapanan cihaz bir sonraki istekte 401 alır; n25'teki akışla o cihazdaki başka hesaba ya da giriş ekranına düşer. Canlıda (Worker, yoklama) bu bir sonraki yoklamada olur; Node sunucusundaki SSE bağlantısı bir sonraki yayında ya da kalp atışında kapanır.
+- Arayüz `Account.jsx`'te `OtherDevices`; "Başka cihazda da aç" kutusunun sınıfını (`device-transfer`) kullanıyor, temalarda onunla aynı görünür.
+- **Testler:** 1 yeni birim testi (iki cihaz kapanır, bu cihaz ve takım arkadaşı açık kalır, kapanan cihazın aboneliği silinir, oturumsuz 401), 1 yeni tarayıcı kontrolü (dizüstünden giriş, "1 cihazda daha açık", onay, dizüstü 401). Dal d26'nın üstünde: 103 birim, 75 tarayıcı, tema 252/252.
+
+**Kararlar ve nedenleri:**
+- **Şifre değişince otomatik çıkış yok** (denetimdeki soru, Batur'un cevabı bekleniyor). Önerilen "kişi seçsin, varsayılan açık kalsın" bu düğmeyle karşılandı; şifre değiştiren kişi hemen altındaki düğmeyle diğerlerini kapatabilir. Batur otomatik isterse `/account`'ta tek satırlık değişiklik.
+- **Şifre sorulmuyor.** Kötü niyetli biri en fazla sahibini diğer cihazlardan çıkarabilir; sahip şifresiyle geri girer. Kaybolan telefon anında, başka cihazdan hızlı çıkmak daha önemli.
+- **Cihaz adı ya da son görülme yok.** Oturumlar cihaz bilgisi tutmuyor; yalnız sayı. Safari ve ana ekran uygulaması aynı iPhone'da iki ayrı "cihaz" sayılır (uygulamanın "Başka cihazda da aç" diliyle aynı).
+- Şifresi olmayan hesapta da çalışıyor; onay metni oralarda yeniden açmak için "Giriş kodu al" gerektiğini söylüyor.
+
+**Batur'un sözleri:** "Projeyi bir sonraki seviyeye taşıyacak iyileştirmeler. Ve özellikler."
+**Geri alma:** `Account.jsx`'te `<OtherDevices … />` satırı silinir (sunucu yolları zararsız, kalabilir).
+**Dosyalar:** `server/app.js`, `src/Account.jsx`, `tests/core.test.js`, `tests/browser_smoke.py`.
 
 ### d26 · Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti
 Cila · 17 Eki 2026 · PR #13 (ikinci üs) · göç yok
