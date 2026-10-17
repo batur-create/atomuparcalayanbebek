@@ -226,6 +226,14 @@ export const migrations = [
     "CREATE TRIGGER subscriptions_outbox_delete AFTER DELETE ON subscriptions BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint AND member_id IS OLD.member_id; END",
     "CREATE TRIGGER subscriptions_outbox_rebind AFTER UPDATE ON subscriptions WHEN OLD.endpoint IS NOT NEW.endpoint OR OLD.member_id IS NOT NEW.member_id OR OLD.session_token IS NOT NEW.session_token OR OLD.subscription IS NOT NEW.subscription BEGIN DELETE FROM push_outbox WHERE subscription_table = 'subscriptions' AND endpoint = OLD.endpoint AND member_id IS OLD.member_id; END",
   ],
+  // 22 — a shared plan link (n34) can be answered "Gelemem" too; those who
+  // said no are kept apart from attendees so every "who is coming" count stays as it was.
+  [
+    "CREATE TABLE IF NOT EXISTS plan_skips (plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE, member_id TEXT NOT NULL REFERENCES members(id), PRIMARY KEY(plan_id, member_id))",
+  ],
+  // 23 — open devices by name (anket, 17 Eki): a short label from the
+  // browser ("iPhone · Safari"), filled in as each device opens the app.
+  ["ALTER TABLE sessions ADD COLUMN device TEXT"],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

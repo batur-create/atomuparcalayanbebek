@@ -9,7 +9,7 @@ import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.j
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
-import { REPORTED } from "../shared/achievements.js";
+import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
 import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
@@ -41,8 +41,20 @@ const ARRIVAL_REPEAT = 5 * 60000;
 // Çalışma eşi on your statistics: the last 30 days, three shared days at least.
 const PARTNER_DAYS = 30;
 const PARTNER_MIN = 3;
+const BADGE_NEWS_WINDOW = DAY; // a badge earned within a day is news on the Pano
+const BADGE_NEWS_MAX = 2; // more at once is the past being counted
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
+/** A short, readable device label from the browser's user agent ("iPhone · Safari"). */
+export function deviceName(agent) {
+  const ua = String(agent || "");
+  if (!ua) return null;
+  const kind = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? (/Mobile/.test(ua) ? "Android telefon" : "Android tablet") : /Windows/.test(ua) ? "Windows" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /CrOS/.test(ua) ? "Chromebook" : /Linux/.test(ua) ? "Linux" : "Cihaz";
+  // On iPhone and iPad the home screen app drops "Safari" from the agent.
+  if ((kind === "iPhone" || kind === "iPad") && !/Safari\//.test(ua)) return `${kind} · ana ekran`;
+  const browser = /Edg\//.test(ua) ? "Edge" : /OPR\/|Opera/.test(ua) ? "Opera" : /SamsungBrowser/.test(ua) ? "Samsung" : /Firefox\/|FxiOS/.test(ua) ? "Firefox" : /Chrome\/|CriOS/.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : null;
+  return browser ? `${kind} · ${browser}` : kind;
+}
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
 const RUIN_TIME = RUIN_DAYS * 24 * 3600000; // rubble waits this long for the next session to clear it
 
@@ -281,7 +293,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   async function memberFor(token) {
     if (!token || token.length > 128) return null;
     return db.get(
-      `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen, s.created AS session_created
+      `SELECT m.*, g.rev AS group_rev, s.token AS session_token, s.seen AS session_seen, s.created AS session_created, s.device AS session_device
        FROM sessions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
        WHERE s.token = ? AND s.created > ?`,
       [await sha(token), Date.now() - SESSION_AGE],
@@ -367,6 +379,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   const bump = (groupId) => ["UPDATE groups SET rev = rev + 1 WHERE id = ?", [groupId]];
   // The village has its own revision so the map is only refetched when it changed.
   const bumpVillage = (groupId) => ["UPDATE groups SET village_rev = village_rev + 1 WHERE id = ?", [groupId]];
+  // n14 + anket (17 Eki): a new badge gets one Pano line; hidden ones stay secret.
+  const badgeNews = (key) => {
+    const badge = ACHIEVEMENTS.find((a) => a.key === key);
+    return !badge || badge.hidden ? "gizli bir rozet buldu 🤫" : `“${badge.name}” rozetini kazandı 🏅`;
+  };
   const systemMessage = (groupId, memberId, value) => [
     "INSERT INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, 'system', ?)",
     [crypto.randomUUID(), groupId, memberId, value, Date.now()],
@@ -402,8 +419,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [groupId, now - 2 * HOUR],
         ],
         [
-          "SELECT a.plan_id AS planId, a.member_id AS memberId FROM attendees a JOIN plans p ON p.id = a.plan_id WHERE p.group_id = ? AND p.starts > ?",
-          [groupId, now - 2 * HOUR],
+          // n34: who said "Varım" and who said "Gelemem" (going = 0).
+          `SELECT a.plan_id AS planId, a.member_id AS memberId, 1 AS going FROM attendees a JOIN plans p ON p.id = a.plan_id WHERE p.group_id = ? AND p.starts > ?
+           UNION ALL
+           SELECT s.plan_id AS planId, s.member_id AS memberId, 0 AS going FROM plan_skips s JOIN plans p ON p.id = s.plan_id WHERE p.group_id = ? AND p.starts > ?`,
+          [groupId, now - 2 * HOUR, groupId, now - 2 * HOUR],
         ],
         [
           "SELECT member_id AS id, SUM(buildings) AS n FROM districts WHERE group_id = ? AND member_id IS NOT NULL GROUP BY member_id",
@@ -420,10 +440,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (!hearts.has(r.messageId)) hearts.set(r.messageId, []);
       hearts.get(r.messageId).push(r.memberId);
     }
-    const going = new Map();
+    const going = new Map(),
+      skips = new Map();
     for (const a of attendees) {
-      if (!going.has(a.planId)) going.set(a.planId, []);
-      going.get(a.planId).push(a.memberId);
+      const into = a.going ? going : skips;
+      if (!into.has(a.planId)) into.set(a.planId, []);
+      into.get(a.planId).push(a.memberId);
     }
     const lastWeek = weekStart(now) - 7 * DAY;
     const master = weekly.find((w) => w.kind === "master" && w.week === lastWeek);
@@ -456,7 +478,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       messages: messages
         .sort((a, b) => a.created - b.created)
         .map((m) => ({ ...m, reactions: hearts.get(m.id) || [] })),
-      plans: plans.map((p) => ({ ...p, attendees: going.get(p.id) || [] })),
+      plans: plans.map((p) => ({ ...p, attendees: going.get(p.id) || [], skips: skips.get(p.id) || [] })),
     };
   }
   // ---------- village ----------
@@ -970,6 +992,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return [
       ["DELETE FROM reactions WHERE member_id = ? OR message_id IN (SELECT id FROM messages WHERE member_id = ?)", [id, id]],
       ["DELETE FROM attendees WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
+      ["DELETE FROM plan_skips WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
       ["DELETE FROM plans WHERE member_id = ?", [id]],
       ["DELETE FROM messages WHERE member_id = ?", [id]],
       ["DELETE FROM focus_log WHERE member_id = ?", [id]],
@@ -1010,6 +1033,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM reactions WHERE message_id IN (SELECT id FROM messages WHERE created < ?)", [now - 120 * DAY]],
       ["DELETE FROM messages WHERE created < ?", [now - 120 * DAY]],
       ["DELETE FROM attendees WHERE plan_id IN (SELECT id FROM plans WHERE starts < ?)", [now - 30 * DAY]],
+      ["DELETE FROM plan_skips WHERE plan_id IN (SELECT id FROM plans WHERE starts < ?)", [now - 30 * DAY]],
       ["DELETE FROM plans WHERE starts < ?", [now - 30 * DAY]],
       ["DELETE FROM sessions WHERE created <= ?", [now - SESSION_AGE]],
       ["DELETE FROM owner_sessions WHERE created <= ?", [now - OWNER_AGE]],
@@ -1258,10 +1282,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       headers = deviceCookies(request, held[0].token, held.slice(1).map((a) => a.token));
     }
     const renew = now - member.session_created > 30 * DAY;
+    const device = deviceName(request.headers.get("user-agent"));
     if (renew)
-      await db.run("UPDATE sessions SET created = ?, seen = ? WHERE token = ?", [now, now, member.session_token]);
-    else if (now - member.session_seen > HOUR)
-      await db.run("UPDATE sessions SET seen = ? WHERE token = ?", [now, member.session_token]);
+      await db.run("UPDATE sessions SET created = ?, seen = ?, device = ? WHERE token = ?", [now, now, device, member.session_token]);
+    else if (now - member.session_seen > HOUR || member.session_device !== device)
+      await db.run("UPDATE sessions SET seen = ?, device = ? WHERE token = ?", [now, device, member.session_token]);
     if (renew && !headers.length) headers = [["Set-Cookie", sessionCookie(request, readCookie(request, "kutup_session"))]];
     return json(await sessionData(member), 200, headers);
   }, false);
@@ -1309,8 +1334,28 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       member.session_token,
       Date.now() - SESSION_AGE,
     ]);
-  route("GET", "/devices", async ({ member }) => json({ others: (await otherSessions(member)).n }));
-  route("POST", "/devices/signout", async ({ member }) => {
+  // Each other device by name and last visit (anket, 17 Eki). The id is the
+  // start of the stored hash, enough to pick one, never the cookie itself.
+  route("GET", "/devices", async ({ member }) => {
+    const list = await db.all(
+      "SELECT substr(token, 1, 16) AS id, device, seen FROM sessions WHERE member_id = ? AND token <> ? AND created > ? ORDER BY seen DESC",
+      [member.id, member.session_token, Date.now() - SESSION_AGE],
+    );
+    return json({ others: list.length, list: list.map((d) => ({ id: d.id, name: d.device || "Bilinmeyen cihaz", seen: d.seen })) });
+  });
+  route("POST", "/devices/signout", async ({ member, body }) => {
+    // One device by id, or all the others.
+    if (body.id !== undefined) {
+      const id = String(body.id);
+      if (!/^[0-9a-f]{16}$/.test(id)) fail("Cihaz bulunamadı.", 404);
+      const row = await db.get("SELECT token FROM sessions WHERE member_id = ? AND token <> ? AND substr(token, 1, 16) = ?", [member.id, member.session_token, id]);
+      if (!row) fail("Cihaz bulunamadı.", 404);
+      await db.batch([
+        ["DELETE FROM subscriptions WHERE member_id = ? AND session_token = ?", [member.id, row.token]],
+        ["DELETE FROM sessions WHERE token = ?", [row.token]],
+      ]);
+      return json({ ok: true, closed: 1 });
+    }
     const { n } = await otherSessions(member);
     await db.batch([
       ["DELETE FROM subscriptions WHERE member_id = ? AND (session_token IS NULL OR session_token <> ?)", [member.id, member.session_token]],
@@ -1517,14 +1562,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return changed(m, { id }, 201);
   });
 
-  route("POST", "/plans/:id/join", async ({ member: m, params }) => {
-    const plan = await db.get("SELECT * FROM plans WHERE id = ? AND group_id = ?", [
-      params.id,
-      m.group_id,
-    ]);
+  async function answerablePlan(m, id) {
+    const plan = await db.get("SELECT * FROM plans WHERE id = ? AND group_id = ?", [id, m.group_id]);
     if (!plan) fail("Plan bulunamadı.", 404);
     if (plan.member_id === m.id) fail("Bu planı sen oluşturdun; istersen silebilirsin.");
     if (plan.starts < Date.now() - 2 * HOUR) fail("Bu planın zamanı geçti.");
+    return plan;
+  }
+
+  route("POST", "/plans/:id/join", async ({ member: m, params }) => {
+    const plan = await answerablePlan(m, params.id);
     const old = await db.get("SELECT 1 AS hit FROM attendees WHERE plan_id = ? AND member_id = ?", [
       plan.id,
       m.id,
@@ -1533,6 +1580,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       old
         ? ["DELETE FROM attendees WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]]
         : ["INSERT OR IGNORE INTO attendees (plan_id, member_id) VALUES (?, ?)", [plan.id, m.id]],
+      ["DELETE FROM plan_skips WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
+      bump(m.group_id),
+    ]);
+    return changed(m);
+  });
+
+  // n34: a shared plan link asks "Varım" or "Gelemem"; the answer is set, not
+  // toggled, so tapping the same button twice changes nothing.
+  route("POST", "/plans/:id/answer", async ({ member: m, params, body }) => {
+    const plan = await answerablePlan(m, params.id);
+    const going = body.going === true;
+    await db.batch([
+      ["DELETE FROM attendees WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
+      ["DELETE FROM plan_skips WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
+      [`INSERT INTO ${going ? "attendees" : "plan_skips"} (plan_id, member_id) VALUES (?, ?)`, [plan.id, m.id]],
       bump(m.group_id),
     ]);
     return changed(m);
@@ -1543,6 +1605,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!plan) fail("Plan bulunamadı.", 404);
     await db.batch([
       ["DELETE FROM attendees WHERE plan_id = ?", [plan.id]],
+      ["DELETE FROM plan_skips WHERE plan_id = ?", [plan.id]],
       ["DELETE FROM plans WHERE id = ?", [plan.id]],
       bump(m.group_id),
     ]);
@@ -1873,6 +1936,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       "INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)",
       [member.id, body.key, Date.now()],
     );
+    if (result.changes === 1) await db.batch([systemMessage(member.group_id, member.id, badgeNews(body.key)), bump(member.group_id)]);
     return json({ ok: true, new: result.changes === 1 });
   });
 
@@ -1894,8 +1958,22 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const list = achievementsOf({ focus, buildings, ledger, masters, arrivals, messages, stored, now: Date.now() });
     const known = new Set(stored.map((s) => s.key));
     const fresh = list.filter((a) => a.at !== null && !known.has(a.key));
+    // Pano news for badges earned just now. A pile at once is the past being
+    // counted (first look, or a long absence), so that stays quiet.
+    const now = Date.now();
+    const news = fresh.filter((a) => now - a.at < BADGE_NEWS_WINDOW);
+    const announce = news.length <= BADGE_NEWS_MAX ? news : [];
     if (fresh.length)
-      await db.batch(fresh.map((a) => ["INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)", [id, a.key, a.at]]));
+      await db.batch([
+        // Written before the badge row and only while it is missing, so two
+        // teammates opening the card at once announce it once.
+        ...announce.map((a) => [
+          "INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, ?, ?, ?, 'system', ? WHERE NOT EXISTS (SELECT 1 FROM achievements WHERE member_id = ? AND key = ?)",
+          [crypto.randomUUID(), target.group_id, id, badgeNews(a.key), now, id, a.key],
+        ]),
+        ...fresh.map((a) => ["INSERT OR IGNORE INTO achievements (member_id, key, created) VALUES (?, ?, ?)", [id, a.key, a.at]]),
+        ...(announce.length ? [bump(target.group_id)] : []),
+      ]);
     return json({ list });
   });
 
@@ -2311,7 +2389,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks", "weekly"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "plan_skips", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks", "weekly"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {

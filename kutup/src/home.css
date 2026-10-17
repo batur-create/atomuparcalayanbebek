@@ -2026,3 +2026,18 @@ button.status-route {
 .map-pick {
   margin-top: 8px;
 }
+/* n34: the plan's title opens its card */
+.home-plan-open {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.home-plan-open strong {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

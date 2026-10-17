@@ -693,3 +693,62 @@ html[data-motion="calm"] .home-sky button.sky-sticker.wobble {
   height: auto;
   transform: none;
 }
+
+/* Anket (17 Eki): a reply from Batur makes the envelope wiggle once, on the
+   "Batur'a ilet" row in Ben and on the feedback card. Once, then still. */
+.envelope-art.wiggle {
+  animation: envelope-wiggle 0.9s ease-in-out 0.4s 1;
+}
+.door-icon.wiggle svg {
+  animation: door-wiggle 0.8s ease-in-out 0.3s 1;
+}
+@keyframes envelope-wiggle {
+  0%, 100% { transform: rotate(-11deg); }
+  20% { transform: rotate(-19deg); }
+  45% { transform: rotate(-4deg); }
+  70% { transform: rotate(-15deg); }
+}
+@keyframes door-wiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  45% { transform: rotate(11deg); }
+  70% { transform: rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .envelope-art.wiggle,
+  .door-icon.wiggle svg {
+    animation: none;
+  }
+}
+html[data-motion="still"] :is(.envelope-art.wiggle, .door-icon.wiggle svg) {
+  animation: none;
+}
+
+/* Anket (17 Eki): open devices by name, each with its own "Çık". */
+.device-list {
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.device-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.device-list small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+.device-list .text-button {
+  min-height: 44px;
+  padding: 0 4px;
+}

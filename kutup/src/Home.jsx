@@ -9,7 +9,7 @@
 // drawing is never repainted frame by frame.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { ArrowUpRight, Check, Headphones, Map as MapIcon, MapPin, Moon, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, Check, Headphones, Map as MapIcon, MapPin, Moon, Plus, Send, Trash2 } from "lucide-react";
 import { Avatar, Empty, reducedMotion } from "./ui.jsx";
 import { STATUS, dayWord, shortTime, minutesLabel } from "./api.js";
 import { skyAt, sunTimes } from "./villageWorld.js";
@@ -723,7 +723,7 @@ function People({ members, me, now, arrived, filter, setFilter, openMember, intr
 }
 
 // ---------- who is coming when ----------
-function PlanRow({ plan, data, me, requireMember, mutate, openMember }) {
+function PlanRow({ plan, data, me, requireMember, mutate, openMember, openCard }) {
   const owner = data.members.find((x) => x.id === plan.memberId),
     joined = plan.attendees.includes(me?.id),
     date = new Date(plan.starts);
@@ -735,7 +735,10 @@ function PlanRow({ plan, data, me, requireMember, mutate, openMember }) {
         <small>{shortTime(plan.starts)}</small>
       </div>
       <div className="home-plan-text">
-        <strong>{plan.note || "Kütüpte buluşalım"}</strong>
+        {/* n34: the plan's own card, where it is answered and sent to a group chat */}
+        <button type="button" className="home-plan-open" onClick={() => requireMember(() => openCard(plan.id))}>
+          <strong>{plan.note || "Kütüpte buluşalım"}</strong>
+        </button>
         <small>
           {dayWord(plan.starts)} · {owner?.name || "Biri"} planladı
         </small>
@@ -745,19 +748,24 @@ function PlanRow({ plan, data, me, requireMember, mutate, openMember }) {
               <FaceButton key={id} member={data.members.find((x) => x.id === id)} onOpen={openMember} />
             ))}
           </span>
-          {plan.attendees.length} kişi geliyor
+          {plan.skips?.length ? `${plan.attendees.length}\u00a0geliyor · ${plan.skips.length}\u00a0gelemiyor` : `${plan.attendees.length} kişi geliyor`}
         </span>
       </div>
       {plan.memberId === me?.id ? (
-        <button
-          className="icon-button"
-          aria-label="Planı sil"
-          onClick={() => {
-            if (confirm("Bu planı kaldırmak istiyor musun?")) mutate(`/plans/${plan.id}`, {}, "Plan kaldırıldı.", "DELETE");
-          }}
-        >
-          <Trash2 size={16} />
-        </button>
+        <>
+          <button className="icon-button" aria-label="Planı gruba gönder" onClick={() => openCard(plan.id)}>
+            <Send size={16} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Planı sil"
+            onClick={() => {
+              if (confirm("Bu planı kaldırmak istiyor musun?")) mutate(`/plans/${plan.id}`, {}, "Plan kaldırıldı.", "DELETE");
+            }}
+          >
+            <Trash2 size={16} />
+          </button>
+        </>
       ) : (
         <m.button
           whileTap={{ scale: 0.92 }}
@@ -773,7 +781,7 @@ function PlanRow({ plan, data, me, requireMember, mutate, openMember }) {
   );
 }
 
-function Plans({ data, me, requireMember, mutate, openPlan, openMember }) {
+function Plans({ data, me, requireMember, mutate, openPlan, openMember, openCard }) {
   const [all, setAll] = useState(false);
   const shown = all ? data.plans : data.plans.slice(0, 3);
   return (
@@ -787,7 +795,7 @@ function Plans({ data, me, requireMember, mutate, openPlan, openMember }) {
       <div className="plan-line">
         <AnimatePresence initial={false}>
           {shown.map((plan) => (
-            <PlanRow key={plan.id} plan={plan} data={data} me={me} requireMember={requireMember} mutate={mutate} openMember={openMember} />
+            <PlanRow key={plan.id} plan={plan} data={data} me={me} requireMember={requireMember} mutate={mutate} openMember={openMember} openCard={openCard} />
           ))}
         </AnimatePresence>
       </div>
@@ -925,7 +933,7 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
         />
       </m.div>
       <m.div className="home-side" {...rise(2)}>
-        <Plans data={data} me={me} requireMember={requireMember} mutate={mutate} openPlan={() => setModal("plan")} openMember={openMember} />
+        <Plans data={data} me={me} requireMember={requireMember} mutate={mutate} openPlan={() => setModal("plan")} openMember={openMember} openCard={(id) => setModal({ plan: id })} />
         <Reveal className="home-tiles">
           <VillageTile me={me} members={data.members} village={village} week={data.week} now={now} navigate={navigate} />
           <BoardTile members={data.members} messages={data.messages} unread={unread} navigate={navigate} />

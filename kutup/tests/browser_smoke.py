@@ -219,14 +219,19 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.account-form button[type=submit]').click()
                 expect(page.locator('.toast', has_text='Şu anki şifren yanlış')).to_be_visible()
                 page.get_by_label('Şu anki şifren').fill('audit-password-123')
+                pw_asked = []
+                page.once('dialog', lambda d: (pw_asked.append(d.message), d.dismiss()))
                 page.locator('.account-form button[type=submit]').click()
                 expect(page.locator('.account-form')).to_have_count(0)
+                expect(page.locator('.device-sessions')).to_contain_text('1 cihazda daha açık')
+                check('A new password asks whether the other devices go too; "no" keeps them (anket)', len(pw_asked) == 1 and 'onlardan da çıkayım mı' in pw_asked[0] and laptop_status() == 200)
                 check('Changing the account asks for the current password', page.locator('.account-box', has_text='@audit_ada').count()==1)
                 expect(page.locator('.device-sessions')).to_contain_text('1 cihazda daha açık')
                 asked, before = [], laptop_status()
                 page.once('dialog', lambda d: (asked.append(d.message), d.accept()))
-                page.locator('.device-sessions').get_by_role('button', name='Diğerlerinden çık').click()
-                expect(page.locator('.toast', has_text='1 cihazdan çıkış yapıldı')).to_be_visible()
+                check('Open devices are listed by name (anket)', page.locator('.device-list li').count() == 1)
+                page.locator('.device-list').get_by_role('button', name='Çık').click()
+                expect(page.locator('.toast', has_text='kapatıldı')).to_be_visible()
                 check('Hesap ve cihazlar signs the other devices out; this one stays (d27)',
                     'Bu cihaz açık kalır' in asked[0] and before == 200 and laptop_status() == 401
                     and json_call(page, '/session')['username'] == 'audit_ada'
