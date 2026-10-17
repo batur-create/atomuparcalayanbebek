@@ -23,7 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | PR #9 (ikinci üs) |
+| d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | PR #10 (ikinci üs) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -72,7 +72,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 ## Kayıtlar (yeniden eskiye)
 
 ### d24 · Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları
-Cila · 17 Eki 2026 · PR #9 (ikinci üs) · göç yok
+Cila · 17 Eki 2026 · PR #10 (ikinci üs) · göç yok
 
 **Ne yapıldı:** 17 Ekim dış denetiminin görsel bulguları V1, V3, V4 (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
 - **V1:** "Batur'a ilet" kartında zarf artık yazının üstüne binmiyor. Paragraf zarfın yanında bitiyor (her ekran boyunda `.envelope-art` ölçüsüyle eşleşen `padding-right`); zarf yerinde ve aynı boyda. 320'den 1600 px'e 14 genişlikte ölçüldü.
