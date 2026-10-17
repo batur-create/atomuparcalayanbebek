@@ -419,8 +419,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [groupId, now - 2 * HOUR],
         ],
         [
-          "SELECT a.plan_id AS planId, a.member_id AS memberId FROM attendees a JOIN plans p ON p.id = a.plan_id WHERE p.group_id = ? AND p.starts > ?",
-          [groupId, now - 2 * HOUR],
+          // n34: who said "Varım" and who said "Gelemem" (going = 0).
+          `SELECT a.plan_id AS planId, a.member_id AS memberId, 1 AS going FROM attendees a JOIN plans p ON p.id = a.plan_id WHERE p.group_id = ? AND p.starts > ?
+           UNION ALL
+           SELECT s.plan_id AS planId, s.member_id AS memberId, 0 AS going FROM plan_skips s JOIN plans p ON p.id = s.plan_id WHERE p.group_id = ? AND p.starts > ?`,
+          [groupId, now - 2 * HOUR, groupId, now - 2 * HOUR],
         ],
         [
           "SELECT member_id AS id, SUM(buildings) AS n FROM districts WHERE group_id = ? AND member_id IS NOT NULL GROUP BY member_id",
@@ -437,10 +440,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (!hearts.has(r.messageId)) hearts.set(r.messageId, []);
       hearts.get(r.messageId).push(r.memberId);
     }
-    const going = new Map();
+    const going = new Map(),
+      skips = new Map();
     for (const a of attendees) {
-      if (!going.has(a.planId)) going.set(a.planId, []);
-      going.get(a.planId).push(a.memberId);
+      const into = a.going ? going : skips;
+      if (!into.has(a.planId)) into.set(a.planId, []);
+      into.get(a.planId).push(a.memberId);
     }
     const lastWeek = weekStart(now) - 7 * DAY;
     const master = weekly.find((w) => w.kind === "master" && w.week === lastWeek);
@@ -473,7 +478,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       messages: messages
         .sort((a, b) => a.created - b.created)
         .map((m) => ({ ...m, reactions: hearts.get(m.id) || [] })),
-      plans: plans.map((p) => ({ ...p, attendees: going.get(p.id) || [] })),
+      plans: plans.map((p) => ({ ...p, attendees: going.get(p.id) || [], skips: skips.get(p.id) || [] })),
     };
   }
   // ---------- village ----------
@@ -987,6 +992,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return [
       ["DELETE FROM reactions WHERE member_id = ? OR message_id IN (SELECT id FROM messages WHERE member_id = ?)", [id, id]],
       ["DELETE FROM attendees WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
+      ["DELETE FROM plan_skips WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
       ["DELETE FROM plans WHERE member_id = ?", [id]],
       ["DELETE FROM messages WHERE member_id = ?", [id]],
       ["DELETE FROM focus_log WHERE member_id = ?", [id]],
@@ -1027,6 +1033,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM reactions WHERE message_id IN (SELECT id FROM messages WHERE created < ?)", [now - 120 * DAY]],
       ["DELETE FROM messages WHERE created < ?", [now - 120 * DAY]],
       ["DELETE FROM attendees WHERE plan_id IN (SELECT id FROM plans WHERE starts < ?)", [now - 30 * DAY]],
+      ["DELETE FROM plan_skips WHERE plan_id IN (SELECT id FROM plans WHERE starts < ?)", [now - 30 * DAY]],
       ["DELETE FROM plans WHERE starts < ?", [now - 30 * DAY]],
       ["DELETE FROM sessions WHERE created <= ?", [now - SESSION_AGE]],
       ["DELETE FROM owner_sessions WHERE created <= ?", [now - OWNER_AGE]],
@@ -1555,14 +1562,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return changed(m, { id }, 201);
   });
 
-  route("POST", "/plans/:id/join", async ({ member: m, params }) => {
-    const plan = await db.get("SELECT * FROM plans WHERE id = ? AND group_id = ?", [
-      params.id,
-      m.group_id,
-    ]);
+  async function answerablePlan(m, id) {
+    const plan = await db.get("SELECT * FROM plans WHERE id = ? AND group_id = ?", [id, m.group_id]);
     if (!plan) fail("Plan bulunamadı.", 404);
     if (plan.member_id === m.id) fail("Bu planı sen oluşturdun; istersen silebilirsin.");
     if (plan.starts < Date.now() - 2 * HOUR) fail("Bu planın zamanı geçti.");
+    return plan;
+  }
+
+  route("POST", "/plans/:id/join", async ({ member: m, params }) => {
+    const plan = await answerablePlan(m, params.id);
     const old = await db.get("SELECT 1 AS hit FROM attendees WHERE plan_id = ? AND member_id = ?", [
       plan.id,
       m.id,
@@ -1571,6 +1580,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       old
         ? ["DELETE FROM attendees WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]]
         : ["INSERT OR IGNORE INTO attendees (plan_id, member_id) VALUES (?, ?)", [plan.id, m.id]],
+      ["DELETE FROM plan_skips WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
+      bump(m.group_id),
+    ]);
+    return changed(m);
+  });
+
+  // n34: a shared plan link asks "Varım" or "Gelemem"; the answer is set, not
+  // toggled, so tapping the same button twice changes nothing.
+  route("POST", "/plans/:id/answer", async ({ member: m, params, body }) => {
+    const plan = await answerablePlan(m, params.id);
+    const going = body.going === true;
+    await db.batch([
+      ["DELETE FROM attendees WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
+      ["DELETE FROM plan_skips WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
+      [`INSERT INTO ${going ? "attendees" : "plan_skips"} (plan_id, member_id) VALUES (?, ?)`, [plan.id, m.id]],
       bump(m.group_id),
     ]);
     return changed(m);
@@ -1581,6 +1605,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!plan) fail("Plan bulunamadı.", 404);
     await db.batch([
       ["DELETE FROM attendees WHERE plan_id = ?", [plan.id]],
+      ["DELETE FROM plan_skips WHERE plan_id = ?", [plan.id]],
       ["DELETE FROM plans WHERE id = ?", [plan.id]],
       bump(m.group_id),
     ]);
@@ -2361,7 +2386,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks", "weekly"];
+    const tables = ["groups", "members", "districts", "buildings", "building_likes", "focus_log", "messages", "reactions", "plans", "attendees", "plan_skips", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks", "weekly"];
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {
