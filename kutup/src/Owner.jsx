@@ -338,6 +338,18 @@ export function OwnerPage() {
   };
   // The open request stays on screen even after its stage moves it out of the filter.
   const shown = (items || []).filter((x) => inFilter(x, filter) || x.id === openId);
+  // On a phone the stages slide sideways; the chosen one (often "Hepsi", the
+  // last) slides into view. Only the row moves, never the page.
+  const stages = useRef();
+  useEffect(() => {
+    const row = stages.current,
+      chip = row?.querySelector(".selected");
+    if (!chip || row.scrollWidth <= row.clientWidth) return;
+    const a = row.getBoundingClientRect(),
+      b = chip.getBoundingClientRect();
+    if (b.left < a.left || b.right > a.right)
+      row.scrollLeft += b.left - a.left - parseFloat(getComputedStyle(row).paddingLeft);
+  }, [filter, view, items]);
   return (
     <main className="owner-page">
       <div className="owner-top">
@@ -441,7 +453,7 @@ export function OwnerPage() {
           {error && <p className="form-error">{error}</p>}
           {view === "requests" ? (
             <>
-              <div className="filter-row owner-filters">
+              <div className="filter-row owner-filters" ref={stages}>
                 {STAGE_FILTERS.map(([id, name, emoji]) => (
                   <button
                     className={`filter-chip ${filter === id ? "selected" : ""}`}

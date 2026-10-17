@@ -639,3 +639,57 @@ html[data-motion="calm"] .home-sky button.sky-sticker.wobble {
 .quiet-focus:focus-visible {
   outline: none;
 }
+
+/* ---------- d24: 44px to the finger for the small controls left ---------- */
+/* Same idea as .face-btn and .scribble above, for every control the audit
+   measured under 40px on a 390px phone: an invisible layer, centred, at least
+   44px each way. Nothing moves or changes colour; only the place a finger
+   can land grows. :where() keeps it weaker than any rule that already places
+   these (absolute corner buttons stay where they are). .mode-button already
+   has its own layer (dark.css). */
+:where(
+    .icon-button:not(.mode-button),
+    .text-button,
+    .filter-chip,
+    .toast > button,
+    .rhythm-chips button,
+    .sound-pill,
+    .reaction,
+    .reply-button,
+    .send-button,
+    .coffee-button,
+    .status-route,
+    .village-building-list summary
+  ) {
+  position: relative;
+}
+:where(
+    .icon-button:not(.mode-button),
+    .text-button,
+    .filter-chip,
+    .toast > button,
+    .rhythm-chips button,
+    .sound-pill,
+    .reaction,
+    .reply-button,
+    .send-button,
+    .coffee-button,
+    .status-route,
+    .village-building-list summary
+  )::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+/* The bell sits 8px from the look button, whose own layer already fills that
+   gap (dark.css); the bell's grows up, down and to the right instead. */
+.notification-button::after {
+  inset: -6px -12px -6px 0;
+  width: auto;
+  height: auto;
+  transform: none;
+}
