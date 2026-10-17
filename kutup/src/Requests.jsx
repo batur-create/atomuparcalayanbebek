@@ -20,7 +20,7 @@ const SPARKS = {
     ["Birlikte", "Birlikte çıkış 🚇 “20.00’de çıkıyorum, metroya beraber yürüyen?” diye çağrı atabilelim."],
     ["Eğlenceli", "Kahve çarkı 🎡 Molada kimin ısmarlayacağını uygulama çevirsin, itiraz yok."],
     ["Odak", "Seri sayacı 🔥 Üst üste kaç gün kütübe geldiğim görünsün, zinciri kırmak istemem."],
-    ["İşe yarar", "Masa haritası 🗺️ Salonun basit bir çizimi olsa, kim hangi masada tek bakışta görsek."],
+    ["İşe yarar", "Sessiz köşe uyarısı 🤫 Salonda gürültü varsa tek tuşla ekibe “şu masalar sakin” diyebilelim."],
     ["Odak", "Günün hedefi ✅ Sabah “bugün 3 ünite” yazayım, akşam tikleyeyim, ekip alkışlasın."],
     ["Eğlenceli", "Günün modu 😴📚🔥 İsmimin yanında bugünkü halim emoji olarak dursun."],
     ["Birlikte", "Ortak çalma listesi 🎶 Odak odasında herkesin şu an ne dinlediği görünsün."],

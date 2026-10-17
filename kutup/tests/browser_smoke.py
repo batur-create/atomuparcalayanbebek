@@ -445,6 +445,22 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(page.locator('.week-story')).to_have_count(0)
                 check("The week's story: tap on, tap back, hold pauses, Escape closes, 44px close, no overflow (n28)",
                       total >= 3 and held == f'1 / {total}' and not wide and close_box['width'] >= 44 and close_box['height'] >= 44)
+                # n30: the desk map opens from "Kim nerede?", a free chair says "Geldim" with that desk.
+                page.goto(base)
+                page.locator('.map-open').click()
+                desk_map = page.get_by_role('dialog', name='Masa haritası')
+                desk_map.get_by_role('button', name='Adnan', exact=False).click()
+                seat_box = desk_map.get_by_role('button', name='Masa 14, boş').bounding_box()
+                desk_map.get_by_role('button', name='Masa 14, boş').click()
+                desk_map.get_by_role('button', name='Buraya', exact=False).click()
+                expect(desk_map.get_by_role('button', name='Masa 14: sen')).to_be_visible()
+                seated = next(x for x in json_call(page, '/state')['members'] if x['id'] == json_call(page, '/session')['memberId'])
+                map_wide = desk_map.evaluate('el => el.scrollWidth > el.clientWidth')
+                page.keyboard.press('Escape')
+                expect(page.locator('.desk-map')).to_have_count(0)
+                check('Desk map: a free chair seats you there, 44px chairs, no overflow (n30)',
+                      seated['status'] == 'here' and seated['desk'] == '14' and seated['location'] == 'Adnan Ötüken Okuma Salonu'
+                      and seat_box['width'] >= 44 and seat_box['height'] >= 44 and not map_wide)
                 owner = browser.new_page(viewport={'width':375,'height':812}, reduced_motion='reduce')
                 owner.on('pageerror', lambda e: errors.append(str(e)))
                 owner.goto(base + '/batur')

@@ -1,8 +1,9 @@
 // Screens that most visits never open load on demand (n29): the owner panel,
-// the focus screen, the village map and the statistics. Each wrapper keeps the
-// component's name and props, so call sites read as before. Once the app has
-// painted and the phone is idle, they are fetched quietly in the background,
-// so a tab switch later is as instant as before (not the owner panel).
+// the focus screen, the village map, the statistics, the week's story and the
+// desk map. Each wrapper keeps the component's name and props, so call sites
+// read as before. Once the app has painted and the phone is idle, they are
+// fetched quietly in the background, so a tab switch later is as instant as
+// before (not the owner panel).
 import React, { Suspense, lazy } from "react";
 import { Loading } from "./Illustrations.jsx";
 
@@ -25,6 +26,7 @@ export const FocusScreen = later(() => import("./FocusScreen.jsx"), "FocusScreen
 export const VillagePanel = later(() => import("./VillageMap.jsx"), "VillagePanel", <Loading text="Köy kuruluyor…" />);
 export const MemberStats = later(() => import("./Stats.jsx"), "MemberStats");
 export const WeekStory = later(() => import("./Story.jsx"), "WeekStory");
+export const DeskMap = later(() => import("./DeskMap.jsx"), "DeskMap");
 
 /** Fetches every on-demand screen once the first paint is done and the phone is idle. */
 export function prefetchScreens() {

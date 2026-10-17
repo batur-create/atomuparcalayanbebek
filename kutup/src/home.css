@@ -2004,3 +2004,25 @@ html[data-motion="still"] *::after {
   line-height: 1.45;
   color: var(--studio-soft);
 }
+
+/* n30: the way into the desk map, beside "Kim nerede?" and under your place */
+.map-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+button.status-route {
+  padding: 0;
+  background: none;
+}
+.map-pick {
+  margin-top: 8px;
+}

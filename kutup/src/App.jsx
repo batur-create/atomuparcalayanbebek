@@ -41,7 +41,7 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { FocusScreen, OwnerPage, VillagePanel, WeekStory, prefetchScreens } from "./later.jsx";
+import { DeskMap, FocusScreen, OwnerPage, VillagePanel, WeekStory, prefetchScreens } from "./later.jsx";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
 import { CoffeeCard, FocusCard, onComputer, pickedModel } from "./Focus.jsx";
 import { Board } from "./Board.jsx";
@@ -1267,6 +1267,7 @@ function KutupApp({ initial, restart }) {
           coming={modal === "coming"}
           close={() => setModal(null)}
           mutate={mutate}
+          openMap={(room) => setModal({ map: room })}
         />
       )}
       {modal === "invite" && (
@@ -1290,6 +1291,17 @@ function KutupApp({ initial, restart }) {
           now={now}
           close={() => setModal(null)}
           mutate={mutate}
+        />
+      )}
+      {modal?.map && (
+        <DeskMap
+          data={data}
+          me={me}
+          start={modal.map}
+          close={() => setModal(null)}
+          mutate={mutate}
+          requireMember={requireMember}
+          openMember={(x) => requireMember(() => setModal({ member: x }))}
         />
       )}
       {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}

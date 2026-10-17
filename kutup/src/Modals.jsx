@@ -1,23 +1,23 @@
 // The small sheets of the app: where am I, invite, plan, coffee call and a
 // friend's card. Split out of App.jsx (n29).
 import React, { useState } from "react";
-import { ArrowUpRight, CalendarDays, Check, Coffee, Copy, Flame, MapPin, Plus, Send, Trophy } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Check, Coffee, Copy, Flame, Map as MapIcon, MapPin, Plus, Send, Trophy } from "lucide-react";
 import { STATUS, shortTime, dayInput, dayWord, sinceLabel, minutesLabel } from "./api.js";
 import { Avatar, Busy } from "./ui.jsx";
 import { MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
 import { Badge } from "./Home.jsx";
+import { ROOMS, roomOf } from "../shared/rooms.js";
 
 // The tayfa's two reading rooms at Milli Kütüphane (Adnan is home), plus break
 // spots. Old free-text places still work through "Başka bir yer…".
 const PLACES = [
-  ["Adnan Ötüken Okuma Salonu", "📚 Adnan"],
-  ["Dr. Müjgan Cunbur Okuma Salonu", "📖 Müjgan"],
+  ...ROOMS.map((room) => [room.name, `${room.emoji} ${room.short}`]),
   ["Kafeterya", "☕ Kafeterya"],
   ["Bahçe", "🌳 Bahçe"],
 ];
 const OTHER_PLACE = "Başka bir yer…";
-export function PresenceModal({ me, coming, close, mutate }) {
+export function PresenceModal({ me, coming, close, mutate, openMap }) {
   const known = !me.location || PLACES.some(([name]) => name === me.location);
   const [status, setStatus] = useState(coming ? "coming" : "here"),
     [location, setLocation] = useState(
@@ -124,6 +124,11 @@ export function PresenceModal({ me, coming, close, mutate }) {
                 placeholder="24 veya pencere yanı"
               />
             </label>
+            {openMap && roomOf(place) && (
+              <button type="button" className="status-route map-pick" onClick={() => openMap(place)}>
+                <MapIcon size={13} /> Masanı haritadan seç
+              </button>
+            )}
           </>
         )}
         <p className="form-footnote">

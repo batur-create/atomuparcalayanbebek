@@ -9,6 +9,7 @@ import { createApp, dayStart, weekStart } from "../server/app.js";
 import { sqliteAdapter } from "../server/sqlite.js";
 import { SCHEMA_VERSION, migrations } from "../server/schema.js";
 import { CAPACITY, cellLayout, chooseCell, placeIn, ringOf } from "../shared/village.js";
+import { ROOMS, deskNumber, elsewhere, headcount, roomOf, seatsOf, seating, tablesOf } from "../shared/rooms.js";
 
 const call = (app, path, { method = "GET", body, headers = {} } = {}) =>
   app
@@ -767,4 +768,37 @@ test("the story route answers for the asker's team only, and Sunday 18:00 tells 
   assert.equal(stories[0].payload.url, "/?story=1");
   assert.match(stories[0].payload.body, /0,8 saat odak/);
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM weekly WHERE kind = 'story'").get().n, 1);
+});
+
+test("the desk map: numbered chairs, typed desks placed, the rest listed (n30)", () => {
+  const [adnan, mujgan] = ROOMS;
+  assert.equal(roomOf("Adnan Ötüken Okuma Salonu"), adnan);
+  assert.equal(roomOf("Kafeterya"), null);
+  assert.equal(seatsOf(adnan), 60);
+  assert.equal(seatsOf(mujgan), 36);
+  const tables = tablesOf(adnan);
+  assert.deepEqual(tables[0][0], { number: 1, top: [1, 2, 3], bottom: [4, 5, 6] });
+  assert.deepEqual(tables[0][1], { number: 2, top: [7, 8, 9], bottom: [10, 11, 12] });
+  assert.equal(tables.at(-1).at(-1).bottom.at(-1), 60);
+  assert.deepEqual(tables.flat().flatMap((t) => [...t.top, ...t.bottom]), Array.from({ length: 60 }, (_, i) => i + 1));
+  for (const [typed, n] of [["24", 24], [" masa 7", 7], ["Masa12", 12], ["no. 3", 3], ["#9", 9], ["24 pencere yanı", 24], ["pencere yanı", null], ["2. kat 14", null], ["0", null], ["61", null], ["1234", null], ["", null], [null, null]])
+    assert.equal(deskNumber(typed, adnan), n, String(typed));
+  assert.equal(deskNumber("40", mujgan), null);
+  const members = [
+    { id: "a", status: "here", location: adnan.name, desk: "14" },
+    { id: "b", status: "break", location: adnan.name, desk: "14" },
+    { id: "c", status: "here", location: adnan.name, desk: "pencere yanı" },
+    { id: "d", status: "coming", location: adnan.name, desk: "3" },
+    { id: "e", status: "away", location: adnan.name, desk: "5" },
+    { id: "f", status: "here", location: mujgan.name, desk: "5" },
+    { id: "g", status: "here", location: "Kafeterya", desk: "" },
+    { id: "h", status: "here", location: "", desk: "" },
+  ];
+  const { desks, loose } = seating(members, adnan);
+  assert.deepEqual([...desks.keys()], [14]);
+  assert.deepEqual(desks.get(14).map((x) => x.id), ["a", "b"]);
+  assert.deepEqual(loose.map((x) => x.id), ["c"]);
+  assert.deepEqual(elsewhere(members).map((x) => x.id), ["g", "h"]);
+  assert.equal(headcount(members, adnan), 3);
+  assert.equal(headcount(members, mujgan), 1);
 });

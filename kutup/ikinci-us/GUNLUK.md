@@ -29,6 +29,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 05:25 · n30 Masa haritası
+
+- **Dal:** `claude/n30-masa-haritasi` (n28 dalının üstünde).
+- **Durum:** salon krokileri, harita penceresi, boş sandalyeden "Geldim" hazır. `test:all` 104/104, `test:browser` 73/73, tema denetimi 252 çift.
+- **Önizleme:** `kutup/onizleme/n30/`. Batur'un görsel onayı ve salonların gerçek düzeni bekleniyor.
+- **Batur'un kararı:** tanım eksikti; "kararları sen ver, geri alınabilir olsun". Verilen kararlar KARARLAR n30'da.
+- **Canlı duman testi:** yeni yol yok; adım eklenmedi (harita mevcut `/presence` ve `/state` ile çalışıyor).
+- **Pano:** n30 → review.
+
 ## 17 Ekim 2026 05:06 · n28 Haftanın hikâyesi
 
 - **Dal:** `claude/n28-hikaye` (n24 dalının üstünde).
