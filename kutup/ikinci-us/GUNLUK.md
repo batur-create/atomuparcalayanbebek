@@ -29,6 +29,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 05:35 · n14 Başarımlar
+
+- **Dal:** `claude/n14-basarimlar` (n30 dalının üstünde).
+- **Durum:** 16 başarım (3'ü gizli), geriye dönük hesap, vitrin, kişi kartı, kazanma anı hazır. `test:all` 106/106, `test:browser` 74/74, tema denetimi 252 çift.
+- **Önizleme:** `kutup/onizleme/n14/`. Batur'un görsel onayı bekleniyor.
+- **Batur'un kararı:** tanım eksikti; "kararları sen ver, geri alınabilir olsun". Verilen kararlar KARARLAR n14'te.
+- **Canlı duman testi:** "badges answer" adımı eklendi.
+- **Pano:** n14 → review. Sıradaki işlerin hepsi PR'da; Batur'un birleştirmesi ve yayını bekleniyor.
+
 ## 17 Ekim 2026 05:25 · n30 Masa haritası
 
 - **Dal:** `claude/n30-masa-haritasi` (n28 dalının üstünde).

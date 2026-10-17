@@ -2,7 +2,7 @@
 // a menu. Profile, look and stats; inviting a friend and writing to Batur; account.
 import React, { useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { BookOpen, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
+import { Award, BookOpen, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
@@ -83,6 +83,7 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave, o
         <Row icon={UserRound} title="Profilim" sub="Ad, karakter, renk, masa notu" onClick={() => setModal("profile")} />
         <Row icon={Palette} title="Görünüm" sub="Tema rengi · gündüz / gece" onClick={() => setModal("look")} />
         <Row icon={ChartColumn} title="İstatistiklerim" sub="Odak saati, seri, binalar" open={stats} onClick={() => setStats(!stats)} />
+        <Row icon={Award} title="Başarımlar" sub="Rozet vitrinin ve sıradaki hedeflerin" onClick={() => setModal("achievements")} />
         <AnimatePresence initial={false}>
           {stats && (
             <m.div className="me-stats" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}>

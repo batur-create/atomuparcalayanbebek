@@ -1,0 +1,234 @@
+/* ---------- Başarımlar (n14) ----------
+   The badge case, a friend's shelf and the moment of earning. The badges keep
+   their own calm colors in both modes, like the avatars; everything around
+   them follows the theme tokens. */
+.badge-art {
+  display: block;
+  flex: none;
+}
+.badge-art.locked {
+  filter: grayscale(1);
+  opacity: 0.42;
+}
+
+/* the case */
+.modal.badges-modal {
+  width: 560px;
+}
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.badge-tile {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 6px 10px;
+  border-radius: 16px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.badge-tile.earned {
+  background: var(--paper);
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--ink) 8%, transparent);
+}
+.badge-tile .badge-art {
+  margin-bottom: 4px;
+}
+.badge-tile b {
+  font-size: 13px;
+  line-height: 1.2;
+}
+.badge-tile small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.badge-tile.earned small {
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+/* a 5px track (the background) with the bar on it, and the count below */
+.badge-progress {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: linear-gradient(var(--border), var(--border)) top / 100% 5px no-repeat;
+}
+.badge-progress i {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.badge-progress em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+.badge-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* a friend's shelf */
+.badge-shelf {
+  margin: 4px 0 18px;
+}
+/* the same heading as the statistics below it */
+.badge-shelf h4 {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.badge-shelf h4 span {
+  color: var(--accent-deep);
+  font-size: 12px;
+}
+.badge-shelf ul {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 2px 6px;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: none;
+}
+.badge-shelf li {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  flex: none;
+  width: 62px;
+  text-align: center;
+}
+.badge-shelf li small {
+  width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badge-shelf p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* the moment of earning */
+.badge-cheer {
+  position: fixed;
+  z-index: 90;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, calc(100vw - 24px));
+  padding: 10px 8px 10px 12px;
+  border-radius: 20px;
+  background: var(--studio);
+  color: var(--studio-ink);
+  box-shadow: 0 18px 50px color-mix(in oklab, var(--ink) 30%, transparent);
+  translate: -50% 0;
+  animation: badge-cheer-in 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.badge-cheer .burst {
+  left: 44px;
+}
+.badge-cheer-art {
+  display: flex;
+  flex: none;
+}
+.badge-cheer-art > span {
+  margin-left: calc(var(--i) * -18px);
+  animation: badge-pop 0.6s cubic-bezier(0.3, 1.7, 0.5, 1) both;
+  animation-delay: calc(0.15s + var(--i) * 0.12s);
+}
+.badge-cheer-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  line-height: 1.25;
+}
+.badge-cheer-text small {
+  color: var(--pop);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-cheer-text b {
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  font-size: 17px;
+}
+.badge-cheer-text em {
+  overflow: hidden;
+  color: var(--studio-soft);
+  font-size: 12px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badge-cheer-close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  color: var(--studio-soft);
+}
+@keyframes badge-cheer-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+}
+@keyframes badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+}
+@media (min-width: 761px) {
+  .badge-cheer {
+    bottom: 28px;
+  }
+}
+@media (max-width: 580px) {
+  .badge-grid {
+    gap: 8px;
+  }
+  .badge-tile {
+    padding: 10px 4px 8px;
+  }
+  .badge-tile b {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-cheer,
+  .badge-cheer-art > span {
+    animation: none;
+  }
+}
