@@ -1,7 +1,8 @@
 // The construction site, built the way a reinforced-concrete building is built:
-// mobilisation, setting out, excavation, blinding, foundation rebar, formwork and
-// pour, then for every storey column rebar → column formwork → pour and strike →
-// props and deck → slab rebar → slab pour. Everything is drawn straight from the
+// mobilisation, setting out, excavation, blinding, foundation waterproofing,
+// foundation rebar, formwork and pour, then for every storey column rebar →
+// column formwork → pour and strike → props, beam and deck formwork → beam and
+// slab rebar → beam and slab pour. Everything is drawn straight from the
 // session's progress: pieces are placed, laid or poured, never faded in.
 import { STONE, WOOD, box, outline, poly, seg } from "./iso.js";
 import { materialsSVG } from "./sitedetail.js";
@@ -9,13 +10,27 @@ import { materialsSVG } from "./sitedetail.js";
 // Share of the session for the substructure and the frame; the rest is walls,
 // roof, openings, finishes and handover (drawn by the scene's later parts).
 export const FRAME_END = 0.55;
-export const LATER = [
-  ["walls", "Duvar örme", FRAME_END, 0.68],
-  ["roof", "Çatı: makas, aşık, kiremit", 0.68, 0.78],
-  ["openings", "Doğrama ve kapı", 0.78, 0.86],
-  ["finish", "Cephe: mantolama, sıva ve boya", 0.86, 0.93],
-  ["handover", "Peyzaj ve teslim", 0.93, 1],
-];
+// Walls that are rendered and painted get an insulated render facade (ETICS):
+// boards and anchors, mesh and base coat, then paint.
+export const rendered = (sp) => sp.wall.pattern === "trim";
+export function laterPhases(sp) {
+  const dome = sp.roofType === "dome";
+  return [
+    ["walls", "Duvar örme", FRAME_END, 0.68],
+    ["roofFrame", dome ? "Kubbe: taşıyıcı halka" : "Çatı: makaslar ve aşıklar", 0.68, 0.715],
+    ["roofDeck", dome ? "Kubbe: kaplama ve su yalıtımı" : "Çatı: OSB kaplama ve su yalıtım örtüsü", 0.715, 0.748],
+    ["roofTiles", dome ? "Kubbe: metal kaplama" : "Çatı: kiremit, saçaktan mahyaya", 0.748, 0.78],
+    ["openings", "Doğrama ve kapı", 0.78, 0.86],
+    ...(rendered(sp)
+      ? [
+          ["eps", "Mantolama: yalıtım levhaları ve dübeller", 0.86, 0.885],
+          ["render", "Sıva: file ve ince sıva", 0.885, 0.905],
+          ["paint", "Dış cephe boyası", 0.905, 0.93],
+        ]
+      : [["finish", "Cephe: mantolama, sıva ve boya", 0.86, 0.93]]),
+    ["handover", "Peyzaj ve teslim", 0.93, 1],
+  ];
+}
 
 export function sitePlan(sp) {
   const steps = [
@@ -23,6 +38,7 @@ export function sitePlan(sp) {
     ["layout", "Aplikasyon: kazık ve ip iskelesi", 1.2],
     ["dig", "Hafriyat", 2.2],
     ["lean", "Grobeton", 0.9],
+    ["footWater", "Temel su yalıtımı", 0.7],
     ["footRebar", "Temel donatısı", 1.6],
     ["footForm", "Temel kalıbı", 0.9],
     ["footPour", "Temel betonu ve kür", 1.4],
@@ -32,9 +48,9 @@ export function sitePlan(sp) {
       ["colRebar", "kolon donatısı", 0.8],
       ["colForm", "kolon kalıbı", 0.5],
       ["colPour", "kolon betonu ve kalıp söküm", 0.6],
-      ["deckForm", "dikmeler ve döşeme kalıbı", 0.8],
-      ["deckRebar", "döşeme donatısı", 0.7],
-      ["deckPour", "döşeme betonu", 0.8],
+      ["deckForm", "dikmeler, kiriş ve döşeme kalıbı", 0.9],
+      ["deckRebar", "kiriş ve döşeme donatısı", 0.9],
+      ["deckPour", "kiriş ve döşeme betonu", 0.8],
     ])
       steps.push({ key, label: `${i + 1}. kat ${label}`, w, floor: i });
   const total = steps.reduce((n, s) => n + s.w, 0);
@@ -44,7 +60,7 @@ export function sitePlan(sp) {
     at += (s.w / total) * FRAME_END;
     return { ...s, a, b: at };
   });
-  for (const [key, label, a, b] of LATER) phases.push({ key, label, a, b, floor: -1 });
+  for (const [key, label, a, b] of laterPhases(sp)) phases.push({ key, label, a, b, floor: -1 });
   return phases;
 }
 
@@ -70,6 +86,7 @@ const SOIL = "#7d6142",
   WET = ["#8e9298", "#7a7e85", "#676b71"],
   CONCRETE = ["#cdcac2", "#b2afa7", "#99968f"],
   PROP = "#6e7c8c",
+  MEMBRANE = ["#33363b", "#2b2e33", "#55595f"],
   FENCE = "#9aa3ad",
   BARRIER = ["#f2c14e", "#d9a930", "#bf9322"];
 const mix = (a, b, t) => {
@@ -202,6 +219,18 @@ export function siteSVG(P, sp, plan, shown) {
     pit += poly([P(-E, -E, 0), P(E, -E, 0), P(E, -E, -d), P(-E, -E, -d)], SOIL_WALLS[1]);
     // Blinding concrete spreads across the bottom, then the bottom mesh, bar by bar.
     if (k.lean > 0) pit += poly([P(-wf, -wf, -d + 0.06), P(-wf + 2 * wf * k.lean, -wf, -d + 0.06), P(-wf + 2 * wf * k.lean, wf, -d + 0.06), P(-wf, wf, -d + 0.06)], LEAN);
+    // Bitumen membrane, torched on in overlapping strips across the blinding.
+    if (k.footWater > 0) {
+      const strips = Math.ceil(k.footWater * 6),
+        sw = (2 * wf) / 6;
+      for (let i = 0; i < strips; i++) {
+        const y0 = -wf + i * sw,
+          y1 = Math.min(wf, y0 + sw + 0.06),
+          x1 = i === strips - 1 ? -wf + 2 * wf * clamp(k.footWater * 6 - i) : wf;
+        pit += poly([P(-wf, y0, -d + 0.07), P(x1, y0, -d + 0.07), P(x1, y1, -d + 0.07), P(-wf, y1, -d + 0.07)], i % 2 ? MEMBRANE[0] : MEMBRANE[1]);
+        pit += seg(P(-wf, y1, -d + 0.071), P(x1, y1, -d + 0.071), MEMBRANE[2], 0.7);
+      }
+    }
     pit += mesh(-d + 0.15, clamp(k.footRebar / 0.5) * bars * 2);
     for (let i = 0; i < starters; i++) pit += cage(P, cols[i][0], cols[i][1], bottom + 0.1, 0, false);
     if (k.footForm > 0 && !struck) {
@@ -230,12 +259,15 @@ export function siteSVG(P, sp, plan, shown) {
   if (k.footForm > 0 && !struck && formZ > 0)
     above += box(P, wf, -wf - 0.06, wf + 0.06, wf + 0.06, 0, formZ, PLY) + box(P, -wf - 0.06, wf, wf + 0.06, wf + 0.06, 0, formZ, PLY);
 
-  // The frame, storey by storey.
+  // The frame, storey by storey. Columns stop at the beam soffit; beams and
+  // slab are formed, reinforced and poured together over them.
   let frame = "";
+  const beams = beamsOf(sp);
   for (let i = 0; i < sp.floors; i++) {
     const z0 = 0.3 + i * hf,
       zs = 0.3 + (i + 1) * hf,
-      soffit = zs - 0.14;
+      soffit = zs - 0.14,
+      under = soffit - BEAM_DEPTH;
     const cr = k[`colRebar${i}`],
       cf = k[`colForm${i}`],
       cp = k[`colPour${i}`],
@@ -243,9 +275,9 @@ export function siteSVG(P, sp, plan, shown) {
       dr = k[`deckRebar${i}`],
       dp = k[`deckPour${i}`];
     if (!(cr > 0)) break;
-    // Props under the deck stay until the walls go in.
+    // Props under the beams and the deck stay until the walls go in.
     if (df > 0 && shown < FRAME_END + 0.02) {
-      const n = Math.ceil(clamp(df / 0.5) * 9);
+      const n = Math.ceil(clamp(df / 0.35) * 9);
       for (let j = 0; j < n; j++) {
         const x = -w + 0.5 + (j % 3) * (w - 0.5),
           y = -w + 0.5 + Math.floor(j / 3) * (w - 0.5);
@@ -254,20 +286,24 @@ export function siteSVG(P, sp, plan, shown) {
     }
     cols.forEach(([x, y], j) => {
       const order = (j + 0.5) / cols.length;
-      if (cp >= order) frame += box(P, x - 0.11, y - 0.11, x + 0.11, y + 0.11, z0, soffit, CONCRETE);
+      if (cp >= order) frame += box(P, x - 0.11, y - 0.11, x + 0.11, y + 0.11, z0, under, CONCRETE);
       else if (cf >= order) {
         // Column formwork held by steel clamps, kept plumb by a push-pull prop.
-        frame += box(P, x - 0.15, y - 0.15, x + 0.15, y + 0.15, z0, soffit, PLY);
-        for (let zc = z0 + 0.25; zc < soffit - 0.1; zc += 0.42)
+        frame += box(P, x - 0.15, y - 0.15, x + 0.15, y + 0.15, z0, under, PLY);
+        for (let zc = z0 + 0.25; zc < under - 0.1; zc += 0.42)
           frame += outline([P(x - 0.16, y - 0.16, zc), P(x + 0.16, y - 0.16, zc), P(x + 0.16, y + 0.16, zc), P(x - 0.16, y + 0.16, zc)], "#5b6168", 1.2);
         const out = x + y > 0 ? 1 : -1;
-        frame += seg(P(x + out * 0.15, y, soffit - 0.45), P(x + out * 0.95, y, z0), "#6e7c8c", 1.1);
+        frame += seg(P(x + out * 0.15, y, under - 0.45), P(x + out * 0.95, y, z0), "#6e7c8c", 1.1);
       }
       else if (cr >= order) frame += cage(P, x, y, z0, soffit + 0.3, true);
     });
-    // Deck: plywood panels, then rebar, then the slab poured from the back.
-    if (df > 0.5 && !(dp >= 1)) {
-      const n = Math.ceil(clamp((df - 0.5) / 0.5) * 9),
+    // Beam bottoms and sides: plywood troughs from column to column.
+    const troughs = df > 0.3 && !(dp >= 1) ? Math.ceil(clamp((df - 0.3) / 0.3) * beams.length) : 0;
+    for (let j = 0; j < troughs; j++) frame += beamBox(P, beams[j], under - 0.04, soffit, 0.06, PLY);
+    // Deck: plywood panels, then beam cages, then the slab mesh; then beams and
+    // slab poured from the back.
+    if (df > 0.6 && !(dp >= 1)) {
+      const n = Math.ceil(clamp((df - 0.6) / 0.4) * 9),
         cell = (2 * w) / 3;
       for (let j = 0; j < n; j++) {
         const x0 = -w + (j % 3) * cell,
@@ -277,8 +313,10 @@ export function siteSVG(P, sp, plan, shown) {
       }
     }
     if (dr > 0 && !(dp >= 1)) {
+      const cages = Math.ceil(clamp(dr / 0.45) * beams.length);
+      for (let j = 0; j < cages; j++) frame += beamCage(P, beams[j], under, soffit);
       const bars = Math.floor((2 * w) / 0.3),
-        n = dr * bars * 2;
+        n = clamp((dr - 0.45) / 0.55) * bars * 2;
       for (let j = 0; j < n; j++) {
         const t = -w + 0.15 + (Math.floor(j / 2) % bars) * 0.3;
         frame += j % 2
@@ -289,6 +327,10 @@ export function siteSVG(P, sp, plan, shown) {
     if (dp > 0) {
       const edge = -w + 2 * w * Math.min(1, dp / 0.85);
       const faces = mixAll(WET, CONCRETE, clamp((dp - 0.85) / 0.15));
+      for (const b of beams) {
+        const x1 = Math.min(b.x1, edge);
+        if (x1 > b.x0) frame += beamBox(P, { ...b, x1 }, under, soffit, 0, faces);
+      }
       frame += box(P, -w, -w, edge, w, soffit, zs, faces);
     }
   }
@@ -303,6 +345,37 @@ export function columnsOf(sp) {
   const list = [[-c, -c], [c, -c], [-c, c], [c, c]];
   if (sp.hw >= 1.8) list.push([0, -c], [-c, 0], [c, 0], [0, c]);
   return list.sort((a, b) => a[0] + a[1] - (b[0] + b[1]));
+}
+// Beams: round the perimeter on the column lines, and across the middle on a
+// wider plan. Back ones first, so the front ones are drawn over them.
+export const BEAM_DEPTH = 0.3;
+export function beamsOf(sp) {
+  const c = sp.hw - 0.14,
+    e = c + 0.11;
+  const list = [
+    { x0: -e, x1: e, y0: -c - 0.1, y1: -c + 0.1 },
+    { x0: -c - 0.1, x1: -c + 0.1, y0: -e, y1: e },
+  ];
+  if (sp.hw >= 1.8) list.push({ x0: -e, x1: e, y0: -0.1, y1: 0.1 }, { x0: -0.1, x1: 0.1, y0: -e, y1: e });
+  list.push({ x0: c - 0.1, x1: c + 0.1, y0: -e, y1: e }, { x0: -e, x1: e, y0: c - 0.1, y1: c + 0.1 });
+  return list;
+}
+function beamBox(P, b, z0, z1, pad, faces) {
+  return box(P, b.x0 - pad, b.y0 - pad, b.x1 + pad, b.y1 + pad, z0, z1, faces);
+}
+// A beam's cage: two top bars along it and stirrups across it.
+function beamCage(P, b, under, soffit) {
+  const along = b.x1 - b.x0 > b.y1 - b.y0;
+  const [cx, cy] = [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2];
+  let s = "";
+  for (const o of [-0.05, 0.05])
+    s += along ? seg(P(b.x0, cy + o, soffit + 0.04), P(b.x1, cy + o, soffit + 0.04), REBAR, 1) : seg(P(cx + o, b.y0, soffit + 0.04), P(cx + o, b.y1, soffit + 0.04), REBAR, 1);
+  const len = along ? b.x1 - b.x0 : b.y1 - b.y0;
+  for (let t = 0.12; t < len - 0.05; t += 0.22) {
+    const q = (dx, dy, z) => (along ? P(b.x0 + t, cy + dy, z) : P(cx + dx, b.y0 + t, z));
+    s += outline([q(-0.06, -0.06, under + 0.04), q(0.06, 0.06, under + 0.04), q(0.06, 0.06, soffit + 0.05), q(-0.06, -0.06, soffit + 0.05)], "#a5654a", 0.7);
+  }
+  return s;
 }
 // A column's rebar cage: four longitudinal bars and stirrups.
 function cage(P, x, y, z0, z1, stirrups) {

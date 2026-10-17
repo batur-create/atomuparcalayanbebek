@@ -7,7 +7,7 @@ import { api, dateLabel, get, minutesLabel, shortTime } from "./api.js";
 import { Avatar } from "./ui.jsx";
 import { buildWorld, focusing, skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
-import { ConstructionScene, KINDS } from "./Village.jsx";
+import { ConstructionScene } from "./Village.jsx";
 import { modelOf } from "../shared/catalog.js";
 import { Modal } from "./Modal.jsx";
 import { Loading } from "./Illustrations.jsx";
@@ -175,7 +175,7 @@ function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
 }
 
 // ---------- the Köy tab ----------
-export function VillagePanel({ me, members, groupId, village, like, run, outcome, notify, session, error, retry, week }) {
+export function VillagePanel({ me, members, groupId, village, like, run, outcome, idle = false, notify, session, error, retry, week }) {
   const [moving, setMoving] = useState(null); // { building, spots } while moving one's own building
   const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId, spots: moving?.spots });
   const [picked, setPicked] = useState(null),
@@ -270,12 +270,12 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
       <div className="section-heading">
         <h2>{showScene ? "Şantiye" : "Kütüp köyü"}</h2>
         <span className="count-tag">
-          {showScene ? `${KINDS[subject.kind].emoji} ${KINDS[subject.kind].label}` : `${count} bina`}
+          {showScene ? `${modelOf(subject.model, subject.kind).emoji} ${modelOf(subject.model, subject.kind).name}` : `${count} bina`}
         </span>
       </div>
       {showScene ? (
         <>
-          <ConstructionScene run={run} outcome={outcome} />
+          <ConstructionScene run={run} outcome={outcome} idle={idle} />
           <p className="village-caption">
             {run
               ? "Odaklandıkça yükseliyor. Uygulamadan çıkarsan yıkılır."

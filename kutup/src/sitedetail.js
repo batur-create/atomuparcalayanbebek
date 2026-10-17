@@ -44,6 +44,10 @@ export function plotSVG(P, sp, seed) {
   return s;
 }
 
+// Block pallets along the front. A small building's mobile crane parks at
+// the front left, so there they stand further right.
+export const blockPallets = (sp) => (sp.kind === "tower" ? [-1.9, -1.15, -0.4] : [-0.45, 0.3, 1.05]);
+
 // Stockpiles: delivered before they are needed, used up while the work goes on,
 // formwork plywood coming back after striking. k holds every phase's progress.
 export function materialsSVG(P, sp, k, shown) {
@@ -71,6 +75,14 @@ export function materialsSVG(P, sp, k, shown) {
     back += box(P, -edge - 0.3, 0.85, -edge + 0.3, 1.95, 0, 0.08, PALLET);
     for (let i = 0; i < sheets; i++) back += box(P, -edge - 0.27, 0.88, -edge + 0.27, 1.92, 0.08 + i * 0.035, 0.08 + (i + 1) * 0.035, i % 2 ? PLY : [PLY[0], PLY[2], PLY[1]]);
   }
+  // Membrane rolls for the foundation waterproofing, by the cement.
+  const rolls = shown < 0.03 || k.footWater >= 1 ? 0 : Math.ceil(4 * (1 - k.footWater));
+  for (let i = 0; i < rolls; i++) {
+    const x = 0.2 + i * 0.24;
+    back += box(P, x, -edge - 0.25, x + 0.18, -edge + 0.25, 0, 0.18, ["#3a3d42", "#2b2e33", "#202326"]);
+    const [cx, cy] = P(x + 0.09, -edge + 0.25, 0.09);
+    back += `<ellipse cx="${n1(cx)}" cy="${n1(cy)}" rx="3" ry="3.4" fill="#55595f"/>`;
+  }
   // Cement bags by the container for the pours and the mortar.
   const bagsLeft = shown < 0.12 || handover > 0 ? 0 : Math.ceil(6 * (1 - clamp((shown - 0.12) / 0.6)));
   for (let i = 0; i < bagsLeft; i++) {
@@ -82,8 +94,9 @@ export function materialsSVG(P, sp, k, shown) {
   // Block pallets in front, delivered before the walls and used course by course.
   if (shown > 0.5 && shown < 0.7) {
     const pallets = Math.max(0, Math.ceil(3 * (1 - clamp((shown - 0.55) / 0.13))));
+    const xs = blockPallets(sp);
     for (let i = 0; i < pallets; i++) {
-      const x = -1.9 + i * 0.75;
+      const x = xs[i];
       front += box(P, x, edge - 0.25, x + 0.6, edge + 0.25, 0, 0.07, PALLET);
       front += box(P, x + 0.03, edge - 0.22, x + 0.57, edge + 0.22, 0.07, 0.5, BLOCK);
       front += seg(P(x + 0.03, edge + 0.23, 0.28), P(x + 0.57, edge + 0.23, 0.28), "#c9c6bd", 0.8);
@@ -94,7 +107,7 @@ export function materialsSVG(P, sp, k, shown) {
   }
   // Roof tiles on a pallet, front right, until the roof is on.
   if (shown > 0.62 && shown < 0.78) {
-    const stacks = Math.max(1, Math.ceil(3 * (1 - clamp((shown - 0.72) / 0.06))));
+    const stacks = Math.max(1, Math.ceil(3 * (1 - clamp((shown - 0.748) / 0.032))));
     for (let i = 0; i < stacks; i++) {
       const y = 0.2 + i * 0.42;
       front += box(P, edge - 0.25, y, edge + 0.25, y + 0.38, 0, 0.06, PALLET) + box(P, edge - 0.22, y + 0.02, edge + 0.22, y + 0.36, 0.06, 0.34, [sp.roof[2], sp.roof[0], sp.roof[1]]);

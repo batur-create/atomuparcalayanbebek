@@ -125,6 +125,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.
 
+- ✔ **n36 inşaat tam şov:** Batur "Tam şov" kademesini seçti: gerçek iş sırası, kirişler, yalıtım katmanları, kulübe/evde mobil vinç (kırmızı taşıyıcı, sarı teleskopik bom), mantolama levhaları ve dübeller. Kule vinç yalnız kulede.
+
 - ✔ **n13 avatarlar:** Kara'nın çizim dili, sitenin dünyasından kadro. 4 örnek gösterildi, Batur onayladı.
 - ✘ **n13 ilk deneme:** kalın çizgi, çıkartma kenarı, canlı renkler, rastgele hayvanlar. Batur: "siteyle alakası yok". Siteye bakılmadan çizilmişti.
 - ✔ **n16 tema düğmesi:** çandaki gibi ince çizgi simge (güneş, ay, yarım güneş). Emoji seçeneği seçilmedi.

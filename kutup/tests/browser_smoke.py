@@ -689,7 +689,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 visual.on('pageerror', lambda e: errors.append(str(e)))
                 visual.goto(base + '/tests/visual-harness.html')
                 visual.wait_for_function('window.fixtureReady===true'); visual.wait_for_timeout(200)
-                check('All twelve construction stages render', visual.locator('#scenes svg').count()==12)
+                check('All twelve construction stages render', visual.locator('#scenes .village-scene').count()==12 and visual.locator('#scenes .village-scene .site-sheet').count()==72)
                 check('Reduced-motion collapse immediately shows rubble', visual.locator('article[data-stage="3"] .fx polygon').count()>0)
                 visual.locator('#scenes').screenshot(path=str(artifacts/'construction-scenes.png'))
                 visual.set_viewport_size({'width':1920,'height':1080})

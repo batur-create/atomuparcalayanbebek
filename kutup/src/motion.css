@@ -904,6 +904,29 @@ h3,
   border-radius: 14px;
   background: #eef4e6;
 }
+/* The site is a stack of SVG sheets; the moving ones get their own layers. */
+.village-scene {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.village-scene > .site-sheet {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.village-scene > .site-sheet + .site-sheet {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  pointer-events: none;
+}
+.village-scene > .moving {
+  will-change: transform;
+}
+.village-scene > .light {
+  mix-blend-mode: multiply;
+}
 .village-people {
   margin: 0 0 10px;
   flex-wrap: wrap;

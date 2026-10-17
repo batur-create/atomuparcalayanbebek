@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | PR (claude/n36-insaat-sov) |
 | d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | 62386ef8 (PR #21) |
 | n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | 62386ef8 (PR #20) |
 | n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | 62386ef8 (PR #19) |
@@ -84,6 +85,29 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n36 · İnşaat tam şov, 1. tur
+Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov) · göç yok
+
+**Ne yapıldı:** Batur inşaatın baştan incelenmesini istedi (rapor: `/mnt/project-files/kutup/insaat-inceleme/RAPOR.md`) ve "Tam şov" kademesini seçti. Üç turun ilki:
+- **Pil:** Sahne üst üste duran SVG sayfalarından oluşuyor; makineler, işçiler ve vinç kendi katmanlarında, yalnızca değişen parça yeniden çiziliyor, 12 kare/sn. Vincin direği bir kez çiziliyor. Sahne ekranda görünmezken, sekme arkadayken ve odak ekranı açıkken (altında kalan kopya) duruyor. Ölçüm (4x yavaş işlemci, 375 px, kulübe): hafriyat %46 → %38, döşeme betonu %57 → %45, duvar %49 → %38 meşgul. Odak ekranı açıkken artık tek sahne çalışıyor (önce iki).
+- **Başlık:** şantiye başlığı katalogdaki yapının adını yazıyor ("🥖 Fırın"), eski türü ("İki katlı ev") değil.
+- **Mobil vinç:** kule vinç yalnız kulede. Kulübe ve evde kamyona monteli teleskopik vinç kaldırma işleri için gelir: ön sol şeritte durur, ayaklarını açar, bomu önce kamyon yönünde kaldırır, sonra döner; işi bitince toplar ve gider. Pompalı dökümlerde (temel, döşeme) yerini pompaya bırakır. Gazbeton paletleri sağa kaydı ki vinç kamyonu üstlerine park etmesin.
+- **Kirişler:** her katta kolonlar kiriş altına kadar dökülür; dikmeler, kiriş kalıpları (kolon aksından kolona, geniş planda ortada da), döşeme kalıbı; kiriş donatısı (üst çubuklar ve etriyeler), döşeme hasırı; kiriş ve döşeme birlikte dökülür, kirişler döşemenin altından sarkık görünür. İş kalemleri "dikmeler, kiriş ve döşeme kalıbı", "kiriş ve döşeme donatısı", "kiriş ve döşeme betonu".
+- **Temel su yalıtımı:** grobetondan sonra yeni iş kalemi; bitümlü örtü şerit şerit, bindirmeli serilir; rulolar yığından eksilir.
+- **Çatı:** makaslar ve aşıklar → OSB kaplama → su yalıtım örtüsü → kiremit, her biri saçaktan mahyaya. Üç ayrı iş kalemi; vinç OSB levhası da taşır.
+- **Mantolama:** sıva + boya cepheli binalarda (krem ve adaçayı duvarlar) yalıtım levhaları şaşırtmalı sıra sıra yapıştırılır ve dübellenir, sonra file + ince sıva, sonra boya. Üç iş kalemi. Tuğla, taş, ahşap ve cam duvarlar 2. turda kendi yapım sistemlerine geçecek; şimdilik eski tek kalem.
+- **Testler:** yeni `tests/site.test.js` (4 test): iş planı oturumu boşluksuz kaplar ve yeni kalemleri içerir, geniş planda 6 kiriş, mobil vinç pompalı dökümlerde yok, bütün katalog yapıları için her ilerlemede çizimlerde NaN yok.
+
+**Kararlar ve nedenleri:**
+- Mobil vinç pompalı dökümde gidiyor: gerçekte pompa ile vinç aynı şeritte çalışmaz, kiralık vinç işi bitince gider.
+- Kiriş derinliği 0,3 birim, kolonlar kiriş altına kadar: kolon-kiriş birleşimi kirişle beraber dökülür.
+- Mantolama yalnız boyalı cephelerde: tuğla ve taş gibi görünen yapıların doğru yapım sistemi 2. turun işi.
+- Ölçüm aracı: `/mnt/project-files/kutup/araclar/site_measure.py`.
+
+**Batur'un sözleri:** "aga inşaat işini animasyon ve sistem komple ele alırsak geliştirilecek yerler var mı" · "ben sonuçta ODTÜ'de inşaat mühendisliği okuyom ... sınırları zorlayalım, daha ne kadar accurate oluruz" · kademe kartında "Tam şov".
+**Geri alma:** dalı geri al; göç yok, veri değişmedi.
+**Dosyalar:** `src/Village.jsx`, `src/construction.js`, `src/crane.js`, `src/crew.js`, `src/sitedetail.js`, `src/VillageMap.jsx`, `src/App.jsx`, `src/motion.css`, `tests/site.test.js`, `package.json`.
 
 ### d28 · Katılma eşiği: arkadaşın oturumuna en az 5 dakika kala
 Birlikte · 17 Eki 2026 · 62386ef8 (PR #21, Worker bfc56968) · göç yok
