@@ -23,21 +23,21 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | PR (ikinci üs) |
-| n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | PR (ikinci üs) |
-| n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | PR (ikinci üs) |
-| n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
-| n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
-| d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | PR #15 (ikinci üs) |
-| n30 | Masa haritası: salonların kuşbakışı krokisi, arkadaşlar masalarında, boş sandalyeye dokununca "Geldim" | Kütüphane | 17 Eki 05:25 | PR (ikinci üs) |
-| d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | PR #13 (ikinci üs) |
-| n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | PR (ikinci üs) |
-| d25 | Satır sonları: tek kalan kelime ve emoji yok | Cila | 17 Eki 05:05 | PR #11 (ikinci üs) |
-| d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | PR #10 (ikinci üs) |
-| n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | PR (ikinci üs) |
-| d23 | Hesap güvenliği: şifre değişikliğinde şu anki şifre, deneme ve bildirim sınırları | Güvenlik | 17 Eki 04:25 | PR #8 (ikinci üs) |
-| n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 04:10 | PR (ikinci üs) |
-| n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 03:50 | PR (ikinci üs, davet bekliyor) |
+| d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | 62386ef8 (PR #21) |
+| n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | 62386ef8 (PR #20) |
+| n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | 62386ef8 (PR #19) |
+| n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | 5b7d4593 (PR #17) |
+| n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | 5b7d4593 (PR #16) |
+| d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | 5b7d4593 (PR #15) |
+| n30 | Masa haritası: salonların kuşbakışı krokisi, arkadaşlar masalarında, boş sandalyeye dokununca "Geldim" | Kütüphane | 17 Eki 05:25 | 5b7d4593 (PR #14) |
+| d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | 5b7d4593 (PR #13) |
+| n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | 5b7d4593 (PR #12) |
+| d25 | Satır sonları: tek kalan kelime ve emoji yok | Cila | 17 Eki 05:05 | 5b7d4593 (PR #11) |
+| d24 | Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları | Cila | 17 Eki 04:55 | 5b7d4593 (PR #10) |
+| n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | 5b7d4593 (PR #9) |
+| d23 | Hesap güvenliği: şifre değişikliğinde şu anki şifre, deneme ve bildirim sınırları | Güvenlik | 17 Eki 04:25 | 5b7d4593 (PR #8) |
+| n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 04:10 | 5b7d4593 (PR #7) |
+| n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 03:50 | 5b7d4593 (PR #6) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -86,7 +86,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 ## Kayıtlar (yeniden eskiye)
 
 ### d28 · Katılma eşiği: arkadaşın oturumuna en az 5 dakika kala
-Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok
+Birlikte · 17 Eki 2026 · 62386ef8 (PR #21, Worker bfc56968) · göç yok
 
 **Ne yapıldı:** Bir arkadaşın odak oturumuna son bir iki dakikada katılmak bitmiş oturum sayılıyor, günün ilk oturumu bonusunu (+10 🧱) ve nadir plan şansını neredeyse hiç odaklanmadan veriyordu (denetimde E1). Artık bitmesine 5 dakikadan az kalan oturuma katılınmıyor.
 - Sunucu: `/api/focus` `joinMember` ile gelince arkadaşın oturumunun bitmesine en az `JOIN_LEAD` (5 dk, `shared/catalog.js`) kalmış olmalı; yoksa 400, "Bu oturumun bitmesine 5 dakikadan az kaldı. Yeni bir oturum başlat."
@@ -102,7 +102,7 @@ Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok
 **Geri alma:** `shared/catalog.js`'te `JOIN_LEAD = 60000` eski davranışa en yakın hal (şerit 1 dakikada kayboluyordu, sunucu sınırı yoktu).
 **Dosyalar:** `shared/catalog.js`, `server/app.js`, `src/Together.jsx`, `tests/core.test.js`.
 ### n35 · Anket sonrası dört ekleme
-Anket · 17 Eki 2026 · PR (ikinci üs) · göç 23 (`sessions.device`)
+Anket · 17 Eki 2026 · 62386ef8 (PR #20, Worker bfc56968) · göç 23 (`sessions.device`)
 
 **Ne yapıldı:** Batur 17 Ekim'de canlı sitede 12 anketi tek tek cevapladı (`/mnt/project-files/kutup/anket-cevaplari.md`). "İyi + fikir" seçtiği dördü:
 - **Rozet Pano duyurusu (n14):** bir gün içinde kazanılan rozet Pano'ya "“Maraton” rozetini kazandı 🏅" diye düşer; gizliler "gizli bir rozet buldu 🤫". Aynı anda ikiden fazla açılan (geçmişin sayılması) sessiz. İki kişi kartı aynı anda açarsa satır bir kez yazılır (rozet satırından önce, yokken).
@@ -119,7 +119,7 @@ Anket · 17 Eki 2026 · PR (ikinci üs) · göç 23 (`sessions.device`)
 **Geri alma:** rozet: `server/app.js` `badgeNews` ve iki duyuru bloğu; zarf: `src/polish.css` sondaki "Anket" bölümleri ve iki `wiggle` sınıfı; cihaz adları: `/devices` yolları ve `Account.jsx` `OtherDevices` (sütun zararsız); şifre: `AccountBox`'taki `if (value.password)` bloğu.
 **Dosyalar:** `server/app.js`, `server/schema.js`, `src/Account.jsx`, `src/MePage.jsx`, `src/Requests.jsx`, `src/polish.css`, `tests/core.test.js`, `tests/browser_smoke.py`.
 ### n34 · Plan paylaşma: plan linki gruba, linkten "Varım" ya da "Gelemem"
-Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç 22 (`plan_skips` tablosu, otomatik)
+Birlikte · 17 Eki 2026 · 62386ef8 (PR #19, Worker bfc56968) · göç 22 (`plan_skips` tablosu, otomatik)
 
 **Ne yapıldı:**
 - **Plan kartı (`PlanCardModal`, `src/Modals.jsx`):** bir planı tek başına gösterir: gün, saat, ad, kim planladı; "Varım" / "Gelemem" düğmeleri; "Geliyor" ve "Gelemiyor" listeleri; "Gruba gönder" düğmesi.
@@ -142,7 +142,7 @@ Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç 22 (`plan_skips` tablosu, ot
 **Dosyalar:** server/schema.js, server/app.js, server/restore.js, src/planShare.js, src/Modals.jsx, src/App.jsx, src/Home.jsx, src/home.css, src/styles.css, tests/suite.js
 
 ### n32 · Çalışma eşi: kiminle beraberken en verimlisin
-Birlikte · 17 Eki 2026 · PR (ikinci üs, #16'dan sonra) · göç yok
+Birlikte · 17 Eki 2026 · 5b7d4593 (PR #17, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:**
 - **Ölçü (`server/stats.js` `partnersOf()`):** arkadaşın bir oturumunun en az yarısında seninle aynı anda odaklandıysa o oturum "beraber" sayılır (İmece kuralıyla aynı). Böyle bir oturumun olduğu gün ikilinin "beraber günü". Verim: beraber günlerde ikisinin o gün toplam odağı, kişi başı günlük ortalama. En iyi ikili bu ortalaması en yüksek olan; eşitlikte aynı anda geçen süre, sonra üye sırası.
@@ -163,7 +163,7 @@ Birlikte · 17 Eki 2026 · PR (ikinci üs, #16'dan sonra) · göç yok
 **Dosyalar:** server/stats.js, server/app.js, src/Stats.jsx, src/stats.css, src/Story.jsx, src/story.css, tests/core.test.js
 
 ### n14 · Başarımlar: rozet vitrini ve kazanma anı
-Başarım · 17 Eki 2026 · PR (ikinci üs) · göç yok (göç 12'deki `achievements` tablosu kullanılıyor)
+Başarım · 17 Eki 2026 · 5b7d4593 (PR #16, Worker 3de3c058) · göç yok (göç 12'deki `achievements` tablosu kullanılıyor)
 
 **Ne yapıldı:**
 - **16 başarım (`shared/achievements.js`):** İlk tuğla (ilk yapı) · Bir hafta (7 gün seri) · Bir ay (30 gün seri) · Sabah erkencisi (09.00'dan önce başlayan 5 oturum, 30 dk+) · Gece kuşu (21.00–04.00 arası başlayan 5 oturum, 30 dk+) · Maraton (bir günde 4 saat) · Yüz saat (toplam 100 saat) · İmece ustası (arkadaşlarla aynı anda 10 oturum) · Koleksiyoncu (8 farklı yapı) · Gönüllerin mimarı (bir yapıya 5 beğeni) · Müdavim (20 ayrı gün kütüpte) · Haftanın Ustası (bir taç) · Anıt ustası (bir anıt). Gizli üç: Kara delik kâşifi (eski rozet), Şşşt! (panoda tamamı büyük harf), Çay saati (panoya yalnız "çay").
@@ -187,7 +187,7 @@ Başarım · 17 Eki 2026 · PR (ikinci üs) · göç yok (göç 12'deki `achieve
 **Dosyalar:** shared/achievements.js, shared/pano.js, server/achievements.js, server/app.js, src/Achievements.jsx, src/achievementArt.js, src/achievementWatch.js, src/achievements.css, src/App.jsx, src/MePage.jsx, src/Modals.jsx, src/later.jsx, tests/core.test.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
 ### d27 · Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar
-Güvenlik · 17 Eki 2026 · PR #15 (ikinci üs) · göç yok
+Güvenlik · 17 Eki 2026 · 5b7d4593 (PR #15, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:** Ben → Hesap ve cihazlar'da üçüncü kutu, "Açık cihazlar". Hesabın bu cihazdan başka kaç cihazda açık olduğunu söylüyor; **Diğerlerinden çık** onay sorup hepsini kapatıyor. Kaybolan telefon, arkadaşın bilgisayarında açık kalan hesap için. Önceden bunu yalnız Batur panelden yapabiliyordu (ve o, bu cihazı da kapatıyor).
 - Sunucu: `GET /api/devices` → `{ others }` (süresi dolmamış diğer oturumlar), `POST /api/devices/signout` → o oturumlar ve onlara bağlı bildirim abonelikleri silinir, `{ ok, closed }`. Bu cihazın oturumu ve bu cihazdaki diğer hesaplar (n25) kalır.
@@ -206,7 +206,7 @@ Güvenlik · 17 Eki 2026 · PR #15 (ikinci üs) · göç yok
 **Dosyalar:** `server/app.js`, `src/Account.jsx`, `tests/core.test.js`, `tests/browser_smoke.py`.
 
 ### n30 · Masa haritası: kim hangi masada
-Kütüphane · 17 Eki 2026 · PR (ikinci üs) · göç yok (mevcut `location` + `desk` alanlarıyla çalışır, sunucuda değişiklik yok)
+Kütüphane · 17 Eki 2026 · 5b7d4593 (PR #14, Worker 3de3c058) · göç yok (mevcut `location` + `desk` alanlarıyla çalışır, sunucuda değişiklik yok)
 
 **Ne yapıldı:**
 - **Harita penceresi (`src/DeskMap.jsx`, ihtiyaç anında yüklenir):** üstte salon seçimi (📚 Adnan · 📖 Müjgan, içerideki kişi sayısıyla), altında salonun kuşbakışı krokisi: üst duvarda raflar, solda pencereler, iki sıra okuma masası ve aralarında koridor, altta giriş. Her masanın iki uzun kenarında üçer sandalye.
@@ -230,7 +230,7 @@ Kütüphane · 17 Eki 2026 · PR (ikinci üs) · göç yok (mevcut `location` + 
 **Dosyalar:** shared/rooms.js, src/DeskMap.jsx, src/deskmap.css, src/home.css, src/Home.jsx, src/Modals.jsx, src/Modal.jsx, src/App.jsx, src/later.jsx, src/Requests.jsx, tests/core.test.js, tests/browser_smoke.py
 
 ### d26 · Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti
-Cila · 17 Eki 2026 · PR #13 (ikinci üs) · göç yok
+Cila · 17 Eki 2026 · 5b7d4593 (PR #13, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:** Kütüp'ün telefon ana ekranındaki simgesi her gün görülen ilk şey; tasarımı (mor zeminde K ve yeşil nokta) aynı kaldı, telefonların istediği biçimlere getirildi.
 - **iPhone:** `apple-touch-icon` köşeleri saydam, yuvarlak 192 px'lik simgeydi. iOS saydam yeri siyaha boyuyor ve kendi köşesini üstüne kesiyor; köşelerde ince siyah kenarlar kalıyordu. Yeni: 180×180, köşesiz, saydamlıksız `apple-touch-icon.png` (iOS köşeyi kendisi yuvarlıyor).
@@ -248,7 +248,7 @@ Cila · 17 Eki 2026 · PR #13 (ikinci üs) · göç yok
 **Dosyalar:** `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/apple-touch-icon.png`, `public/icon-maskable-512.png`, `public/badge-96.png`, `tests/browser_smoke.py`.
 
 ### n28 · Haftanın hikâyesi: dokundukça ilerleyen haftalık özet
-Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok (`weekly` tablosuna yeni bir tür satır: `story`)
+Birlikte · 17 Eki 2026 · 5b7d4593 (PR #12, Worker 3de3c058) · göç yok (`weekly` tablosuna yeni bir tür satır: `story`)
 
 **Ne yapıldı:**
 - **Hikâye ekranı (`src/Story.jsx`, ihtiyaç anında yüklenir):** tam ekran kartlar; sağa dokun ilerler, sola dokun geri gelir, basılı tut durur, aşağı kaydır ya da ✕ kapatır, klavyede ok tuşları ve Esc. Üstte kart sayısı kadar ilerleme çizgisi.
@@ -273,7 +273,7 @@ Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok (`weekly` tablosuna yeni
 **Dosyalar:** src/Story.jsx, src/story.css, src/storyLink.jsx, src/home.css, src/App.jsx, src/MePage.jsx, src/later.jsx, server/app.js, server/stats.js, shared/week.js, tests/core.test.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
 ### d25 · Satır sonları: tek kalan kelime ve emoji yok
-Cila · 17 Eki 2026 · PR #11 (ikinci üs) · göç yok
+Cila · 17 Eki 2026 · 5b7d4593 (PR #11, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:** Uygulamanın her yerinde bir paragrafın ya da başlığın son satırına tek bir kelime ya da emoji düşmesi önlendi. Denetimin V2 bulgusu ("Yolun kütübe mi düşüyor?" ve altında yalnız 🛵) da bununla kapandı, `Modals.jsx`'e (n29) dokunmadan.
 - Başlıklar (h1–h3) `text-wrap: balance`: satırlar eşit bölünüyor ("Yolun kütübe / mi düşüyor? 🛵").
@@ -290,7 +290,7 @@ Cila · 17 Eki 2026 · PR #11 (ikinci üs) · göç yok
 **Dosyalar:** `src/styles.css`, `tests/browser_smoke.py`.
 
 ### d24 · Görsel cila: zarf, Batur paneli telefonda, 44 px dokunma alanları
-Cila · 17 Eki 2026 · PR #10 (ikinci üs) · göç yok
+Cila · 17 Eki 2026 · 5b7d4593 (PR #10, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:** 17 Ekim dış denetiminin görsel bulguları V1, V3, V4 (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
 - **V1:** "Batur'a ilet" kartında zarf artık yazının üstüne binmiyor. Paragraf zarfın yanında bitiyor (her ekran boyunda `.envelope-art` ölçüsüyle eşleşen `padding-right`); zarf yerinde ve aynı boyda. 320'den 1600 px'e 14 genişlikte ölçüldü.
@@ -310,7 +310,7 @@ Cila · 17 Eki 2026 · PR #10 (ikinci üs) · göç yok
 **Dosyalar:** `src/styles.css`, `src/polish.css`, `src/blackhole.css`, `src/Owner.jsx`, `tests/browser_smoke.py`.
 
 ### n24 · Ses turu: altı odak sesi yeniden, daha gerçekçi
-Ses · 17 Eki 2026 · PR (ikinci üs) · göç yok
+Ses · 17 Eki 2026 · 5b7d4593 (PR #9, Worker 3de3c058) · göç yok
 
 **Ne yapıldı (`src/Sound.jsx`, yalnız ses motoru; arayüz ve kayıtlı ayarlar aynı):**
 - **Yağmur:** damlalar artık suya düşen damla gibi çınlıyor (damlanın hapsettiği hava kabarcığının yükselen tonu ve çarpma tıkırtısı), yakın ve uzak; oluktan ağır damlalar; sağanak rüzgârla kabarıp iniyor; camda ince tıslama; oda yankısı.
@@ -335,7 +335,7 @@ Ses · 17 Eki 2026 · PR (ikinci üs) · göç yok
 **Dosyalar:** src/Sound.jsx, tests/browser_smoke.py
 
 ### d23 · Hesap güvenliği: şu anki şifre, deneme ve bildirim sınırları
-Güvenlik · 17 Eki 2026 · PR #8 (ikinci üs) · göç yok
+Güvenlik · 17 Eki 2026 · 5b7d4593 (PR #8, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:** 17 Ekim dış denetiminin güvenlik bulguları (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
 - **G1 (orta):** Şifresi olan hesapta kullanıcı adı ya da şifre yalnız şu anki şifreyle değişiyor ("Hesap ve cihazlar → Değiştir" formunda "Şu anki şifren" alanı). Yanlış deneme dakikada 6. Güncelleme eski şifre özetine bağlı; iki cihazdan aynı anda değiştirmede yalnız biri kazanır.
@@ -356,7 +356,7 @@ Güvenlik · 17 Eki 2026 · PR #8 (ikinci üs) · göç yok
 **Dosyalar:** `server/app.js`, `src/Account.jsx`, `tests/core.test.js`, `tests/suite.js`, `tests/browser_smoke.py`, `tests/live-smoke.mjs`.
 
 ### n29 · Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış
-Altyapı · 17 Eki 2026 · PR (ikinci üs) · göç yok (D1 değişmedi; Cloudflare'de yeni Durable Object sınıfı)
+Altyapı · 17 Eki 2026 · 5b7d4593 (PR #7, Worker 3de3c058) · göç yok (D1 değişmedi; Cloudflare'de yeni Durable Object sınıfı)
 
 **Ne yapıldı:**
 - **Canlı oda:** her ekibe bir Durable Object (`LiveRoom`, `worker/index.js`). Telefonlar `/api/live` üzerinden WebSocket ile bağlanır; bir yazma olunca oda "changed" der, telefon hemen `/state?rev=` çeker. Uyuyan (hibernation) soket boşta para ve CPU harcamaz; `ping` → `pong` odayı uyandırmadan cevaplanır. Ekipten çıkan ya da çıkarılanın soketine "removed" gider ve kapanır. Yerel workerd'de bir gelişin öbür telefona yansıması 438 ms (yazma dahil); worker testinde zil < 1 sn.
@@ -377,7 +377,7 @@ Altyapı · 17 Eki 2026 · PR (ikinci üs) · göç yok (D1 değişmedi; Cloudfl
 **Dosyalar:** worker/index.js, wrangler.jsonc, public/_headers, src/App.jsx, src/Focus.jsx, src/Board.jsx, src/Modals.jsx, src/later.jsx, src/lastState.js, src/villageData.js, src/fullscreen.js, src/FocusScreen.jsx, src/VillageMap.jsx, src/MePage.jsx, tests/suite.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
 ### n31 · Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir
-Maskot · 17 Eki 2026 · PR (ikinci üs) · göç yok
+Maskot · 17 Eki 2026 · 5b7d4593 (PR #6, Worker 3de3c058) · göç yok
 
 **Ne yapıldı:** ChatGPT'nin Kara v2 paketindeki `Kara.jsx` ve `kara.css` yerleşti (34 küçük hareket, 77 eklem klibi, 2,5B baş dönüşü, 6 nadir sürpriz, baret/gözlük/kitap/bere/çay bardağı). Gökyüzündeki "ders arası hayat" pulu artık Kara'nın cümlesi: pula dokununca Kara üç cümleden sıradakini söyler (kütüpteysen "kalk, bir bardak çay", moladaysan "çayın soğumasın"). Tarayıcı testine üç kontrol eklendi: sonsuz animasyon yok, 7 dokunuşta yıldız yutma, pul Kara'yı konuşturur.
 **Kararlar ve nedenleri:**

@@ -22,10 +22,17 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 | H9 | Hafıza (9 kural) | ✓ | Kurallar proje hafızasına özetlendi |
 | H10 | Önizleme `kutup` | ✓ | Önizleme yerine Playwright ekran görüntüleri (bulutta yan panel yok) |
 | H11 | Pano yayında, 49 kart, yan panelde | ✓ | Plan B: kopya pano, 49 kart + meta/board |
-| H12 | PR yolu denemesi | ✱ | Bu PR |
+| H12 | PR yolu denemesi | ✓ | PR #5 birleşti (17 Eki) |
 | H13 | Kara v2 kodu depoda (9 dosya) | ✓ | 9 dosya |
 | H14 | `get_usage` | – | Bulut oturumunda `get_usage` yok; kullanım Claude ayarlarından izlenir |
 | H15 | Hazırım raporu, Batur "başla" dedi | ✓ | Batur: "A'yı seçtim", "o olamdan ilerleyebil" |
+
+---
+
+## 17 Ekim 2026 18:54 · Yayın: d28, n34, n35 canlıda
+
+- **Yayın:** `62386ef8`, Worker `bfc56968`, canlı duman testi geçti, push: members 6/6 bound, owner 5/5 bound.
+- **Birleşenler:** n34 plan paylaşma (#19), n35 anket sonrası dört ekleme (#20), d28 katılma eşiği (#21). Göç 22 (`plan_skips`) ve 23 (`sessions.device`) otomatik.
 
 ---
 
@@ -34,6 +41,17 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **d28** (`claude/d28-katilma-esigi`, güncel `kutup-platform` üstünde): arkadaşın oturumuna bitmesine 5 dakikadan az kala katılınmıyor; Katıl düğmesi o zaman gizleniyor. Göç yok.
 - Batur'un anket cevabı "5 dakika" (denetimin önerisi 10'du). "Ekibi çağır" bildirimi yine 10 dakikada kesiliyor.
 - Şifre değişince çıkış ("Sorsun") ve simge ("K kalsın") cevapları anket turu başlığında; bu dalda yok.
+
+---
+
+## 17 Ekim 2026 13:52 · Yayın: panodaki işler, denetim ve çalışma eşi canlıda
+
+- **Yayın:** `Yayın tamam · 30952c21 → 5b7d4593 · Worker 3de3c058 · canlı duman testi geçti · push: members 6/6 bound, owner 4/4 bound`.
+- **Birleşenler:** n31 (#6), n29 (#7), n24 (#9), n28 (#12), n30 (#14), n14 (#16), n32 (#17), d23–d27 (#8, #10, #11, #13, #15). Batur'un isteğiyle ("Evet, sen al", "başla") Batur'un bilgisayarındaki Claude birleştirdi ve `kutup-platform`'a gönderdi; çakışma yalnız KARARLAR, GUNLUK ve core.test.js'te çıktı, iki taraf da tutuldu. `test:all` 112/112.
+- **Yayın yeri:** `npm run yayin` Batur'un canlı anahtarın olduğu laptopundan çalıştı.
+- **Akış (Batur, 17 Eki):** önizleme yok; her iş bitince doğrudan canlıya, görsel sorular canlıda cevaplanır, beğenilmeyen düzeltilip yeniden yayınlanır.
+- **Pano:** 12 kart → done.
+- **Açık:** salonların gerçek krokisi (n30), görsel onaylar.
 
 ---
 
