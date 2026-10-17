@@ -279,6 +279,18 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 for name in ['Kütüp','Köy','Pano','Ben']:
                     page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
                     page.wait_for_timeout(100)
+                    # let the tab's slide-in (and a screen loaded on demand) settle before measuring
+                    page.evaluate('''() => new Promise((done) => {
+                      let last = '', still = 0;
+                      const tick = () => {
+                        const r = document.querySelector('.tab-stage')?.getBoundingClientRect();
+                        const now = r ? `${r.left},${r.width},${document.body.scrollHeight}` : '';
+                        still = now === last ? still + 1 : 0;
+                        last = now;
+                        still >= 10 ? done() : requestAnimationFrame(tick);
+                      };
+                      tick();
+                    })''')
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
                     fakes += page.evaluate(FAKE_TAPPABLES)
                     short += page.evaluate(SHORT_REACH)
