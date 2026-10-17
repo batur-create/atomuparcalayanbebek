@@ -1170,6 +1170,7 @@ function KutupApp({ initial, restart }) {
                   retry={retryVillage}
                   run={buildRun}
                   outcome={buildOutcome}
+                  idle={focusScreen}
                   notify={notify}
                   session={session}
                   week={data.week}

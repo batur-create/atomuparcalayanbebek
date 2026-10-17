@@ -1,9 +1,12 @@
 // Machines and crew on the construction site. Each machine drives in from the
 // edge of the plot at the start of its phase, works, and drives off at the end;
 // the scene clips this layer to the plot so they seem to arrive from beyond it.
-// Drawn every frame (things move), so every piece is a handful of shapes.
+// Drawn every frame (things move), so every piece is a handful of shapes;
+// crewSVG returns them as lists of pieces.
 import { box, poly, seg } from "./iso.js";
 import { phaseAt } from "./construction.js";
+import { blockPallets } from "./sitedetail.js";
+import { LAB, approvedSVG, checkAt, slumpSVG } from "./quality.js";
 
 const YELLOW = ["#f6c945", "#dcae2c", "#c0951f"],
   STEEL = ["#9aa4ae", "#7f8994", "#68727c"],
@@ -61,6 +64,10 @@ function worker(P, x, y, z, time, phase, helmet, tool = "none") {
   } else if (tool === "roller") {
     hand = [fx + 6, top + 4 + swing * 4];
     gear = `<line x1="${n1(hand[0])}" y1="${n1(hand[1])}" x2="${n1(hand[0] + 4)}" y2="${n1(hand[1] - 9)}" stroke="#6b7480" stroke-width="1.2"/><rect x="${n1(hand[0] + 1)}" y="${n1(hand[1] - 13)}" width="7" height="3.5" rx="1.5" fill="#f4f2ea"/>`;
+  } else if (tool === "clip") {
+    // The inspector's clipboard, held up to read, ticking now and then.
+    hand = [fx + 5, top + 9];
+    gear = `<rect x="${n1(fx + 3.5)}" y="${n1(top + 5)}" width="5.5" height="7" rx="0.8" fill="#8b5e36"/><rect x="${n1(fx + 4.3)}" y="${n1(top + 6.2)}" width="3.9" height="5" fill="#fbfaf6"/>`;
   } else if (tool === "survey") {
     hand = [fx + 5, top + 8];
     gear = `<rect x="${n1(fx + 4)}" y="${n1(top + 6)}" width="5" height="6" rx="1" fill="#f4f2ea" stroke="#6b7480" stroke-width="0.6"/>`;
@@ -304,10 +311,12 @@ export function crewSVG(P, sp, plan, shown, time) {
   const w = sp.hw,
     hf = sp.h / sp.floors;
   const away = 1 - ease(arrival(k));
-  let behind = "",
-    machines = "";
+  // Each machine and worker is its own piece, so the scene only rebuilds the
+  // pieces that actually moved since the last frame.
+  const behind = [],
+    machines = [];
   const crew = [];
-  let extra = "";
+  const extra = [];
   const top = 0.3 + sp.h;
   const strip = w + 0.2 + (2.9 - (w + 0.2)) / 2;
   // Deliveries: a flatbed with a loader crane brings rebar and plywood before
@@ -316,8 +325,8 @@ export function crewSVG(P, sp, plan, shown, time) {
   const window = (from, to) => (shown > from && shown < to ? (shown - from) / (to - from) : -1);
   const d1 = window(0.055, 0.1),
     d2 = window(0.6, 0.665);
-  if (d1 >= 0) behind += flatbed(P, 1.05 + (1 - ease(arrival(d1))) * 4.5, -w - 0.66, "rebar", 1 - clamp((d1 - 0.2) / 0.6), sp);
-  if (d2 >= 0) machines += flatbed(P, 1.3 + (1 - ease(arrival(d2))) * 4.5, w + 1.0, "tiles", 1 - clamp((d2 - 0.2) / 0.6), sp);
+  if (d1 >= 0) behind.push(flatbed(P, 1.05 + (1 - ease(arrival(d1))) * 4.5, -w - 0.66, "rebar", 1 - clamp((d1 - 0.2) / 0.6), sp));
+  if (d2 >= 0) machines.push(flatbed(P, 1.3 + (1 - ease(arrival(d2))) * 4.5, w + 1.0, "tiles", 1 - clamp((d2 - 0.2) / 0.6), sp));
   if (p.key === "dig") {
     // The excavator loads the truck: dig, swing over the bed, dump, swing back.
     // Four buckets fill a truck; it drives off and an empty one pulls in.
@@ -353,23 +362,22 @@ export function crewSVG(P, sp, plan, shown, time) {
       wrist = lerp3(dumpAt, digAt, u);
       wrist[2] += 0.7 * Math.sin(Math.PI * u);
     }
-    machines += dumpTruck(P, truckX, lane, fill);
-    machines += excavator(P, -0.95 + away * 4.5, lane, wrist, { full, dumping, time });
+    machines.push(dumpTruck(P, truckX, lane, fill), excavator(P, -0.95 + away * 4.5, lane, wrist, { full, dumping, time }));
     crew.push([-w - 0.6, -w - 0.6, 0, "survey"], [w + 0.6, -0.4, 0, "shovel"]);
-  } else if (["lean", "footPour", "colPour", "deckPour"].includes(p.key)) {
+  } else if (["lean", "footPour", "colPour", "tieCol", "deckPour"].includes(p.key)) {
     const pumped = p.key === "footPour" || p.key === "deckPour";
     // Blinding goes straight down an extended chute into the pit.
     const parked = away < 0.02;
-    if (p.key === "lean") machines += mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time, 1, parked ? [0.25, -w + 0.55, -0.42] : null);
-    else if (!pumped) behind += mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time);
+    if (p.key === "lean") machines.push(mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time, 1, parked ? [0.25, -w + 0.55, -0.42] : null));
+    else if (!pumped) behind.push(mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time));
     if (pumped) {
       const z = p.key === "footPour" ? 0.3 : 0.3 + (p.floor + 1) * hf;
       const edge = p.key === "deckPour" ? -w + 2 * w * Math.min(1, k / 0.85) : 0;
       const pumpX = 0.9 + away * 4.5,
         lane = w + 1.0;
       // The mixer backs up to the pump's rear hopper and discharges into it.
-      machines += mixerTruck(P, pumpX - 2.6 - away * 1.5, lane, time, -1, parked ? [pumpX - 1.06, lane, 0.78] : null);
-      machines += pumpTruck(P, pumpX, lane, [edge, 0.2 * Math.sin(time * 0.5), z], time);
+      machines.push(mixerTruck(P, pumpX - 2.6 - away * 1.5, lane, time, -1, parked ? [pumpX - 1.06, lane, 0.78] : null));
+      machines.push(pumpTruck(P, pumpX, lane, [edge, 0.2 * Math.sin(time * 0.5), z], time));
       // Hose man, vibrator man and a screeder at the pour front.
       crew.push([edge - 0.35, 0.6, z, "hose"], [edge + 0.15, -0.7, z, "shovel"], [edge - 0.8, -0.2, z, "trowel"]);
     } else if (p.key === "lean") crew.push([-w + 0.4, w + 0.5, -0.5, "shovel"], [w - 0.2, -w + 0.3, -0.5, "trowel"]);
@@ -382,29 +390,49 @@ export function crewSVG(P, sp, plan, shown, time) {
     // Backfill: the excavator pushes the spoil heap back round the foundation.
     // It works from the back lane: bucket into the windrow on the right, then
     // along the trench at the back of the foundation.
-    if (p.key === "colRebar" && p.floor === 0 && k < 0.75) {
+    if (p === plan.find((q) => q.floor >= 0) && k < 0.75) {
       const left = Math.sqrt(Math.max(0, 1 - k / 0.75));
       const heap = [3.06, -2.1 + 0.95 * left, 0.1 + 0.3 * left],
         trench = [0.9 + 0.6 * Math.sin(time * 0.37), -w - 0.25, 0.08];
       const c = (time / 5) % 1;
       const wrist = c < 0.5 ? lerp3(heap, trench, ease(c / 0.5)) : lerp3(trench, heap, ease((c - 0.5) / 0.5));
-      behind += excavator(P, 1.9 + (1 - ease(arrival(k / 0.75))) * 4.5, -w - 0.62, wrist, { full: c < 0.5, time, side: 1 });
+      behind.push(excavator(P, 1.9 + (1 - ease(arrival(k / 0.75))) * 4.5, -w - 0.62, wrist, { full: c < 0.5, time, side: 1 }));
     }
     // Fixers and carpenters on the storey under way.
     const z = 0.3 + p.floor * hf;
-    const tools = { colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"] }[p.key] || ["hammer", "none"];
+    const tools = {
+      colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"],
+      wallLay: ["trowel", "trowel"], studs: ["hammer", "carry"], joists: ["hammer", "carry"],
+      steelCol: ["hammer", "none"], steelBeam: ["hammer", "carry"], brace: ["hammer", "none"], steelDeck: ["hose", "trowel"],
+    }[p.key] || ["hammer", "none"];
     crew.push([-w + 0.6, w - 0.3, p.key === "deckRebar" ? z + hf - 0.14 : z, tools[0]], [w - 0.5, -w + 0.7, z, tools[1]]);
+    // A labourer wheels bricks or stone from the pallets to the masons.
+    if (p.key === "wallLay") extra.push(barrow(P, [blockPallets(sp)[0] + 0.5, strip], [w + 0.5, w + 0.5], 0, time, sp.wall.faces[0]));
   } else if (p.key === "walls") {
     // Masons on the courses; a labourer brings blocks from the pallets.
     crew.push([w + 0.35, w * 0.2, 0, "trowel"], [-w * 0.3, w + 0.35, 0, "trowel"]);
-    extra += barrow(P, [-1.4, strip], [w + 0.5, w + 0.5], 0, time, "#e4e2db");
-  } else if (p.key === "roof") crew.push([0.4, 0.2, top + 0.1, "hammer"], [-0.6, -0.4, top + 0.1, "carry"]);
+    extra.push(barrow(P, [blockPallets(sp)[0] + 0.5, strip], [w + 0.5, w + 0.5], 0, time, "#e4e2db"));
+  } else if (["roofFrame", "roofDeck", "roofTiles"].includes(p.key)) crew.push([0.4, 0.2, top + 0.1, "hammer"], [-0.6, -0.4, top + 0.1, "carry"]);
   else if (p.key === "openings") crew.push([w + 0.7, w * 0.3, 0, "carry"], [-w * 0.3, w + 0.7, 0, "hammer"]);
+  else if (p.key === "finish" && sp.wall.pattern === "panes") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.4 * k, "carry"], [-w * 0.4, w + 0.6, 0.3, "hammer"]);
   else if (p.key === "finish") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45, "roller"], [-w * 0.4, w + 0.6, 1.25, "trowel"]);
+  // Insulated render: boards and anchors (a hammer drill), base coat with mesh, paint.
+  else if (p.key === "sheath") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "carry"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "hammer"]);
+  else if (p.key === "eps") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "carry"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "hammer"]);
+  else if (p.key === "render") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "trowel"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "trowel"]);
+  else if (p.key === "paint") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "roller"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "roller"]);
+  else if (p.key === "footWater") crew.push([-w + 0.5, w * 0.3, -0.5, "carry"], [w * 0.2, -w + 0.5, -0.5, "roller"]);
   else if (p.key === "handover") crew.push([w + 1.0, w + 1.2, 0, "shovel"]);
-  let people = "";
-  crew.forEach(([x, y, z, tool], i) => (people += worker(P, x, y, z, time, i * 1.7, i % 2 ? "#f4f2ea" : "#f6d24a", tool)));
-  return { behind, front: machines + people + extra };
+  const people = crew.map(([x, y, z, tool], i) => worker(P, x, y, z, time, i * 1.7, i % 2 ? "#f4f2ea" : "#f6d24a", tool));
+  // Quality control: the inspector (white helmet, clipboard) at the work to be
+  // covered up; the lab technician's slump test and cubes at every pour.
+  const check = checkAt(plan, shown);
+  if (check?.kind === "inspect") {
+    const z = p.floor < 0 ? 0 : p.key === "deckRebar" ? 0.3 + (p.floor + 1) * hf - 0.14 : 0.3 + p.floor * hf;
+    const [ix, iy] = [w * 0.35, w * 0.55];
+    people.push(worker(P, ix, iy, z, time * 0.3, 0.4, "#ffffff", "clip") + (check.k >= 0.7 ? approvedSVG(P, ix, iy, z) : ""));
+  } else if (check?.kind === "slump") people.push(slumpSVG(P, check.k) + worker(P, LAB[0] + 0.25, LAB[1] - 0.25, 0, time * 0.6, 2.1, "#7fb2e5", check.k < 0.55 ? "tie" : "survey"));
+  return { behind, front: [...machines, ...people, ...extra] };
 }
 
 // When a build collapses the crew runs clear of it.

@@ -5,15 +5,18 @@
 import React, { useEffect, useRef } from "react";
 import { reducedMotion } from "./ui.jsx";
 import { kindFor } from "../shared/village.js";
+import { modelOf } from "../shared/catalog.js";
 import {
   CRANE, DIRT, GRASS, STONE, WOOD, box, chimneySVG, doorSVG, f, flagSVG, foundationSVG, gardenSVG,
   poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG, openingList, faceX, faceY,
   porticoSVG, sailsSVG, wallFittingsSVG, yardFittingsSVG,
 } from "./iso.js";
-import { FRAME_END, phaseAt, sitePlan, siteSVG, workHeight } from "./construction.js";
+import { FRAME_END, phaseAt, rendered, sitePlan, siteSVG, systemOf, workHeight } from "./construction.js";
 import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
-import { craneSVG } from "./crane.js";
+import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
+import { checkAt } from "./quality.js";
+import { metraj } from "./metraj.js";
 import { skyAt } from "./villageWorld.js";
 
 export const KINDS = {
@@ -50,6 +53,9 @@ function scaffoldSVG(P, sp, built = 1) {
 }
 // Infill walls are laid in aerated-concrete blocks, course by course; the
 // course being laid creeps along the two visible faces.
+const ALU = ["#c9ced3", "#b3b9bf", "#dde1e4"],
+  OSB = ["#d6b27a", "#c29d63", "#a7824b"],
+  UNDERLAY = ["#5b6b7d", "#4a5868", "#7d8b9a"];
 const BLOCK = { faces: ["#ecebe6", "#d9d7cf", "#c4c1b8"], grain: "#c9c6bd", pattern: "blocks" };
 function masonrySVG(P, sp, t) {
   const courses = Math.max(4, Math.round(sp.h / 0.25)),
@@ -74,31 +80,92 @@ function masonrySVG(P, sp, t) {
   }
   return s;
 }
-// Render and paint go up the scaffold from the ground: only the two visible
-// faces sweep upward, then the finished wall (trim, floor bands) takes over.
-function facadeSVG(P, sp, t) {
-  if (t >= 1) return wallsSVG(P, sp, 1);
-  const w = sp.hw,
-    z1 = 0.3 + sp.h * t,
-    [, left, right] = sp.wall.faces;
+// Insulated render facade, on the two visible faces: insulation boards laid
+// course by course in a running bond and pinned with anchors; then the base
+// coat with its mesh and the paint, each going up from the ground.
+const EPS = ["#f4f4ef", "#e2e1da"],
+  BASECOAT = ["#d5d0c4", "#bfb9ac"];
+function sweep(P, sp, z1, [left, right], d = 0.04) {
+  const w = sp.hw + d;
   return poly([P(-w, w, 0.3), P(w, w, 0.3), P(w, w, z1), P(-w, w, z1)], left) + poly([P(w, -w, 0.3), P(w, w, 0.3), P(w, w, z1), P(w, -w, z1)], right);
+}
+function epsSVG(P, sp, t) {
+  const w = sp.hw + 0.04,
+    rowH = 0.5,
+    rows = Math.ceil(sp.h / rowH),
+    laid = t * rows,
+    top = 0.3 + sp.h;
+  let s = "";
+  for (let r = 0; r < Math.ceil(laid); r++) {
+    const z0 = 0.3 + r * rowH,
+      z1 = Math.min(top, z0 + rowH),
+      reach = r < Math.floor(laid) ? 1 : laid - r;
+    const end = -w + 2 * w * reach;
+    s += poly(faceY(P, w, -w, end, z0, z1), EPS[0]) + poly(faceX(P, w, -w, end, z0, z1), EPS[1]);
+    s += seg(P(-w, w, z1), P(end, w, z1), "#c9c7bd", 0.7) + seg(P(w, -w, z1), P(w, end, z1), "#c9c7bd", 0.6);
+    for (let u = -w + (r % 2 ? 0.5 : 1); u < end - 0.05; u += 1) {
+      s += seg(P(u, w, z0), P(u, w, z1), "#c9c7bd", 0.7) + seg(P(w, u, z0), P(w, u, z1), "#c9c7bd", 0.6);
+      // anchors: one at each joint, one in the middle of the board
+      for (const [a, b] of [[u, z0 + rowH * 0.5], [u - 0.5, z0 + rowH * 0.5]]) {
+        if (a < -w + 0.05) continue;
+        const q1 = P(a, w, b),
+          q2 = P(w, a, b);
+        s += `<circle cx="${f(q1[0])}" cy="${f(q1[1])}" r="1.1" fill="#9aa0a6"/><circle cx="${f(q2[0])}" cy="${f(q2[1])}" r="1.1" fill="#9aa0a6"/>`;
+      }
+    }
+  }
+  return s;
+}
+function renderFacadeSVG(P, sp, t) {
+  const top = 0.3 + sp.h,
+    [, left, right] = sp.wall.faces;
+  if (t >= 1) return wallsSVG(P, sp, 1);
+  if (t < 0.36) return epsSVG(P, sp, t / 0.36);
+  if (t < 0.65) {
+    // Base coat over the mesh, with the wet front a shade darker.
+    const z = 0.3 + sp.h * ((t - 0.36) / 0.29);
+    return epsSVG(P, sp, 1) + sweep(P, sp, z, BASECOAT, 0.05) + sweep(P, sp, z, ["#cfc9bc", "#bbb5a7"], 0.05).replace(/<polygon/g, `<polygon opacity="0.5"`);
+  }
+  return sweep(P, sp, top, BASECOAT, 0.05) + sweep(P, sp, 0.3 + sp.h * ((t - 0.65) / 0.35), [left, right], 0.051);
 }
 
 function sceneParts(P, sp, seed, plan) {
   const w = sp.hw,
-    look = sp.look || {};
+    look = sp.look || {},
+    sys = systemOf(sp),
+    rc = sys === "rc";
+  const phase = (key) => plan.find((p) => p.key === key),
+    first = plan.find((p) => p.floor >= 0),
+    facade = plan.filter((p) => ["eps", "render", "paint", "finish"].includes(p.key)),
+    openings = phase("openings");
+  const span = (from, to, p) => from + (to - from) * p;
+  // Scaffold goes up once there is something to reach: the infill walls of a
+  // concrete frame, the first storey's walls once they pass head height, the
+  // timber frame's sheathing, the glazing of a steel frame.
+  const scaffoldAt = rc ? FRAME_END - 0.02 : sys === "masonry" ? span(first.a, first.b, 0.4) : sys === "timber" ? phase("joists").a : 0.66;
   return [
-    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
+    { a: rc ? FRAME_END : first.a, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
     { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
-    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => masonrySVG(P, sp, t) },
-    { a: 0.86, b: 0.93, kind: "grow", draw: (t) => facadeSVG(P, sp, t) },
+    ...(rc ? [{ a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => masonrySVG(P, sp, t) }] : []),
+    // The finished wall goes up from the ground: insulated render on a
+    // concrete frame; pointing, timber cladding or glass otherwise.
+    { a: facade[0].a, b: facade[facade.length - 1].b, kind: "grow", draw: (t) => (rc ? renderFacadeSVG(P, sp, t) : wallsSVG(P, sp, t)) },
     // The door is fitted into its frame from the threshold up.
-    { a: 0.8, b: 0.84, kind: "reveal", fit: true, draw: () => doorSVG(P, sp) },
-    { a: 0.78, b: 0.86, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
-    { a: FRAME_END - 0.02, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
-    // Roof: trusses one by one, purlins across, then tiles from the eaves up.
-    { a: 0.68, b: 0.73, kind: "grow", draw: (t) => (sp.roofType === "dome" ? "" : trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t)) },
-    { a: 0.72, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
+    { a: span(openings.a, openings.b, 0.25), b: span(openings.a, openings.b, 0.75), kind: "reveal", fit: true, draw: () => doorSVG(P, sp) },
+    { a: openings.a, b: openings.b, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
+    { a: scaffoldAt, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
+    // Roof: trusses one by one, purlins across; OSB sheathing and the
+    // waterproofing underlay go on from the eaves up, then the tiles.
+    { a: 0.68, b: 0.715, kind: "grow", draw: (t) => (sp.roofType === "dome" ? "" : trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t, sys === "steel")) },
+    ...(sp.roofType === "dome"
+      ? []
+      : sys === "steel"
+      ? [{ a: 0.715, b: 0.748, kind: "reveal", draw: () => roofSVG(P, { ...sp, roof: ALU }) }]
+      : [
+          { a: 0.712, b: 0.735, kind: "reveal", draw: () => roofSVG(P, { ...sp, roof: OSB }) },
+          { a: 0.733, b: 0.75, kind: "reveal", draw: () => roofSVG(P, { ...sp, roof: UNDERLAY }) },
+        ]),
+    { a: 0.748, b: 0.78, kind: "reveal", draw: () => roofSVG(P, sp) },
     { a: 0.78, b: 0.8, kind: "grow", live: sp.roofType === "pyramid", draw: (t, lit, time) => (sp.roofType === "pyramid" ? flagSVG(P, sp, t, time * 3) : chimneySVG(P, sp, t)) },
     // Windmill sails go up blade by blade once the roof is on, then turn.
     ...(look.sails ? [{ a: 0.79, b: 0.82, kind: "grow", live: true, draw: (t, lit, time) => sailsSVG(P, sp, t >= 1 ? 0.4 + time * 0.9 : 0.4, 2, Math.ceil(t * 4)) }] : []),
@@ -107,15 +174,29 @@ function sceneParts(P, sp, seed, plan) {
     ...(sp.look ? [{ a: 0.93, b: 0.955, kind: "reveal", fit: true, draw: () => wallFittingsSVG(P, sp) + (look.columns ? porticoSVG(P, sp) : "") }] : []),
     // Planting: the garden comes up out of the ground, with the yard's tables, beds and sign.
     { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) + yardFittingsSVG(P, sp) },
-    // The tower crane goes up once its footing is cast, at the blinding, and comes down after the roof.
-    { a: plan.find((p) => p.key === "lean").a, b: 0.82, kind: "erect", live: true, draw: (time, shown, built) => craneSVG(P, sp, plan, time, shown, built, workHeight(plan, sp, shown)) },
+    // The tower goes up with a tower crane, once its footing is cast at the
+    // blinding; it comes down after the roof. Smaller buildings get a mobile
+    // crane, which comes and goes with the lifting work.
+    sp.kind === "tower"
+      ? { a: plan.find((p) => p.key === "lean").a, b: 0.82, kind: "erect", live: true, crane: true, draw: (time, shown, built) => craneSVG(P, sp, plan, time, shown, built, workHeight(plan, sp, shown)) }
+      : { a: liftRuns(plan)[0][0], b: 0.79, kind: "erect", live: true, crane: true, draw: (time, shown) => mobileCraneSVG(P, sp, plan, time, shown, workHeight(plan, sp, shown)) },
   ];
 }
 
 const springOut = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2));
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const NS = "http://www.w3.org/2000/svg";
+// Machines, workers and the crane: smooth enough, and every frame costs battery.
+const MOVING_FPS = 12;
 let sceneSerial = 0;
+// Keep one <g> per piece and touch only the pieces whose drawing changed.
+function patch(layer, pieces) {
+  while (layer.children.length > pieces.length) layer.lastChild.remove();
+  pieces.forEach((text, i) => {
+    const g = layer.children[i] || layer.appendChild(document.createElementNS(NS, "g"));
+    if (g.__text !== text) g.innerHTML = g.__text = text;
+  });
+}
 const escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 /**
@@ -123,14 +204,16 @@ const escapeText = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
  * run: { endsAt, minutes, kind, seed } while a build-mode session is on.
  * outcome: { type: "built" | "collapsed", kind, seed, at } right after it ends.
  */
-export function ConstructionScene({ run, outcome }) {
+export function ConstructionScene({ run, outcome, idle = false }) {
   const ref = useRef(null);
-  const live = useRef({ run, outcome });
-  live.current = { run, outcome };
+  const live = useRef({ run, outcome, idle });
+  live.current = { run, outcome, idle };
+  const wakeRef = useRef(null);
   const subject = run || outcome;
   const kind = subject?.kind || "cottage",
     seed = subject?.seed || 1,
     model = subject?.model || null;
+  const item = modelOf(model, kind);
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
@@ -139,10 +222,28 @@ export function ConstructionScene({ run, outcome }) {
     const s = { cottage: 31, house: 28, tower: 23.5 }[kind];
     const P = projector({ cx: 350, cy: 268, s });
     root.innerHTML = "";
-    const layer = (name) => {
+    // The scene is a stack of SVG sheets. The moving ones (machines, workers,
+    // the crane) sit on their own compositor layers, so redrawing them 15 times
+    // a second does not repaint the sky, the plot and the building under them.
+    const sheet = (name) => {
+      const svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("viewBox", "0 0 680 400");
+      svg.setAttribute("class", `site-sheet ${name}`);
+      svg.setAttribute("aria-hidden", "true");
+      root.appendChild(svg);
+      return svg;
+    };
+    const base = sheet("base"),
+      backSheet = sheet("moving back"),
+      mid = sheet("mid"),
+      topSheet = sheet("moving top"),
+      washSheet = sheet("light"),
+      labelSheet = sheet("label");
+    let into = base;
+    const layer = (name, parent = into) => {
       const g = document.createElementNS(NS, "g");
       g.setAttribute("class", name);
-      root.appendChild(g);
+      parent.appendChild(g);
       return g;
     };
     // Daylight: a sky behind the site (sunset peach, night navy with stars)
@@ -152,16 +253,27 @@ export function ConstructionScene({ run, outcome }) {
     const uid = ++sceneSerial;
     // Machines are clipped to the plot (open upwards) so they drive in from beyond its edge.
     const plot = [P(-3.4, 3.4, 0), P(3.4, 3.4, 0), P(3.4, -3.4, 0)];
-    root.firstChild.insertAdjacentHTML("beforeend", `<clipPath id="plot${uid}"><polygon points="${[...plot, [plot[2][0], -400], [plot[0][0], -400]].map((q) => q.map((v) => v.toFixed(1)).join(",")).join(" ")}"/></clipPath>`);
+    const plotClip = (id) => `<clipPath id="${id}"><polygon points="${[...plot, [plot[2][0], -400], [plot[0][0], -400]].map((q) => q.map((v) => v.toFixed(1)).join(",")).join(" ")}"/></clipPath>`;
+    backSheet.innerHTML = plotClip(`plot${uid}b`);
+    topSheet.innerHTML = plotClip(`plot${uid}t`);
     const yard = layer("yard");
-    const crewBack = layer("crew-back");
+    const crewBack = layer("crew-back", backSheet);
+    into = mid;
     const building = layer("site");
     const frontYard = layer("front-yard");
+    into = topSheet;
+    const craneLayer = layer("crane");
     const crewFront = layer("crew-front");
-    crewBack.setAttribute("clip-path", `url(#plot${uid})`);
-    crewFront.setAttribute("clip-path", `url(#plot${uid})`);
+    crewBack.setAttribute("clip-path", `url(#plot${uid}b)`);
+    crewFront.setAttribute("clip-path", `url(#plot${uid}t)`);
+    // The mobile crane drives in from beyond the plot like the other machines.
+    if (sp.kind !== "tower") craneLayer.setAttribute("clip-path", `url(#plot${uid}t)`);
     const fx = layer("fx");
-    const wash = layer("light");
+    const wash = layer("light", washSheet);
+    // The structure and its crane shake, fall or bounce together.
+    const moveBuilding = (t) => {
+      for (const g of [building, craneLayer]) t ? g.setAttribute("transform", t) : g.removeAttribute("transform");
+    };
     let daylight = skyAt(),
       skyKey = "";
     const paintSky = () => {
@@ -178,21 +290,21 @@ export function ConstructionScene({ run, outcome }) {
             y = (i * 71.9) % 190;
           sky += `<circle cx="${f(x)}" cy="${f(y)}" r="${i % 5 ? 0.9 : 1.5}" fill="#fff8e1" opacity="${(night * (0.35 + (i % 3) * 0.2)).toFixed(2)}"/>`;
         }
-        light += `<rect width="680" height="400" fill="#20306e" opacity="${(0.3 * night).toFixed(2)}" style="mix-blend-mode:multiply" pointer-events="none"/>`;
+        light += `<rect width="680" height="400" fill="#20306e" opacity="${(0.3 * night).toFixed(2)}"/>`;
       }
       if (warm > 0) {
         sky += `<defs><linearGradient id="warm${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3a77a"/><stop offset="1" stop-color="#f7e2c8" stop-opacity="0"/></linearGradient></defs><rect width="680" height="400" fill="url(#warm${uid})" opacity="${warm.toFixed(2)}"/>`;
-        light += `<rect width="680" height="400" fill="#ff9145" opacity="${(0.13 * warm).toFixed(2)}" style="mix-blend-mode:multiply" pointer-events="none"/>`;
+        light += `<rect width="680" height="400" fill="#ff9145" opacity="${(0.13 * warm).toFixed(2)}"/>`;
       }
       skyLayer.innerHTML = sky;
       wash.innerHTML = light;
     };
     paintSky();
     const skyTimer = setInterval(paintSky, 180000);
-    const caption = layer("caption");
+    const caption = layer("caption", labelSheet);
     const plan = sitePlan(sp);
     let crewKey = "";
-    const parts = sceneParts(P, sp, seed, plan).map((p) => ({ ...p, el: building.appendChild(document.createElementNS(NS, "g")) }));
+    const parts = sceneParts(P, sp, seed, plan).map((p) => ({ ...p, el: (p.crane ? craneLayer : building).appendChild(document.createElementNS(NS, "g")) }));
     let shown = 0,
       raf = 0,
       last = 0,
@@ -240,8 +352,7 @@ export function ConstructionScene({ run, outcome }) {
         // down piece by piece; 3) dust. The crew runs clear; the debris stays.
         const SHAKE = motionReduced ? 0 : 0.75,
           fallT = tau - SHAKE;
-        if (fallT < 0) building.setAttribute("transform", `translate(${f(Math.sin(tau * 55) * 3.2 * (tau / SHAKE))} 0)`);
-        else building.removeAttribute("transform");
+        moveBuilding(fallT < 0 ? `translate(${f(Math.sin(tau * 55) * 3.2 * (tau / SHAKE))} 0)` : "");
         parts.forEach((p) => {
           if (!p.fall) return p.el.setAttribute("opacity", "0");
           const l = Math.max(0, fallT - p.fall.d);
@@ -323,10 +434,19 @@ export function ConstructionScene({ run, outcome }) {
         } else if (p.kind === "erect") {
           const built = clamp((shown - p.a) / 0.03) * clamp((p.b - shown) / 0.03);
           op = built > 0 ? 1 : 0;
-          const key = built.toFixed(2) + (p.live ? Math.floor(time * 15) : "");
+          const key = built.toFixed(2) + (p.live ? Math.floor(time * MOVING_FPS) : "");
           if (op && key !== p.key) {
-            p.el.innerHTML = p.draw(time, shown, built);
+            const out = p.draw(time, shown, built);
             p.key = key;
+            if (typeof out === "string") p.el.innerHTML = out;
+            else {
+              // The crane: its mast only changes while it goes up or comes
+              // down; the slewing top is redrawn only when it has moved.
+              if (!p.mast) p.el.innerHTML = "<g></g><g></g>";
+              [p.mast, p.head] = p.el.children;
+              for (const [g, text] of [[p.mast, out.mast], [p.head, out.head]])
+                if (g.__text !== text) g.innerHTML = g.__text = text;
+            }
           }
         } else if (p.kind === "reveal") {
           // Tiles go on from the eaves up to the ridge: a clip uncovers the roof bottom-up.
@@ -367,7 +487,7 @@ export function ConstructionScene({ run, outcome }) {
         const
           base = P(0, 0, 0),
           bounce = motionReduced ? 1 : 1 + 0.06 * Math.exp(-dt * 5) * Math.cos(dt * 14);
-        building.setAttribute("transform", `translate(${f(base[0])} ${f(base[1])}) scale(${bounce.toFixed(4)}) translate(${f(-base[0])} ${f(-base[1])})`);
+        moveBuilding(`translate(${f(base[0])} ${f(base[1])}) scale(${bounce.toFixed(4)}) translate(${f(-base[0])} ${f(-base[1])})`);
         const apex = P(0, 0, ridgeOf(sp));
         for (let i = 0; !motionReduced && i < 18 && dt < 1.5; i++) {
           const a = -Math.PI / 2 + (i / 17 - 0.5) * 2.5,
@@ -385,29 +505,42 @@ export function ConstructionScene({ run, outcome }) {
           }
       }
       fx.innerHTML = effects;
-      // Machines and workers for the work under way (15 fps is plenty for them).
+      // Machines and workers for the work under way (12 fps is plenty for them).
       const resting = mode === "build" && !!live.current.run?.pausedAt;
       if (mode === "build" && !resting) {
-        const key = `${Math.floor(time * 15)}|${shown.toFixed(3)}`;
+        const key = `${Math.floor(time * MOVING_FPS)}|${shown.toFixed(3)}`;
         if (key !== crewKey) {
           const c = crewSVG(P, sp, plan, shown, time);
-          crewBack.innerHTML = c.behind;
-          crewFront.innerHTML = c.front;
+          patch(crewBack, c.behind);
+          patch(crewFront, c.front);
           crewKey = key;
         }
       } else if (crewKey) {
-        crewBack.innerHTML = crewFront.innerHTML = "";
+        patch(crewBack, []);
+        patch(crewFront, []);
         crewKey = "";
       }
-      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : phaseAt(plan, shown).label;
-      const text = `${label}|${Math.round(shown * 100)}|${daylight.night > 0.4}`;
+      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : checkAt(plan, shown)?.label || phaseAt(plan, shown).label;
+      // The progress payment weighs each work item by its cost; beside it,
+      // what has gone into the building so far.
+      const m = metraj(sp, plan, mode === "done" ? 1 : shown);
+      const line = `Hakediş %${m.hakedis} · ${m.items.join(" · ")}`;
+      const text = `${label}|${line}|${daylight.night > 0.4}`;
       if (text !== caption.dataset.text) {
         caption.dataset.text = text;
         const dark = daylight.night > 0.4;
-        caption.innerHTML = `<text x="22" y="40" fill="${dark ? "#f1efe6" : "#4f4a3f"}" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="${dark ? "#b9bdd4" : "#8a8170"}" font-size="20" font-family="DM Sans, sans-serif">Hakediş %${Math.round(shown * 100)}</text>`;
+        caption.innerHTML = `<text x="22" y="40" fill="${dark ? "#f1efe6" : "#4f4a3f"}" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="${dark ? "#b9bdd4" : "#8a8170"}" font-size="20" font-family="DM Sans, sans-serif">${escapeText(line)}</text>`;
       }
     };
+    // Nothing is drawn while nobody can see it: scrolled away, or covered by
+    // the focus screen (which runs its own copy of the site).
+    let onScreen = true;
+    const awake = () => onScreen && !live.current.idle && !document.hidden;
     const loop = (now) => {
+      if (!awake()) {
+        raf = 0;
+        return;
+      }
       // 30 fps is plenty for a scene that changes in minutes, and spares the battery.
       if (now - last > 33) {
         last = now;
@@ -415,28 +548,42 @@ export function ConstructionScene({ run, outcome }) {
       }
       raf = requestAnimationFrame(loop);
     };
+    const wake = () => {
+      if (!motionReduced && !raf && awake()) raf = requestAnimationFrame(loop);
+    };
+    wakeRef.current = wake;
+    const seen = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(([e]) => {
+          onScreen = e.isIntersecting;
+          wake();
+        })
+      : null;
+    seen?.observe(root);
+    document.addEventListener("visibilitychange", wake);
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      clearInterval(skyTimer);
+      seen?.disconnect();
+      document.removeEventListener("visibilitychange", wake);
+    };
     if (motionReduced) {
       shown = run ? progressOf(run) : 1;
       draw(performance.now());
       const timer = setInterval(() => {
+        if (!awake()) return;
         if (live.current.run) shown = progressOf(live.current.run);
         draw(performance.now());
       }, 5000);
       return () => {
         clearInterval(timer);
-        clearInterval(skyTimer);
+        stop();
       };
     }
-    raf = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearInterval(skyTimer);
-    };
+    wake();
+    return stop;
     // The scene lives for one building; run/outcome are read live through the ref.
   }, [kind, seed, model]);
-  return (
-    <svg className="village-scene" viewBox="0 0 680 400" role="img" aria-label={`${KINDS[kind].label} inşaatı`}>
-      <g ref={ref} />
-    </svg>
-  );
+  useEffect(() => wakeRef.current?.(), [idle]);
+  return <div ref={ref} className="village-scene" role="img" aria-label={`${item.emoji} ${item.name} inşaatı`} />;
 }

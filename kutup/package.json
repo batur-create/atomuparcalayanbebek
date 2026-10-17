@@ -10,7 +10,7 @@
     "dev": "node server/index.js --dev",
     "build": "vite build",
     "start": "node server/index.js",
-    "test": "node --test tests/core.test.js tests/client.test.js tests/push.test.js tests/outbox.test.js tests/node.test.js",
+    "test": "node --test tests/core.test.js tests/client.test.js tests/site.test.js tests/push.test.js tests/outbox.test.js tests/node.test.js",
     "test:browser": "python tests/browser_smoke.py",
     "test:worker": "vite build && node --test tests/worker.test.js",
     "test:all": "vite build && node --test tests/*.test.js",

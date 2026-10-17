@@ -23,6 +23,9 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | PR (claude/n36-insaat-sov) |
+| n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-2) |
+| n36c | İnşaat tam şov, 3. tur: yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, şantiyede yakınlaştırma | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-3) |
 | d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | 62386ef8 (PR #21) |
 | n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | 62386ef8 (PR #20) |
 | n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | 62386ef8 (PR #19) |
@@ -84,6 +87,69 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n36c · İnşaat tam şov, 3. tur: denetim, metraj, TBDY, yakınlaştırma
+Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-3, 1. ve 2. turun üstüne) · göç yok
+
+**Ne yapıldı:**
+- **Yapı denetim:** üstü kapanacak her işin son kısmında beyaz baretli, klipsli denetçi gelir: temel, kolon (kulede kolon ve perde), kiriş/döşeme donatısı; yığmada duvar, lento ve hatıl donatısı; ahşapta karkas ve bağlantılar; çelikte bulon sıkma torku. Başlık önce "Yapı denetim: 1. kat kiriş ve döşeme donatısı", sonra "Denetim onayı ✓ beton dökülebilir"; denetçinin başında yeşil onay işareti (`src/quality.js`).
+- **Slump ve küp:** her beton dökümünün (temel, kolon, döşeme, trapez sac) ilk kısmında konteyner önünde laborant: slump hunisi üç katta doldurulup şişlenir, kaldırılır, beton çöker, şiş ile çökme ölçülür; yanında üç 15 cm küp kalıbı sırayla dolar. Başlık "Slump testi ve küp numuneleri".
+- **Ruhsat tabelası:** mobilizasyonda arka çite mavi başlıklı yapı ruhsatı tabelası; kalem adı "Mobilizasyon: çit, konteyner ve ruhsat tabelası".
+- **Canlı metraj ve hakediş:** başlığın altı "Hakediş %53 · Beton 63,9 m³ · Donatı 5,54 t". Hakediş artık zamanın yüzdesi değil, iş kalemlerinin maliyet ağırlıklı toplamı (temel ucuz, doğrama ve cephe pahalı; ağırlıklar `src/metraj.js` COST). Metraj çizimden: 1 birim = 1,6 m, radye 0,8 m kalın; donatı t/m³: radye 0,08, kolon ve perde 0,16, kiriş-döşeme 0,11, hatıl 0,12. İkinci kalem sisteme göre: donatı, sonra duvar m² (betonarme dolgu ve yığma), kereste m³ (ahşap), çelik t (sera; HEA ~20 kg/m, çapraz 8 kg/m).
+- **TBDY ayrıntıları:** kolon etriyeleri iki uçta sarılma bölgesinde sık (10 cm'e karşılık ortada 25), etriyelerde 135° kanca; kiriş etriyeleri mesnetten kiriş derinliğinin iki katı boyunca sık; döşeme hasırının altında pas payı takozları; betonarme kulede (Yel Değirmeni, Deniz Feneri, krem kule) arka iki yüzde perde duvar: filiz, donatı, kalıp, beton kolonlarla birlikte.
+- **Yakınlaştırma:** Köy panelindeki şantiye de odak ekranı gibi büyüyor: iki parmak, çift dokunma, + ve − düğmeleri; büyükken sürükleyince kayar. Büyütülmemişken sayfa üstünden kaydırılabilir, fare tekerleği sayfayı kaydırır. Ortak kanca `src/zoom.js` (odak ekranından taşındı).
+- **Testler:** 3 yeni: denetim her temel/döşeme donatısının sonunda ve onayla biter, her dökümde slump; hakediş 0'dan 100'e hiç düşmeden, metraj sayıları sonlu; betonarme kulede 2 perde, evde yok.
+
+**Kararlar ve nedenleri:**
+- Hakediş maliyet ağırlıklı: gerçek hakediş yapılan işin bedelidir; temel uzun sürer ama toplam bedelin küçük bir kısmıdır.
+- Ruhsat tabelasında okunur yazı yok: telefonda 4–5 px'e düşerdi; başlık bandı ve satırlar yeter.
+- Panelde fare tekerleği yakınlaştırmıyor: sayfa kaydırmayı kaçırmasın diye.
+
+**Geri alma:** dalı geri al; göç yok, veri değişmedi.
+**Dosyalar:** `src/quality.js` (yeni), `src/metraj.js` (yeni), `src/zoom.js` (yeni), `src/construction.js`, `src/crew.js`, `src/Village.jsx`, `src/VillageMap.jsx`, `src/FocusScreen.jsx`, `src/motion.css`, `tests/site.test.js`.
+
+### n36b · İnşaat tam şov, 2. tur: yapım sistemleri
+Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-2, 1. turun üstüne) · göç yok
+
+**Ne yapıldı:** Her yapı duvarının söylediği sistemle yapılıyor (`systemOf` in `src/construction.js`). Temel (hafriyat, grobeton, su yalıtımı, radye) hepsinde aynı; katlar ve cephe değişiyor. Taşıyıcı sistemin bittiği an betonarmede 0,55, diğerlerinde 0,68 (betonarmenin dolgu duvarı da o an biter); çatıdan sonrası herkeste aynı zamanda.
+- **Betonarme** (krem, adaçayı: Konak, Kır Kahvesi, Çiçekçi, Yel Değirmeni, Deniz Feneri): değişmedi. Dolgu duvar kalemi "Dolgu duvar: gazbeton bloklar ve lentolar" oldu.
+- **Yığma kagir** (tuğla, taş: Fırın, Köy Postanesi, Kütüphane, Saat Kulesi, Gözlemevi, rastgele tuğla/taş evler): her katta duvar sıra sıra örülür (tuğlada şaşırtmalı derz, taşta iri sıra), lentolar her iki yana 20 cm oturur. Köşe ve duvar birleşimlerinde düşey hatıl donatısı önce dikilir, duvar dişli örülür, sonra kalıp ve beton. Ardından yatay hatıl + döşeme kalıbı, donatısı, betonu (betonarmedeki kod). Hatıllar cephede gri bant olarak görünür; son kalem "Cephe: derz dolgusu, hatıllara tuğla kaplama" (taşta taş).
+- **Ahşap karkas** (ahşap: Bostan Evi, Sahaf, Çay Ocağı): taban kirişi ankrajı, 40 cm aralıklı dikmeler, pencere altı ve üstünde kısa dikmeler, lentolar, çift başlık, köşelerden gömme çaprazlar; döşeme (üst katta tavan) kirişleri ve OSB. Sonra dışa OSB levhalar ve rüzgâr bariyeri, en son ahşap dış kaplama. Betonda pompa ve mikser yalnız temelde.
+- **Çelik + cam** (Cam Sera): ankraj bulonları temel betonundan çıkar, taban plakalı I-kolonlar, çevre kirişleri ve bulonlar, kenar açıklıklarda X çaprazlar; çelik makaslar, alüminyum kayıtlar, temperli cam çatı; cam cephe kapılardan önce takılır.
+- Malzeme yığınları ve vinç yükleri sisteme göre: tuğla/taş paleti, kerestelik, çelik profil; vinç kereste demeti, OSB, I-profil (yönlendirme ipiyle) taşır, düşey hatıla betonu kovayla döker. İskele yığmada duvar baş hizasını geçince, ahşapta karkas çıkınca, çelikte cam için kurulur.
+- **Testler:** `tests/site.test.js` sistemlere göre: her sistemin kendi kalemleri her katta var, ahşapta kaplama kirişlerden sonra, çelikte cam kapıdan önce, betonarme dışında kolon kalemi yok; katalogdaki 8 yapının sistemi beklenen.
+
+**Kararlar ve nedenleri:**
+- Sistem duvardan çıkıyor, katalog değişmedi: tuğla/taş görünen yapının içinde betonarme iskelet + mantolama tutarsızdı.
+- Saat Kulesi ve kule 3 katlı yığma: TBDY 2018 yığma binada kat sayısını deprem tehlikesine göre sınırlar; 3 kat ancak düşük tehlikeli yerlerde olur. Oyunda bırakıldı, raporda not.
+- Tüm sistemlerde radye temel: yığma ve ahşapta sürekli temel de olur, ama ortak temel kodu ve süre dengesi için tek tip kaldı.
+- Cephe bitince (0,93) iç taşıyıcı çizilmiyor: görünmüyor, sahneyi hafifletiyor (Fırın'da 720 şekil gidiyor).
+
+**Geri alma:** dalı geri al; göç yok, veri değişmedi.
+**Dosyalar:** `src/construction.js`, `src/Village.jsx`, `src/crane.js`, `src/crew.js`, `src/sitedetail.js`, `tests/site.test.js`.
+
+### n36 · İnşaat tam şov, 1. tur
+Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov) · göç yok
+
+**Ne yapıldı:** Batur inşaatın baştan incelenmesini istedi (rapor: `/mnt/project-files/kutup/insaat-inceleme/RAPOR.md`) ve "Tam şov" kademesini seçti. Üç turun ilki:
+- **Pil:** Sahne üst üste duran SVG sayfalarından oluşuyor; makineler, işçiler ve vinç kendi katmanlarında, yalnızca değişen parça yeniden çiziliyor, 12 kare/sn. Vincin direği bir kez çiziliyor. Sahne ekranda görünmezken, sekme arkadayken ve odak ekranı açıkken (altında kalan kopya) duruyor. Ölçüm (4x yavaş işlemci, 375 px, kulübe): hafriyat %46 → %38, döşeme betonu %57 → %45, duvar %49 → %38 meşgul. Odak ekranı açıkken artık tek sahne çalışıyor (önce iki).
+- **Başlık:** şantiye başlığı katalogdaki yapının adını yazıyor ("🥖 Fırın"), eski türü ("İki katlı ev") değil.
+- **Mobil vinç:** kule vinç yalnız kulede. Kulübe ve evde kamyona monteli teleskopik vinç kaldırma işleri için gelir: ön sol şeritte durur, ayaklarını açar, bomu önce kamyon yönünde kaldırır, sonra döner; işi bitince toplar ve gider. Pompalı dökümlerde (temel, döşeme) yerini pompaya bırakır. Gazbeton paletleri sağa kaydı ki vinç kamyonu üstlerine park etmesin.
+- **Kirişler:** her katta kolonlar kiriş altına kadar dökülür; dikmeler, kiriş kalıpları (kolon aksından kolona, geniş planda ortada da), döşeme kalıbı; kiriş donatısı (üst çubuklar ve etriyeler), döşeme hasırı; kiriş ve döşeme birlikte dökülür, kirişler döşemenin altından sarkık görünür. İş kalemleri "dikmeler, kiriş ve döşeme kalıbı", "kiriş ve döşeme donatısı", "kiriş ve döşeme betonu".
+- **Temel su yalıtımı:** grobetondan sonra yeni iş kalemi; bitümlü örtü şerit şerit, bindirmeli serilir; rulolar yığından eksilir.
+- **Çatı:** makaslar ve aşıklar → OSB kaplama → su yalıtım örtüsü → kiremit, her biri saçaktan mahyaya. Üç ayrı iş kalemi; vinç OSB levhası da taşır.
+- **Mantolama:** sıva + boya cepheli binalarda (krem ve adaçayı duvarlar) yalıtım levhaları şaşırtmalı sıra sıra yapıştırılır ve dübellenir, sonra file + ince sıva, sonra boya. Üç iş kalemi. Tuğla, taş, ahşap ve cam duvarlar 2. turda kendi yapım sistemlerine geçecek; şimdilik eski tek kalem.
+- **Testler:** yeni `tests/site.test.js` (4 test): iş planı oturumu boşluksuz kaplar ve yeni kalemleri içerir, geniş planda 6 kiriş, mobil vinç pompalı dökümlerde yok, bütün katalog yapıları için her ilerlemede çizimlerde NaN yok.
+
+**Kararlar ve nedenleri:**
+- Mobil vinç pompalı dökümde gidiyor: gerçekte pompa ile vinç aynı şeritte çalışmaz, kiralık vinç işi bitince gider.
+- Kiriş derinliği 0,3 birim, kolonlar kiriş altına kadar: kolon-kiriş birleşimi kirişle beraber dökülür.
+- Mantolama yalnız boyalı cephelerde: tuğla ve taş gibi görünen yapıların doğru yapım sistemi 2. turun işi (n36b).
+- Ölçüm aracı: `/mnt/project-files/kutup/araclar/site_measure.py`.
+
+**Batur'un sözleri:** "aga inşaat işini animasyon ve sistem komple ele alırsak geliştirilecek yerler var mı" · "ben sonuçta ODTÜ'de inşaat mühendisliği okuyom ... sınırları zorlayalım, daha ne kadar accurate oluruz" · kademe kartında "Tam şov".
+**Geri alma:** dalı geri al; göç yok, veri değişmedi.
+**Dosyalar:** `src/Village.jsx`, `src/construction.js`, `src/crane.js`, `src/crew.js`, `src/sitedetail.js`, `src/VillageMap.jsx`, `src/App.jsx`, `src/motion.css`, `tests/site.test.js`, `package.json`.
 
 ### d28 · Katılma eşiği: arkadaşın oturumuna en az 5 dakika kala
 Birlikte · 17 Eki 2026 · 62386ef8 (PR #21, Worker bfc56968) · göç yok

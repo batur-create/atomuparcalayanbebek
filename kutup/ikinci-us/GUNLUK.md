@@ -29,6 +29,16 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 20:15 · n36 inşaat tam şov, 1. tur
+
+- **İnceleme:** `/mnt/project-files/kutup/insaat-inceleme/RAPOR.md`. Batur kademe kartında "Tam şov"u seçti; üç turda yapılıyor.
+- **1. tur** (`claude/n36-insaat-sov`): pil (katmanlı sahne, görünmezken durma), doğru başlık, kulübe/evde mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama. Göç yok.
+- **2. tur** (`claude/n36-insaat-sov-2`, 1. turun üstüne): duvara göre yapım sistemi. Tuğla/taş yığma kagir, ahşap karkas, cam sera çelik karkas; betonarme yalnız krem/adaçayı. Göç yok.
+- **3. tur** (`claude/n36-insaat-sov-3`, ilk iki turun üstüne): yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, panelde yakınlaştırma. Göç yok.
+- **Sıradaki:** Batur PR'ı birleştirip yayınlayınca kayıt. Seçilmeyen fikirler raporda: hızlandırılmış tekrar, arkadaşın şantiyesini izleme.
+
+---
+
 ## 17 Ekim 2026 18:54 · Yayın: d28, n34, n35 canlıda
 
 - **Yayın:** `62386ef8`, Worker `bfc56968`, canlı duman testi geçti, push: members 6/6 bound, owner 5/5 bound.

@@ -9,7 +9,8 @@ const REBAR = ["#9a5a40", "#84492f", "#6f3c26"],
   PLY = ["#e6c383", "#cfa56a", "#b98e55"],
   BLOCK = ["#ecebe6", "#d9d7cf", "#c4c1b8"],
   PALLET = ["#c7a06a", "#ad8754", "#946f42"],
-  BAG = ["#f2efe6", "#dcd7ca", "#c7c1b2"];
+  BAG = ["#f2efe6", "#dcd7ca", "#c7c1b2"],
+  TIMBER = ["#efd3a1", "#dab47c", "#c29862"];
 
 // The plot: lawn edge, gravel apron around the dug area, a gate gap in front,
 // tyre tracks from the gate and a couple of trees left standing at the back.
@@ -44,19 +45,31 @@ export function plotSVG(P, sp, seed) {
   return s;
 }
 
+// Block pallets along the front. A small building's mobile crane parks at
+// the front left, so there they stand further right.
+export const blockPallets = (sp) => (sp.kind === "tower" ? [-1.9, -1.15, -0.4] : [-0.45, 0.3, 1.05]);
+
 // Stockpiles: delivered before they are needed, used up while the work goes on,
 // formwork plywood coming back after striking. k holds every phase's progress.
-export function materialsSVG(P, sp, k, shown) {
+export function materialsSVG(P, sp, k, shown, plan) {
+  // When each stock is needed: from the first to the last phase that uses it.
+  const span = (keys) => {
+    const ps = plan.filter((p) => keys.includes(p.key));
+    return ps.length ? [ps[0].a, ps[ps.length - 1].b] : null;
+  };
+  const rebarEnd = span(["footRebar", "colRebar", "deckRebar"])[1],
+    formEnd = span(["footPour", "colPour", "deckPour", "tieCol"])[1];
+  const has = (key) => plan.some((p) => p.key === key);
   const w = sp.hw,
     edge = w + 0.2 + (2.9 - (w + 0.2)) / 2; // middle of the strip between foundation and fence
   let back = "",
     front = "";
   const sum = (prefix) => Object.keys(k).filter((key) => key.startsWith(prefix)).reduce((n, key) => n + k[key], 0);
-  const floors = sp.floors;
   const handover = clamp((shown - 0.93) / 0.05);
   // Rebar bundles along the back-left fence.
-  const rebarUsed = (k.footRebar + sum("colRebar") + sum("deckRebar")) / (1 + floors * 2);
-  const bundles = shown < 0.08 || shown > 0.56 ? 0 : Math.max(1, Math.ceil(4 * (1 - rebarUsed)));
+  const rebarJobs = plan.filter((p) => ["footRebar", "colRebar", "deckRebar"].includes(p.key)).length;
+  const rebarUsed = (k.footRebar + sum("colRebar") + sum("deckRebar")) / rebarJobs;
+  const bundles = shown < 0.08 || shown > rebarEnd + 0.01 ? 0 : Math.max(1, Math.ceil(4 * (1 - rebarUsed)));
   for (let i = 0; i < bundles; i++) {
     const z = 0.06 + Math.floor(i / 2) * 0.13,
       y0 = -1.5 + (i % 2) * 0.12;
@@ -65,11 +78,19 @@ export function materialsSVG(P, sp, k, shown) {
   }
   if (bundles) back += box(P, -edge - 0.2, -1.55, -edge + 0.2, -1.4, 0, 0.06, PALLET) + box(P, -edge - 0.2, 0.4, -edge + 0.2, 0.55, 0, 0.06, PALLET);
   // Plywood stack: goes out as formwork, comes back after striking.
-  const inUse = clamp((k.footForm - (k.footPour > 0.8 ? 1 : 0)) + sum("colForm") - sum("colPour") + sum("deckForm") - sum("deckPour"));
-  if (shown > 0.06 && shown < 0.58) {
+  const inUse = clamp((k.footForm - (k.footPour > 0.8 ? 1 : 0)) + sum("colForm") - sum("colPour") + sum("deckForm") - sum("deckPour") + sum("tieCol") * 0.3);
+  if (shown > 0.06 && shown < formEnd + 0.03) {
     const sheets = Math.round(10 * (1 - 0.8 * inUse));
     back += box(P, -edge - 0.3, 0.85, -edge + 0.3, 1.95, 0, 0.08, PALLET);
     for (let i = 0; i < sheets; i++) back += box(P, -edge - 0.27, 0.88, -edge + 0.27, 1.92, 0.08 + i * 0.035, 0.08 + (i + 1) * 0.035, i % 2 ? PLY : [PLY[0], PLY[2], PLY[1]]);
+  }
+  // Membrane rolls for the foundation waterproofing, by the cement.
+  const rolls = shown < 0.03 || k.footWater >= 1 ? 0 : Math.ceil(4 * (1 - k.footWater));
+  for (let i = 0; i < rolls; i++) {
+    const x = 0.2 + i * 0.24;
+    back += box(P, x, -edge - 0.25, x + 0.18, -edge + 0.25, 0, 0.18, ["#3a3d42", "#2b2e33", "#202326"]);
+    const [cx, cy] = P(x + 0.09, -edge + 0.25, 0.09);
+    back += `<ellipse cx="${n1(cx)}" cy="${n1(cy)}" rx="3" ry="3.4" fill="#55595f"/>`;
   }
   // Cement bags by the container for the pours and the mortar.
   const bagsLeft = shown < 0.12 || handover > 0 ? 0 : Math.ceil(6 * (1 - clamp((shown - 0.12) / 0.6)));
@@ -79,22 +100,40 @@ export function materialsSVG(P, sp, k, shown) {
     back += box(P, x, -edge - 0.13, x + 0.27, -edge + 0.13, 0.06 + z, 0.18 + z, BAG);
   }
   if (bagsLeft) back += box(P, -1.5, -edge - 0.18, -0.55, -edge + 0.18, 0, 0.06, PALLET);
-  // Block pallets in front, delivered before the walls and used course by course.
-  if (shown > 0.5 && shown < 0.7) {
-    const pallets = Math.max(0, Math.ceil(3 * (1 - clamp((shown - 0.55) / 0.13))));
+  // In front, what the walls or the frame are made of: aerated-concrete
+  // blocks, bricks or stone, sawn timber, or steel sections; delivered before
+  // the work and used up as it goes.
+  const walls = span(["walls", "wallLay"]) || span(["studs", "joists", "sheath"]) || span(["steelCol", "steelBeam", "brace", "steelDeck"]);
+  if (walls && shown > walls[0] - 0.05 && shown < walls[1] + 0.02) {
+    const pallets = Math.max(0, Math.ceil(3 * (1 - clamp((shown - walls[0]) / (walls[1] - walls[0])))));
+    const xs = blockPallets(sp);
     for (let i = 0; i < pallets; i++) {
-      const x = -1.9 + i * 0.75;
+      const x = xs[i];
+      if (has("studs")) {
+        // Sawn timber in stickered layers.
+        for (let l = 0; l < 4; l++) front += box(P, x + 0.03, edge - 0.22, x + 0.57, edge + 0.22, 0.05 + l * 0.1, 0.13 + l * 0.1, TIMBER);
+        for (let u = 0.08; u < 0.55; u += 0.1) front += seg(P(x + u, edge + 0.225, 0.05), P(x + u, edge + 0.225, 0.43), "#b98d58", 0.5);
+        continue;
+      }
       front += box(P, x, edge - 0.25, x + 0.6, edge + 0.25, 0, 0.07, PALLET);
-      front += box(P, x + 0.03, edge - 0.22, x + 0.57, edge + 0.22, 0.07, 0.5, BLOCK);
-      front += seg(P(x + 0.03, edge + 0.23, 0.28), P(x + 0.57, edge + 0.23, 0.28), "#c9c6bd", 0.8);
+      if (has("steelCol")) {
+        // Steel sections on bearers, flanges catching the light.
+        for (let l = 0; l < 3; l++) front += box(P, x + 0.03, edge - 0.22 + l * 0.15, x + 0.57, edge - 0.1 + l * 0.15, 0.07, 0.19, ["#6f7c8a", "#5b6775", "#4a5562"]) + seg(P(x + 0.03, edge - 0.1 + l * 0.15, 0.19), P(x + 0.57, edge - 0.1 + l * 0.15, 0.19), "#9aa6b2", 0.7);
+        continue;
+      }
+      const units = has("wallLay") ? sp.wall.faces : BLOCK;
+      front += box(P, x + 0.03, edge - 0.22, x + 0.57, edge + 0.22, 0.07, 0.5, units);
+      front += seg(P(x + 0.03, edge + 0.23, 0.28), P(x + 0.57, edge + 0.23, 0.28), has("wallLay") ? "#f6e3d6" : "#c9c6bd", 0.8);
     }
-    // Sand for the mortar, and its mixing tub.
-    const [sx, sy] = P(-edge, edge - 0.1, 0);
-    front += ellipse(sx, sy - 3, 15, 6, "#d8c08a") + ellipse(sx - 3, sy - 6, 9, 4, "#e3cd99");
+    if (has("walls") || has("wallLay")) {
+      // Sand for the mortar, and its mixing tub.
+      const [sx, sy] = P(-edge, edge - 0.1, 0);
+      front += ellipse(sx, sy - 3, 15, 6, "#d8c08a") + ellipse(sx - 3, sy - 6, 9, 4, "#e3cd99");
+    }
   }
   // Roof tiles on a pallet, front right, until the roof is on.
   if (shown > 0.62 && shown < 0.78) {
-    const stacks = Math.max(1, Math.ceil(3 * (1 - clamp((shown - 0.72) / 0.06))));
+    const stacks = Math.max(1, Math.ceil(3 * (1 - clamp((shown - 0.748) / 0.032))));
     for (let i = 0; i < stacks; i++) {
       const y = 0.2 + i * 0.42;
       front += box(P, edge - 0.25, y, edge + 0.25, y + 0.38, 0, 0.06, PALLET) + box(P, edge - 0.22, y + 0.02, edge + 0.22, y + 0.36, 0.06, 0.34, [sp.roof[2], sp.roof[0], sp.roof[1]]);
@@ -105,12 +144,12 @@ export function materialsSVG(P, sp, k, shown) {
 
 // Roof structure before the tiles: trusses set one by one along the ridge,
 // then purlins across them (gable); hip and jack rafters on a pyramid roof.
-export function trussesSVG(P, sp, ridgeZ, topZ, t) {
+export function trussesSVG(P, sp, ridgeZ, topZ, t, steel = false) {
   const w = sp.hw,
     o = 0.32,
     eave = topZ - 0.1,
-    wood = "#b5803f",
-    dark = "#8f6230";
+    wood = steel ? "#8d99a6" : "#b5803f",
+    dark = steel ? "#5b6775" : "#8f6230";
   let s = "";
   if (sp.roofType === "pyramid") {
     const a = w + o;
