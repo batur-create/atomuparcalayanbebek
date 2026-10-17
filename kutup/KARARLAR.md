@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 05:30 | PR (ikinci üs) |
 | n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 04:30 | PR (ikinci üs, davet bekliyor) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
@@ -70,6 +71,27 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n29 · Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış
+Altyapı · 17 Eki 2026 · PR (ikinci üs) · göç yok (D1 değişmedi; Cloudflare'de yeni Durable Object sınıfı)
+
+**Ne yapıldı:**
+- **Canlı oda:** her ekibe bir Durable Object (`LiveRoom`, `worker/index.js`). Telefonlar `/api/live` üzerinden WebSocket ile bağlanır; bir yazma olunca oda "changed" der, telefon hemen `/state?rev=` çeker. Uyuyan (hibernation) soket boşta para ve CPU harcamaz; `ping` → `pong` odayı uyandırmadan cevaplanır. Ekipten çıkan ya da çıkarılanın soketine "removed" gider ve kapanır. Yerel workerd'de bir gelişin öbür telefona yansıması 438 ms (yazma dahil); worker testinde zil < 1 sn.
+- **Yedek yoklama:** soket açıkken 30 sn'de bir, kapalıyken eskisi gibi 5 sn'de bir. Uygulama öne gelince soket yeniden kurulur. Node sunucusu (SSE) değişmedi.
+- **İhtiyaç anında yükleme (`src/later.jsx`):** Batur paneli, odak ekranı, köy haritası ve istatistikler ayrı parçalar. İlk boyamadan sonra telefon boştayken sessizce indirilir (Batur paneli hariç), sekme geçişi eskisi kadar hızlı. Ana JS paketi gzip 203,5 KB → 169,8 KB (n31'den önceki hâline göre −%17).
+- **Anında açılış (`src/lastState.js`):** cihazın gördüğü son ekip durumu saklanır, sonraki açılışta beklemeden gösterilir, taze durum arkadan gelir. Sunucuya ulaşılamazsa son resim kalır, bağlantı yok işareti yanar. Bir günden eski resim kullanılmaz; çıkış ya da ekipten ayrılma temizler; `/batur`, davet linki ve `?as=` bildirimlerinde kullanılmaz.
+- **App.jsx bölündü:** 2.539 satırdan 1.419'a. `Focus.jsx` (odak kartı, kahve kartı), `Board.jsx` (Pano), `Modals.jsx` (konum, davet, plan, kahve, arkadaş kartı), `villageData.js` (köy veri kancası), `fullscreen.js`.
+
+**Kararlar ve nedenleri:**
+- Yoklama yedek olarak kaldı: Durable Object ya da soket bir sebeple çalışmazsa uygulama eskisi gibi çalışır.
+- Durable Object, SQLite tabanlı sınıf olarak tanımlandı (`new_sqlite_classes`); Cloudflare'in ücretsiz planı yalnız bunu destekliyor. İlk yayında `wrangler deploy` sınıfı kendisi oluşturur. Yayın bu adımda hata verirse `npm run yayin` durur ve canlıya bir şey gitmez.
+- CSP `connect-src`'ye canlı adresin `wss://` hâli eklendi: iOS Safari `'self'`in WebSocket'i kapsadığını her sürümde kabul etmiyor. Alan adı değişirse soket kurulmaz, yoklama devam eder.
+- Anında açılış yerel depoda yalnız açık hesabın son durumunu tutar; o cihaz zaten aynı veriyi oturumla görebiliyor.
+
+**Batur'un sözleri:** Claude'un 5 önerisinden 2. madde, onaylandı ("senin planını beğendim").
+**Vazgeçilenler:** Durable Object'in kendi durum kopyasını tutup göndermesi (veri D1'de tek yerde kalsın diye yalnız "changed" zili gönderiliyor).
+**Açık:** Gerçek iPhone'da arka plandan dönüşte soketin yeniden kurulması canlıda denenecek. Canlı duman testine "live room rings" adımı eklendi.
+**Dosyalar:** worker/index.js, wrangler.jsonc, public/_headers, src/App.jsx, src/Focus.jsx, src/Board.jsx, src/Modals.jsx, src/later.jsx, src/lastState.js, src/villageData.js, src/fullscreen.js, src/FocusScreen.jsx, src/VillageMap.jsx, src/MePage.jsx, tests/suite.js, tests/browser_smoke.py, tests/live-smoke.mjs
 
 ### n31 · Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir
 Maskot · 17 Eki 2026 · PR (ikinci üs) · göç yok

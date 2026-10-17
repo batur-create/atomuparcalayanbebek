@@ -13,5 +13,9 @@
   // No database_id: `wrangler deploy` creates the D1 database on first deploy
   // and `wrangler dev` creates a local one automatically.
   "d1_databases": [{ "binding": "DB", "database_name": "kutup" }],
+  // n29: one LiveRoom per team pushes "changed" to open phones over hibernating
+  // WebSockets. SQLite-backed classes run on the Workers free plan.
+  "durable_objects": { "bindings": [{ "name": "LIVE", "class_name": "LiveRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["LiveRoom"] }],
   "observability": { "enabled": true }
 }

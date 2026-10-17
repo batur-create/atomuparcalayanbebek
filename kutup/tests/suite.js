@@ -170,7 +170,7 @@ export function defineSuite(target) {
     group = created.data.group;
     assert.equal(created.data.members[0].avatar, "🦄");
     assert.ok(group.invite.length >= 24);
-    assert.ok(created.data.live === "sse" || created.data.live === "poll");
+    assert.equal(created.data.live, target === "node" ? "sse" : "ws");
     const invited = (await request(`/invites/${group.invite}`)).data;
     assert.equal(invited.count, 1);
     // n27: the welcome shows who is in the team (names and faces only).
@@ -291,6 +291,32 @@ export function defineSuite(target) {
         return seen.includes("SSE integration marker");
       }, 3000, "SSE event");
       controller.abort();
+    });
+
+  // n29: on Cloudflare a team's live room rings every open phone on a change.
+  const liveSocket = (cookie) =>
+    new WebSocket(`${base.replace("http", "ws")}/api/live`, { headers: cookie ? { Cookie: cookie } : {} });
+  const opened = (ws) =>
+    new Promise((ok, fail) => {
+      ws.onopen = () => ok(ws);
+      ws.onerror = () => fail(new Error("live socket did not open"));
+      ws.onclose = (e) => fail(new Error(`live socket closed ${e.code}`));
+    });
+  if (target === "worker")
+    test(`[${target}] the team's live room rings open phones within a second`, async () => {
+      const refused = liveSocket();
+      await assert.rejects(opened(refused), "no session, no live room");
+      const ws = await opened(liveSocket(people.bob));
+      const heard = [];
+      ws.onmessage = (e) => heard.push({ data: e.data, at: Date.now() });
+      ws.send("ping");
+      await waitFor(() => heard.some((h) => h.data === "pong"), 3000, "pong");
+      const sent = Date.now();
+      await request("/messages", { cookie: people.alice, body: { text: "Canlı oda işareti" } });
+      await waitFor(() => heard.some((h) => h.data === "changed"), 3000, "changed");
+      const lag = heard.find((h) => h.data === "changed").at - sent;
+      assert.ok(lag < 1000, `rang after ${lag} ms`);
+      ws.close();
     });
 
   test(`[${target}] focus validates duration and lets friends join the same timer`, async () => {
@@ -774,9 +800,17 @@ export function defineSuite(target) {
       stream = response.body.getReader();
       await stream.read();
     }
+    let heard;
+    if (target === "worker") {
+      // The leaving person's live socket hears "removed" at once and is closed.
+      const ws = await opened(liveSocket(people.bob));
+      ws.onmessage = (e) => (heard = e.data);
+      ws.onclose = () => {};
+    }
     const left = await request("/leave", { cookie: people.bob, body: {} });
     if (stream)
       await waitFor(async () => (await stream.read()).done, 3000, "stream close");
+    if (target === "worker") await waitFor(() => heard === "removed", 3000, "live socket removed");
     assert.equal(left.status, 200);
     assert.match(left.setCookie, /Max-Age=0/);
     assert.equal((await request("/session", { cookie: people.bob })).status, 401);

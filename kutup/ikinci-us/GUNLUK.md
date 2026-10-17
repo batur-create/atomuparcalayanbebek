@@ -29,6 +29,14 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 05:30 · n29 Anında ve hızlı
+
+- **Dal:** `claude/n29-hizli` (n31 dalının üstünde).
+- **Durum:** kod ve kayıtlar hazır. `test:all` 100/100 (yeni: canlı oda zili < 1 sn, ayrılanın soketi kapanır), `test:browser` 70/70 (yeni: sunucuya ulaşılamazken son durumla açılış). Yerel workerd'de iki tarayıcıyla: geliş öbür telefonda 438 ms'de göründü.
+- **Batur'un kararı:** "inisiyatif alarak ... kararları sen ver ... geri dönülebilir olsun" (bütün n29 kararları KARARLAR n29'da).
+- **Yayında dikkat:** ilk yayında Cloudflare `LiveRoom` Durable Object sınıfını oluşturur. Canlı duman testine "live room rings" adımı eklendi.
+- **Pano:** n29 → review.
+
 ## 17 Ekim 2026 04:30 · n31 Kara v2
 
 - **Dal:** `claude/n31-kara-v2` (kurulum dalının üstünde). PR: davet gelince açılacak.

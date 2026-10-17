@@ -116,6 +116,19 @@ try {
   check("here → break → here works", brk.status === 200 && back.status === 200);
   const cool = d1(`SELECT pushed_here_at > 0 AS h, pushed_break_at > 0 AS b FROM members WHERE id = '${idA}'`)[0];
   check("separate arrival/break cooldowns recorded", cool.h === 1 && cool.b === 1, JSON.stringify(cool));
+  // n29: the team's live room rings B's phone at once when A writes.
+  const heard = await new Promise((done) => {
+    const ws = new WebSocket(`${base.replace("https", "wss")}/api/live`, { headers: { cookie: `kutup_session=${B1}` } });
+    const stop = (result) => { clearTimeout(timer); try { ws.close(); } catch {} done(result); };
+    const timer = setTimeout(() => stop(null), 8000);
+    ws.onopen = async () => {
+      const sent = Date.now();
+      ws.onmessage = (e) => e.data === "changed" && stop(Date.now() - sent);
+      await call("/presence", { cookie: A1, body: { status: "here", location: "Duman salonu", desk: "8" } });
+    };
+    ws.onerror = () => stop(null);
+  });
+  check("live room rings (write + ring under 2 s)", heard !== null && heard < 2000, heard === null ? "no ring" : `${heard} ms`);
   const msg = await call("/messages", { cookie: B1, body: { text: "duman testi, birazdan silinecek" } });
   check("board message", msg.status === 201, `status ${msg.status}`);
   const village = await call("/village", { cookie: A1 });

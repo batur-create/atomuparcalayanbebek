@@ -124,6 +124,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 16 Ekim 2026)
 
+> **n29 (ikinci üs, 17 Eki):** Cloudflare'de canlılık artık ekip başına bir Durable Object (`LiveRoom`): `/api/live` WebSocket, oturum çerezinden doğrulanır, oda yalnız "changed"/"removed" der, veri hep `/state`ten gelir. Yeni yazma uç noktası eklerken `changed()` ya da `onChange()` çağırmayı unutma, yoksa telefonlar ancak yoklamada görür. App.jsx bölündü: odak kartı `Focus.jsx`, Pano `Board.jsx`, küçük pencereler `Modals.jsx`. Nadir açılan ekranlar `later.jsx` ile tembel yüklenir; yeni ağır ekran eklersen oraya koy. Son durum `localStorage` `kutup-last` anahtarında (`lastState.js`).
+
 > **n31 Kara v2 (ikinci üs, 17 Eki):** Kara artık `kutup:kara-test` olayıyla da denenebilir (`{id:"home", act|egg|blink|wink}`), yalnız test ve önizleme için. Sürprizlerin sayaçları `sessionStorage`'da (`kutup-kara:<grup>:<ad>`). `kara.css` büyük (gzip 40 KB): eklem kliplerini elle düzenleme, değişiklik gerekirse paketteki üretim mantığıyla yeniden üret. Kenar ışığı ve kürk tonları dosyanın başında, bilerek eski değerlerde.
 
 > **İş akışı panosu:**
