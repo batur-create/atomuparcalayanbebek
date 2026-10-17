@@ -10,7 +10,7 @@ import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shar
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED } from "../shared/achievements.js";
-import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
+import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -1652,8 +1652,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         String(body.joinMember),
         m.group_id,
       ]);
-      if (!other || other.focus_end < now + 60000)
-        fail("Bu odak oturumu sona ermek üzere. Yeni oturum başlat.");
+      // Joining in the last minutes would count as a finished session (and the
+      // day's first-session bonus) for almost no focus (d28; the invite itself
+      // still needs ten minutes).
+      if (!other || other.focus_end < now + JOIN_LEAD)
+        fail("Bu oturumun bitmesine 5 dakikadan az kaldı. Yeni bir oturum başlat.");
       end = other.focus_end;
       minutes = Math.floor((end - now) / 60000);
       if (strict && item && !fits(item, minutes)) fail("Kalan süre bu yapıya yetmez. Daha küçük bir yapı seç.");

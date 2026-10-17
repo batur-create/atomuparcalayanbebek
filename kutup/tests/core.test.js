@@ -406,6 +406,24 @@ test("late focus settlement appears in village deltas without moving existing bu
   assert.deepEqual(full.buildings.find((b) => b[0] === village.buildings[0][0]).slice(4, 7), village.buildings[0].slice(4, 7));
 });
 
+test("joining a friend's session needs five minutes of it left (d28)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", username: "ada_d28", password: "join-pass-1" } });
+  const invite = sqlite.prepare("SELECT invite FROM groups").get().invite;
+  const join = (name, username) => call(app, "/join", { method: "POST", body: { invite, name, username, password: "join-pass-2" } });
+  const bora = await join("Bora", "bora_d28"), cem = await join("Cem", "cem_d28");
+  const focus = (cookie, body) => call(app, "/focus", { method: "POST", headers: { Cookie: cookie }, body });
+  assert.equal((await focus(ada.cookie, { action: "start", minutes: 25 })).status, 200);
+  const adaId = sqlite.prepare("SELECT id FROM members WHERE username = 'ada_d28'").get().id;
+  sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 6 * 60000, adaId);
+  assert.equal((await focus(bora.cookie, { action: "start", joinMember: adaId })).status, 200, "six minutes left: joins");
+  sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 4 * 60000, adaId);
+  const late = await focus(cem.cookie, { action: "start", joinMember: adaId });
+  assert.equal(late.status, 400, "four minutes left: no bonus for a last-minute join");
+  assert.match(late.data.error, /5 dakikadan az/);
+});
+
 test("parallel joins reclaim distinct plots and cannot duplicate names", async () => {
   const { app, joined, sqlite } = await auditFixture();
   const join = (name, username) => call(app, "/join", { method: "POST", body: { invite: joined.data.group.invite, name, username, password: "test123" } });

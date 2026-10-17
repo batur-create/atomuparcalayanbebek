@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { chime } from "./Sound.jsx";
+import { JOIN_LEAD } from "../shared/catalog.js";
 import "./together.css";
 
 const minutesLeft = (m, now) => Math.max(1, Math.ceil((m.focusEnd - (m.focusPausedAt || now)) / 60000));
@@ -14,6 +15,9 @@ export function DeskMates({ me, members, now, dark = false, onJoin }) {
   const mates = members.filter((m) => m.id !== me?.id && m.focusEnd > now);
   if (!mates.length) return null;
   const focusing = me?.focusEnd > now;
+  // The friend with the most time left; under five minutes there is nothing to join (d28).
+  const longest = [...mates].sort((a, b) => b.focusEnd - a.focusEnd)[0],
+    joinable = longest.focusEnd > now + JOIN_LEAD;
   return (
     <div className={`desk-mates ${dark ? "dark" : ""}`}>
       <span className="desk-avatars">
@@ -23,10 +27,10 @@ export function DeskMates({ me, members, now, dark = false, onJoin }) {
       </span>
       <span>
         {mates.length === 1 ? `${mates[0].name} odakta · ${minutesLeft(mates[0], now)} dk` : `${mates.length} arkadaşın odakta`}
-        {focusing ? ` · imece +%${Math.min(20, mates.length * 5)}'e kadar` : " · katılırsan imece +%5"}
+        {focusing ? ` · imece +%${Math.min(20, mates.length * 5)}'e kadar` : joinable ? " · katılırsan imece +%5" : ""}
       </span>
-      {onJoin && !focusing && (
-        <button type="button" className="join" onClick={() => onJoin([...mates].sort((a, b) => b.focusEnd - a.focusEnd)[0])}>
+      {onJoin && !focusing && joinable && (
+        <button type="button" className="join" onClick={() => onJoin(longest)}>
           Katıl
         </button>
       )}
@@ -36,7 +40,7 @@ export function DeskMates({ me, members, now, dark = false, onJoin }) {
 
 /** "?join=<id>" from an invite notification: one tap joins that friend's session. */
 export function JoinBanner({ friend, me, now, join, close }) {
-  if (!friend || !(friend.focusEnd > now + 60000) || me?.focusEnd > now) return null;
+  if (!friend || !(friend.focusEnd > now + JOIN_LEAD) || me?.focusEnd > now) return null;
   return (
     <div className="join-banner" role="status">
       <Avatar member={friend} size="small" />

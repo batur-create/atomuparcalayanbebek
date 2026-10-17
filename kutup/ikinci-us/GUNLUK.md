@@ -29,6 +29,14 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 16:00 · d28 katılma eşiği
+
+- **d28** (`claude/d28-katilma-esigi`, güncel `kutup-platform` üstünde): arkadaşın oturumuna bitmesine 5 dakikadan az kala katılınmıyor; Katıl düğmesi o zaman gizleniyor. Göç yok.
+- Batur'un anket cevabı "5 dakika" (denetimin önerisi 10'du). "Ekibi çağır" bildirimi yine 10 dakikada kesiliyor.
+- Şifre değişince çıkış ("Sorsun") ve simge ("K kalsın") cevapları anket turu başlığında; bu dalda yok.
+
+---
+
 ## 17 Ekim 2026 13:20 · n32 Çalışma eşi
 
 - **Dal:** `claude/n32-calisma-esi` (n14 dalının üstünde; #16'dan sonra birleşir).
