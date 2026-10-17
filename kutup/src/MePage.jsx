@@ -16,7 +16,7 @@ function Row({ icon: Icon, title, sub, onClick, href, danger, count, open }) {
   const Tag = href ? m.a : m.button;
   return (
     <Tag whileTap={{ scale: 0.98 }} className={`home-door ${danger ? "danger" : ""}`} onClick={onClick} href={href} aria-expanded={open}>
-      <i className="door-icon">
+      <i className={`door-icon${count > 0 ? " wiggle" : ""}`}>
         <Icon size={18} />
         {count > 0 && <b className="me-count" aria-label={`${count} yeni gelişme`} />}
       </i>

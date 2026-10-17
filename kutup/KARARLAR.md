@@ -23,6 +23,9 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | PR (ikinci üs) |
+| n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | PR (ikinci üs) |
+| n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | PR (ikinci üs) |
 | n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
 | n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
 | d27 | Diğer cihazlardan çıkış: Hesap ve cihazlar'da açık cihazlar | Güvenlik | 17 Eki 05:30 | PR #15 (ikinci üs) |
@@ -81,6 +84,62 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d28 · Katılma eşiği: arkadaşın oturumuna en az 5 dakika kala
+Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok
+
+**Ne yapıldı:** Bir arkadaşın odak oturumuna son bir iki dakikada katılmak bitmiş oturum sayılıyor, günün ilk oturumu bonusunu (+10 🧱) ve nadir plan şansını neredeyse hiç odaklanmadan veriyordu (denetimde E1). Artık bitmesine 5 dakikadan az kalan oturuma katılınmıyor.
+- Sunucu: `/api/focus` `joinMember` ile gelince arkadaşın oturumunun bitmesine en az `JOIN_LEAD` (5 dk, `shared/catalog.js`) kalmış olmalı; yoksa 400, "Bu oturumun bitmesine 5 dakikadan az kaldı. Yeni bir oturum başlat."
+- Uygulama: odak kartındaki arkadaş satırında "Katıl" düğmesi ve "katılırsan imece +%5" yazısı en uzun oturumun 5 dakikadan azı kalınca gizleniyor; davet bildiriminden açılan katılma şeridi de aynı eşikle kayboluyor (önceden 1 dakika).
+- **Testler:** 1 yeni birim testi (6 dakika kala katılır, 4 dakika kala 400 ve mesaj). Tarayıcı kontrolü eklenmedi; görünür değişiklik yalnız düğmenin son 5 dakikada gizlenmesi.
+
+**Kararlar ve nedenleri:**
+- **Eşik 5 dakika:** Batur'un anket cevabı (denetimde önerilen 10 dakikaydı; "Daha esnek: 5 dakikadan az kalana katılınamaz" seçildi).
+- **"Ekibi çağır" bildirimi 10 dakikada kalıyor:** Batur'un seçtiği şıkta böyle yazıyordu; davet yalnız 10 dakika ve üstü oturumda gidiyor, bu değişmedi.
+- Eşik sunucuyla uygulamada tek sabitten (`JOIN_LEAD`) okunuyor; değiştirmek tek satır.
+
+**Batur'un sözleri:** anket kartında "5 dakika" (17 Eki, anket turu başlığı).
+**Geri alma:** `shared/catalog.js`'te `JOIN_LEAD = 60000` eski davranışa en yakın hal (şerit 1 dakikada kayboluyordu, sunucu sınırı yoktu).
+**Dosyalar:** `shared/catalog.js`, `server/app.js`, `src/Together.jsx`, `tests/core.test.js`.
+### n35 · Anket sonrası dört ekleme
+Anket · 17 Eki 2026 · PR (ikinci üs) · göç 23 (`sessions.device`)
+
+**Ne yapıldı:** Batur 17 Ekim'de canlı sitede 12 anketi tek tek cevapladı (`/mnt/project-files/kutup/anket-cevaplari.md`). "İyi + fikir" seçtiği dördü:
+- **Rozet Pano duyurusu (n14):** bir gün içinde kazanılan rozet Pano'ya "“Maraton” rozetini kazandı 🏅" diye düşer; gizliler "gizli bir rozet buldu 🤫". Aynı anda ikiden fazla açılan (geçmişin sayılması) sessiz. İki kişi kartı aynı anda açarsa satır bir kez yazılır (rozet satırından önce, yokken).
+- **Zarf sallanması (d24):** isteğine yeni cevap gelince Ben'deki "Batur'a ilet" simgesi ve kartın 💌 zarfı bir kez sallanır; hareketi azalt ve Kıpırtısız'da durur.
+- **Cihaz adları (d27):** Açık cihazlar kutusunda her cihaz kendi satırında ("iPhone · Safari", "Windows · Chrome", "iPhone · ana ekran") ve son görülmesiyle; tek tek "Çık". Birden çok cihazda "Hepsinden çık". Ad, uygulama her açıldığında tarayıcı bilgisinden yazılır.
+- **Şifre değişince sor:** yeni şifre kaydedilince başka cihaz açıksa "onlardan da çıkayım mı?" sorulur.
+
+**Kararlar ve nedenleri:**
+- Cihaz kimliği saklanan özetin ilk 16 karakteri; çerezin kendisi hiç dönmez. Başkasının cihazı 404.
+- Eski oturumların adı o cihaz bir sonraki açılışta dolar; o zamana kadar "Bilinmeyen cihaz".
+- Rozet duyurusu bildirim göndermez, yalnız Pano satırı.
+
+**Batur'un sözleri:** "iyi güzel tamam da ... alternatif eğer aklında bir fikir varsa ... onu bana söyleyebilirsin" (17 Ekim, anket).
+**Geri alma:** rozet: `server/app.js` `badgeNews` ve iki duyuru bloğu; zarf: `src/polish.css` sondaki "Anket" bölümleri ve iki `wiggle` sınıfı; cihaz adları: `/devices` yolları ve `Account.jsx` `OtherDevices` (sütun zararsız); şifre: `AccountBox`'taki `if (value.password)` bloğu.
+**Dosyalar:** `server/app.js`, `server/schema.js`, `src/Account.jsx`, `src/MePage.jsx`, `src/Requests.jsx`, `src/polish.css`, `tests/core.test.js`, `tests/browser_smoke.py`.
+### n34 · Plan paylaşma: plan linki gruba, linkten "Varım" ya da "Gelemem"
+Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç 22 (`plan_skips` tablosu, otomatik)
+
+**Ne yapıldı:**
+- **Plan kartı (`PlanCardModal`, `src/Modals.jsx`):** bir planı tek başına gösterir: gün, saat, ad, kim planladı; "Varım" / "Gelemem" düğmeleri; "Geliyor" ve "Gelemiyor" listeleri; "Gruba gönder" düğmesi.
+- **Link:** `/?plan=<id>`. Açan kişi giriş yapmışsa kart hemen açılır; giriş yapmamışsa önce girer, kart sonra açılır. Plan silinmiş ya da zamanı geçmişse "Bu plan artık yok." der.
+- **Gruba gönder (`src/planShare.js`):** telefonda paylaşım menüsü açılır (WhatsApp dahil). Menü yoksa (bilgisayar) metin ve link panoya kopyalanır. Metin: "🗓️ Ada kütüp planı yaptı: Yarın 16:00 · Sınav haftası. Geliyor musun? Buradan söyle: <link>". Böylece grupta linke basmadan da ne zaman olduğu okunur.
+- **Plan yapınca:** "Plan yap" kaydedince kart "Plan takvimde." başlığıyla açılır ve gruba atmayı önerir.
+- **Ana sayfa:** plan adına dokununca kart açılır; planın sahibinde çöp kutusunun yanında gönder simgesi var. Biri "Gelemem" dediyse satırda "2 geliyor · 1 gelemiyor" yazar.
+- **Sunucu:** `POST /plans/:id/answer {going}` cevabı ayarlar (aç/kapa değil; iki kez basmak bir şey değiştirmez). "Ben de" düğmesi eski "Gelemem"i siler. Plan, üye ve eski plan temizliklerinde `plan_skips` da silinir; yedek/geri yüklemeye eklendi.
+
+**Kararlar ve nedenleri (Batur "geri alınabilir kararları sen ver" dedi):**
+- **Link giriş ister:** planlar ekibe özel. Herkese açık önizleme yerine bilgiyi paylaşım metnine koydum; gruptaki herkes saati linke basmadan görüyor.
+- **"Gelemem" ayrı tabloda:** "kaç kişi geliyor" sayan her yer (istatistikler, başarımlar) olduğu gibi kalsın diye `attendees`a dokunmadım.
+- **Arkadaş satırında gönder simgesi yok:** telefonda "Ben de" ile yan yana sığmıyordu, başlık kısalıyordu. Arkadaşlar plana dokunup karttan gönderebiliyor.
+- **Bildirim yok:** "Gelemem" kimseye bildirim atmaz; plan sahibi kartta görür.
+
+**Batur'un sözleri:** "bir tane plan yaptım ... takvime koydum ama insanlara paylaşamıyorum ... bildirimi görmemiş olma ihtimallerine karşı ... WhatsApp'tan gruba atmak istiyorum. Millet o linkten girip plana katılıp katılmayacağını ... girebilir." (17 Ekim)
+**Önizleme:** proje klasöründe `kutup/onizleme/n34/` (plan yapıldı, linkten açıldı, gelemem, ana sayfa, sahibin kartı; açık ve koyu). Araç: `kutup/araclar/plan_share_shots.py`.
+**Geri alma:** `PlanModal`daki `onSaved` (kart açılmasın), `App.jsx` `openSharedPlan`, `Home.jsx` `home-plan-open` ve gönder simgesi. Tablo kalabilir; boşken bir şey değiştirmez.
+**Açık:** Batur'un görsel onayı; gerçek iPhone'da WhatsApp paylaşımı denenmedi.
+**Dosyalar:** server/schema.js, server/app.js, server/restore.js, src/planShare.js, src/Modals.jsx, src/App.jsx, src/Home.jsx, src/home.css, src/styles.css, tests/suite.js
 
 ### n32 · Çalışma eşi: kiminle beraberken en verimlisin
 Birlikte · 17 Eki 2026 · PR (ikinci üs, #16'dan sonra) · göç yok

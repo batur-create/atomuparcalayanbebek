@@ -158,6 +158,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 > **d27 (ikinci üs, 17 Eki):** Hesap ve cihazlar'daki "Açık cihazlar" `GET /api/devices` ve `POST /api/devices/signout` ile çalışır; yalnız kendi hesabının diğer oturumlarını ve onlara bağlı abonelikleri siler. Şifre değişince diğer cihazlar hâlâ açık kalıyor (Batur'un kararı bekleniyor).
 
+> **d28 (ikinci üs, 17 Eki):** Arkadaşın oturumuna katılmak için en az `JOIN_LEAD` (5 dk, `shared/catalog.js`) kalmalı; sunucu (`/api/focus` `joinMember`) ve uygulama (`Together.jsx`: Katıl düğmesi, katılma şeridi) aynı sabiti okur. "Ekibi çağır" bildiriminin 10 dakika sınırı ayrı ve değişmedi.
+
 Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler, Kara yön değişikliği) ve ilk paket planı KARARLAR.md arşivine taşındı.
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
