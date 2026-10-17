@@ -1,15 +1,49 @@
 // A member's statistics on their card: focus over time, streaks, the library,
-// building and tuğla. Everyone in the team can see everyone's.
+// building and tuğla. Everyone in the team can see everyone's, except whom
+// someone studies best with.
 import React, { useEffect, useState } from "react";
 import { CATALOG } from "../shared/catalog.js";
 import { get, minutesLabel } from "./api.js";
 import { Loading } from "./Illustrations.jsx";
+import { Avatar } from "./ui.jsx";
 import "./stats.css";
 
 const dayNumber = new Intl.DateTimeFormat("tr-TR", { day: "numeric", timeZone: "Europe/Istanbul" });
 const dayMonth = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short", timeZone: "Europe/Istanbul" });
 const hours = (minutes) => (minutes >= 600 ? `${Math.round(minutes / 60)} sa` : minutesLabel(minutes));
 const clock = (minute) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+
+// Çalışma eşi: the friend you focus best with, on your own statistics only.
+function Partner({ p }) {
+  if (!p)
+    return (
+      <p className="stats-partner none">
+        🤝 Çalışma eşin henüz belli değil. Bir arkadaşınla üç ayrı gün aynı anda odaklanın, burada çıksın.
+      </p>
+    );
+  // How much more you focus on your days together than on your other days.
+  const ratio = p.usual ? p.daily / p.usual : 0,
+    lift = ratio >= 2 ? `${String(Math.round(ratio * 10) / 10).replace(".", ",")} kat` : ratio >= 1.1 ? `+%${Math.round((ratio - 1) * 100)}` : "";
+  return (
+    <div className="stats-partner">
+      <Avatar member={p.member} />
+      <div>
+        <small>En iyi çalışma eşin</small>
+        <b>{p.member.name}</b>
+        <span>
+          Beraber çalıştığınız {p.days} günde günde {hours(p.daily)} odaklandın{p.usual != null ? `, diğer günlerinde ${hours(p.usual)}` : ""}.
+        </span>
+        <i>Son 30 gün · aynı anda {hours(p.together)} · bunu yalnız sen görüyorsun</i>
+      </div>
+      {lift && (
+        <p className="stats-lift">
+          <b>{lift}</b>
+          <span>beraberken</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function MemberStats({ memberId }) {
   const [s, setStats] = useState(null),
@@ -60,6 +94,7 @@ export function MemberStats({ memberId }) {
           </div>
         ))}
       </div>
+      {"partner" in s && <Partner p={s.partner} />}
       <ul className="stats-list">
         {f.bestDay && (
           <li>

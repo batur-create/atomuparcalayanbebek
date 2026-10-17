@@ -295,6 +295,25 @@ html.story-open body {
   font-size: 60px;
   border-radius: 30px;
 }
+/* Haftanın ikilisi: two faces leaning in, an ampersand between them. */
+.st-pair {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.st-pair .st-face:first-child .avatar {
+  transform: rotate(-5deg);
+}
+.st-pair .st-face:last-child .avatar {
+  transform: rotate(5deg);
+}
+.st-amp {
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--st-mark);
+}
 .st-crown {
   position: absolute;
   top: -34px;

@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
-import { dayStreak, statsOf, storyOf, storyWeek } from "./stats.js";
+import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED } from "../shared/achievements.js";
 import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
@@ -38,6 +38,9 @@ const PUSH_COOLDOWN = 45 * 60000;
 // A real arrival (from away or on the way) always notifies; this only stops
 // someone from pinging everyone by flipping away/here in a loop.
 const ARRIVAL_REPEAT = 5 * 60000;
+// Çalışma eşi on your statistics: the last 30 days, three shared days at least.
+const PARTNER_DAYS = 30;
+const PARTNER_MIN = 3;
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
 const WITHERED = "inşaatı çöktü 🧱 Telefon bu sefer kazandı.";
@@ -1695,7 +1698,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [id, id, id],
       ],
     ]);
-    return json(statsOf({ focus, activity, built, ledger, social: social[0], bricks: target.bricks, now: Date.now() }));
+    const now = Date.now(),
+      stats = statsOf({ focus, activity, built, ledger, social: social[0], bricks: target.bricks, now });
+    // Çalışma eşi: only on your own statistics, over the last 30 days. Nobody
+    // sees whom someone else studies best with.
+    if (id === m.id) {
+      const [team, recent] = await db.read([
+        ["SELECT id, name, avatar, color FROM members WHERE group_id = ? ORDER BY joined, id", [m.group_id]],
+        ["SELECT f.member_id AS memberId, f.minutes, f.created FROM focus_log f JOIN members m ON m.id = f.member_id WHERE m.group_id = ? AND f.created >= ?", [m.group_id, now - PARTNER_DAYS * DAY]],
+      ]);
+      const best = partnersOf({ focus: recent, ids: team.map((t) => t.id), min: PARTNER_MIN }).of(id);
+      stats.partner = best && { ...best, member: team.find((t) => t.id === best.id) };
+    }
+    return json(stats);
   });
 
   // n28: the week's story for the team, and a card only the asker sees. Any of

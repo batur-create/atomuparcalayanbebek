@@ -1,4 +1,4 @@
-import { dayStreak, statsOf, storyOf, storyWeek, weekOf } from "../server/stats.js";
+import { dayStreak, partnersOf, statsOf, storyOf, storyWeek, weekOf } from "../server/stats.js";
 import { pushReceiver } from "./helpers.js";
 import { BY_ID, CATALOG, CATEGORIES, CLASSES, RARE, blueprintPool, fits, imeceBonus, modelOf, refundLater, refundNow, stateOf, streakBonus, unlocked, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
@@ -690,7 +690,8 @@ test("the week's story: totals, the people who stood out and a card for me (n28)
   assert.equal(story.longest.id, "ada");
   assert.equal(story.longest.minutes, 120);
   assert.deepEqual(story.village, { built: 3, builder: { id: "ada", n: 2 }, monument: true, liked: { id: "bora", model: "sahaf", likes: 3 } });
-  assert.deepEqual(story.me, { minutes: 105, sessions: 2, days: 2, on: [0, 4], visits: 3, streak: 1, built: 1, bestDay: { day: 0, minutes: 60 }, peakHour: 22, share: 33, rank: 2 });
+  assert.deepEqual(story.me, { minutes: 105, sessions: 2, days: 2, on: [0, 4], visits: 3, streak: 1, built: 1, bestDay: { day: 0, minutes: 60 }, peakHour: 22, share: 33, rank: 2, partner: null });
+  assert.equal(story.duo, null, "nobody focused at the same time");
 
   // The crowned Haftanın Ustası wins over a recount; a quiet week leaves cards out.
   const crowned = storyOf({ start, now: start + 8 * D, members, focus, previous: 0, arrivals, buildings: [], days, messages: 0, master: { memberId: "bora", minutes: 105 }, monument: false, meId: "cem" });
@@ -770,6 +771,73 @@ test("the story route answers for the asker's team only, and Sunday 18:00 tells 
   assert.equal(stories[0].payload.url, "/?story=1");
   assert.match(stories[0].payload.body, /0,8 saat odak/);
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM weekly WHERE kind = 'story'").get().n, 1);
+});
+
+// ---------- Çalışma eşi ----------
+test("study partners: shared days follow the İmece rule, the best pair focuses most per day together", () => {
+  const start = Date.parse("2026-10-11T21:00:00Z"),
+    at = (day, hour, min = 0) => start + day * D + hour * H + min * 60000; // Istanbul clock
+  const ids = ["ada", "bora", "cem", "deniz"];
+  const focus = [
+    // Ada and Bora side by side on three days; on those days Ada does 3 hours.
+    ...[0, 1, 2].flatMap((d) => [
+      { memberId: "ada", minutes: 90, created: at(d, 11) },
+      { memberId: "ada", minutes: 90, created: at(d, 15) },
+      { memberId: "bora", minutes: 60, created: at(d, 11) },
+    ]),
+    // Ada alone on two other days: an hour each.
+    { memberId: "ada", minutes: 60, created: at(4, 10) },
+    { memberId: "ada", minutes: 60, created: at(5, 10) },
+    // Cem overlaps Ada for less than half of either session: not together.
+    { memberId: "cem", minutes: 100, created: at(4, 10, 50) },
+    // Cem and Deniz: three shared days, but little focus on them.
+    ...[0, 1, 2].flatMap((d) => [
+      { memberId: "cem", minutes: 25, created: at(d, 20) },
+      { memberId: "deniz", minutes: 25, created: at(d, 20, 5) },
+    ]),
+    // Someone who left is never anyone's partner.
+    { memberId: "gone", minutes: 90, created: at(4, 10) },
+  ];
+  const p = partnersOf({ focus, ids, min: 3 });
+  // Ada 180 a day, Bora 60 a day on their shared days: 120 per person per day.
+  assert.deepEqual(p.duo, { ids: ["ada", "bora"], days: 3, together: 180, daily: 120 });
+  assert.deepEqual(p.of("ada"), { id: "bora", days: 3, together: 180, daily: 180, usual: 60 });
+  assert.deepEqual(p.of("bora"), { id: "ada", days: 3, together: 180, daily: 60, usual: null }, "no other days to compare with");
+  assert.deepEqual(p.of("cem"), { id: "deniz", days: 3, together: 60, daily: 25, usual: null });
+  assert.equal(partnersOf({ focus, ids, min: 4 }).duo, null, "too few shared days");
+  assert.equal(partnersOf({ focus, ids, min: 3 }).of("gone"), null);
+  // A short session inside a long one: together for the short one, and that day counts.
+  const inside = partnersOf({ focus: [{ memberId: "ada", minutes: 120, created: at(0, 12) }, { memberId: "bora", minutes: 25, created: at(0, 11) }], ids, min: 1 });
+  assert.deepEqual(inside.duo, { ids: ["ada", "bora"], days: 1, together: 25, daily: 73 });
+
+  // The week's story names the duo, and the asker's own partner.
+  const story = storyOf({ start, now: start + 8 * D, members: ids.map((id) => ({ id })), focus, previous: 0, arrivals: [], buildings: [], days: new Map(), messages: 0, master: null, monument: false, meId: "bora" });
+  assert.deepEqual(story.duo, { ids: ["ada", "bora"], days: 3, together: 180, daily: 120 });
+  assert.equal(story.me.partner.id, "ada");
+});
+
+test("your study partner shows on your own statistics only", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "k".repeat(24) } });
+  const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", groupName: "Eşler", username: "ada_partner", password: "partner-123" } });
+  const invite = (await call(app, "/session", { headers: { Cookie: ada.cookie } })).data.group.invite;
+  const bora = await call(app, "/join", { method: "POST", body: { invite, name: "Bora", username: "bora_partner", password: "partner-123" } });
+  const log = sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)");
+  const now = Date.now();
+  const mine = () => call(app, `/stats/${ada.data.memberId}`, { headers: { Cookie: ada.cookie } });
+  assert.equal((await mine()).data.partner, null, "no partner yet, but the line is there");
+  for (const d of [1, 2, 3]) {
+    log.run(`a${d}`, ada.data.memberId, 50, now - d * D);
+    log.run(`b${d}`, bora.data.memberId, 50, now - d * D + 60000);
+  }
+  log.run("old", bora.data.memberId, 50, now - 40 * D); // outside the 30 days
+  const own = (await mine()).data.partner;
+  assert.equal(own.id, bora.data.memberId);
+  assert.equal(own.days, 3);
+  assert.equal(own.member.name, "Bora");
+  const theirs = await call(app, `/stats/${bora.data.memberId}`, { headers: { Cookie: ada.cookie } });
+  assert.equal(theirs.status, 200);
+  assert.equal("partner" in theirs.data, false, "nobody sees someone else's partner");
 });
 
 test("the desk map: numbered chairs, typed desks placed, the rest listed (n30)", () => {

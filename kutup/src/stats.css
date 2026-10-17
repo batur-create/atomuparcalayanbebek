@@ -67,6 +67,60 @@
   font-size: 9.5px;
   color: var(--muted);
 }
+.stats-partner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin: 10px 0 4px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+.stats-partner > div {
+  display: grid;
+  gap: 1px;
+}
+.stats-partner small {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stats-partner b {
+  font-size: 15px;
+}
+.stats-partner span {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.stats-partner i {
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--muted);
+}
+.stats-partner.none {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.stats-lift {
+  margin: 0;
+  text-align: right;
+}
+.stats-lift b {
+  display: block;
+  font-size: 17px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.stats-lift span {
+  font-size: 10.5px;
+}
 .stats-list {
   margin: 8px 0 0;
   padding: 0;
