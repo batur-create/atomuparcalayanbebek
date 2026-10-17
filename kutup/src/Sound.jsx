@@ -101,6 +101,52 @@ function rendered(key, seconds, paint) {
   buf.copyToChannel(R, 1);
   return (cache[key] = buf);
 }
+// n24: slow shapes (gusts, waves, voices, a fire's flicker) are drawn once as
+// low-rate control buffers and drive gains and filters, so nothing in the mix
+// repeats as a plain sine wobble. 8 kHz keeps a minute of shape under 2 MB.
+const SHAPE_RATE = 8000;
+function shape(key, seconds, paint) {
+  if (cache[key] !== undefined) return cache[key];
+  let buf = null;
+  try {
+    const len = Math.floor(SHAPE_RATE * seconds),
+      d = new Float32Array(len);
+    paint(d, SHAPE_RATE);
+    // Close the loop softly so the seam is never heard.
+    const fade = Math.min(len >> 3, SHAPE_RATE);
+    for (let i = 0; i < fade; i++) d[len - fade + i] = d[len - fade + i] * (1 - i / fade) + d[i] * (i / fade);
+    buf = ctx.createBuffer(1, len, SHAPE_RATE);
+    buf.copyToChannel(d, 0);
+  } catch {}
+  return (cache[key] = buf);
+}
+// The samples of an already drawn shape, so a derived one (leaves from the
+// gusts, foam from the waves) lines up with it.
+function drawn(name, seconds) {
+  const buf = shape(name, seconds, SHAPES[name]);
+  if (buf) return buf.getChannelData(0);
+  const d = new Float32Array(Math.floor(SHAPE_RATE * seconds));
+  SHAPES[name](d, SHAPE_RATE);
+  return d;
+}
+// Random values eased into each other: a smooth, never-repeating-looking curve.
+function drift(d, rate, { every, low = 0, high = 1 }) {
+  let from = rnd(low, high),
+    to = rnd(low, high),
+    span = Math.floor(rate * every * rnd(0.6, 1.4)),
+    at = 0;
+  for (let i = 0; i < d.length; i++, at++) {
+    if (at >= span) {
+      from = to;
+      to = rnd(low, high);
+      span = Math.floor(rate * every * rnd(0.6, 1.4));
+      at = 0;
+    }
+    const t = at / span;
+    d[i] = from + (to - from) * (t * t * (3 - 2 * t));
+  }
+  return d;
+}
 // A burst of noise through a resonant band-pass (RBJ biquad), with an envelope.
 function burst(rate, { f, q = 1, attack = 0.001, decay = 0.02, level = 0.3 }) {
   const n = Math.floor(rate * (attack + decay * 6)),
@@ -126,14 +172,30 @@ function burst(rate, { f, q = 1, attack = 0.001, decay = 0.02, level = 0.3 }) {
   }
   return out;
 }
-// A tone gliding from f0 to f1 (exponentially), with a soft envelope.
-function glide(rate, { f0, f1, dur, level = 0.2, partials = [1] }) {
+// A water drop: the tiny air bubble it traps rings as a damped sine whose pitch
+// rises as the bubble shrinks (Minnaert), after a soft click of the impact.
+function bubble(rate, { f, level = 0.1, decay = 0.006, rise = 0.6 }) {
+  const n = Math.floor(rate * decay * 7),
+    out = new Float32Array(n);
+  let phase = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / rate;
+    phase += (2 * Math.PI * f * (1 + rise * (t / (decay * 7)))) / rate;
+    out[i] = Math.sin(phase) * Math.exp(-t / decay) * level;
+  }
+  const click = burst(rate, { f: f * 1.8, q: 0.7, decay: 0.0006, level: level * 0.5 });
+  for (let i = 0; i < click.length && i < n; i++) out[i] += click[i];
+  return out;
+}
+// A tone gliding from f0 to f1 (exponentially), with a soft envelope and an
+// optional vibrato (birdsong).
+function glide(rate, { f0, f1, dur, level = 0.2, partials = [1], vib = 0, vibRate = 30 }) {
   const n = Math.floor(rate * dur),
     out = new Float32Array(n);
   let phase = 0;
   for (let i = 0; i < n; i++) {
     const t = i / n,
-      f = f0 * Math.pow(f1 / f0, t),
+      f = f0 * Math.pow(f1 / f0, t) * (1 + vib * Math.sin((2 * Math.PI * vibRate * i) / rate)),
       env = Math.sin(Math.PI * t) ** 2;
     phase += (2 * Math.PI * f) / rate;
     let v = 0;
@@ -147,13 +209,38 @@ function ting(rate, { f, level = 0.05 }) {
   const n = Math.floor(rate * 0.9),
     out = new Float32Array(n),
     partials = [[1, 1], [2.32, 0.5], [3.9, 0.3], [5.4, 0.15]];
-  for (let i = 0; i < n; i++) {
-    const t = i / rate,
-      env = Math.min(1, t / 0.002) * Math.exp(-t / 0.16);
-    let v = 0;
-    for (const [p, a] of partials) v += Math.sin(2 * Math.PI * f * p * t) * a * Math.exp(-t * p * 2);
-    out[i] = v * env * level;
+  // Each partial is a sine by recurrence with its own decay: no sin or exp per
+  // sample, so a table of cups renders fast even on an old phone.
+  for (const [p, a] of partials) {
+    const w = (2 * Math.PI * f * p) / rate,
+      c = 2 * Math.cos(w),
+      fall = Math.exp(-(1 / 0.16 + p * 2) / rate);
+    let s1 = 0,
+      s2 = -Math.sin(w),
+      amp = a * level;
+    for (let i = 0; i < n; i++) {
+      const s0 = c * s1 - s2;
+      s2 = s1;
+      s1 = s0;
+      out[i] += s0 * amp * (i < 0.002 * rate ? i / (0.002 * rate) : 1);
+      amp *= fall;
+    }
   }
+  return out;
+}
+// A page turned: paper rustles in many tiny grains, then lands with a soft slap.
+function pageTurn(rate, level = 0.1) {
+  const dur = rnd(0.35, 0.6),
+    out = new Float32Array(Math.floor(rate * (dur + 0.15)));
+  const grains = Math.floor(rnd(28, 46));
+  for (let g = 0; g < grains; g++) {
+    const at = Math.floor(rate * dur * Math.pow(Math.random(), 0.8)),
+      piece = burst(rate, { f: rnd(1800, 6500), q: rnd(0.8, 2.5), decay: rnd(0.002, 0.009), level: level * rnd(0.2, 0.7) * Math.sin((Math.PI * at) / (rate * dur)) });
+    for (let i = 0; i < piece.length && at + i < out.length; i++) out[at + i] += piece[i];
+  }
+  const slap = burst(rate, { f: rnd(700, 1100), q: 0.6, attack: 0.004, decay: 0.03, level: level * 0.8 }),
+    at = Math.floor(rate * dur);
+  for (let i = 0; i < slap.length && at + i < out.length; i++) out[at + i] += slap[i];
   return out;
 }
 // A gravitational-wave chirp: frequency and loudness climb as the two holes
@@ -179,28 +266,84 @@ function mergerChirp(rate) {
   }
   return out;
 }
+// A few kinds of bird, each with its own song shape.
+const SONGS = [
+  // Trill: a run of quick rising notes.
+  (put, rate, at, pan, far) => {
+    const base = rnd(3800, 5200), n = Math.floor(rnd(7, 14)), gap = rnd(0.06, 0.09);
+    for (let j = 0; j < n; j++) put(at + j * gap, glide(rate, { f0: base, f1: base * 1.35, dur: 0.045, level: 0.03 * far }), pan);
+  },
+  // Two notes, high-low, repeated: "tee-oo, tee-oo".
+  (put, rate, at, pan, far) => {
+    const hi = rnd(4200, 5200), lo = hi * rnd(0.72, 0.8);
+    for (let j = 0; j < Math.floor(rnd(2, 4)); j++) {
+      put(at + j * 0.42, glide(rate, { f0: hi, f1: hi * 0.97, dur: 0.13, level: 0.032 * far }), pan);
+      put(at + j * 0.42 + 0.17, glide(rate, { f0: lo, f1: lo * 0.95, dur: 0.16, level: 0.028 * far }), pan);
+    }
+  },
+  // A blackbird-like fluted phrase: slow whistles with vibrato and a soft overtone.
+  (put, rate, at, pan, far) => {
+    let t = at;
+    for (let j = 0; j < Math.floor(rnd(3, 6)); j++) {
+      const f = rnd(1700, 2800), dur = rnd(0.12, 0.28);
+      put(t, glide(rate, { f0: f, f1: f * rnd(0.85, 1.25), dur, level: 0.03 * far, partials: [1, 2], vib: 0.015, vibRate: rnd(18, 32) }), pan);
+      t += dur + rnd(0.03, 0.09);
+    }
+  },
+  // Single short chips, scattered.
+  (put, rate, at, pan, far) => {
+    for (let j = 0; j < Math.floor(rnd(2, 5)); j++) {
+      const f = rnd(5000, 6800);
+      put(at + j * rnd(0.25, 0.6), glide(rate, { f0: f, f1: f * 0.8, dur: 0.035, level: 0.025 * far }), pan);
+    }
+  },
+];
 const EVENTS = {
+  // Drops on the window: close ticks on the glass and little ringing bubbles
+  // in the puddle, at every size and distance.
   drops: (put, rate) => {
-    for (let i = 0; i < 150; i++) put(rnd(0, 8), burst(rate, { f: rnd(1400, 6200), q: rnd(2, 6), decay: rnd(0.004, 0.012), level: rnd(0.08, 0.32) }), rnd(-0.9, 0.9));
+    for (let i = 0; i < 230; i++) {
+      const near = Math.random() < 0.3;
+      put(rnd(0, 12), bubble(rate, { f: rnd(near ? 1800 : 1200, near ? 4200 : 3000), decay: rnd(0.002, near ? 0.009 : 0.005), level: rnd(0.02, near ? 0.12 : 0.05) }), rnd(-0.95, 0.95));
+    }
+    for (let i = 0; i < 90; i++) put(rnd(0, 12), burst(rate, { f: rnd(3000, 7000), q: rnd(3, 8), decay: rnd(0.0015, 0.004), level: rnd(0.05, 0.2) }), rnd(-0.9, 0.9));
+  },
+  // Gutter drips: slower, deeper and steadier, slightly off to one side.
+  gutter: (put, rate) => {
+    let t = 0;
+    while (t < 12) {
+      put(t, bubble(rate, { f: rnd(600, 950), decay: 0.012, level: 0.07, rise: 0.3 }), 0.55);
+      t += rnd(0.35, 0.9);
+    }
   },
   pages: (put, rate) => {
-    for (const at of [rnd(3, 9), rnd(17, 24), rnd(31, 38)]) {
-      put(at, burst(rate, { f: rnd(2200, 3200), q: 0.6, attack: 0.07, decay: 0.09, level: 0.12 }), rnd(-0.6, 0.6));
-      put(at + 0.16, burst(rate, { f: rnd(3000, 4200), q: 0.6, attack: 0.03, decay: 0.05, level: 0.06 }), rnd(-0.6, 0.6));
+    for (const at of [rnd(2, 6), rnd(10, 15), rnd(21, 26)]) put(at, pageTurn(rate, rnd(0.08, 0.13)), rnd(-0.6, 0.6));
+    // A pencil writing a line somewhere nearby.
+    for (const at of [rnd(6, 9), rnd(16, 19)]) {
+      const strokes = Math.floor(rnd(10, 22)), pan = rnd(-0.5, 0.5);
+      for (let j = 0; j < strokes; j++) put(at + j * rnd(0.07, 0.13), burst(rate, { f: rnd(3500, 6000), q: 1.5, attack: 0.01, decay: 0.02, level: 0.018 }), pan);
     }
-    put(rnd(26, 29), glide(rate, { f0: 190, f1: 150, dur: 0.5, level: 0.03, partials: [1, 2.01, 3.02] }), rnd(-0.5, 0.5)); // a chair, far away
+    // Footsteps far down the hall, and a chair.
+    const walk = rnd(0, 20), pan = rnd(-0.7, 0.7);
+    for (let j = 0; j < 7; j++) put(walk + j * 0.55, burst(rate, { f: rnd(140, 220), q: 1.5, attack: 0.003, decay: 0.025, level: 0.06 * Math.sin((Math.PI * (j + 1)) / 8) }), pan + j * 0.03);
+    put(rnd(26, 29), glide(rate, { f0: 190, f1: 150, dur: 0.5, level: 0.025, partials: [1, 2.01, 3.02] }), rnd(-0.5, 0.5));
   },
+  // A fire: crackles come in clusters (a pop and its little echoes), the wood
+  // hisses, and now and then a log settles with a soft thud.
   crackle: (put, rate) => {
-    for (let i = 0; i < 260; i++) put(rnd(0, 10), burst(rate, { f: rnd(1800, 5200), q: 0.9, decay: rnd(0.0008, 0.003), level: rnd(0.1, 0.5) }), rnd(-0.4, 0.4));
-    for (let i = 0; i < 7; i++) put(rnd(0, 10), burst(rate, { f: rnd(500, 1100), q: 1.2, decay: rnd(0.006, 0.014), level: rnd(0.3, 0.6) }), rnd(-0.3, 0.3));
+    for (let c = 0; c < 70; c++) {
+      const at = rnd(0, 12), pan = rnd(-0.45, 0.45);
+      put(at, burst(rate, { f: rnd(900, 2600), q: 1.1, decay: rnd(0.001, 0.004), level: rnd(0.25, 0.6) }), pan);
+      for (let j = 0; j < Math.floor(rnd(1, 7)); j++)
+        put(at + rnd(0.005, 0.12), burst(rate, { f: rnd(2400, 6500), q: 0.9, decay: rnd(0.0004, 0.0018), level: rnd(0.05, 0.3) }), pan + rnd(-0.1, 0.1));
+    }
+    for (let i = 0; i < 160; i++) put(rnd(0, 12), burst(rate, { f: rnd(3000, 7000), q: 0.8, decay: rnd(0.0003, 0.001), level: rnd(0.03, 0.12) }), rnd(-0.4, 0.4));
+    for (let i = 0; i < 2; i++) put(rnd(0, 12), burst(rate, { f: rnd(90, 160), q: 1.4, attack: 0.01, decay: 0.08, level: 0.35 }), rnd(-0.2, 0.2));
   },
   birds: (put, rate) => {
-    for (let k = 0; k < 6; k++) {
-      const at = rnd(0, 28),
-        base = rnd(2600, 4200),
-        pan = rnd(-0.8, 0.8);
-      for (let j = 0; j < 2 + Math.floor(rnd(0, 3)); j++)
-        put(at + j * rnd(0.14, 0.22), glide(rate, { f0: base, f1: base * rnd(1.15, 1.45), dur: rnd(0.07, 0.12), level: 0.035 }), pan);
+    for (let k = 0; k < 9; k++) {
+      const far = rnd(0.35, 1);
+      SONGS[Math.floor(Math.random() * SONGS.length)](put, rate, rnd(0, 26), rnd(-0.85, 0.85), far);
     }
   },
   cups: (put, rate) => {
@@ -209,16 +352,80 @@ const EVENTS = {
       put(at, ting(rate, { f: rnd(1900, 2600), level: 0.045 }), pan);
       if (Math.random() < 0.5) put(at + rnd(0.15, 0.3), ting(rate, { f: rnd(2400, 3100), level: 0.025 }), pan);
     }
+    // A spoon stirring a glass of tea, a few quick taps.
+    const stir = rnd(9, 11), pan = rnd(-0.6, 0.6);
+    for (let j = 0; j < Math.floor(rnd(4, 8)); j++) put(stir + j * rnd(0.16, 0.22), ting(rate, { f: rnd(3300, 3700), level: 0.018 }), pan);
   },
   merger: (put, rate) => put(rnd(18, 36), mergerChirp(rate), 0),
 };
+const SHAPES = {
+  // Wind: slow gusts with quicker eddies on top.
+  gusts: (d, rate) => {
+    const slow = drift(new Float32Array(d.length), rate, { every: 7, low: 0.25, high: 1 }),
+      fast = drift(new Float32Array(d.length), rate, { every: 0.9, low: 0.75, high: 1 });
+    for (let i = 0; i < d.length; i++) d[i] = slow[i] * fast[i];
+  },
+  // Leaves: rustles that follow the gusts, in short bursts.
+  leaves: (d, rate) => {
+    d.set(drawn("gusts", d.length / rate));
+    const flutter = drift(new Float32Array(d.length), rate, { every: 0.12, low: 0, high: 1 });
+    for (let i = 0; i < d.length; i++) d[i] = Math.max(0, d[i] - 0.45) * 1.8 * flutter[i];
+  },
+  // A fire's breath: uneven flicker instead of a steady wobble.
+  flicker: (d, rate) => {
+    const slow = drift(new Float32Array(d.length), rate, { every: 2.5, low: 0.55, high: 1 }),
+      fast = drift(new Float32Array(d.length), rate, { every: 0.18, low: 0.8, high: 1 });
+    for (let i = 0; i < d.length; i++) d[i] = slow[i] * fast[i];
+  },
+  // Waves of uneven size and period: a slow build, the break, the wash.
+  waves: (d, rate) => {
+    let t = 0,
+      prev = 0.15;
+    while (t < d.length) {
+      const period = rnd(7, 13) * rate, size = rnd(0.5, 1), build = period * rnd(0.45, 0.6), crash = rate * rnd(0.25, 0.5);
+      // Each wave builds from wherever the last one's wash left off.
+      for (let i = 0; i < period && t + i < d.length; i++) {
+        let v;
+        if (i < build) v = prev + (0.5 * size - prev) * (i / build) ** 2;
+        else if (i < build + crash) v = size * (0.5 + 0.5 * ((i - build) / crash));
+        else v = size * (0.15 + 0.85 * Math.exp(-(i - build - crash) / (rate * 2.2)));
+        d[t + i] = v;
+      }
+      prev = d[Math.min(d.length, t + Math.floor(period)) - 1];
+      t += Math.floor(period);
+    }
+    // Round off the corners: water never switches.
+    const k = 1 / (rate * 0.12);
+    let y = d[d.length - 1];
+    for (let i = 0; i < d.length; i++) d[i] = y += (d[i] - y) * k;
+  },
+  // The foam: hiss that comes in right after each break and drains away.
+  foam: (d, rate) => {
+    d.set(drawn("waves", d.length / rate));
+    const shift = Math.floor(rate * 0.35), copy = d.slice();
+    for (let i = 0; i < d.length; i++) d[i] = Math.max(0, copy[(i - shift + d.length) % d.length] - 0.35) * 1.5;
+  },
+  // People talking: syllables in phrases, with pauses between turns.
+  voices: (d, rate) => {
+    let i = 0;
+    while (i < d.length) {
+      const phrase = Math.floor(rate * rnd(1.2, 3.5));
+      for (let p = 0; p < phrase && i < d.length; ) {
+        const syl = Math.floor(rate * rnd(0.12, 0.26)), peak = rnd(0.5, 1);
+        for (let s = 0; s < syl && i < d.length; s++, p++, i++) d[i] = peak * Math.sin((Math.PI * s) / syl) ** 1.5;
+      }
+      const pause = Math.floor(rate * rnd(0.3, 1.6));
+      for (let s = 0; s < pause && i < d.length; s++, i++) d[i] = 0;
+    }
+  },
+};
 
 const node = {
-  loop(buf) {
+  loop(buf, at = rnd(0, buf.duration - 0.1)) {
     const s = ctx.createBufferSource();
     s.buffer = buf;
     s.loop = true;
-    s.start(0, rnd(0, buf.duration - 0.1));
+    s.start(0, at % buf.duration);
     return s;
   },
   filter(type, f, q = 0.7) {
@@ -259,69 +466,158 @@ const wobble = (param, rate, depth, sources) => {
   g.connect(param);
   sources.push(o);
 };
+// Drives an AudioParam with a drawn shape (scaled by depth, added to its value);
+// falls back to a slow wobble where low-rate buffers are not supported. Params
+// given the same `at` move together (one wave lifts the rumble and the foam).
+const follow = (param, name, seconds, depth, sources, { fallback = 0.1, at } = {}) => {
+  const buf = shape(name, seconds, SHAPES[name]);
+  if (!buf) return wobble(param, fallback, depth / 2, sources);
+  const s = node.loop(buf, at),
+    g = node.gain(depth);
+  s.connect(g);
+  g.connect(param);
+  sources.push(s);
+};
+// Space: a reverb tail drawn as decaying noise that loses its highs as it fades
+// (air absorbs them), so a sound sits in a room, a hall or the open air.
+const SPACES = { room: [0.9, 0.25, 7000], hall: [2.4, 0.7, 5000], open: [1.4, 0.35, 3500] };
+function space(out, kind, wet) {
+  const [seconds, decay, bright] = SPACES[kind];
+  const key = `space-${kind}`;
+  if (!cache[key]) {
+    const rate = ctx.sampleRate,
+      len = Math.floor(rate * seconds),
+      buf = ctx.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      let low = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / rate,
+          cut = Math.exp((-2 * Math.PI * bright * Math.exp(-t / decay)) / rate);
+        low = (1 - cut) * (Math.random() * 2 - 1) + cut * low;
+        d[i] = low * Math.exp(-t / decay) * (i < rate * 0.004 ? i / (rate * 0.004) : 1);
+      }
+    }
+    cache[key] = buf;
+  }
+  const verb = ctx.createConvolver();
+  verb.buffer = cache[key];
+  const send = node.gain(wet);
+  chain(send, verb, out);
+  return send;
+}
 
-// Each recipe connects its sources into \`out\` and returns them for stopping.
+// Each recipe connects its sources into `out` and returns them for stopping.
 const RECIPES = {
   rain(out) {
-    const s = [node.loop(noise("pink")), node.loop(rendered("drops", 8, EVENTS.drops)), node.loop(noise("brown"))];
-    chain(s[0], node.filter("highpass", 500), node.filter("lowpass", 6500), node.gain(0.5), out);
-    chain(s[1], node.gain(0.75), out);
-    chain(s[2], node.filter("lowpass", 180), node.gain(0.25), out);
+    const s = [node.loop(noise("pink")), node.loop(rendered("drops", 12, EVENTS.drops)), node.loop(noise("brown")), node.loop(rendered("gutter", 12, EVENTS.gutter)), node.loop(noise("pink"))];
+    const room = space(out, "room", 0.35);
+    // The wide wash of rain on the street, breathing a little.
+    const wash = node.gain(0.32);
+    chain(s[0], node.filter("highpass", 400), node.filter("lowpass", 5200), wash, out);
+    follow(wash.gain, "gusts", 40, 0.14, s);
+    // Hiss on the glass, high and close.
+    chain(s[4], node.filter("highpass", 5000), node.gain(0.06), out);
+    const drops = chain(s[1], node.gain(0.85));
+    drops.connect(out);
+    drops.connect(room);
+    chain(s[3], node.filter("lowpass", 2500), node.gain(0.6), room);
+    chain(s[2], node.filter("lowpass", 160), node.gain(0.22), out);
     return s;
   },
   library(out) {
-    const s = [node.loop(noise("brown")), node.loop(noise("pink")), node.loop(rendered("pages", 42, EVENTS.pages))];
-    chain(s[0], node.filter("lowpass", 340), node.gain(0.45), out);
-    chain(s[1], node.filter("bandpass", 900, 0.4), node.gain(0.05), out);
-    chain(s[2], node.gain(0.9), out);
+    const s = [node.loop(noise("brown")), node.loop(noise("pink")), node.loop(rendered("pages", 30, EVENTS.pages)), node.osc("sine", 100), node.osc("sine", 200.4)];
+    const hall = space(out, "hall", 0.6);
+    // Room tone: the big reading room's air and a far ventilation hum.
+    chain(s[0], node.filter("lowpass", 280), node.gain(0.4), out);
+    chain(s[1], node.filter("bandpass", 700, 0.35), node.gain(0.035), out);
+    const hum = node.gain(0.006);
+    chain(s[3], hum, out);
+    chain(s[4], node.gain(0.5), hum);
+    const events = chain(s[2], node.gain(0.9));
+    events.connect(out);
+    events.connect(hall);
     return s;
   },
   fire(out) {
-    const s = [node.loop(noise("brown")), node.loop(rendered("crackle", 10, EVENTS.crackle))];
-    const roar = node.gain(0.42);
-    chain(s[0], node.filter("lowpass", 650), roar, out);
-    wobble(roar.gain, 0.17, 0.12, s);
-    chain(s[1], node.filter("highpass", 400), node.gain(0.55), out);
+    const s = [node.loop(noise("brown")), node.loop(rendered("crackle", 12, EVENTS.crackle)), node.loop(noise("pink"))];
+    const room = space(out, "room", 0.15);
+    // The roar of the flames, flickering unevenly.
+    const roar = node.gain(0.12);
+    chain(s[0], node.filter("lowpass", 520), roar, out);
+    const at = rnd(0, 30);
+    follow(roar.gain, "flicker", 30, 0.32, s, { fallback: 0.17, at });
+    // Gas hissing out of the wood.
+    const hiss = node.gain(0.006);
+    chain(s[2], node.filter("highpass", 2800), node.filter("lowpass", 9000), hiss, out);
+    follow(hiss.gain, "flicker", 30, 0.025, s, { fallback: 0.23, at });
+    const crackle = chain(s[1], node.filter("highpass", 120), node.gain(0.85));
+    crackle.connect(out);
+    crackle.connect(room);
     return s;
   },
   forest(out) {
     const s = [node.loop(noise("pink")), node.loop(noise("white")), node.loop(rendered("birds", 30, EVENTS.birds))];
-    const band = node.filter("bandpass", 650, 0.9),
-      wind = node.gain(0.62);
+    const open = space(out, "open", 0.5);
+    // Wind through the trees, in gusts; the band slides up as it blows harder.
+    const band = node.filter("bandpass", 380, 0.8),
+      wind = node.gain(0.12);
     chain(s[0], band, wind, out);
-    wobble(band.frequency, 0.055, 330, s);
-    wobble(wind.gain, 0.085, 0.12, s);
-    chain(s[1], node.filter("highpass", 4200), node.gain(0.05), out);
-    chain(s[2], node.gain(1.3), out);
+    const at = rnd(0, 40);
+    follow(wind.gain, "gusts", 40, 0.55, s, { fallback: 0.085, at });
+    follow(band.frequency, "gusts", 40, 520, s, { fallback: 0.055, at });
+    // Leaves rustling high up, only when the gust is strong.
+    const leaves = node.gain(0);
+    chain(s[1], node.filter("highpass", 2600), node.filter("lowpass", 9000), leaves, out);
+    follow(leaves.gain, "leaves", 40, 0.09, s, { at });
+    const birds = chain(s[2], node.gain(2));
+    birds.connect(out);
+    birds.connect(open);
     return s;
   },
   waves(out) {
-    const s = [node.loop(noise("brown")), node.loop(noise("pink"))];
-    const low = node.filter("lowpass", 650),
-      swell = node.gain(0.34),
-      spray = node.gain(0.05);
+    const s = [node.loop(noise("brown")), node.loop(noise("pink")), node.loop(noise("white"))];
+    const open = space(out, "open", 0.25),
+      at = rnd(0, 60);
+    // The body of each wave: rumble that opens up as it breaks.
+    const low = node.filter("lowpass", 250),
+      swell = node.gain(0.05);
     chain(s[0], low, swell, out);
-    chain(s[1], node.filter("highpass", 1600), spray, out);
-    // One swell drives all three, so the foam comes in with the wave.
-    const tide = node.osc("sine", 0.1);
-    s.push(tide);
-    for (const [param, depth] of [[low.frequency, 420], [swell.gain, 0.28], [spray.gain, 0.045]]) {
-      const g = node.gain(depth);
-      tide.connect(g);
-      g.connect(param);
-    }
+    follow(swell.gain, "waves", 60, 0.55, s, { at });
+    follow(low.frequency, "waves", 60, 900, s, { at });
+    // The break and the foam draining back over the sand.
+    const crash = node.gain(0);
+    chain(s[1], node.filter("bandpass", 1100, 0.5), crash, out);
+    crash.connect(open);
+    follow(crash.gain, "waves", 60, 0.08, s, { at });
+    const foam = node.gain(0);
+    chain(s[2], node.filter("highpass", 2500), node.filter("lowpass", 9500), foam, out);
+    follow(foam.gain, "foam", 60, 0.05, s, { at });
     return s;
   },
   cafe(out) {
-    const s = [node.loop(noise("pink")), node.loop(noise("pink")), node.loop(noise("brown")), node.loop(rendered("cups", 26, EVENTS.cups))];
-    const voices = node.gain(0.42),
-      voices2 = node.gain(0.17);
-    chain(s[0], node.filter("bandpass", 480, 0.9), voices, node.pan(-0.3), out);
-    chain(s[1], node.filter("bandpass", 1150, 1.1), voices2, node.pan(0.35), out);
-    wobble(voices.gain, 4.3, 0.07, s);
-    wobble(voices2.gain, 5.7, 0.04, s);
-    chain(s[2], node.filter("lowpass", 300), node.gain(0.3), out);
-    chain(s[3], node.gain(1.1), out);
+    const s = [node.loop(noise("pink")), node.loop(noise("pink")), node.loop(noise("pink")), node.loop(noise("brown")), node.loop(rendered("cups", 26, EVENTS.cups))];
+    const room = space(out, "hall", 0.7);
+    // Three tables talking, each a different voice (vowel formants) and place.
+    // Most of what reaches us is the room, so the words never come through.
+    for (const [k, f1, f2, pan, level] of [[0, 520, 1500, -0.4, 0.9], [1, 380, 1100, 0.3, 0.75], [2, 650, 1900, 0.05, 0.55]]) {
+      const voice = node.gain(0);
+      const formant1 = node.filter("bandpass", f1, 3),
+        formant2 = node.filter("bandpass", f2, 4),
+        mixVoice = node.gain(level);
+      s[k].connect(formant1);
+      s[k].connect(formant2);
+      formant1.connect(mixVoice);
+      chain(formant2, node.gain(0.6), mixVoice);
+      chain(mixVoice, voice, node.pan(pan));
+      voice.connect(room);
+      chain(voice, node.gain(0.35), out);
+      follow(voice.gain, "voices", 43, 1, s);
+    }
+    chain(s[3], node.filter("lowpass", 260), node.gain(0.2), out);
+    const cups = chain(s[4], node.gain(1.1));
+    cups.connect(out);
+    cups.connect(room);
     return s;
   },
   brown(out) {
@@ -354,15 +650,19 @@ const RECIPES = {
   },
 };
 
+// n24: each new recipe brought back to the loudness of the sound it replaced,
+// so a saved mix keeps its balance (measured offline, K-weighted).
+const TRIM = { rain: 1.26, library: 1.17, fire: 1.32, forest: 1.3, waves: 1.68, cafe: 1.84 };
 const layers = new Map(); // id -> { gain, sources }
 const FADE = 1.2;
 function setLayer(id, volume) {
   const now = ctx.currentTime;
   let layer = layers.get(id);
   if (!layer && volume > 0) {
-    const gain = node.gain(0);
-    gain.connect(master);
-    layer = { gain, sources: RECIPES[id](gain) };
+    const gain = node.gain(0),
+      trim = node.gain(TRIM[id] ?? 1);
+    chain(trim, gain, master);
+    layer = { gain, sources: RECIPES[id](trim) };
     layers.set(id, layer);
   }
   if (!layer) return;

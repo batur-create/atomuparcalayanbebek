@@ -402,6 +402,27 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 a, b = frames('still', 900)
                 check('Kıpırtısız keeps the village map still', a == b)
                 page.evaluate('(m)=>{if(m)document.documentElement.dataset.motion=m;else delete document.documentElement.dataset.motion}', picked)
+                # n24: every ambient sound really plays, alone, without errors: the app's own
+                # output meter is caught when it is made and read like soundState() does.
+                page.add_init_script("(()=>{const A=window.AudioContext;if(!A)return;const f=A.prototype.createAnalyser;A.prototype.createAnalyser=function(){return window.__kutupMeter=f.call(this)}})()")
+                page.goto(base + '/?tab=focus')
+                page.get_by_role('button', name='Ses karışımı').click()
+                tiles = page.get_by_role('dialog').locator('.sound-tile button')
+                expect(tiles.first).to_be_visible()
+                for i in range(tiles.count()):
+                    if tiles.nth(i).get_attribute('aria-pressed') == 'true': tiles.nth(i).click()
+                level = '''()=>{const m=window.__kutupMeter;if(!m)return 0;const d=new Float32Array(m.fftSize);m.getFloatTimeDomainData(d);let s=0;for(const v of d)s+=v*v;return Math.sqrt(s/d.length)}'''
+                heard = {}
+                for i in range(tiles.count()):
+                    tile = tiles.nth(i); name = tile.locator('b').inner_text()
+                    tile.click(); page.wait_for_timeout(2500)
+                    rms = []
+                    for _ in range(5): rms.append(page.evaluate(level)); page.wait_for_timeout(150)
+                    heard[name] = round(max(rms), 4)
+                    tile.click()
+                print('Sound levels (RMS):', json.dumps(heard, ensure_ascii=False), flush=True)
+                check('Every ambient sound plays on its own (n24)', len(heard) == 8 and all(0.003 < v < 0.5 for v in heard.values()))
+                page.keyboard.press('Escape')
                 owner = browser.new_page(viewport={'width':375,'height':812}, reduced_motion='reduce')
                 owner.on('pageerror', lambda e: errors.append(str(e)))
                 owner.goto(base + '/batur')
