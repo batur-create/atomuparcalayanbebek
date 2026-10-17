@@ -124,6 +124,8 @@ async function checkPassword(password, stored) {
   if (kind !== "pbkdf2" || !hash) return false;
   return sameSecret(await derive(password, salt, Number(rounds)), hash);
 }
+// Checked against when a username does not exist; no password matches it.
+const DUMMY_HASH = `pbkdf2$${PBKDF2_ROUNDS}$${"0".repeat(32)}$${"0".repeat(64)}`;
 const sameName = (a, b) =>
   a.toLocaleLowerCase("tr") === b.toLocaleLowerCase("tr");
 
@@ -172,6 +174,9 @@ export const SECURITY_HEADERS = {
  */
 export function createApp({ db, config = {}, live = "poll", onChange = () => {} }) {
   let ready, vapid, lastCleanup = 0;
+  // The address the app is really served from, for pushes sent by the timer,
+  // which has no request of its own (d23). PUBLIC_ORIGIN wins when it is set.
+  let knownOrigin = null;
   const buckets = new Map();
   const extraPushHosts = String(config.pushExtraHosts || "")
     .split(",")
@@ -186,6 +191,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // Owner devices that subscribed before migration 8 belong to the current key.
     const owner = await ownerHash();
     if (owner) await db.run("UPDATE owner_subscriptions SET key_hash = ? WHERE key_hash IS NULL", [owner]);
+    knownOrigin = (await db.get("SELECT value FROM settings WHERE key = 'origin'"))?.value || null;
     const stored = await db.get("SELECT value FROM settings WHERE key = 'vapid'");
     if (stored) vapid = JSON.parse(stored.value);
     else {
@@ -226,7 +232,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // SQLite/D1 serializes this upsert across processes and Worker isolates.
   // Hash the key so IP addresses and usernames are not retained in this table.
-  async function authLimit(key, max) {
+  async function authLimit(key, max, window = 60000) {
     const now = Date.now();
     const bucket = await db.get(
       `INSERT INTO auth_limits (key, attempts, expires) VALUES (?, 1, ?)
@@ -234,10 +240,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
          attempts = CASE WHEN expires <= ? THEN 1 ELSE attempts + 1 END,
          expires = CASE WHEN expires <= ? THEN excluded.expires ELSE expires END
        RETURNING attempts`,
-      [await sha(key), now + 60000, now, now],
+      [await sha(key), now + window, now, now],
     );
     if (bucket.attempts > max) fail("Biraz hızlı gittik. Bir dakika sonra tekrar dene.", 429);
   }
+  // Wrong passwords for one username over an hour (d23). The per-minute limit
+  // alone still allows ~11,000 guesses a day; only failures count here, so the
+  // owner of the account is never slowed down by their own correct logins.
+  const WRONG_PER_HOUR = 30;
+  const wrongKey = (username) => `wrong:${username}`;
+  async function tooManyWrong(username) {
+    const row = await db.get("SELECT attempts FROM auth_limits WHERE key = ? AND expires > ?", [await sha(wrongKey(username)), Date.now()]);
+    if ((row?.attempts || 0) >= WRONG_PER_HOUR)
+      fail("Bu hesapta çok fazla yanlış şifre denendi. Bir saat sonra tekrar dene ya da Batur’dan kod iste.", 429);
+  }
+  const countWrong = (username) => authLimit(wrongKey(username), Infinity, HOUR);
 
   // ---------- session ----------
   function readCookie(request, wanted) {
@@ -1099,12 +1116,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const taken = await db.get("SELECT 1 AS hit FROM members WHERE username = ? AND id <> ?", [username, member.id]);
     if (taken) fail("Bu kullanıcı adı alınmış. Başka bir tane dene.", 409);
     if (!member.pass_hash && !body.password) fail("Bir şifre belirle.");
+    // d23: an account that already has a password changes only with it, so an
+    // unlocked phone in someone else's hand cannot take the account over.
+    if (member.pass_hash && (username !== member.username || body.password)) {
+      await authLimit(`account:${member.id}`, 6);
+      if (!(await checkPassword(String(body.current || ""), member.pass_hash)))
+        fail("Şu anki şifren yanlış.", 403);
+    }
     const secret = body.password ? await hashPassword(passwordOf(body.password)) : member.pass_hash;
-    await db.run("UPDATE members SET username = ?, pass_hash = ?, reset_hash = NULL, reset_until = 0 WHERE id = ?", [
+    const result = await db.run("UPDATE members SET username = ?, pass_hash = ?, reset_hash = NULL, reset_until = 0 WHERE id = ? AND pass_hash IS ?", [
       username,
       secret,
       member.id,
+      member.pass_hash ?? null,
     ]);
+    if (!result.changes) fail("Hesabın bu arada değişti. Sayfayı yenileyip tekrar dene.", 409);
     return json({ ok: true, username });
   });
   async function signIn(request, member) {
@@ -1124,9 +1150,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const username = usernameOf(body.username);
     await authLimit(`${ip}:login`, 12);
     await authLimit(`login:${username}`, 8);
+    await tooManyWrong(username);
     const member = await db.get("SELECT id, group_id, username, pass_hash FROM members WHERE username = ?", [username]);
-    if (!member || !(await checkPassword(String(body.password || ""), member.pass_hash)))
+    // An unknown name costs the same hashing time, so timing does not tell
+    // which usernames exist.
+    const right = await checkPassword(String(body.password || ""), member?.pass_hash || DUMMY_HASH);
+    if (!member || !right) {
+      await countWrong(username);
       fail("Kullanıcı adı ya da şifre yanlış.", 401);
+    }
     return signIn(request, member);
   }, false);
   // Forgot the password: Batur gives out a one-day code; it sets a new password.
@@ -1265,6 +1297,25 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true, others }, 200, [["Set-Cookie", sessionCookie(request, "", 0)]]);
   });
 
+  // Ben → Hesap ve cihazlar: how many other devices this account is open on,
+  // and signing them all out at once (a lost phone, a friend's laptop). This
+  // device and the other accounts on it stay as they are (d27).
+  const otherSessions = (member) =>
+    db.get("SELECT count(*) AS n FROM sessions WHERE member_id = ? AND token <> ? AND created > ?", [
+      member.id,
+      member.session_token,
+      Date.now() - SESSION_AGE,
+    ]);
+  route("GET", "/devices", async ({ member }) => json({ others: (await otherSessions(member)).n }));
+  route("POST", "/devices/signout", async ({ member }) => {
+    const { n } = await otherSessions(member);
+    await db.batch([
+      ["DELETE FROM subscriptions WHERE member_id = ? AND (session_token IS NULL OR session_token <> ?)", [member.id, member.session_token]],
+      ["DELETE FROM sessions WHERE member_id = ? AND token <> ?", [member.id, member.session_token]],
+    ]);
+    return json({ ok: true, closed: n });
+  });
+
   // Cheap polling: when nothing changed since `rev`, only the revision travels.
   route("GET", "/state", async ({ member, url }) => {
     const known = url.searchParams.get("rev");
@@ -1372,6 +1423,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   route("POST", "/messages", async ({ member: m, body, ctx }) => {
     const value = text(body.text, 280, "Mesaj", 1);
+    // Every board line reaches everyone's phone; one person cannot flood them (d23).
+    await authLimit(`message:${m.id}`, 20);
     const kind = body.kind === "coffee" ? "coffee" : "message";
     const id = crypto.randomUUID();
     // A coffee call may be for one person; a reply may answer one.
@@ -1435,6 +1488,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       [m.id, now],
     );
     if (upcoming.n >= 10) fail("En fazla 10 gelecek planın olabilir.");
+    await authLimit(`plan:${m.id}`, 6); // each plan notifies the team (d23)
     const id = crypto.randomUUID();
     await db.batch([
       [
@@ -2331,6 +2385,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         .find((x) => x.m);
       if (!match) fail("Bu işlem bulunamadı.", 404);
       await ensureReady();
+      if (!config.publicOrigin && ctx.origin !== knownOrigin && ctx.origin.startsWith("https://")) {
+        knownOrigin = ctx.origin;
+        ctx.waitUntil(db.run("INSERT INTO settings (key, value) VALUES ('origin', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [ctx.origin]));
+      }
       let body = {};
       if (writes) {
         const raw = await readBody(request);
@@ -2389,7 +2447,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const message = r.inBreak
         ? { title: "☕ Ortak mola!", body: `${r.rest} dakika: kahve, su, biraz hava. İnşaatlar bekliyor.` }
         : { title: "📚 Yeni tur başladı", body: `${r.work} dakika birlikte. Masaya dönüyoruz.` };
-      await deliver({ origin: config.publicOrigin || "https://kutup.app", waitUntil }, subs, { tag: `rhythm-${g.id}`, url: "/", ...message }, "subscriptions", { urgency: "high", ttl: 600 });
+      await deliver({ origin: config.publicOrigin || knownOrigin || "https://kutup.app", waitUntil }, subs, { tag: `rhythm-${g.id}`, url: "/", ...message }, "subscriptions", { urgency: "high", ttl: 600 });
     }
     // n28: Sunday 18:00, the week's story is ready. Each team that focused this
     // week hears it once (the weekly 'story' row is the guard), whoever ticks first.

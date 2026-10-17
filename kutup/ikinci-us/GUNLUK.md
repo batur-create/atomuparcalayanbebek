@@ -81,6 +81,46 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Pano:** n31 → doing.
 - **ChatGPT:** Kara-v2 paketinden `Kara.jsx` ve `kara.css` alındı; `ikinci-us/gelen/kara-v2/` silindi.
 
+## 17 Ekim 2026 05:30 · d27 diğer cihazlardan çıkış (PR #15)
+
+- **d27 · PR #15** (`claude/d27-diger-cihazlar`, d26'nın üstünde): Ben → Hesap ve cihazlar'da açık cihaz sayısı ve "Diğerlerinden çık". Durum: review. Göç yok.
+- Şifre değişince otomatik çıkış yok; denetimdeki soru Batur'da.
+- PR'lar üst üste: #8 → #10 → #11 → #13 → #15. Yalnız #15'i birleştirmek beşini getirir.
+- Görüntüler proje klasöründe `kutup/denetim/d27/`.
+
+---
+
+## 17 Ekim 2026 05:10 · d26 ana ekran simgesi (PR #13)
+
+- **d26 · PR #13** (`claude/d26-ana-ekran-simgesi`, taban `kutup-platform` a37f3f0): iPhone simgesinin köşelerindeki siyah kenar, Android'de daireye kesilen simge, durum çubuğu rozeti. Tasarım aynı. Durum: review. Göç yok.
+- Önce/sonra görüntüsü proje klasöründe `kutup/denetim/d26/`.
+
+---
+
+## 17 Ekim 2026 05:05 · d25 satır sonları (PR #11)
+
+- **d25 · PR #11** (`claude/d25-satir-sonlari`, taban `kutup-platform` a37f3f0): son satırda tek kalan kelime ve emoji (V2 dahil). Durum: review. Göç yok.
+- Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d25/`.
+
+---
+
+## 17 Ekim 2026 04:55 · d24 görsel cila (PR #10)
+
+- **d24 · PR #10** (`claude/d24-gorsel-cila`, taban `kutup-platform` a37f3f0): denetimin V1 (zarf yazıyı kapatıyordu), V3 (Batur paneli telefonda) ve V4 (44 px dokunma alanları) bulguları. Durum: review. Göç yok.
+- Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d24/`.
+- V2 (pencere başlığında tek kalan emoji) ayrı iş: d25 (PR #11).
+
+---
+
+## 17 Ekim 2026 04:25 · Dış denetim ve d23 (PR #8)
+
+- **İstek (Batur, 04:06):** bütün sistemi dışarıdan denetle, açıkları ve geliştirmeleri bul, sonra açıkları düzelt, kararları not et, kredi kalırsa projeyi bir sonraki seviyeye taşıyacak iyileştirmeler yap. Batur uyurken soru sorulmuyor; kararlar geri alınabilir ve not ediliyor.
+- **Rapor:** proje klasöründe `kutup/denetim/DENETIM-RAPORU.md` (karar günlüğü `kutup/denetim/KARAR-GUNLUGU.md`). Kritik ya da yüksek açık yok; 1 orta (G1), 3 düşük (G2–G4), 3 görsel kusur, küçük dokunma alanları.
+- **d23 · PR #8** (`claude/d23-hesap-guvenligi`, taban `kutup-platform` a37f3f0): G1–G4. Durum: review. Göç yok.
+- **Batur'a sorular:** E1 (son dakikada katılma bonusu) ve şifre değişince diğer cihazlardan çıkış.
+
+---
+
 ## 17 Ekim 2026 03:30 · İkinci üs: kurulum
 
 - **Nerede:** Claude bulut oturumu, claude.ai projesi "Kütüp ikinci üs", Ediz'in hesabı. Arkadaşın bilgisayarına kurulum gerekmedi.

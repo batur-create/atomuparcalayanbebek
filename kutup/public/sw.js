@@ -13,6 +13,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: "/icon-192.png",
+      badge: "/badge-96.png", // Android's status bar: the K alone, in white
       tag: payload.tag || "kutup",
       renotify: true,
       requireInteraction: !!payload.sticky,

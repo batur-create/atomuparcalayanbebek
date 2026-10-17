@@ -888,3 +888,97 @@ test("the achievements route answers for the team, and keeps what was earned (n1
   await call(app, "/messages", { method: "POST", headers: { Cookie: bora.cookie }, body: { text: "çay" } });
   assert.notEqual((await list(bora, bora.data.memberId)).data.list.find((a) => a.key === "tea").at, null);
 });
+
+test("changing a username or password needs the current password; wrong ones are counted (d23)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const me = await call(app, "/groups", { method: "POST", body: { name: "Ada", username: "ada_d23", password: "first-pass-1" } });
+  const account = (body) => call(app, "/account", { method: "POST", headers: { Cookie: me.cookie }, body });
+  assert.equal((await account({ username: "ada_d23", password: "taken-over-1" })).status, 403, "an unlocked phone is not enough");
+  assert.equal((await account({ username: "ada_new", current: "yanlis-12" })).status, 403, "a new username needs it too");
+  assert.equal((await account({ username: "ada_d23" })).status, 200, "saving nothing new needs nothing");
+  const changed = await account({ username: "ada_new", password: "second-pass-2", current: "first-pass-1" });
+  assert.deepEqual(changed.data, { ok: true, username: "ada_new" });
+  assert.equal((await call(app, "/login", { method: "POST", body: { username: "ada_new", password: "second-pass-2" } })).status, 200);
+  for (let i = 0; i < 4; i++) await account({ username: "ada_x", current: "guess-123" });
+  assert.equal((await account({ username: "ada_x", current: "guess-123" })).status, 429, "guessing the current password is limited");
+
+  // Login: a username takes at most 30 wrong passwords an hour, even when the
+  // per-minute buckets keep emptying; the right password waits out the hour too.
+  const wrongKey = createHash("sha256").update("wrong:ada_new").digest("hex");
+  const login = (password) => call(app, "/login", { method: "POST", body: { username: "ada_new", password } });
+  for (let i = 0; i < 30; i++) {
+    sqlite.prepare("UPDATE auth_limits SET expires = 0 WHERE key <> ?").run(wrongKey);
+    assert.equal((await login(`wrong-${i}-pass`)).status, 401);
+  }
+  sqlite.prepare("UPDATE auth_limits SET expires = 0 WHERE key <> ?").run(wrongKey);
+  const locked = await login("second-pass-2");
+  assert.equal(locked.status, 429);
+  assert.match(locked.data.error, /Batur’dan kod iste/);
+  sqlite.prepare("UPDATE auth_limits SET expires = 0").run();
+  assert.equal((await login("second-pass-2")).status, 200, "an hour later it opens");
+  // Unknown usernames are answered the same way, after the same hashing work.
+  assert.equal((await call(app, "/login", { method: "POST", body: { username: "nobody_here", password: "whatever-1" } })).status, 401);
+});
+
+test("one person cannot flood the team with board messages or plans (d23)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const me = await call(app, "/groups", { method: "POST", body: { name: "Can", username: "can_d23", password: "flood-pass-1" } });
+  const post = (text) => call(app, "/messages", { method: "POST", headers: { Cookie: me.cookie }, body: { text } });
+  for (let i = 0; i < 20; i++) assert.equal((await post(`not ${i}`)).status, 201);
+  assert.equal((await post("bir tane daha")).status, 429);
+  const plan = (n) => call(app, "/plans", { method: "POST", headers: { Cookie: me.cookie }, body: { starts: Date.now() + (n + 1) * 3600000 } });
+  for (let i = 0; i < 6; i++) assert.equal((await plan(i)).status, 201);
+  assert.equal((await plan(7)).status, 429);
+});
+
+test("timer pushes sign with the address the app is served from (d23)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const pending = [];
+  const visit = (origin) =>
+    app.fetch(new Request(`${origin}/api/health`), { ip: "test", waitUntil: (p) => pending.push(p) });
+  await visit("http://localhost:3001");
+  await Promise.all(pending);
+  assert.equal(sqlite.prepare("SELECT value FROM settings WHERE key = 'origin'").get(), undefined, "plain http is never remembered");
+  await visit("https://kutup.example.dev");
+  await Promise.all(pending);
+  assert.equal(sqlite.prepare("SELECT value FROM settings WHERE key = 'origin'").get().value, "https://kutup.example.dev");
+  await visit("https://kutup.example.dev");
+  assert.equal(pending.length, 1, "written once, not on every request");
+});
+
+test("Hesap ve cihazlar signs the account out of its other devices; this one stays (d27)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const me = await call(app, "/groups", { method: "POST", body: { name: "Ece", username: "ece_d27", password: "devices-pass-1" } });
+  const login = () => call(app, "/login", { method: "POST", body: { username: "ece_d27", password: "devices-pass-1" } });
+  const laptop = await login(), tablet = await login();
+  const invite = sqlite.prepare("SELECT invite FROM groups").get().invite;
+  const friend = await call(app, "/join", { method: "POST", body: { invite, name: "Arda", username: "arda_d27", password: "devices-pass-2" } });
+  const hash = (cookie) => createHash("sha256").update(cookie.split("=")[1]).digest("hex");
+  const subscribe = sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) SELECT ?, member_id, '{}', token FROM sessions WHERE token = ?");
+  subscribe.run("https://fcm.googleapis.com/fcm/send/mine", hash(me.cookie));
+  subscribe.run("https://fcm.googleapis.com/fcm/send/laptop", hash(laptop.cookie));
+  const devices = (cookie) => call(app, "/devices", { headers: { Cookie: cookie } });
+  const session = (cookie) => call(app, "/session", { headers: { Cookie: cookie } });
+
+  assert.deepEqual((await devices(me.cookie)).data, { others: 2 });
+  assert.deepEqual((await devices(friend.cookie)).data, { others: 0 });
+  const out = await call(app, "/devices/signout", { method: "POST", headers: { Cookie: me.cookie }, body: {} });
+  assert.deepEqual(out.data, { ok: true, closed: 2 });
+  assert.equal((await session(laptop.cookie)).status, 401);
+  assert.equal((await session(tablet.cookie)).status, 401);
+  assert.equal((await session(me.cookie)).status, 200, "this device stays signed in");
+  assert.equal((await session(friend.cookie)).status, 200, "teammates are untouched");
+  assert.deepEqual((await devices(me.cookie)).data, { others: 0 });
+  assert.deepEqual(
+    sqlite.prepare("SELECT endpoint FROM subscriptions").all().map((s) => s.endpoint),
+    ["https://fcm.googleapis.com/fcm/send/mine"],
+    "the signed-out devices' notifications stop; this one's stay",
+  );
+  assert.equal((await call(app, "/devices/signout", { method: "POST", body: {} })).status, 401, "needs a session");
+});

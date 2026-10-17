@@ -347,6 +347,14 @@ body.bh-releasing #root {
 .owner-requests {
   padding-bottom: 92px; /* room above the hole in the corner */
 }
+/* With an empty list that room goes under the empty note instead, so the
+   hole never sits on its words (d24). */
+.owner-requests:empty {
+  padding-bottom: 0;
+}
+.owner-requests:empty + .empty {
+  padding-bottom: 110px;
+}
 .icon-button.dev-pick {
   font-size: 16px;
   color: #b9a98b;

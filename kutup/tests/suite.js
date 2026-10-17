@@ -619,8 +619,9 @@ export function defineSuite(target) {
 
   test(`[${target}] a username and password open the same profile anywhere; Batur can reset it`, async () => {
     assert.equal((await request("/account", { cookie: people.alice, body: { username: "Ay lin", password: "gizli123" } })).status, 400);
-    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Aylin", password: "short" } })).status, 400, "a valid password is needed");
-    const set = await request("/account", { cookie: people.alice, body: { username: "Aylin.K", password: "gizli123" } });
+    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Aylin", password: "short", current: "test-pass-123" } })).status, 400, "a valid password is needed");
+    assert.equal((await request("/account", { cookie: people.alice, body: { username: "Aylin.K", password: "gizli123" } })).status, 403, "the current password is needed (d23)");
+    const set = await request("/account", { cookie: people.alice, body: { username: "Aylin.K", password: "gizli123", current: "test-pass-123" } });
     assert.deepEqual(set.data, { ok: true, username: "aylin.k" });
     assert.equal((await request("/session", { cookie: people.alice })).data.username, "aylin.k");
     assert.equal((await request("/account", { cookie: people.bob, body: { username: "AYLIN.K", password: "baska123" } })).status, 409);
