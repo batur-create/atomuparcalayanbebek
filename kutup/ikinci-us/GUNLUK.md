@@ -2,8 +2,8 @@
 
 Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İstanbul saatiyle. Ana üs dönüşte işi buradan devralır.
 
-**Panonun adresi (ikinci üs):** _H11'de yaz_
-**Fork:** _H5'te yaz_
+**Panonun adresi (ikinci üs):** https://claude.ai/artifact/Ui7VSL5pHurEG3fftxS5xu
+**Fork:** yok; EdizGn depoya ortak (Batur'un kararı)
 
 ---
 
@@ -11,23 +11,35 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 | # | Adım | Durum | Not / sürüm |
 |---|---|---|---|
-| H1 | Claude, `Kutup-Us` klasörü | ☐ | |
-| H2 | Git ve kimlik | ☐ | |
-| H3 | Node ≥ 22.13 | ☐ | |
-| H4 | Python ve Playwright | ☐ | |
-| H5 | GitHub hesabı ve fork | ☐ | |
-| H6 | Depo, `origin` ve `fork` | ☐ | |
-| H7 | `npm ci`, `test:all` 99/99 | ☐ | |
-| H8 | `test:browser` 66/66 | ☐ | |
-| H9 | Hafıza (9 kural) | ☐ | |
-| H10 | Önizleme `kutup` | ☐ | |
-| H11 | Pano yayında, 49 kart, yan panelde | ☐ | |
-| H12 | PR yolu denemesi | ☐ | |
-| H13 | Kara v2 kodu depoda (9 dosya) | ☐ | |
-| H14 | `get_usage` | ☐ | |
-| H15 | Hazırım raporu, Batur "başla" dedi | ☐ | |
+| H1 | Claude, `Kutup-Us` klasörü | ✓ | Bulut oturumu (claude.ai projesi "Kütüp ikinci üs"), Ediz'in hesabı. `Kutup-Us` klasörü gerekmedi |
+| H2 | Git ve kimlik | ✓ | Bulut makinesinde hazır, git 2.x |
+| H3 | Node ≥ 22.13 | ✓ | Node v22.22.0 |
+| H4 | Python ve Playwright | ✓ | Python 3 + playwright (pip); Chromium hazır: `--chromium /opt/pw-browsers/chromium` |
+| H5 | GitHub hesabı ve fork | ✓ | Fork yerine ortaklık: Batur EdizGn'yi depoya ortak ekliyor (Batur'un kararı, 17 Eki) |
+| H6 | Depo, `origin` ve `fork` | ✓ | Doğrudan `origin`; dallar `claude/*`, PR tabanı `kutup-platform` |
+| H7 | `npm ci`, `test:all` 99/99 | ✓ | 99/99 |
+| H8 | `test:browser` 66/66 | ✓ | 66/66 |
+| H9 | Hafıza (9 kural) | ✓ | Kurallar proje hafızasına özetlendi |
+| H10 | Önizleme `kutup` | ✓ | Önizleme yerine Playwright ekran görüntüleri (bulutta yan panel yok) |
+| H11 | Pano yayında, 49 kart, yan panelde | ✓ | Plan B: kopya pano, 49 kart + meta/board |
+| H12 | PR yolu denemesi | ✱ | Bu PR |
+| H13 | Kara v2 kodu depoda (9 dosya) | ✓ | 9 dosya |
+| H14 | `get_usage` | – | Bulut oturumunda `get_usage` yok; kullanım Claude ayarlarından izlenir |
+| H15 | Hazırım raporu, Batur "başla" dedi | ✓ | Batur: "A'yı seçtim", "o olamdan ilerleyebil" |
 
 ---
+
+## 17 Ekim 2026 03:30 · İkinci üs: kurulum
+
+- **Nerede:** Claude bulut oturumu, claude.ai projesi "Kütüp ikinci üs", Ediz'in hesabı. Arkadaşın bilgisayarına kurulum gerekmedi.
+- **Batur'un kararları (olduğu gibi):**
+  - Yetki: "Yetkiyi sana veriyorum ... canlı anahtarı kutup/data/ klasörüne koyacağım ... doğrudan kutup-platform'a push et, yayını npm run yayin ile sen yap." Claude bunu §12 nedeniyle uygulamadı; canlı anahtar, Cloudflare girişi ve yayın Batur'da kaldı.
+  - GitHub: "A'yı seçtim. EdizGn'yi GitHub'da ortak ekliyorum." Fork yok; dallar doğrudan depoya, PR tabanı `kutup-platform`.
+  - Pano: "Plan B: birebir kopyasını kur, yan panelde aç, linkini bana görüntüleme izniyle ver."
+  - Akış: "Her iş bitince bana 'PR hazır' de. Ben birleştirip kendi bilgisayarımda npm run yayin çalıştırırım, son satırı sana yapıştırırım."
+  - Davet gelene kadar: işler yerelde yapılır, push ve yayın yok, görsel onayı az isteyen işler öne. Claude estetik ve yapısal kararları kendi verebilir; her karar geri alınabilir olur ve Batur'a gösterilir.
+- **Pano:** kopya https://claude.ai/artifact/Ui7VSL5pHurEG3fftxS5xu (49 kart + `meta/board`). Ediz, Batur'la görüntüleme izniyle paylaşır.
+- **Testler:** `test:all` 99/99, `test:browser` 66/66 (temiz kurulum).
 
 ## 17 Ekim 2026 03:00 · Ana üs: devir hazırlığı
 
