@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 04:30 | PR (ikinci üs, davet bekliyor) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -69,6 +70,20 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n31 · Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir
+Maskot · 17 Eki 2026 · PR (ikinci üs) · göç yok
+
+**Ne yapıldı:** ChatGPT'nin Kara v2 paketindeki `Kara.jsx` ve `kara.css` yerleşti (34 küçük hareket, 77 eklem klibi, 2,5B baş dönüşü, 6 nadir sürpriz, baret/gözlük/kitap/bere/çay bardağı). Gökyüzündeki "ders arası hayat" pulu artık Kara'nın cümlesi: pula dokununca Kara üç cümleden sıradakini söyler (kütüpteysen "kalk, bir bardak çay", moladaysan "çayın soğumasın"). Tarayıcı testine üç kontrol eklendi: sonsuz animasyon yok, 7 dokunuşta yıldız yutma, pul Kara'yı konuşturur.
+**Kararlar ve nedenleri:**
+- Kenar ışığı ve kürk tonları şimdiki Kara'nınki kaldı (`kara.css` başı: `--kara-sheen/shade/pad`, `.k-rim` opaklığı ve çizgi kalınlıkları). v2'de gece halkası çok incelmiş, gündüz hale kaybolmuş, kürk maviye kaymıştı; kart "renkleri aynı kalsın" diyor. Geri almak için bu 8 satırı paketteki değerlere çevirmek yeter.
+- Paketin geri kalanı olduğu gibi alındı; arayüz (`KaraRig`, `KaraHome`, `KaraBuddy`, `ACTS`, `LASTS`) uyumlu, paket tabanı (e10c30a) sonrasında Kara dosyaları değişmemişti.
+- Ölçüm (yavaş telefon, CPU 4×, 375 px, 20 sn, 3 koşunun ortancası, ana sayfa): meşguliyet şimdiki %17,6–21,8, v2 %15,9–20,1; iki sürüm de 60 fps, p95 18–19 ms. Bedel: `kara.css` gzip 4 KB → 40 KB, sitenin CSS'i 46 → 81 KB.
+**Batur'un sözleri:** "Önce /compact yapacağım, sonra Kara v2'ye başla." İkinci üste (17 Eki): "inisiyatif alarak ... kararları sen vererek de bana yapabilirsin. Sadece ... verdiğin kararları ben geldiğim zaman bana göstereceksin ve geri dönülebilir kararlar olacak."
+**Kaynak:** ChatGPT, Kara-v2 paketi (Batur yaptırdı), taban e10c30a; alınanlar `Kara.jsx` ve `kara.css`. Önizleme HTML'i ve ChatGPT ekran görüntüleri alınmadı; görüntüler yerel test verisiyle çekildi.
+**Vazgeçilenler:** v2'nin ince kenar ışığı ve mavimsi kürk tonları.
+**Açık:** Batur görüntüleri ve hareketleri görüp onaylayacak. 120 sn sessizlikte ateş böceği ve çok yönlü okşama gerçek telefonda denenmedi.
+**Dosyalar:** src/Kara.jsx, src/kara.css, src/Home.jsx, tests/browser_smoke.py
 
 ### n25 · Hesaplar arası geçiş: bir cihazda birden fazla hesap
 Hesap · 17 Eki 2026 · 76381788 (bulut oturumu, PR #4) · birleştirme eb4e2ba9 · Worker 812f7ef9 · göç 21

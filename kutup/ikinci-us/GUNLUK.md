@@ -29,6 +29,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 04:30 · n31 Kara v2
+
+- **Dal:** `claude/n31-kara-v2` (kurulum dalının üstünde). PR: davet gelince açılacak.
+- **Durum:** kod ve kayıtlar hazır, testler yeşil (`test:all` 99/99, `test:browser` 69/69). Batur'un görsel onayı bekleniyor.
+- **Karar:** kenar ışığı ve kürk tonları şimdiki Kara'nınki (KARARLAR n31). Batur'a soruldu, önerilen buydu; Batur "kararları sen ver, geri alınabilir olsun" dedi.
+- **Ölçüm:** v2 meşguliyeti şimdikinden düşük ya da eşit (KARARLAR n31). Önizlemeler ve ölçüm dosyaları proje klasöründe: `kutup/onizleme/n31/`.
+- **Pano:** n31 → doing.
+- **ChatGPT:** Kara-v2 paketinden `Kara.jsx` ve `kara.css` alındı; `ikinci-us/gelen/kara-v2/` silindi.
+
 ## 17 Ekim 2026 03:30 · İkinci üs: kurulum
 
 - **Nerede:** Claude bulut oturumu, claude.ai projesi "Kütüp ikinci üs", Ediz'in hesabı. Arkadaşın bilgisayarına kurulum gerekmedi.
