@@ -130,6 +130,26 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     widths.append(page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
                 page.set_viewport_size({'width': 375, 'height': 812})
                 check('Welcome: no horizontal overflow at 375 and 360', all(widths))
+                # d26: iOS fills a transparent corner with black and Android crops the maskable
+                # icon to a circle; both icons are full squares, the mark inside the safe circle.
+                icons = page.evaluate('''async () => {
+                    const pixels = async (src) => { const img = new Image(); img.src = src; await img.decode();
+                        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+                        const g = c.getContext('2d'); g.drawImage(img, 0, 0); return [img.width, g.getImageData(0, 0, img.width, img.height).data]; };
+                    const apple = document.querySelector('link[rel=apple-touch-icon]').getAttribute('href');
+                    const manifest = await (await fetch(document.querySelector('link[rel=manifest]').href)).json();
+                    const [aw, a] = await pixels(apple);
+                    const [mw, m] = await pixels(manifest.icons.find((i) => i.purpose === 'maskable').src);
+                    let outside = 0;
+                    for (let y = 0; y < mw; y += 2) for (let x = 0; x < mw; x += 2) {
+                        if (Math.hypot(x - mw / 2, y - mw / 2) <= mw * 0.4) continue;
+                        const i = (y * mw + x) * 4; if (Math.abs(m[i] - m[0]) + Math.abs(m[i + 1] - m[1]) + Math.abs(m[i + 2] - m[2]) > 24) outside++; }
+                    const corners = (d, w) => [0, w - 1, (w - 1) * w, w * w - 1].every((p) => d[p * 4 + 3] === 255);
+                    return {aw, appleOpaque: corners(a, aw), maskOpaque: corners(m, mw), outside,
+                        badge: (await fetch('/badge-96.png')).ok};
+                }''')
+                check('Home screen icons: 180px opaque square for iPhone, maskable mark inside the safe circle, status-bar badge (d26)',
+                    icons['aw']==180 and icons['appleOpaque'] and icons['maskOpaque'] and icons['outside']==0 and icons['badge'])
                 page.get_by_role('button', name='Giriş yap', exact=True).click()
                 page.keyboard.press('Shift+Tab')
                 check('Modal traps keyboard focus', page.get_by_role('dialog').evaluate('(d)=>d.contains(document.activeElement)'))
