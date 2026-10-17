@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | PR (ikinci üs) |
 | n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | PR (ikinci üs) |
 | n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | PR (ikinci üs) |
 | n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
@@ -84,6 +85,22 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 ## Kayıtlar (yeniden eskiye)
 
+### d28 · Katılma eşiği: arkadaşın oturumuna en az 5 dakika kala
+Birlikte · 17 Eki 2026 · PR (ikinci üs) · göç yok
+
+**Ne yapıldı:** Bir arkadaşın odak oturumuna son bir iki dakikada katılmak bitmiş oturum sayılıyor, günün ilk oturumu bonusunu (+10 🧱) ve nadir plan şansını neredeyse hiç odaklanmadan veriyordu (denetimde E1). Artık bitmesine 5 dakikadan az kalan oturuma katılınmıyor.
+- Sunucu: `/api/focus` `joinMember` ile gelince arkadaşın oturumunun bitmesine en az `JOIN_LEAD` (5 dk, `shared/catalog.js`) kalmış olmalı; yoksa 400, "Bu oturumun bitmesine 5 dakikadan az kaldı. Yeni bir oturum başlat."
+- Uygulama: odak kartındaki arkadaş satırında "Katıl" düğmesi ve "katılırsan imece +%5" yazısı en uzun oturumun 5 dakikadan azı kalınca gizleniyor; davet bildiriminden açılan katılma şeridi de aynı eşikle kayboluyor (önceden 1 dakika).
+- **Testler:** 1 yeni birim testi (6 dakika kala katılır, 4 dakika kala 400 ve mesaj). Tarayıcı kontrolü eklenmedi; görünür değişiklik yalnız düğmenin son 5 dakikada gizlenmesi.
+
+**Kararlar ve nedenleri:**
+- **Eşik 5 dakika:** Batur'un anket cevabı (denetimde önerilen 10 dakikaydı; "Daha esnek: 5 dakikadan az kalana katılınamaz" seçildi).
+- **"Ekibi çağır" bildirimi 10 dakikada kalıyor:** Batur'un seçtiği şıkta böyle yazıyordu; davet yalnız 10 dakika ve üstü oturumda gidiyor, bu değişmedi.
+- Eşik sunucuyla uygulamada tek sabitten (`JOIN_LEAD`) okunuyor; değiştirmek tek satır.
+
+**Batur'un sözleri:** anket kartında "5 dakika" (17 Eki, anket turu başlığı).
+**Geri alma:** `shared/catalog.js`'te `JOIN_LEAD = 60000` eski davranışa en yakın hal (şerit 1 dakikada kayboluyordu, sunucu sınırı yoktu).
+**Dosyalar:** `shared/catalog.js`, `server/app.js`, `src/Together.jsx`, `tests/core.test.js`.
 ### n35 · Anket sonrası dört ekleme
 Anket · 17 Eki 2026 · PR (ikinci üs) · göç 23 (`sessions.device`)
 
