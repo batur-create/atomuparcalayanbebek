@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d26 | Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti | Cila | 17 Eki 05:10 | PR #12 (ikinci üs) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -69,6 +70,24 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d26 · Ana ekran simgesi: iPhone köşeleri, Android dairesi, bildirim rozeti
+Cila · 17 Eki 2026 · PR #12 (ikinci üs) · göç yok
+
+**Ne yapıldı:** Kütüp'ün telefon ana ekranındaki simgesi her gün görülen ilk şey; tasarımı (mor zeminde K ve yeşil nokta) aynı kaldı, telefonların istediği biçimlere getirildi.
+- **iPhone:** `apple-touch-icon` köşeleri saydam, yuvarlak 192 px'lik simgeydi. iOS saydam yeri siyaha boyuyor ve kendi köşesini üstüne kesiyor; köşelerde ince siyah kenarlar kalıyordu. Yeni: 180×180, köşesiz, saydamlıksız `apple-touch-icon.png` (iOS köşeyi kendisi yuvarlıyor).
+- **Android:** "maskable" simge saydam köşeli aynı resimdi; Android onu daireye kesince yeşil nokta kenara dayanıyordu. Yeni `icon-maskable-512.png`: zemin kenardan kenara, K ve nokta güvenli dairenin (çapın %80'i) içinde.
+- **Bildirim rozeti:** Android'de durum çubuğunda Kütüp bildirimi artık genel bir simge yerine beyaz K ile görünüyor (`badge-96.png`, `sw.js`).
+- Simgeler `public/icon.svg`'deki çizimden üretildi (aynı yollar; iPhone için `rx` yok, maskable'da %90 ölçek, rozette yalnız K).
+- **Testler:** 99 birim (değişmedi), 67 tarayıcı (1 yeni: iPhone simgesi 180 px ve köşeleri dolu, maskable işaret güvenli dairede, rozet var; eski dosyalarla kırmızı), tema 252/252.
+
+**Kararlar ve nedenleri:**
+- Simgenin tasarımı değişmedi. Uygulamanın içindeki marka ✳ (kütüp✳), ana ekrandaki K; bu ayrılık Batur'un kararı, raporda öneri olarak duruyor.
+- `icon-192.png`/`icon-512.png` ("any") ve tarayıcı sekmesi simgesi aynen kaldı.
+
+**Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
+**Geri alma:** `index.html`'de `apple-touch-icon` yeniden `/icon-192.png`, manifest'te maskable yeniden `/icon-512.png`, `sw.js`'te `badge` satırı silinir; üç yeni PNG silinir.
+**Dosyalar:** `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/apple-touch-icon.png`, `public/icon-maskable-512.png`, `public/badge-96.png`, `tests/browser_smoke.py`.
 
 ### n25 · Hesaplar arası geçiş: bir cihazda birden fazla hesap
 Hesap · 17 Eki 2026 · 76381788 (bulut oturumu, PR #4) · birleştirme eb4e2ba9 · Worker 812f7ef9 · göç 21

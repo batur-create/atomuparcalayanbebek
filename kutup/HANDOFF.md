@@ -136,6 +136,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 > - Her yayından önce iki dalı birleştir (`git fetch` ve `git merge origin/astra/gorevler`); aksi hâlde birinin işi geri gider.
 > - Göç numaraları sırayla, en son yayınlananın arkasına eklenir.
 
+> **d26 (ikinci üs, 17 Eki):** Ana ekran simgesi değişirse üçü birlikte üretilir: `public/apple-touch-icon.png` (180, köşesiz, saydamlıksız), `public/icon-maskable-512.png` (işaret çapın %80'lik dairesinde), `public/badge-96.png` (beyaz, saydam zemin). `tests/browser_smoke.py` ilk ikisini denetler.
+
 Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler, Kara yön değişikliği) ve ilk paket planı KARARLAR.md arşivine taşındı.
 
 ### ⭐ Güncel devir — 15 Ekim 2026 akşamı (Claude; canlı şema 20) — ÖNCE BUNU OKU
