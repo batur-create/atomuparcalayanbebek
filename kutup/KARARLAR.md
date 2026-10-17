@@ -87,7 +87,7 @@ Cila · 17 Eki 2026 · PR #10 (ikinci üs) · göç yok
 - Zarfı küçültmek ya da taşımak yerine yazı daraltıldı: kartın çizimi aynen kalıyor.
 
 **Batur'un sözleri:** "Şöyle baktığın zaman projenin bütünüyle uyumsuz ya da zayıf duran herhangi bir eleman olabilir."
-**Vazgeçilenler:** V2 (pencere başlığının sonundaki emojinin tek başına alt satıra düşmesi) bu PR'da yok: pencereler n29 PR'ında `Modals.jsx`'e taşınıyor, n29 birleşince yapılacak.
+**Vazgeçilenler:** V2 (pencere başlığının sonundaki emojinin tek başına alt satıra düşmesi) bu PR'da yok; `Modals.jsx`'e (n29) dokunmadan bütün uygulama için d25'te (PR #11) çözüldü.
 **Geri alma:** `src/polish.css` sonundaki "d24" bölümü; `src/styles.css`'te `.feedback-intro p` `padding-right` satırları ve telefondaki `.owner-toolbar`/`.owner-filters` kuralları; `src/blackhole.css`'te `.owner-requests:empty` kuralları; `src/Owner.jsx`'te `stages` kaydırması silinir.
 **Dosyalar:** `src/styles.css`, `src/polish.css`, `src/blackhole.css`, `src/Owner.jsx`, `tests/browser_smoke.py`.
 

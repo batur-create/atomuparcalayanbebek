@@ -33,7 +33,7 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 - **d24 · PR #10** (`claude/d24-gorsel-cila`, taban `kutup-platform` a37f3f0): denetimin V1 (zarf yazıyı kapatıyordu), V3 (Batur paneli telefonda) ve V4 (44 px dokunma alanları) bulguları. Durum: review. Göç yok.
 - Önce/sonra görüntüleri proje klasöründe `kutup/denetim/d24/`.
-- **Bekleyen:** V2 (pencere başlığında tek kalan emoji) n29 birleşince.
+- V2 (pencere başlığında tek kalan emoji) ayrı iş: d25 (PR #11).
 
 ---
 
