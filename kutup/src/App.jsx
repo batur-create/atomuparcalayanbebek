@@ -41,7 +41,8 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { FocusScreen, OwnerPage, VillagePanel, prefetchScreens } from "./later.jsx";
+import { FocusScreen, OwnerPage, VillagePanel, WeekStory, prefetchScreens } from "./later.jsx";
+import { StoryNudge, storyFresh } from "./storyLink.jsx";
 import { CoffeeCard, FocusCard, onComputer, pickedModel } from "./Focus.jsx";
 import { Board } from "./Board.jsx";
 import { CoffeeModal, InviteModal, MemberModal, PlanModal, PresenceModal } from "./Modals.jsx";
@@ -199,6 +200,8 @@ function KutupApp({ initial, restart }) {
   const [buildOutcome, setBuildOutcome] = useState(null);
   const [receipt, setReceipt] = useState(null);
   const [focusScreen, setFocusScreen] = useState(false);
+  // n28: the week's story, opened from the home card, the Ben tab or Sunday's notification.
+  const [story, setStory] = useState(false);
   // An invite notification opens "/?join=<friend>": offer to join their session.
   const [joinAsk, setJoinAsk] = useState(() => (initial ? null : startParams.get("join")));
   // "Hesap ekle": the welcome screen over the open account, which stays signed in.
@@ -319,6 +322,7 @@ function KutupApp({ initial, restart }) {
         prefetchScreens();
         if (initial?.message) notify(initial.message);
         else if (!initial && startParams.get("action") === "here") setModal("presence");
+        if (!initial && startParams.has("story")) setStory(true);
       })
       .catch((e) => {
         if (e.status === 401 && cached) signedOut();
@@ -329,7 +333,7 @@ function KutupApp({ initial, restart }) {
       })
       .finally(() => {
         setLoading(false);
-        if (!initial && (startParams.has("tab") || startParams.has("action") || startParams.has("as")))
+        if (!initial && (startParams.has("tab") || startParams.has("action") || startParams.has("as") || startParams.has("story")))
           history.replaceState({}, "", location.pathname);
       });
     if ("serviceWorker" in navigator)
@@ -1111,6 +1115,7 @@ function KutupApp({ initial, restart }) {
               village={village}
               extras={
                 <>
+                  {session && storyFresh(now) && <StoryNudge open={() => setStory(true)} />}
                   {session && !notificationOn && <SetupCard enable={enableNotifications} busy={notificationWorking} />}
                   {session && !session.username && (
                     <button className="account-nudge" onClick={() => setModal("account")}>
@@ -1191,7 +1196,7 @@ function KutupApp({ initial, restart }) {
             </div>
           )}
           {tab === "me" && (
-            <MePage me={me} group={data.group} size={data.members.length} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} accounts={{ onSwitch: switchAccount, onAdd: addAccount, onSignOut: signOutHere }} />
+            <MePage me={me} group={data.group} size={data.members.length} openStory={() => setStory(true)} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} accounts={{ onSwitch: switchAccount, onAdd: addAccount, onSignOut: signOutHere }} />
           )}
           {tab === "feedback" && (
             <FeedbackPage
@@ -1287,6 +1292,7 @@ function KutupApp({ initial, restart }) {
           mutate={mutate}
         />
       )}
+      {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}
       {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
       <JoinBanner
         friend={data.members.find((x) => x.id === joinAsk)}

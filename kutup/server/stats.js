@@ -118,3 +118,136 @@ export function statsOf({ focus, activity, built, ledger, social, bricks, now })
     social: { messages: social?.messages || 0, plans: social?.plans || 0, joined: social?.joined || 0 },
   };
 }
+
+// ---------- n28: the week's story ----------
+export { weekOf, storyWeek } from "../shared/week.js";
+const WEEK = 7 * DAY;
+const hourOf = (t) => new Date(t + TR).getUTCHours();
+// The person with the most of something; ties go to whoever got there first
+// in `order` (the member list), so the story never flips between reads.
+function topOf(map, order) {
+  let best = null;
+  for (const id of order) {
+    const v = map.get(id) || 0;
+    if (v > 0 && (!best || v > best.value)) best = { id, value: v };
+  }
+  return best;
+}
+/**
+ * The team's week, from raw rows of that week (focus, arrivals, buildings) and
+ * each member's focus days up to its end (for streaks). Pure, so it is tested
+ * without a server. `members` is the current team, in a stable order; rows of
+ * people who left are ignored. Cards with nothing to say are left out.
+ */
+export function storyOf({ start, now, members, focus, previous, arrivals, buildings, days, messages, master, monument, meId }) {
+  const end = start + WEEK,
+    ids = members.map((m) => m.id),
+    inTeam = new Set(ids);
+  const perDay = new Array(7).fill(0),
+    minutes = new Map(),
+    sessions = new Map(),
+    night = new Map(),
+    early = new Map(),
+    myDays = new Map(),
+    myHours = new Array(24).fill(0);
+  let total = 0,
+    count = 0,
+    longest = null;
+  for (const f of focus) {
+    if (!inTeam.has(f.memberId)) continue;
+    const began = f.created - f.minutes * 60000,
+      day = Math.min(6, Math.max(0, Math.floor((f.created - start) / DAY))),
+      hour = hourOf(began);
+    perDay[day] += f.minutes;
+    total += f.minutes;
+    count++;
+    minutes.set(f.memberId, (minutes.get(f.memberId) || 0) + f.minutes);
+    sessions.set(f.memberId, (sessions.get(f.memberId) || 0) + 1);
+    if (hour >= 21 || hour < 4) night.set(f.memberId, (night.get(f.memberId) || 0) + f.minutes);
+    if (hour >= 5 && hour < 9) early.set(f.memberId, (early.get(f.memberId) || 0) + f.minutes);
+    if (!longest || f.minutes > longest.minutes) longest = { id: f.memberId, minutes: f.minutes, at: began };
+    if (f.memberId === meId) {
+      myDays.set(day, (myDays.get(day) || 0) + f.minutes);
+      myHours[hour] += f.minutes;
+    }
+  }
+  // Library days: distinct days each person checked in.
+  const visitDays = new Map(),
+    visits = new Map();
+  for (const a of arrivals) {
+    if (!inTeam.has(a.memberId)) continue;
+    visits.set(a.memberId, (visits.get(a.memberId) || 0) + 1);
+    if (!visitDays.has(a.memberId)) visitDays.set(a.memberId, new Set());
+    visitDays.get(a.memberId).add(dayOf(a.created));
+  }
+  const dayCount = new Map([...visitDays].map(([id, set]) => [id, set.size]));
+  // Streaks as they stood when the week ended (or now, for the week under way).
+  const lastDay = dayOf(Math.min(now, end - 1)),
+    streaks = new Map();
+  for (const id of ids) {
+    const set = new Set((days.get(id) || []).map(dayOf));
+    streaks.set(id, dayStreak(set, lastDay).count);
+  }
+  const built = buildings.filter((b) => inTeam.has(b.memberId)),
+    builders = new Map();
+  for (const b of built) builders.set(b.memberId, (builders.get(b.memberId) || 0) + 1);
+  const liked = built.reduce((best, b) => (b.likes > 0 && (!best || b.likes > best.likes) ? b : best), null);
+
+  const top = topOf(minutes, ids),
+    regular = topOf(dayCount, ids),
+    streak = topOf(streaks, ids),
+    owl = topOf(night, ids),
+    lark = topOf(early, ids),
+    builder = topOf(builders, ids);
+  const crowned = master && inTeam.has(master.memberId) ? { id: master.memberId, minutes: master.minutes } : null;
+  const story = {
+    week: { start, end, complete: now >= end },
+    team: {
+      minutes: total,
+      sessions: count,
+      previous,
+      people: minutes.size,
+      size: ids.length,
+      days: perDay,
+      messages,
+      visits: [...visits.values()].reduce((t, v) => t + v, 0),
+    },
+    master: crowned || (top && { id: top.id, minutes: top.value }),
+    crowned: !!crowned,
+    regular: regular && {
+      id: regular.id,
+      days: regular.value,
+      visits: visits.get(regular.id) || 0,
+      on: [...visitDays.get(regular.id)].map((d) => d - dayOf(start)).sort((a, b) => a - b),
+    },
+    streak: streak && streak.value >= 2 ? { id: streak.id, days: streak.value } : null,
+    owl: owl && owl.value >= 30 ? { id: owl.id, minutes: owl.value } : null,
+    lark: lark && lark.value >= 30 ? { id: lark.id, minutes: lark.value } : null,
+    longest,
+    village: built.length
+      ? { built: built.length, builder: builder && { id: builder.id, n: builder.value }, monument: !!monument, liked: liked && { id: liked.memberId, model: liked.model, likes: liked.likes } }
+      : monument
+        ? { built: 0, builder: null, monument: true, liked: null }
+        : null,
+    me: null,
+  };
+  if (meId && inTeam.has(meId)) {
+    const mine = minutes.get(meId) || 0;
+    const best = [...myDays].sort((a, b) => b[1] - a[1])[0];
+    const ranked = ids.filter((id) => (minutes.get(id) || 0) > mine).length;
+    story.me = {
+      minutes: mine,
+      sessions: sessions.get(meId) || 0,
+      days: myDays.size,
+      on: [...myDays.keys()].sort((a, b) => a - b),
+      visits: dayCount.get(meId) || 0,
+      streak: streaks.get(meId) || 0,
+      built: builders.get(meId) || 0,
+      bestDay: best ? { day: best[0], minutes: best[1] } : null,
+      peakHour: mine ? myHours.indexOf(Math.max(...myHours)) : null,
+      share: total ? Math.round((mine / total) * 100) : 0,
+      rank: mine ? ranked + 1 : null,
+    };
+  }
+  return story;
+}

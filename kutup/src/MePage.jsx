@@ -2,7 +2,7 @@
 // a menu. Profile, look and stats; inviting a friend and writing to Batur; account.
 import React, { useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
+import { BookOpen, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
@@ -29,7 +29,7 @@ function Row({ icon: Icon, title, sub, onClick, href, danger, count, open }) {
   );
 }
 
-export function MePage({ me, group, size, requests, setModal, navigate, leave, accounts: actions }) {
+export function MePage({ me, group, size, requests, setModal, navigate, leave, openStory, accounts: actions }) {
   const [stats, setStats] = useState(false);
   // n25: with more than one account on this device, they come first.
   const accounts = useAccounts(me?.id);
@@ -96,6 +96,7 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave, a
       <div className="me-label">EKİP</div>
       <Reveal className="me-rows" delay={0.05}>
         <Row icon={Users} title={group?.name || "Ekibimiz"} sub={`${size} kişi · kim nerede, haftanın odağı`} onClick={() => setModal("team")} />
+        <Row icon={BookOpen} title="Haftanın hikâyesi" sub="Ekibin haftası kart kart; paylaşmalık kartın" onClick={openStory} />
         <Row icon={UserRoundPlus} title="Arkadaşını ekibe ekle" sub="Davet bağlantısını paylaş" onClick={() => setModal("invite")} />
         <Row icon={Send} title="Batur’a ilet" sub={requests ? `${requests} yeni gelişme var` : "Fikir, hata ya da iki çift laf"} count={requests} onClick={() => navigate("feedback")} />
       </Reveal>

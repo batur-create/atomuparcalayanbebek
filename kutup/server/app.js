@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
-import { dayStreak, statsOf } from "./stats.js";
+import { dayStreak, statsOf, storyOf, storyWeek } from "./stats.js";
 import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
@@ -1697,6 +1697,51 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json(statsOf({ focus, activity, built, ledger, social: social[0], bricks: target.bricks, now: Date.now() }));
   });
 
+  // n28: the week's story for the team, and a card only the asker sees. Any of
+  // the last eight weeks can be asked for; the default is storyWeek().
+  route("GET", "/story", async ({ member: m, url }) => {
+    const now = Date.now(),
+      latest = storyWeek(now),
+      asked = url.searchParams.get("week");
+    const start = asked === null ? latest : Number(asked);
+    if (!Number.isInteger(start) || start > latest || start < latest - 8 * 7 * DAY || (latest - start) % (7 * DAY))
+      fail("Bu haftanın hikâyesi yok.", 404);
+    const end = start + 7 * DAY,
+      g = m.group_id;
+    const [members, focus, previous, arrivals, buildings, history, messages, weekly] = await db.read([
+      ["SELECT id FROM members WHERE group_id = ? ORDER BY joined, id", [g]],
+      ["SELECT f.member_id AS memberId, f.minutes, f.created FROM focus_log f JOIN members m ON m.id = f.member_id WHERE m.group_id = ? AND f.created >= ? AND f.created < ? ORDER BY f.created", [g, start, end]],
+      ["SELECT COALESCE(SUM(f.minutes), 0) AS minutes FROM focus_log f JOIN members m ON m.id = f.member_id WHERE m.group_id = ? AND f.created >= ? AND f.created < ?", [g, start - 7 * DAY, start]],
+      ["SELECT a.member_id AS memberId, a.created FROM activity a JOIN members m ON m.id = a.member_id WHERE m.group_id = ? AND a.kind = 'arrive' AND a.created >= ? AND a.created < ?", [g, start, end]],
+      ["SELECT member_id AS memberId, COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, likes FROM buildings WHERE group_id = ? AND created >= ? AND created < ?", [g, start, end]],
+      // Enough history for any streak a week can end on.
+      ["SELECT f.member_id AS memberId, f.created FROM focus_log f JOIN members m ON m.id = f.member_id WHERE m.group_id = ? AND f.created >= ? AND f.created < ?", [g, end - 120 * DAY, end]],
+      ["SELECT count(*) AS n FROM messages WHERE group_id = ? AND kind <> 'system' AND created >= ? AND created < ?", [g, start, end]],
+      ["SELECT kind, member_id AS memberId, minutes FROM weekly WHERE group_id = ? AND week = ?", [g, start]],
+    ]);
+    const days = new Map();
+    for (const h of history) {
+      if (!days.has(h.memberId)) days.set(h.memberId, []);
+      days.get(h.memberId).push(h.created);
+    }
+    return json(
+      storyOf({
+        start,
+        now,
+        members,
+        focus,
+        previous: previous[0]?.minutes || 0,
+        arrivals,
+        buildings,
+        days,
+        messages: messages[0]?.n || 0,
+        master: weekly.find((w) => w.kind === "master" && w.memberId) || null,
+        monument: weekly.some((w) => w.kind === "monument"),
+        meId: m.id,
+      }),
+    );
+  });
+
   route("POST", "/push", async ({ request, member, body, ctx }) => {
     const clean = validSubscription(body.subscription);
     const subscription = JSON.stringify(clean);
@@ -2321,6 +2366,33 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         ? { title: "☕ Ortak mola!", body: `${r.rest} dakika: kahve, su, biraz hava. İnşaatlar bekliyor.` }
         : { title: "📚 Yeni tur başladı", body: `${r.work} dakika birlikte. Masaya dönüyoruz.` };
       await deliver({ origin: config.publicOrigin || "https://kutup.app", waitUntil }, subs, { tag: `rhythm-${g.id}`, url: "/", ...message }, "subscriptions", { urgency: "high", ttl: 600 });
+    }
+    // n28: Sunday 18:00, the week's story is ready. Each team that focused this
+    // week hears it once (the weekly 'story' row is the guard), whoever ticks first.
+    const week = weekStart(now);
+    if (now < week + 6 * DAY + 18 * HOUR) return;
+    const teams = await db.all(
+      `SELECT m.group_id AS id, SUM(f.minutes) AS minutes FROM focus_log f JOIN members m ON m.id = f.member_id
+       WHERE f.created >= ? AND NOT EXISTS (SELECT 1 FROM weekly w WHERE w.group_id = m.group_id AND w.week = ? AND w.kind = 'story')
+       GROUP BY m.group_id`,
+      [week, week],
+    );
+    for (const t of teams) {
+      const won = await db.run("INSERT OR IGNORE INTO weekly (group_id, week, kind, member_id, minutes, created) VALUES (?, ?, 'story', NULL, ?, ?)", [t.id, week, t.minutes, now]);
+      if (!won?.changes) continue;
+      const subs = await db.all(
+        `SELECT ${pushColumns} FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id
+         JOIN sessions a ON a.token = s.session_token AND a.member_id = m.id WHERE m.group_id = ? AND a.created > ?`,
+        [t.id, now - SESSION_AGE],
+      );
+      const hours = Math.round((t.minutes / 60) * 10) / 10;
+      await deliver(
+        { origin: config.publicOrigin || "https://kutup.app", waitUntil },
+        subs,
+        { tag: `story-${t.id}-${week}`, url: "/?story=1", title: "📖 Haftanın hikâyesi hazır", body: `Ekipçe ${String(hours).replace(".", ",")} saat odak. Kim öne geçti, köyde neler yükseldi? Dokun, birlikte bakalım.` },
+        "subscriptions",
+        { ttl: 12 * 3600 },
+      );
     }
   }
 

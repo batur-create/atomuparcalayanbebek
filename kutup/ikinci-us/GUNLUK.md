@@ -29,6 +29,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 05:06 · n28 Haftanın hikâyesi
+
+- **Dal:** `claude/n28-hikaye` (n24 dalının üstünde).
+- **Durum:** hikâye ekranı, paylaşım kartı, Pazar 18.00 bildirimi hazır. `test:all` 103/103, `test:browser` 72/72.
+- **Önizleme:** `kutup/onizleme/n28/` (kartlar, paylaşım kartları, oynayan kayıt). Batur'un görsel onayı bekleniyor.
+- **Batur'un kararı:** "kararları sen ver, geri alınabilir olsun"; açık sorulara verilen cevaplar KARARLAR n28'de.
+- **Canlı duman testi:** "week's story answers" adımı eklendi.
+- **Pano:** n28 → review.
+
 ## 17 Ekim 2026 04:40 · n24 Ses turu
 
 - **Dal:** `claude/n24-sesler` (n29 dalının üstünde).

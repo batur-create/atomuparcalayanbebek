@@ -1,0 +1,637 @@
+/* ---------- Haftanın hikâyesi (n28) ----------
+   Full-screen story cards over the app. Every colour comes from the theme
+   tokens: the night sky, the studio card, the hero, the paper, the day sky and
+   the member's own colour. Numbers slam in, lines follow one beat each, bars
+   rise, stamps land; all with transform and opacity only. Reduced motion and
+   "Kıpırtısız" keep a plain fade. */
+.week-story {
+  /* dark: scope */
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--studio-deep);
+  color: var(--studio-ink);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  animation: st-open 0.32s var(--ease-out) both;
+}
+html.story-open body {
+  overflow: hidden;
+}
+@keyframes st-open {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.st-top {
+  position: absolute;
+  inset: env(safe-area-inset-top, 0px) 0 auto;
+  z-index: 2;
+  padding: 10px 12px 0;
+  pointer-events: none;
+}
+.st-progress {
+  display: flex;
+  gap: 4px;
+}
+.st-progress span {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--studio-ink) 28%, transparent);
+  overflow: hidden;
+}
+.st-progress span.done {
+  background: var(--studio-ink);
+}
+/* Over a light card the bar takes the card's ink: the paper's, or the night's
+   blue over the day sky (which stays light in dark mode). */
+.week-story.on-paper {
+  --bar-ink: var(--ink);
+  --bar-back: var(--paper);
+}
+.week-story.on-sky {
+  --bar-ink: var(--night-1);
+  --bar-back: var(--sky-2);
+}
+:is(.on-paper, .on-sky) .st-progress span {
+  background: color-mix(in srgb, var(--bar-ink) 18%, transparent);
+}
+:is(.on-paper, .on-sky) .st-progress span.done,
+:is(.on-paper, .on-sky) .st-progress i {
+  background: var(--bar-ink);
+}
+:is(.on-paper, .on-sky) .st-team {
+  color: var(--bar-ink);
+}
+:is(.on-paper, .on-sky) .st-close {
+  background: color-mix(in srgb, var(--bar-back) 70%, transparent);
+  color: var(--bar-ink);
+}
+.st-progress i {
+  display: block;
+  height: 100%;
+  background: var(--studio-ink);
+  transform-origin: left;
+  animation: st-fill linear both;
+}
+/* The bar is the story's clock, not decoration: it keeps its pace even in
+   Kıpırtısız, which otherwise ends every animation at once. */
+.week-story .st-progress i {
+  animation-duration: var(--len) !important;
+  animation-delay: 0s !important;
+}
+@keyframes st-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+.st-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.st-team {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding-left: 4px;
+  color: var(--studio-ink);
+  opacity: 0.85;
+}
+.st-close {
+  pointer-events: auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--studio-deep) 35%, transparent);
+  color: var(--studio-ink);
+}
+.st-stage {
+  position: relative;
+  grid-row: 1 / 3;
+  overflow: hidden;
+  touch-action: none;
+}
+.st-card {
+  --st-ink: var(--studio-ink);
+  --st-soft: var(--studio-soft);
+  --st-mark: var(--pop);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: calc(84px + env(safe-area-inset-top, 0px)) 28px 40px;
+  color: var(--st-ink);
+  overflow: hidden;
+  animation: st-card-in 0.32s var(--ease-out) both;
+}
+@keyframes st-card-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+/* The card colours. */
+.st-night {
+  background: linear-gradient(180deg, var(--night-1), var(--night-2) 70%, var(--night-3));
+}
+.st-studio {
+  background: var(--studio);
+}
+.st-hero {
+  --st-ink: var(--ink);
+  --st-soft: var(--muted);
+  --st-mark: var(--accent);
+  background: var(--hero);
+}
+.st-paper {
+  --st-ink: var(--ink);
+  --st-soft: var(--muted);
+  --st-mark: var(--accent);
+  background: var(--canvas);
+}
+.st-sky {
+  --st-ink: var(--night-1);
+  --st-soft: color-mix(in srgb, var(--night-1) 78%, transparent);
+  --st-mark: var(--night-2);
+  background: linear-gradient(180deg, var(--sky-1), var(--sky-2) 60%, var(--sky-3));
+}
+.st-mine {
+  --st-ink: var(--ink);
+  --st-soft: color-mix(in srgb, var(--ink) 72%, transparent);
+  --st-mark: var(--ink);
+  background: var(--lilac);
+}
+.st-mine.mint { background: var(--mint); }
+.st-mine.peach { background: var(--peach); }
+.st-mine.blue { background: var(--blue); }
+.st-mine.pink { background: var(--pink); }
+.st-mine.lemon { background: var(--lemon); }
+.st-mine.slate { background: var(--slate); }
+.st-mine.sand { background: var(--sand); }
+.st-mine.olive { background: var(--olive); }
+.st-split {
+  padding: 0;
+  gap: 0;
+}
+.st-half {
+  --st-ink: var(--studio-ink);
+  --st-soft: var(--studio-soft);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 28px;
+  color: var(--st-ink);
+}
+.st-half:first-child {
+  padding-top: calc(84px + env(safe-area-inset-top, 0px));
+}
+.st-half.st-day {
+  --st-ink: var(--night-1);
+  --st-soft: color-mix(in srgb, var(--night-1) 78%, transparent);
+  --st-mark: var(--night-2);
+  background: linear-gradient(180deg, var(--sky-1), var(--sky-3));
+}
+.st-wait {
+  align-items: center;
+  font-size: 14px;
+  color: var(--studio-soft);
+}
+
+/* Type. */
+.st-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: var(--st-soft);
+}
+.st-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 8px 1px 0;
+  border-radius: 50%;
+  background: var(--st-mark);
+}
+.st-title {
+  margin: 0;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+  font-size: 35px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.st-lead {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--st-ink);
+}
+.st-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--st-soft);
+}
+.st-big {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+}
+.st-big b {
+  font-size: clamp(88px, 30vw, 132px);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -3px;
+  color: var(--st-mark);
+  font-variant-numeric: tabular-nums;
+}
+.st-studio .st-big b,
+.st-studio .st-record b {
+  color: var(--pop);
+}
+.st-big span {
+  font-size: 27px;
+  font-weight: 700;
+}
+.st-big small {
+  flex-basis: 100%;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--st-soft);
+}
+.st-face {
+  position: relative;
+  width: max-content;
+}
+.st-face.crowned {
+  margin-top: 22px;
+}
+.st-face .avatar {
+  width: 104px;
+  height: 104px;
+  font-size: 60px;
+  border-radius: 30px;
+}
+.st-crown {
+  position: absolute;
+  top: -34px;
+  right: -22px;
+  font-size: 46px;
+  line-height: 1;
+  transform: rotate(16deg);
+}
+
+/* Bars: the week, day by day. */
+.st-bars {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
+  gap: 8px;
+  height: 132px;
+  margin-top: 6px;
+}
+.st-bars span {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+.st-bars i {
+  width: 100%;
+  height: calc(4px + (100% - 24px) * var(--h));
+  border-radius: 6px 6px 3px 3px;
+  background: color-mix(in srgb, var(--studio-ink) 26%, transparent);
+  transform-origin: bottom;
+}
+.st-bars .top i {
+  background: var(--pop);
+}
+.st-bars small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--studio-soft);
+}
+
+/* Stamps: the reader card's days. */
+.st-stamps {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.st-stamps span {
+  position: relative;
+  aspect-ratio: 1;
+  max-width: 100%;
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--border);
+  border-radius: 50%;
+}
+.st-stamps small {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.st-stamps .on {
+  border: 2px solid var(--accent);
+}
+.st-stamps .on small {
+  color: var(--accent-deep);
+}
+.st-stamps b {
+  position: absolute;
+  inset: auto -6px -12px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-align: center;
+  color: var(--accent-deep);
+  transform: rotate(-8deg);
+}
+.st-stamp {
+  align-self: flex-start;
+  display: grid;
+  padding: 10px 16px;
+  border: 3px solid var(--st-mark);
+  border-radius: 12px;
+  color: var(--st-mark);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  transform: rotate(-8deg);
+}
+.st-stamp small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* Records and the personal list. */
+.st-record {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+}
+.st-record b {
+  min-width: 2ch;
+  font-size: 92px;
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+.st-record span {
+  display: grid;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.st-record small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--st-soft);
+}
+.st-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.st-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  font-size: 15px;
+}
+.st-list li span {
+  color: var(--st-soft);
+}
+.st-list li b {
+  text-align: right;
+}
+.st-kara {
+  align-self: flex-end;
+  width: 150px;
+  margin: 8px -6px -24px 0;
+}
+.st-kara .kara {
+  width: 100%;
+  height: auto;
+}
+
+/* The bottom bar. */
+.st-foot {
+  grid-row: 3;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--studio-deep);
+}
+.st-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--studio-soft);
+  font-variant-numeric: tabular-nums;
+}
+.st-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pop);
+  color: var(--pop-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+.st-share:disabled {
+  opacity: 0.7;
+}
+.st-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The beats: in, hit, settle. Each line waits its turn (--i). */
+.st-beat,
+.st-big,
+.st-face,
+.st-record,
+.st-stamp,
+.st-bars i,
+.st-stamps span {
+  animation-fill-mode: both;
+  animation-delay: calc(0.12s + var(--i, 0) * 0.11s);
+}
+.st-beat {
+  animation-name: st-rise;
+  animation-duration: 0.42s;
+  animation-timing-function: var(--ease-out);
+}
+@keyframes st-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.st-big,
+.st-record {
+  animation-name: st-fade;
+  animation-duration: 0.2s;
+}
+.st-slam {
+  display: inline-block;
+  animation: st-slam 0.5s calc(0.12s + var(--i, 1) * 0.11s) cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.st-big .st-slam,
+.st-record .st-slam {
+  animation-delay: inherit;
+}
+@keyframes st-slam {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-4deg);
+  }
+  55% {
+    opacity: 1;
+  }
+}
+@keyframes st-fade {
+  from {
+    opacity: 0;
+  }
+}
+.st-face {
+  animation-name: st-pop;
+  animation-duration: 0.55s;
+  animation-timing-function: var(--ease-spring);
+}
+@keyframes st-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-6deg);
+  }
+}
+.st-crown {
+  animation: st-crown 0.6s 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes st-crown {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-20deg);
+  }
+}
+.st-bars i {
+  animation-name: st-grow;
+  animation-duration: 0.5s;
+  animation-timing-function: var(--ease-spring);
+  animation-delay: calc(0.45s + var(--i) * 0.07s);
+}
+@keyframes st-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+.st-stamps span {
+  animation-name: st-fade;
+  animation-duration: 0.3s;
+  animation-delay: calc(0.4s + var(--i) * 0.06s);
+}
+.st-stamps b {
+  animation: st-stamp-in 0.38s calc(0.55s + var(--i) * 0.09s) cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+.st-stamp {
+  animation-name: st-stamp-in;
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes st-stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(2.4) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(-8deg);
+  }
+}
+.st-stage.paused *,
+.st-stage.paused {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .week-story,
+  .st-card,
+  .st-beat,
+  .st-big,
+  .st-record,
+  .st-slam,
+  .st-face,
+  .st-crown,
+  .st-bars i,
+  .st-stamps span,
+  .st-stamps b,
+  .st-stamp {
+    animation-name: st-fade !important;
+    animation-timing-function: ease !important;
+  }
+  .st-stamps b,
+  .st-stamp {
+    transform: rotate(-8deg);
+  }
+}
+html[data-motion="still"] :is(.week-story, .st-card, .st-beat, .st-big, .st-record, .st-slam, .st-face, .st-crown, .st-bars i, .st-stamps span, .st-stamps b, .st-stamp) {
+  animation-name: st-fade !important;
+  animation-timing-function: ease !important;
+}

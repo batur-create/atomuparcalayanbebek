@@ -24,6 +24,7 @@ export const OwnerPage = later(() => import("./Owner.jsx"), "OwnerPage", <Loadin
 export const FocusScreen = later(() => import("./FocusScreen.jsx"), "FocusScreen");
 export const VillagePanel = later(() => import("./VillageMap.jsx"), "VillagePanel", <Loading text="Köy kuruluyor…" />);
 export const MemberStats = later(() => import("./Stats.jsx"), "MemberStats");
+export const WeekStory = later(() => import("./Story.jsx"), "WeekStory");
 
 /** Fetches every on-demand screen once the first paint is done and the phone is idle. */
 export function prefetchScreens() {

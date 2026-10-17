@@ -1,4 +1,5 @@
-import { dayStreak, statsOf } from "../server/stats.js";
+import { dayStreak, statsOf, storyOf, storyWeek, weekOf } from "../server/stats.js";
+import { pushReceiver } from "./helpers.js";
 import { BY_ID, CATALOG, CATEGORIES, CLASSES, RARE, blueprintPool, fits, imeceBonus, modelOf, refundLater, refundNow, stateOf, streakBonus, unlocked, wageFor } from "../shared/catalog.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -608,4 +609,162 @@ test("Batur's dev badge is one per team, visible in state, and the black hole ba
   assert.equal((await earn("made-up")).status, 400);
   assert.equal((await call(app, "/leave", { method: "POST", headers: { Cookie: friend.cookie }, body: {} })).status, 200);
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM achievements").get().n, 0, "leaving removes badges too");
+});
+
+// ---------- n28: the week's story ----------
+const H = 3600000,
+  D = 24 * H;
+
+test("the week's story is told from Sunday 18:00, and weeks follow Türkiye time (n28)", () => {
+  const monday = Date.parse("2026-10-11T21:00:00Z"); // Monday 12 Oct, 00:00 in Istanbul
+  assert.equal(weekOf(monday), monday);
+  assert.equal(weekOf(monday + 7 * D - 1), monday, "Sunday 23:59 is the same week");
+  assert.equal(weekOf(Date.parse("2026-10-14T10:00:00Z")), weekStart(Date.parse("2026-10-14T10:00:00Z")));
+  assert.equal(storyWeek(monday + 6 * D + 18 * H - 1), monday - 7 * D, "Sunday 17:59: last week's story");
+  assert.equal(storyWeek(monday + 6 * D + 18 * H), monday, "Sunday 18:00: this week's story");
+  assert.equal(storyWeek(monday + 7 * D + H), monday, "Monday: the week that just ended");
+});
+
+test("the week's story: totals, the people who stood out and a card for me (n28)", () => {
+  const start = Date.parse("2026-10-11T21:00:00Z"),
+    at = (day, hour, min = 0) => start + day * D + hour * H + min * 60000; // Istanbul clock
+  const members = [{ id: "ada" }, { id: "bora" }, { id: "cem" }];
+  const focus = [
+    // Ada: three mornings, one long session.
+    { memberId: "ada", minutes: 50, created: at(0, 8, 50) },
+    { memberId: "ada", minutes: 120, created: at(1, 12) },
+    { memberId: "ada", minutes: 40, created: at(2, 8, 40) },
+    // Bora: late nights.
+    { memberId: "bora", minutes: 60, created: at(0, 23) },
+    { memberId: "bora", minutes: 45, created: at(4, 23, 30) },
+    // Someone who left the team is not in the story.
+    { memberId: "gone", minutes: 600, created: at(3, 12) },
+  ];
+  const arrivals = [
+    { memberId: "bora", created: at(0, 9) },
+    { memberId: "bora", created: at(0, 15) },
+    { memberId: "bora", created: at(2, 9) },
+    { memberId: "bora", created: at(3, 9) },
+    { memberId: "ada", created: at(1, 9) },
+    { memberId: "gone", created: at(1, 9) },
+  ];
+  const days = new Map([
+    ["ada", [-2, -1, 0, 1, 2, 3, 4, 5, 6].map((d) => at(d, 12))],
+    ["bora", [at(0, 23), at(4, 23)]],
+  ]);
+  const story = storyOf({
+    start,
+    now: start + 8 * D,
+    members,
+    focus,
+    previous: 200,
+    arrivals,
+    buildings: [
+      { memberId: "ada", model: "kule", likes: 2 },
+      { memberId: "ada", model: "kulube", likes: 0 },
+      { memberId: "bora", model: "sahaf", likes: 3 },
+    ],
+    days,
+    messages: 12,
+    master: null,
+    monument: true,
+    meId: "bora",
+  });
+  assert.equal(story.week.complete, true);
+  assert.equal(story.team.minutes, 315);
+  assert.equal(story.team.sessions, 5);
+  assert.equal(story.team.people, 2);
+  assert.equal(story.team.size, 3);
+  assert.equal(story.team.previous, 200);
+  assert.deepEqual(story.team.days, [110, 120, 40, 0, 45, 0, 0]);
+  assert.equal(story.team.visits, 5);
+  assert.deepEqual(story.master, { id: "ada", minutes: 210 });
+  assert.equal(story.crowned, false);
+  assert.deepEqual(story.regular, { id: "bora", days: 3, visits: 4, on: [0, 2, 3] });
+  assert.deepEqual(story.streak, { id: "ada", days: 9 }, "the streak as it stood when the week ended");
+  assert.deepEqual(story.owl, { id: "bora", minutes: 105 }, "sessions begun after 21:00");
+  assert.deepEqual(story.lark, { id: "ada", minutes: 90 }, "sessions begun between 05:00 and 09:00");
+  assert.equal(story.longest.id, "ada");
+  assert.equal(story.longest.minutes, 120);
+  assert.deepEqual(story.village, { built: 3, builder: { id: "ada", n: 2 }, monument: true, liked: { id: "bora", model: "sahaf", likes: 3 } });
+  assert.deepEqual(story.me, { minutes: 105, sessions: 2, days: 2, on: [0, 4], visits: 3, streak: 1, built: 1, bestDay: { day: 0, minutes: 60 }, peakHour: 22, share: 33, rank: 2 });
+
+  // The crowned Haftanın Ustası wins over a recount; a quiet week leaves cards out.
+  const crowned = storyOf({ start, now: start + 8 * D, members, focus, previous: 0, arrivals, buildings: [], days, messages: 0, master: { memberId: "bora", minutes: 105 }, monument: false, meId: "cem" });
+  assert.deepEqual(crowned.master, { id: "bora", minutes: 105 });
+  assert.equal(crowned.crowned, true);
+  assert.equal(crowned.village, null);
+  assert.equal(crowned.me.minutes, 0);
+  assert.equal(crowned.me.rank, null);
+  const quiet = storyOf({ start, now: start + 3 * D, members, focus: [], previous: 0, arrivals: [], buildings: [], days: new Map(), messages: 0, master: null, monument: false, meId: "ada" });
+  assert.equal(quiet.week.complete, false);
+  assert.equal(quiet.team.minutes, 0);
+  for (const card of ["master", "regular", "streak", "owl", "lark", "longest", "village"]) assert.equal(quiet[card], null, card);
+});
+
+test("the story route answers for the asker's team only, and Sunday 18:00 tells each team once (n28)", async (t) => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "k".repeat(24), pushExtraHosts: "push.kutup.test" } });
+  const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", groupName: "Gece kuşları", username: "ada_story", password: "story-123" } });
+  const invite = (await call(app, "/session", { headers: { Cookie: ada.cookie } })).data.group.invite;
+  const bora = await call(app, "/join", { method: "POST", body: { invite, name: "Bora", username: "bora_story", password: "story-123" } });
+  const other = await call(app, "/groups", { method: "POST", body: { name: "Ece", groupName: "Başka ekip", username: "ece_story", password: "story-123" } });
+  const id = (who) => sqlite.prepare("SELECT id FROM members WHERE name = ?").get(who).id;
+  const week = storyWeek(Date.now()) - 7 * D;
+  const log = sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)");
+  log.run("f1", id("Ada"), 90, week + D + 12 * H);
+  log.run("f2", id("Bora"), 30, week + 2 * D + 12 * H);
+  log.run("f3", id("Ece"), 500, week + 2 * D + 12 * H);
+  log.run("f4", id("Ada"), 25, week - D); // the week before
+
+  const asked = await call(app, `/story?week=${week}`, { headers: { Cookie: bora.cookie } });
+  assert.equal(asked.status, 200);
+  assert.equal(asked.data.team.minutes, 120, "another team's focus is not counted");
+  assert.equal(asked.data.team.previous, 25);
+  assert.equal(asked.data.master.id, id("Ada"));
+  assert.equal(asked.data.me.minutes, 30);
+  assert.equal(asked.data.me.rank, 2);
+  assert.equal((await call(app, "/story", { headers: { Cookie: other.cookie } })).status, 200);
+  assert.equal((await call(app, "/story")).status, 401);
+  for (const bad of [week + 7 * D + 7 * D, week + 1, week - 9 * 7 * D, "abc"])
+    assert.equal((await call(app, `/story?week=${bad}`, { headers: { Cookie: ada.cookie } })).status, 404, String(bad));
+
+  // Sunday 18:00: the story is ready. Bora's phone hears it once; Ece's team did not focus.
+  const receiver = pushReceiver();
+  const session = sqlite.prepare("SELECT token FROM sessions WHERE member_id = ?").get(id("Bora")).token;
+  sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?)").run(
+    "https://push.kutup.test/bora",
+    id("Bora"),
+    JSON.stringify(receiver.subscription("https://push.kutup.test/bora")),
+    session,
+  );
+  const thisWeek = week + 7 * D;
+  log.run("f5", id("Bora"), 45, thisWeek + 2 * D);
+  const sent = [];
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    sent.push({ url, payload: JSON.parse(receiver.decrypt(new Uint8Array(await new Response(init.body).arrayBuffer()))) });
+    return new Response(null, { status: 201 });
+  });
+  const realNow = Date.now;
+  const tick = async () => {
+    const pending = [];
+    await app.tick((p) => pending.push(p));
+    await Promise.all(pending);
+  };
+  try {
+    Date.now = () => thisWeek + 6 * D + 17 * H;
+    await tick();
+    assert.equal(sent.length, 0, "not before Sunday 18:00");
+    Date.now = () => thisWeek + 6 * D + 18 * H + 60000;
+    await tick();
+    await tick();
+  } finally {
+    Date.now = realNow;
+  }
+  const stories = sent.filter((p) => p.payload.title?.includes("Haftanın hikâyesi"));
+  assert.equal(stories.length, 1, "once per team and week");
+  assert.equal(stories[0].url, "https://push.kutup.test/bora");
+  assert.equal(stories[0].payload.url, "/?story=1");
+  assert.match(stories[0].payload.body, /0,8 saat odak/);
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM weekly WHERE kind = 'story'").get().n, 1);
 });
