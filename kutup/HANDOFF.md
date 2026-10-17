@@ -124,6 +124,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 16 Ekim 2026)
 
+> **n31 Kara v2 (ikinci üs, 17 Eki):** Kara artık `kutup:kara-test` olayıyla da denenebilir (`{id:"home", act|egg|blink|wink}`), yalnız test ve önizleme için. Sürprizlerin sayaçları `sessionStorage`'da (`kutup-kara:<grup>:<ad>`). `kara.css` büyük (gzip 40 KB): eklem kliplerini elle düzenleme, değişiklik gerekirse paketteki üretim mantığıyla yeniden üret. Kenar ışığı ve kürk tonları dosyanın başında, bilerek eski değerlerde.
+
 > **İş akışı panosu:**
 > - Adres: https://claude.ai/artifact/Rm7oZuLi3ZjgqTn935kUVX ("Kütüp İş Akışı").
 > - Batur yapılan, yapılmakta olan ve sıradaki işleri buradan izliyor.

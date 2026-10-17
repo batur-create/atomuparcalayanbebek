@@ -356,7 +356,8 @@ function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, int
   const box = useRef(null),
     paused = useSkyPaused(box),
     sky = useSky(now, dark),
-    [wobble, setWobble] = useState(0);
+    [wobble, setWobble] = useState(0),
+    [poke, setPoke] = useState(0);
   const here = data.members.filter((x) => x.status === "here" || x.status === "break"),
     coming = data.members.filter((x) => x.status === "coming"),
     focusing = data.members.filter((x) => x.focusEnd > now).sort((a, b) => a.focusEnd - b.focusEnd),
@@ -382,9 +383,9 @@ function HomeSky({ me, data, arrivals, arrived, unread, navigate, dark, now, int
         <Ticker facts={facts} live={here.length > 0} go={go} />
       </div>
       <div className="sky-over">
-        <KaraHome me={me} data={data} now={now} unread={unread} navigate={navigate} arrived={arrived} style={{ ...at(290, 134), width: span(62) }} />
+        <KaraHome me={me} data={data} now={now} unread={unread} navigate={navigate} arrived={arrived} poke={poke} style={{ ...at(290, 134), width: span(62) }} />
       </div>
-      <button type="button" className={`sky-sticker ${wobble ? "wobble" : ""}`} aria-label="Ders arası hayat" onClick={() => setWobble((n) => n + 1)} onAnimationEnd={() => setWobble(0)} key={wobble ? `w${wobble}` : "still"}>
+      <button type="button" className={`sky-sticker ${wobble ? "wobble" : ""}`} aria-label="Ders arası hayat" onClick={() => { setWobble((n) => n + 1); setPoke((n) => n + 1); }} onAnimationEnd={() => setWobble(0)} key={wobble ? `w${wobble}` : "still"}>
         ders arası
         <b>hayat ✷</b>
       </button>
