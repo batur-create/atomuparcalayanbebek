@@ -551,7 +551,7 @@ function OtherDevices({ username, notify }) {
     </div>
   );
 }
-function AccountBox({ username, notify, onSaved }) {
+function AccountBox({ username, notify, onSaved, onDevices }) {
   const [value, setValue] = useState({ username: username || "", password: "", current: "" }),
     [busy, setBusy] = useState(false),
     [open, setOpen] = useState(!username);
@@ -568,6 +568,15 @@ function AccountBox({ username, notify, onSaved }) {
       setValue({ username: r.username, password: "", current: "" });
       setOpen(false);
       notify("Hesabın hazır. Artık her cihazdan kullanıcı adın ve şifrenle girebilirsin. 🔐");
+      // Anket (17 Eki): a new password asks whether the other devices go too.
+      if (value.password) {
+        const { others } = await get("/devices").catch(() => ({ others: 0 }));
+        if (others && confirm(`Şifren değişti. Hesabın ${others} cihazda daha açık; onlardan da çıkayım mı? Bu cihaz açık kalır.`)) {
+          const out = await api("/devices/signout", {});
+          notify(`Şifren değişti, ${out.closed} cihazdan çıkış yapıldı. 🔐`);
+        }
+        onDevices?.();
+      }
     } catch (error) {
       notify(error.message);
     } finally {
@@ -759,11 +768,12 @@ function LookPick({ id, on, pick }) {
 
 // Ben → Hesap ve cihazlar: username and password, and opening on another device.
 export function AccountModal({ username, onAccount, notify, close }) {
+  const [devices, setDevices] = useState(0);
   return (
     <Modal title="Hesap ve cihazlar" subtitle="Başka bir telefondan girince profilin seni beklesin." close={close}>
-      <AccountBox username={username} notify={notify} onSaved={onAccount} />
+      <AccountBox username={username} notify={notify} onSaved={onAccount} onDevices={() => setDevices((n) => n + 1)} />
       <DeviceTransfer notify={notify} />
-      <OtherDevices username={username} notify={notify} />
+      <OtherDevices key={devices} username={username} notify={notify} />
     </Modal>
   );
 }
