@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n32 | Çalışma eşi: kiminle beraberken en verimlisin, istatistiklerde ve haftanın hikâyesinde | Birlikte | 17 Eki 13:20 | PR (ikinci üs) |
 | n14 | Başarımlar: 16 rozet (3'ü gizli), geçmişten geriye dönük, vitrin, kişi kartında rozetler, kazanma anı | Başarım | 17 Eki 05:35 | PR (ikinci üs) |
 | n30 | Masa haritası: salonların kuşbakışı krokisi, arkadaşlar masalarında, boş sandalyeye dokununca "Geldim" | Kütüphane | 17 Eki 05:25 | PR (ikinci üs) |
 | n28 | Haftanın hikâyesi: dokundukça ilerleyen haftalık özet, paylaşmalık okuyucu kartı, Pazar bildirimi | Birlikte | 17 Eki 05:06 | PR (ikinci üs) |
@@ -75,6 +76,27 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n32 · Çalışma eşi: kiminle beraberken en verimlisin
+Birlikte · 17 Eki 2026 · PR (ikinci üs, #16'dan sonra) · göç yok
+
+**Ne yapıldı:**
+- **Ölçü (`server/stats.js` `partnersOf()`):** arkadaşın bir oturumunun en az yarısında seninle aynı anda odaklandıysa o oturum "beraber" sayılır (İmece kuralıyla aynı). Böyle bir oturumun olduğu gün ikilinin "beraber günü". Verim: beraber günlerde ikisinin o gün toplam odağı, kişi başı günlük ortalama. En iyi ikili bu ortalaması en yüksek olan; eşitlikte aynı anda geçen süre, sonra üye sırası.
+- **İstatistikler (Ben → İstatistiklerim):** "En iyi çalışma eşin" kutusu: yüz, ad, "beraber çalıştığınız N günde günde X odaklandın, diğer günlerinde Y", aynı anda geçen süre ve en az %10 fark varsa sağda "+%Z beraberken" (iki katı aşınca "2,3 kat"). Eş yoksa tek satır: üç ayrı gün aynı anda odaklanınca çıkar.
+- **Haftanın hikâyesi:** müdavim kartından sonra "Haftanın ikilisi" kartı (iki yüz, "&", aynı anda odak süresi, kişi başı günlük odak). "Senin haftan"da "Çalışma eşin · N gün" satırı. Paylaşım kartlarında (ekip ve kişisel) birer satır; satır sınırı 5'ten 6'ya.
+
+**Kararlar ve nedenleri (Batur "sorma, geri alınabilir karar ver" dedi):**
+- **Verim = beraber günlerdeki toplam odak**, oturum uzunluğu değil: oturum süresini kişi baştan seçiyor, günlük toplam gerçekten "beraberken daha çok çalıştı mı" sorusunu cevaplıyor.
+- **Eşik:** istatistikte son 30 günde en az 3 beraber gün, hikâyede o hafta en az 2. Değiştirmek için `server/app.js` `PARTNER_DAYS` / `PARTNER_MIN`, hikâye için `storyOf()` içindeki `min: 2`.
+- **Gizlilik:** istatistiklerdeki eş yalnız sahibine görünür (başkasının istatistiğinde yok, sunucu hiç göndermiyor). Hikâyedeki "Haftanın ikilisi" ekibe açık, Haftanın Ustası gibi; kimsenin "en kötü eşi" ya da eş sıralaması gösterilmiyor.
+- **Eş karşılıklı:** puan ikili için ortak, bu yüzden çoğu zaman iki kişi birbirini görür.
+- **Video yok:** haftalık paylaşım n28'deki gibi görsel kart (PNG); eş bu kartlara eklendi.
+
+**Batur'un sözleri:** "kim kiminle en en iyi çalıştı yani hangi insanlar beraberken en verimli, istatistiklerden herkes eşini görsün ve haftalık videoda da" (17 Ekim).
+**Önizleme:** proje klasöründe `kutup/onizleme/n32/` (istatistik, ikili kartı, senin haftan, paylaşım kartları; açık ve koyu).
+**Geri alma:** istatistik için `src/Stats.jsx` `Partner` satırı ve `/stats/:id` içindeki `if (id === m.id)` bloğu; hikâye için `Story.jsx` `cardsOf()` içindeki `duo` satırı.
+**Açık:** Batur'un görsel onayı.
+**Dosyalar:** server/stats.js, server/app.js, src/Stats.jsx, src/stats.css, src/Story.jsx, src/story.css, tests/core.test.js
 
 ### n14 · Başarımlar: rozet vitrini ve kazanma anı
 Başarım · 17 Eki 2026 · PR (ikinci üs) · göç yok (göç 12'deki `achievements` tablosu kullanılıyor)

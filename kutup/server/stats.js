@@ -200,6 +200,8 @@ export function storyOf({ start, now, members, focus, previous, arrivals, buildi
     lark = topOf(early, ids),
     builder = topOf(builders, ids);
   const crowned = master && inTeam.has(master.memberId) ? { id: master.memberId, minutes: master.minutes } : null;
+  // Haftanın ikilisi: two shared days make a pair in a week.
+  const partners = partnersOf({ focus, ids, min: 2 });
   const story = {
     week: { start, end, complete: now >= end },
     team: {
@@ -224,6 +226,7 @@ export function storyOf({ start, now, members, focus, previous, arrivals, buildi
     owl: owl && owl.value >= 30 ? { id: owl.id, minutes: owl.value } : null,
     lark: lark && lark.value >= 30 ? { id: lark.id, minutes: lark.value } : null,
     longest,
+    duo: partners.duo,
     village: built.length
       ? { built: built.length, builder: builder && { id: builder.id, n: builder.value }, monument: !!monument, liked: liked && { id: liked.memberId, model: liked.model, likes: liked.likes } }
       : monument
@@ -247,7 +250,78 @@ export function storyOf({ start, now, members, focus, previous, arrivals, buildi
       peakHour: mine ? myHours.indexOf(Math.max(...myHours)) : null,
       share: total ? Math.round((mine / total) * 100) : 0,
       rank: mine ? ranked + 1 : null,
+      partner: partners.of(meId),
     };
   }
   return story;
+}
+
+// ---------- Çalışma eşi: who studies best together ----------
+/**
+ * Pairs of the team who focused at the same time, from finished sessions
+ * ({ memberId, minutes, created }). A session counts as "with" a friend when
+ * the friend was focusing for at least half of it (the İmece rule); a day with
+ * such a session is the pair's shared day. How productive a pair is together
+ * is how much each of them focused, all day, on their shared days. A pair needs
+ * `min` shared days to count. `duo` is the team's best pair; `of(id)` is that
+ * person's best partner, with their usual day for comparison.
+ */
+export function partnersOf({ focus, ids, min }) {
+  const inTeam = new Set(ids),
+    spans = new Map(ids.map((id) => [id, []])),
+    daily = new Map(ids.map((id) => [id, new Map()]));
+  for (const f of focus) {
+    if (!inTeam.has(f.memberId) || f.minutes <= 0) continue;
+    spans.get(f.memberId).push([f.created - f.minutes * 60000, f.created]);
+    const d = dayOf(f.created),
+      days = daily.get(f.memberId);
+    days.set(d, (days.get(d) || 0) + f.minutes);
+  }
+  for (const list of spans.values()) list.sort((x, y) => x[0] - y[0]);
+  const pairs = [];
+  ids.forEach((a, i) => {
+    for (const b of ids.slice(i + 1)) {
+      const shared = new Set(),
+        other = spans.get(b);
+      let together = 0,
+        k = 0;
+      // One person's sessions never overlap each other, so both lists are in
+      // order of start and of end: a sweep finds every overlap.
+      for (const [s1, e1] of spans.get(a)) {
+        while (k < other.length && other[k][1] <= s1) k++;
+        for (let n = k; n < other.length && other[n][0] < e1; n++) {
+          const [s2, e2] = other[n],
+            o = Math.min(e1, e2) - Math.max(s1, s2);
+          together += o;
+          if (o * 2 >= e1 - s1) shared.add(dayOf(e1));
+          if (o * 2 >= e2 - s2) shared.add(dayOf(e2));
+        }
+      }
+      if (shared.size < Math.max(1, min)) continue;
+      const on = (id) => [...shared].reduce((t, d) => t + (daily.get(id).get(d) || 0), 0);
+      pairs.push({ ids: [a, b], days: shared, together: Math.round(together / 60000), focus: [on(a), on(b)] });
+    }
+  });
+  // Best first: the most focus per person per shared day, then the most time
+  // side by side; ties keep the member order, so the answer never flips.
+  const score = (p) => (p.focus[0] + p.focus[1]) / (2 * p.days.size);
+  pairs.sort((x, y) => score(y) - score(x) || y.together - x.together);
+  const top = pairs[0];
+  return {
+    duo: top ? { ids: top.ids, days: top.days.size, together: top.together, daily: Math.round(score(top)) } : null,
+    of(id) {
+      const p = pairs.find((x) => x.ids.includes(id));
+      if (!p) return null;
+      const side = p.ids.indexOf(id),
+        rest = [...daily.get(id)].filter(([d]) => !p.days.has(d));
+      return {
+        id: p.ids[1 - side],
+        days: p.days.size,
+        together: p.together,
+        daily: Math.round(p.focus[side] / p.days.size),
+        // The person's other focus days, when there are enough to compare with.
+        usual: rest.length >= 2 ? Math.round(rest.reduce((t, [, m]) => t + m, 0) / rest.length) : null,
+      };
+    },
+  };
 }

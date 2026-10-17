@@ -40,6 +40,7 @@ export function cardsOf(story, members) {
   const cards = ["cover", story.team.minutes ? "hours" : "quiet"];
   if (known(story.master)) cards.push("master");
   if (known(story.regular)) cards.push("regular");
+  if (story.duo?.ids.every((id) => known({ id }))) cards.push("duo");
   if (known(story.owl) || known(story.lark)) cards.push("clock");
   if (known(story.streak) || known(story.longest)) cards.push("records");
   if (story.village) cards.push("village");
@@ -181,6 +182,28 @@ function Card({ kind, story, who, group, me }) {
         </div>
       );
     }
+    case "duo": {
+      const [a, b] = story.duo.ids.map(who);
+      return (
+        <div className="st-card st-studio">
+          <Beat i={0} className="st-eyebrow">HAFTANIN İKİLİSİ</Beat>
+          <div className="st-pair">
+            <Face member={a} i={1} />
+            <span className="st-amp st-beat" style={{ "--i": 2 }} aria-hidden="true">
+              &amp;
+            </span>
+            <Face member={b} i={2} />
+          </div>
+          <Beat i={3} as="h2" className="st-title">
+            {a.name} & {b.name}
+          </Beat>
+          <Big min={story.duo.together} i={4} label="aynı anda odak" />
+          <Beat i={5} className="st-lead">
+            {story.duo.days} gün yan yana çalıştılar. O günlerde kişi başı günde {said(story.duo.daily)} odak: ekibin en verimli ikilisi.
+          </Beat>
+        </div>
+      );
+    }
     case "clock": {
       const owl = story.owl && who(story.owl.id),
         lark = story.lark && who(story.lark.id);
@@ -312,14 +335,22 @@ function Card({ kind, story, who, group, me }) {
                 <b>{hourLabel(mine.peakHour)}</b>
               </Beat>
             )}
-            {mine.streak > 1 && (
+            {mine.partner && who(mine.partner.id) && (
               <Beat as="li" i={6}>
+                <span>Çalışma eşin</span>
+                <b>
+                  {who(mine.partner.id).name} · {mine.partner.days} gün
+                </b>
+              </Beat>
+            )}
+            {mine.streak > 1 && (
+              <Beat as="li" i={7}>
                 <span>Seri</span>
                 <b>{mine.streak} gün</b>
               </Beat>
             )}
           </ul>
-          <Beat i={7} className="st-note">
+          <Beat i={8} className="st-note">
             Ekip odağındaki payın: %{mine.share}.
           </Beat>
         </div>
@@ -452,16 +483,19 @@ export async function readerCard({ story, group, who, me, personal }) {
     rows.push(["Oturum", String(m.sessions)], ["Kütüpte", `${m.visits} gün`]);
     if (m.bestDay) rows.push(["En iyi gün", `${DAY_NAMES[m.bestDay.day]} · ${said(m.bestDay.minutes)}`]);
     if (m.peakHour !== null) rows.push(["En verimli saat", hourLabel(m.peakHour)]);
+    if (m.partner && who(m.partner.id)) rows.push(["Çalışma eşin", `${who(m.partner.id).name} · ${m.partner.days} gün`]);
     if (m.streak > 1) rows.push(["Seri", `${m.streak} gün`]);
   } else {
     const name = (x) => who(x?.id)?.name;
     if (name(story.master)) rows.push(["Haftanın Ustası", `${name(story.master)} · ${said(story.master.minutes)}`]);
+    const duo = story.duo?.ids.map((id) => who(id)?.name);
+    if (duo?.every(Boolean)) rows.push(["Haftanın ikilisi", `${duo.join(" & ")} · ${story.duo.days} gün`]);
     if (name(story.regular)) rows.push(["Kütübün müdavimi", `${name(story.regular)} · ${story.regular.days} gün`]);
     if (name(story.streak)) rows.push(["En uzun seri", `${name(story.streak)} · ${story.streak.days} gün`]);
     if (story.village?.built) rows.push(["Köyde", `${story.village.built} yeni bina${story.village.monument ? " · anıt tamam" : ""}`]);
     rows.push(["Ekip", `${story.team.people} kişi · ${story.team.sessions} oturum`]);
   }
-  for (const [label, value] of rows.slice(0, 5)) {
+  for (const [label, value] of rows.slice(0, 6)) {
     c.strokeStyle = border;
     c.lineWidth = 2;
     c.beginPath();

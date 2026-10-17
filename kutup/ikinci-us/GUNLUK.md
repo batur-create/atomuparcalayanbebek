@@ -29,6 +29,14 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 13:20 · n32 Çalışma eşi
+
+- **Dal:** `claude/n32-calisma-esi` (n14 dalının üstünde; #16'dan sonra birleşir).
+- **İstek (Batur, 17 Eki 13:02):** "kim kiminle en iyi çalıştı ... herkes eşini görsün ve haftalık videoda da".
+- **Durum:** istatistiklerde "En iyi çalışma eşin" kutusu (yalnız sahibine), hikâyede "Haftanın ikilisi" kartı, "Senin haftan"da ve paylaşım kartlarında eş satırı. `test:all` 108/108, `test:browser` 74/74.
+- **Not:** haftalık paylaşım hâlâ görsel kart (PNG), video değil; eş o kartlara eklendi.
+- **Kararlar:** KARARLAR n32. Önizleme `kutup/onizleme/n32/`.
+
 ## 17 Ekim 2026 05:35 · n14 Başarımlar
 
 - **Dal:** `claude/n14-basarimlar` (n30 dalının üstünde).
