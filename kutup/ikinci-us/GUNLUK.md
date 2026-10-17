@@ -29,13 +29,20 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 22:35 · Yayın: n36 inşaat tam şov canlıda
+
+- **Yayın:** `Yayın tamam · 62386ef8 → 825c5561 · Worker b690b171 · canlı duman testi geçti · push: members 7/7 bound, owner 5/5 bound`.
+- **Birleşenler:** #24 (içinde #22 ve #23): n36 1. tur, n36b yapım sistemleri, n36c denetim, metraj, TBDY, yakınlaştırma. Göç yok.
+
+---
+
 ## 17 Ekim 2026 20:15 · n36 inşaat tam şov, 1. tur
 
 - **İnceleme:** `/mnt/project-files/kutup/insaat-inceleme/RAPOR.md`. Batur kademe kartında "Tam şov"u seçti; üç turda yapılıyor.
 - **1. tur** (`claude/n36-insaat-sov`): pil (katmanlı sahne, görünmezken durma), doğru başlık, kulübe/evde mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama. Göç yok.
 - **2. tur** (`claude/n36-insaat-sov-2`, 1. turun üstüne): duvara göre yapım sistemi. Tuğla/taş yığma kagir, ahşap karkas, cam sera çelik karkas; betonarme yalnız krem/adaçayı. Göç yok.
 - **3. tur** (`claude/n36-insaat-sov-3`, ilk iki turun üstüne): yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, panelde yakınlaştırma. Göç yok.
-- **Sıradaki:** Batur PR'ı birleştirip yayınlayınca kayıt. Seçilmeyen fikirler raporda: hızlandırılmış tekrar, arkadaşın şantiyesini izleme.
+- **Sonuç:** 17 Eki 22:35 yayında (`825c5561`). Seçilmeyen fikirler raporda: hızlandırılmış tekrar, arkadaşın şantiyesini izleme.
 
 ---
 
