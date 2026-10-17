@@ -490,16 +490,20 @@ function DeviceTransfer({ notify }) {
   );
 }
 function AccountBox({ username, notify, onSaved }) {
-  const [value, setValue] = useState({ username: username || "", password: "" }),
+  const [value, setValue] = useState({ username: username || "", password: "", current: "" }),
     [busy, setBusy] = useState(false),
     [open, setOpen] = useState(!username);
   const save = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const r = await api("/account", { username: value.username, ...(value.password ? { password: value.password } : {}) });
+      const r = await api("/account", {
+        username: value.username,
+        ...(value.password ? { password: value.password } : {}),
+        ...(username ? { current: value.current } : {}),
+      });
       onSaved(r.username);
-      setValue({ username: r.username, password: "" });
+      setValue({ username: r.username, password: "", current: "" });
       setOpen(false);
       notify("Hesabın hazır. Artık her cihazdan kullanıcı adın ve şifrenle girebilirsin. 🔐");
     } catch (error) {
@@ -544,6 +548,19 @@ function AccountBox({ username, notify, onSaved }) {
             value={value.password}
             onChange={(e) => setValue({ ...value, password: e.target.value })}
           />
+          {/* d23: an account with a password changes only with it. */}
+          {username && (
+            <input
+              required
+              type="password"
+              aria-label="Şu anki şifren"
+              placeholder="şu anki şifren"
+              autoComplete="current-password"
+              maxLength={128}
+              value={value.current}
+              onChange={(e) => setValue({ ...value, current: e.target.value })}
+            />
+          )}
           <Busy loading={busy} className="btn primary" type="submit">
             Kaydet
           </Busy>

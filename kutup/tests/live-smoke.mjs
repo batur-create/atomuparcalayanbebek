@@ -141,6 +141,10 @@ try {
   check("login (case-insensitive username)", login.status === 200 && !!login.token, `status ${login.status}`);
   const A2 = login.token;
   check("first device still signed in", (await call("/session", { cookie: A1 })).status === 200);
+  // d23: changing the account needs the current password.
+  const bare = await call("/account", { cookie: A2, body: { username: userA, password: pass } });
+  const proven = await call("/account", { cookie: A2, body: { username: userA, password: pass, current: pass } });
+  check("account change needs the current password", bare.status === 403 && proven.status === 200, `${bare.status}/${proven.status}`);
 
   // 5. Device transfer code: single use, keeps the first device.
   const code = await call("/transfer", { cookie: A1, body: {} });

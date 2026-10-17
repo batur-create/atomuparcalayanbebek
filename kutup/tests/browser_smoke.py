@@ -168,6 +168,18 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
                 page.locator('.me-page').wait_for()
                 check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
+                # d23: an account that has a password changes only with the current one.
+                page.locator('.home-door', has_text='Hesap ve cihazlar').click()
+                page.locator('.account-box').get_by_role('button', name='Değiştir', exact=True).click()
+                page.get_by_label('Yeni şifre (isteğe bağlı)').fill('audit-password-123')
+                page.get_by_label('Şu anki şifren').fill('not-the-password')
+                page.locator('.account-form button[type=submit]').click()
+                expect(page.locator('.toast', has_text='Şu anki şifren yanlış')).to_be_visible()
+                page.get_by_label('Şu anki şifren').fill('audit-password-123')
+                page.locator('.account-form button[type=submit]').click()
+                expect(page.locator('.account-form')).to_have_count(0)
+                check('Changing the account asks for the current password', page.locator('.account-box', has_text='@audit_ada').count()==1)
+                page.keyboard.press('Escape')
                 # Kara lives on the library roof (n06): asleep while nobody is at the library; a tap wakes it and it says something useful.
                 page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
                 cat = page.locator('.kara-home .kara-button')
