@@ -29,6 +29,21 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 18:54 · Yayın: d28, n34, n35 canlıda
+
+- **Yayın:** `62386ef8`, Worker `bfc56968`, canlı duman testi geçti, push: members 6/6 bound, owner 5/5 bound.
+- **Birleşenler:** n34 plan paylaşma (#19), n35 anket sonrası dört ekleme (#20), d28 katılma eşiği (#21). Göç 22 (`plan_skips`) ve 23 (`sessions.device`) otomatik.
+
+---
+
+## 17 Ekim 2026 16:00 · d28 katılma eşiği
+
+- **d28** (`claude/d28-katilma-esigi`, güncel `kutup-platform` üstünde): arkadaşın oturumuna bitmesine 5 dakikadan az kala katılınmıyor; Katıl düğmesi o zaman gizleniyor. Göç yok.
+- Batur'un anket cevabı "5 dakika" (denetimin önerisi 10'du). "Ekibi çağır" bildirimi yine 10 dakikada kesiliyor.
+- Şifre değişince çıkış ("Sorsun") ve simge ("K kalsın") cevapları anket turu başlığında; bu dalda yok.
+
+---
+
 ## 17 Ekim 2026 13:52 · Yayın: panodaki işler, denetim ve çalışma eşi canlıda
 
 - **Yayın:** `Yayın tamam · 30952c21 → 5b7d4593 · Worker 3de3c058 · canlı duman testi geçti · push: members 6/6 bound, owner 4/4 bound`.

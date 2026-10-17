@@ -9,7 +9,7 @@ import { sqliteAdapter } from "./sqlite.js";
 // Parents before children, so foreign keys hold row by row.
 export const BACKUP_TABLES = [
   "groups", "members", "districts", "buildings", "building_likes", "focus_log",
-  "messages", "reactions", "plans", "attendees", "feedback", "feedback_events",
+  "messages", "reactions", "plans", "attendees", "plan_skips", "feedback", "feedback_events",
   "achievements", "bricks_log", "activity", "unlocks", "weekly",
 ];
 

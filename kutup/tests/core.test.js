@@ -406,6 +406,24 @@ test("late focus settlement appears in village deltas without moving existing bu
   assert.deepEqual(full.buildings.find((b) => b[0] === village.buildings[0][0]).slice(4, 7), village.buildings[0].slice(4, 7));
 });
 
+test("joining a friend's session needs five minutes of it left (d28)", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite) });
+  const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", username: "ada_d28", password: "join-pass-1" } });
+  const invite = sqlite.prepare("SELECT invite FROM groups").get().invite;
+  const join = (name, username) => call(app, "/join", { method: "POST", body: { invite, name, username, password: "join-pass-2" } });
+  const bora = await join("Bora", "bora_d28"), cem = await join("Cem", "cem_d28");
+  const focus = (cookie, body) => call(app, "/focus", { method: "POST", headers: { Cookie: cookie }, body });
+  assert.equal((await focus(ada.cookie, { action: "start", minutes: 25 })).status, 200);
+  const adaId = sqlite.prepare("SELECT id FROM members WHERE username = 'ada_d28'").get().id;
+  sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 6 * 60000, adaId);
+  assert.equal((await focus(bora.cookie, { action: "start", joinMember: adaId })).status, 200, "six minutes left: joins");
+  sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 4 * 60000, adaId);
+  const late = await focus(cem.cookie, { action: "start", joinMember: adaId });
+  assert.equal(late.status, 400, "four minutes left: no bonus for a last-minute join");
+  assert.match(late.data.error, /5 dakikadan az/);
+});
+
 test("parallel joins reclaim distinct plots and cannot duplicate names", async () => {
   const { app, joined, sqlite } = await auditFixture();
   const join = (name, username) => call(app, "/join", { method: "POST", body: { invite: joined.data.group.invite, name, username, password: "test123" } });
@@ -609,6 +627,7 @@ test("Batur's dev badge is one per team, visible in state, and the black hole ba
   const earn = (key) => call(app, "/achievements", { method: "POST", headers: { Cookie: friend.cookie }, body: { key } });
   assert.equal((await earn("black-hole")).data.new, true);
   assert.equal((await earn("black-hole")).data.new, false, "awarded once");
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM messages WHERE kind = 'system' AND text = 'gizli bir rozet buldu 🤫'").get().n, 1, "one secret Pano line");
   assert.equal((await earn("made-up")).status, 400);
   assert.equal((await call(app, "/leave", { method: "POST", headers: { Cookie: friend.cookie }, body: {} })).status, 200);
   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM achievements").get().n, 0, "leaving removes badges too");
@@ -949,12 +968,23 @@ test("the achievements route answers for the team, and keeps what was earned (n1
   assert.equal(marathon.at, now - H, "earned by the session that tipped it over");
   assert.equal(seen.data.list.find((a) => a.key === "hundred").have, 250);
   assert.equal(sqlite.prepare("SELECT created FROM achievements WHERE member_id = ? AND key = 'marathon'").get(ada.data.memberId).created, now - H, "written down");
+  const news = (id) => sqlite.prepare("SELECT text FROM messages WHERE member_id = ? AND kind = 'system' ORDER BY created").all(id).map((m) => m.text).filter((t) => t.includes("rozet"));
+  assert.deepEqual(news(ada.data.memberId), ["“Maraton” rozetini kazandı 🏅"], "a new badge is Pano news");
+  await list(ada, ada.data.memberId);
+  assert.equal(news(ada.data.memberId).length, 1, "announced once");
   sqlite.prepare("DELETE FROM focus_log").run();
   assert.notEqual((await list(ada, ada.data.memberId)).data.list.find((a) => a.key === "marathon").at, null, "kept once earned");
   assert.equal((await list(other, ada.data.memberId)).status, 404, "another team cannot look");
   assert.equal((await call(app, `/achievements/${ada.data.memberId}`)).status, 401);
   await call(app, "/messages", { method: "POST", headers: { Cookie: bora.cookie }, body: { text: "çay" } });
   assert.notEqual((await list(bora, bora.data.memberId)).data.list.find((a) => a.key === "tea").at, null);
+  assert.deepEqual(news(bora.data.memberId), ["gizli bir rozet buldu 🤫"], "a hidden badge keeps its secret");
+
+  // The past counted at once (old sessions, or many badges together) stays quiet.
+  const old = now - 40 * 24 * H;
+  for (let i = 0; i < 5; i++) sqlite.prepare("INSERT INTO focus_log (id, member_id, minutes, created, strict) VALUES (?, ?, ?, ?, 0)").run(`o${i}`, other.data.memberId, 50, old - (4 - i) * 24 * H);
+  await list(other, other.data.memberId);
+  assert.equal(news(other.data.memberId).length, 0, "old badges are not news");
 });
 
 test("changing a username or password needs the current password; wrong ones are counted (d23)", async () => {
@@ -1034,15 +1064,28 @@ test("Hesap ve cihazlar signs the account out of its other devices; this one sta
   const devices = (cookie) => call(app, "/devices", { headers: { Cookie: cookie } });
   const session = (cookie) => call(app, "/session", { headers: { Cookie: cookie } });
 
-  assert.deepEqual((await devices(me.cookie)).data, { others: 2 });
-  assert.deepEqual((await devices(friend.cookie)).data, { others: 0 });
+  const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+  const windows = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36";
+  await call(app, "/session", { headers: { Cookie: laptop.cookie, "User-Agent": windows } });
+  await call(app, "/session", { headers: { Cookie: tablet.cookie, "User-Agent": iphone } });
+  const seen = (await devices(me.cookie)).data;
+  assert.equal(seen.others, 2);
+  assert.deepEqual(seen.list.map((d) => d.name).sort(), ["Windows · Chrome", "iPhone · Safari"], "each device by name (anket)");
+  assert.ok(seen.list.every((d) => /^[0-9a-f]{16}$/.test(d.id) && d.seen > 0));
+  assert.deepEqual((await devices(friend.cookie)).data, { others: 0, list: [] });
+  const iphoneRow = seen.list.find((d) => d.name === "iPhone · Safari");
+  assert.equal((await call(app, "/devices/signout", { method: "POST", headers: { Cookie: friend.cookie }, body: { id: iphoneRow.id } })).status, 404, "not someone else's device");
+  assert.deepEqual((await call(app, "/devices/signout", { method: "POST", headers: { Cookie: me.cookie }, body: { id: iphoneRow.id } })).data, { ok: true, closed: 1 });
+  assert.equal((await session(tablet.cookie)).status, 401, "that one device is signed out");
+  assert.equal((await session(laptop.cookie)).status, 200, "the others stay");
+  const tablet2 = await login();
   const out = await call(app, "/devices/signout", { method: "POST", headers: { Cookie: me.cookie }, body: {} });
   assert.deepEqual(out.data, { ok: true, closed: 2 });
   assert.equal((await session(laptop.cookie)).status, 401);
-  assert.equal((await session(tablet.cookie)).status, 401);
+  assert.equal((await session(tablet2.cookie)).status, 401);
   assert.equal((await session(me.cookie)).status, 200, "this device stays signed in");
   assert.equal((await session(friend.cookie)).status, 200, "teammates are untouched");
-  assert.deepEqual((await devices(me.cookie)).data, { others: 0 });
+  assert.deepEqual((await devices(me.cookie)).data, { others: 0, list: [] });
   assert.deepEqual(
     sqlite.prepare("SELECT endpoint FROM subscriptions").all().map((s) => s.endpoint),
     ["https://fcm.googleapis.com/fcm/send/mine"],
