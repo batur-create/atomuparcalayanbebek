@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| d23 | Hesap güvenliği: şifre değişikliğinde şu anki şifre, deneme ve bildirim sınırları | Güvenlik | 17 Eki 05:00 | PR #8 (ikinci üs) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -69,6 +70,27 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### d23 · Hesap güvenliği: şu anki şifre, deneme ve bildirim sınırları
+Güvenlik · 17 Eki 2026 · PR #8 (ikinci üs) · göç yok
+
+**Ne yapıldı:** 17 Ekim dış denetiminin güvenlik bulguları (rapor proje klasöründe, `kutup/denetim/DENETIM-RAPORU.md`).
+- **G1 (orta):** Şifresi olan hesapta kullanıcı adı ya da şifre yalnız şu anki şifreyle değişiyor ("Hesap ve cihazlar → Değiştir" formunda "Şu anki şifren" alanı). Yanlış deneme dakikada 6. Güncelleme eski şifre özetine bağlı; iki cihazdan aynı anda değiştirmede yalnız biri kazanır.
+- **G2:** Girişte kullanıcı adı başına saatte en fazla 30 yanlış şifre (yalnız yanlışlar sayılır; `auth_limits`, anahtar `wrong:<ad>`). Var olmayan adda da aynı PBKDF2 işi yapılıyor.
+- **G3:** Kişi başı dakikada 20 pano mesajı ve 6 plan (veritabanında, Worker kopyaları arasında ortak).
+- **G4:** Zamanlayıcının gönderdiği masa ritmi bildirimleri, sitenin gerçek `https` adresiyle imzalanıyor (`settings.origin`, adres değişince bir kez yazılır).
+- **Testler:** 102 birim (3 yeni), 67 tarayıcı (1 yeni), canlı duman testinin 4. adımına bir kontrol.
+
+**Kararlar ve nedenleri:**
+- Şifre değişince diğer cihazlar açık kalıyor (eskisi gibi). Kaybolan telefon için Batur'un "tüm cihazlardan çıkış" düğmesi ve kurtarma kodu zaten var; "diğer cihazlardan da çık" seçeneği Batur'a soruldu.
+- Saatlik sınır, birinin bir arkadaşının hesabını bir saat kilitlemesine izin veriyor (30 yanlış deneme). Kabul edildi: hesap sahibi Batur'un koduyla ya da başka cihazdan "Giriş kodu al" ile yine girebilir; sınırsız tahminden daha az zararlı.
+- Mesaj ve plan sınırları normal kullanımın çok üstünde seçildi; amaç yalnız yağmuru durdurmak.
+
+**Batur'un sözleri:** "Sistemdeki açıkları falan varsa bulacaksın ... ondan sonra bu açıklardan düzeltmeye başlayacaksın. Verdiğin kararları yine not ederek."
+**Vazgeçilenler:** `PUBLIC_ORIGIN`'i `wrangler.jsonc`'ye yazmak (yazma isteklerindeki köken kontrolünü de değiştirirdi; ileride özel alan adında yazmaları kırabilirdi).
+**Açık:** E1 (arkadaşın seansına son dakikada katılınca günün ilk seans bonusu) Batur'un kararı; raporda.
+**Geri alma:** `server/app.js`'te `/account` içindeki d23 bloğu, `tooManyWrong`/`countWrong` çağrıları ve `message:`/`plan:` sınırları silinir; `src/Account.jsx`'te "Şu anki şifren" alanı kaldırılır.
+**Dosyalar:** `server/app.js`, `src/Account.jsx`, `tests/core.test.js`, `tests/suite.js`, `tests/browser_smoke.py`, `tests/live-smoke.mjs`.
 
 ### n25 · Hesaplar arası geçiş: bir cihazda birden fazla hesap
 Hesap · 17 Eki 2026 · 76381788 (bulut oturumu, PR #4) · birleştirme eb4e2ba9 · Worker 812f7ef9 · göç 21

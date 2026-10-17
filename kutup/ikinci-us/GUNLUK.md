@@ -29,6 +29,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 17 Ekim 2026 05:00 · Dış denetim ve d23 (PR #8)
+
+- **İstek (Batur, 04:06):** bütün sistemi dışarıdan denetle, açıkları ve geliştirmeleri bul, sonra açıkları düzelt, kararları not et, kredi kalırsa projeyi bir sonraki seviyeye taşıyacak iyileştirmeler yap. Batur uyurken soru sorulmuyor; kararlar geri alınabilir ve not ediliyor.
+- **Rapor:** proje klasöründe `kutup/denetim/DENETIM-RAPORU.md` (karar günlüğü `kutup/denetim/KARAR-GUNLUGU.md`). Kritik ya da yüksek açık yok; 1 orta (G1), 3 düşük (G2–G4), 3 görsel kusur, küçük dokunma alanları.
+- **d23 · PR #8** (`claude/d23-hesap-guvenligi`, taban `kutup-platform` a37f3f0): G1–G4. Durum: review. Göç yok.
+- **Batur'a sorular:** E1 (son dakikada katılma bonusu) ve şifre değişince diğer cihazlardan çıkış.
+
+---
+
 ## 17 Ekim 2026 03:30 · İkinci üs: kurulum
 
 - **Nerede:** Claude bulut oturumu, claude.ai projesi "Kütüp ikinci üs", Ediz'in hesabı. Arkadaşın bilgisayarına kurulum gerekmedi.
