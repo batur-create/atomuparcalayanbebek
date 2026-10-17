@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { m, AnimatePresence } from "motion/react";
 import { ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
 import { Avatar } from "./ui.jsx";
-import { MemberStats } from "./Stats.jsx";
+import { MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
 import { minutesLabel } from "./api.js";
 import { Badge, Reveal } from "./Home.jsx";

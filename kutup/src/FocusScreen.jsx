@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Expand, Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
 import { ConstructionScene } from "./Village.jsx";
+import { enterFullscreen, leaveFullscreen } from "./fullscreen.js";
 import { isIOS, keepScreenOn, releaseScreen, storage } from "./ui.jsx";
 import { DeskMates } from "./Together.jsx";
 import { SoundButton, SoundPanel } from "./Sound.jsx";
@@ -122,19 +123,6 @@ function useZoom() {
     zoomOut: () => zoomAt(1 / 1.4, ...center()),
     reset: () => setView({ s: 1, x: 0, y: 0 }),
   };
-}
-
-/** Asks for full screen; call it from the tap that opens the focus screen. */
-export function enterFullscreen() {
-  const el = document.documentElement;
-  try {
-    if (!document.fullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el, { navigationUI: "hide" })?.catch?.(() => {});
-  } catch {}
-}
-function leaveFullscreen() {
-  try {
-    if (document.fullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document)?.catch?.(() => {});
-  } catch {}
 }
 
 // A desk flip-clock digit: the upper flap falls to show the new number.
