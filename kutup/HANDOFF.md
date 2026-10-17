@@ -136,6 +136,12 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 > - Her yayından önce iki dalı birleştir (`git fetch` ve `git merge origin/astra/gorevler`); aksi hâlde birinin işi geri gider.
 > - Göç numaraları sırayla, en son yayınlananın arkasına eklenir.
 
+> **d23 (ikinci üs, 17 Eki):** `POST /api/account` artık şifresi olan hesapta `current` (şu anki şifre) istiyor; testlerde ve betiklerde hesap değiştirirken `current` gönder. `authLimit(key, max, window)` pencere alıyor; yanlış şifre sayacı `wrong:<kullanıcı adı>` anahtarında, bir saat. Zamanlayıcı bildirimleri `settings.origin`'deki adresi kullanır.
+
+> **d24 (ikinci üs, 17 Eki):** Yeni küçük bir düğme 44 px dokunma alanını `src/polish.css` sonundaki d24 listesinden alır (görünmez `::after` katmanı); kendi `::after`'ı olan öğeyi o listeye ekleme. `tests/browser_smoke.py`'deki `SHORT_REACH` aynı listeyi dört sekmede denetler.
+
+> **d25 (ikinci üs, 17 Eki):** Gövde `text-wrap: pretty`, başlıklar `text-wrap: balance` (`src/styles.css` başı). Bir başlığın sonuna emoji koyarken `&nbsp;` gerekmez; `tests/browser_smoke.py`'deki `LONE_LAST` başlıkları denetler.
+
 > **d26 (ikinci üs, 17 Eki):** Ana ekran simgesi değişirse üçü birlikte üretilir: `public/apple-touch-icon.png` (180, köşesiz, saydamlıksız), `public/icon-maskable-512.png` (işaret çapın %80'lik dairesinde), `public/badge-96.png` (beyaz, saydam zemin). `tests/browser_smoke.py` ilk ikisini denetler.
 
 Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler, Kara yön değişikliği) ve ilk paket planı KARARLAR.md arşivine taşındı.

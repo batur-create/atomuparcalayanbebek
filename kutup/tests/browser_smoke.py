@@ -31,6 +31,19 @@ parser.add_argument('--artifacts', default=str(Path(tempfile.gettempdir()) / 'ku
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 artifacts = Path(args.artifacts); artifacts.mkdir(parents=True, exist_ok=True)
+# d25: headings whose last line is a single word or emoji (h1–h3 are balanced).
+LONE_LAST = r'''(() => [...document.querySelectorAll("h1, h2, h3")].filter((h) => {
+  const r = h.getBoundingClientRect(); if (r.width < 2) return false;
+  const words = [], walk = document.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+  while (walk.nextNode()) for (const m of walk.currentNode.textContent.matchAll(/\S+/g)) {
+    const range = document.createRange(); range.setStart(walk.currentNode, m.index); range.setEnd(walk.currentNode, m.index + m[0].length);
+    const rects = range.getClientRects(), b = rects[rects.length - 1]; if (b) words.push([(b.top + b.bottom) / 2, b.height]);
+  }
+  // A word is on the last line when its middle sits inside that line's height.
+  const [mid, height] = words.reduce((a, w) => (w[0] > a[0] ? w : a), [-1, 0]);
+  const onLast = words.filter(([m]) => Math.abs(m - mid) < height / 2).length;
+  return words.length > 2 && onLast < words.length && onLast === 1;
+}).map((h) => h.innerText.trim().slice(0, 40)))()'''
 results = []
 def check(name, condition):
     assert condition, name
@@ -69,6 +82,24 @@ FAKE_TAPPABLES = r'''(() => {
     if (!has && !(b.type === "submit" && b.form) && !b.disabled && shown(b)) out.add(`idle button: ${String(b.className).split(" ")[0]} «${b.innerText.trim().slice(0, 30)}»`);
   });
   return [...out];
+})()'''
+
+# d24: small controls that got an invisible 44px layer. Returns the ones whose
+# tappable area, walked out from the centre, is under 40px across or down.
+SHORT_REACH = r'''(() => {
+  const SEL = ".icon-button, .text-button, .filter-chip, .toast > button, .rhythm-chips button, .sound-pill, .reaction, .reply-button, .send-button, .coffee-button, .status-route, .village-building-list summary";
+  const out = [];
+  document.querySelectorAll(SEL).forEach((el) => {
+    const s = getComputedStyle(el);
+    if (s.display === "none" || s.visibility === "hidden" || el.closest("[inert], .mobile-hidden")) return;
+    el.scrollIntoView({ block: "center" });
+    const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    if (r.width < 4 || document.elementFromPoint(x, y)?.closest(SEL) !== el) return;
+    const reach = (dx, dy) => { let n = 0; while (n < 30 && document.elementFromPoint(x + dx * (n + 1), y + dy * (n + 1))?.closest(SEL) === el) n++; return n; };
+    if (reach(-1, 0) + reach(1, 0) + 1 < 40 || reach(0, -1) + reach(0, 1) + 1 < 40) out.push(`${String(el.className).split(" ")[0] || el.tagName.toLowerCase()} «${(el.getAttribute("aria-label") || el.innerText || "").trim().slice(0, 24)}» ${Math.round(r.width)}x${Math.round(r.height)}`);
+  });
+  scrollTo(0, 0);
+  return out;
 })()'''
 
 def json_call(page, path, body=None):
@@ -170,6 +201,18 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
                 page.locator('.me-page').wait_for()
                 check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
+                # d23: an account that has a password changes only with the current one.
+                page.locator('.home-door', has_text='Hesap ve cihazlar').click()
+                page.locator('.account-box').get_by_role('button', name='Değiştir', exact=True).click()
+                page.get_by_label('Yeni şifre (isteğe bağlı)').fill('audit-password-123')
+                page.get_by_label('Şu anki şifren').fill('not-the-password')
+                page.locator('.account-form button[type=submit]').click()
+                expect(page.locator('.toast', has_text='Şu anki şifren yanlış')).to_be_visible()
+                page.get_by_label('Şu anki şifren').fill('audit-password-123')
+                page.locator('.account-form button[type=submit]').click()
+                expect(page.locator('.account-form')).to_have_count(0)
+                check('Changing the account asks for the current password', page.locator('.account-box', has_text='@audit_ada').count()==1)
+                page.keyboard.press('Escape')
                 # Kara lives on the library roof (n06): asleep while nobody is at the library; a tap wakes it and it says something useful.
                 page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
                 cat = page.locator('.kara-home .kara-button')
@@ -233,21 +276,37 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 friend.locator('.sheet-page button[type=submit]').click()
                 expect(friend.locator('.app-shell')).to_be_visible()
                 check('Character with accessories is saved', any(m['avatar']=='k:tekir+gozluk+atki' for m in json_call(friend, '/state')['members']))
-                page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
+                lone = []
+                for name in ['Köy','Pano','Ben','Kütüp']:
+                    page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
+                    page.wait_for_timeout(100)
+                    lone += page.evaluate(LONE_LAST)
+                if lone: print('Heading with a lone last word:', lone, flush=True)
+                check('Headings on the four tabs never leave a word or emoji alone on the last line (d25)', not lone)
+                page.get_by_role('button', name='Yoldayım', exact=True).click()
+                expect(page.get_by_role('dialog')).to_be_visible()
+                lone = page.evaluate(LONE_LAST)
+                if lone: print('Heading with a lone last word:', lone, flush=True)
+                check('A window title keeps its emoji next to a word: “Yolun kütübe mi düşüyor? 🛵” (d25)', not lone)
+                page.keyboard.press('Escape')
+                expect(page.get_by_role('dialog')).to_have_count(0)
                 page.get_by_role('button', name='Geldim', exact=True).click()
                 page.locator('[role=dialog] button[type=submit]').click()
                 expect(page.get_by_role('dialog')).to_have_count(0)
                 expect(friend.locator('.member-card').filter(has=friend.get_by_text('Ada',exact=True))).to_contain_text('Kütüpte')
                 check('Presence reaches a second browser through SSE', True)
-                fakes = []
+                fakes, short = [], []
                 for name in ['Kütüp','Köy','Pano','Ben']:
                     page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     check(f'375px: {name} has no horizontal overflow', page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
                     fakes += page.evaluate(FAKE_TAPPABLES)
+                    short += page.evaluate(SHORT_REACH)
                 # n27: anything with a pointer, a hover, an arrow or a button's shape does something.
                 if fakes: print('Looks tappable, does nothing:', fakes, flush=True)
                 check('No fake tappables on the four tabs (pointer, hover, arrow, idle button)', not fakes)
+                if short: print('Too small for a finger:', short, flush=True)
+                check('Small controls on the four tabs: 40px+ to the finger, look unchanged (d24)', not short)
                 page.locator('.page-title').click()
                 expect(page.locator('.home-status')).to_be_visible()
                 page.evaluate('scrollTo(0, 700)'); page.wait_for_timeout(150)
@@ -349,6 +408,11 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     and friend.locator('.team-list li').count()==2)
                 friend.keyboard.press('Escape')
                 page.locator('.home-door', has_text='Batur’a ilet').click()
+                expect(page.locator('.envelope-art')).to_be_visible()
+                check('Batur’a ilet: the envelope sits beside the words, not on them (d24)', page.evaluate('''()=>{
+                    const e=document.querySelector('.envelope-art').getBoundingClientRect(), range=document.createRange();
+                    range.selectNodeContents(document.querySelector('.feedback-intro p'));
+                    return [...range.getClientRects()].every(r=>r.right<=e.left||r.bottom<=e.top||r.top>=e.bottom)}'''))
                 page.locator('.feedback-form textarea').fill('Denetim: Batur paneli ve özel geri bildirim akışı.')
                 page.locator('.feedback-form button[type=submit]').click()
                 expect(page.locator('.feedback-success')).to_be_visible()
@@ -409,6 +473,18 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 owner.goto(base + '/batur')
                 owner.get_by_label('Yönetici anahtarı').fill(key)
                 owner.get_by_role('button',name='Kutuyu aç',exact=True).click()
+                expect(owner.locator('.owner-request')).to_have_count(1)
+                check('Owner desk on a phone: Yenile and the bell share one full row, stages on one sliding line (d24)', owner.evaluate('''()=>{
+                    const box=(q)=>document.querySelector(q).getBoundingClientRect(), bar=box('.owner-toolbar');
+                    const [again, bell]=[...document.querySelectorAll('.owner-toolbar > .btn')].map(b=>b.getBoundingClientRect());
+                    const tops=[...document.querySelectorAll('.owner-filters .filter-chip')].map(c=>Math.round(c.getBoundingClientRect().top));
+                    return again.left===bar.left && again.top===bell.top && Math.abs(bell.right-bar.right)<1
+                        && new Set(tops).size===1 && document.documentElement.scrollWidth<=innerWidth}'''))
+                owner.locator('.owner-filters .filter-chip', has_text='Bitti').click()
+                owner.evaluate('scrollTo(0, document.documentElement.scrollHeight)')
+                check('Owner desk: Kara delik never sits on the empty note (d24)', owner.evaluate('''()=>{
+                    const h=document.querySelector('.owner-hole').getBoundingClientRect(), p=document.querySelector('.owner-page .empty p').getBoundingClientRect();
+                    return p.bottom<=h.top||p.right<=h.left}'''))
                 owner.get_by_role('button',name='Ekipler',exact=False).click()
                 owner.get_by_role('button',name='Ada için giriş kodu üret').click()
                 code = owner.get_by_label('Giriş / şifre sıfırlama kodu').input_value()
