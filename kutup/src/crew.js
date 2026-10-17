@@ -359,7 +359,7 @@ export function crewSVG(P, sp, plan, shown, time) {
     }
     machines.push(dumpTruck(P, truckX, lane, fill), excavator(P, -0.95 + away * 4.5, lane, wrist, { full, dumping, time }));
     crew.push([-w - 0.6, -w - 0.6, 0, "survey"], [w + 0.6, -0.4, 0, "shovel"]);
-  } else if (["lean", "footPour", "colPour", "deckPour"].includes(p.key)) {
+  } else if (["lean", "footPour", "colPour", "tieCol", "deckPour"].includes(p.key)) {
     const pumped = p.key === "footPour" || p.key === "deckPour";
     // Blinding goes straight down an extended chute into the pit.
     const parked = away < 0.02;
@@ -385,7 +385,7 @@ export function crewSVG(P, sp, plan, shown, time) {
     // Backfill: the excavator pushes the spoil heap back round the foundation.
     // It works from the back lane: bucket into the windrow on the right, then
     // along the trench at the back of the foundation.
-    if (p.key === "colRebar" && p.floor === 0 && k < 0.75) {
+    if (p === plan.find((q) => q.floor >= 0) && k < 0.75) {
       const left = Math.sqrt(Math.max(0, 1 - k / 0.75));
       const heap = [3.06, -2.1 + 0.95 * left, 0.1 + 0.3 * left],
         trench = [0.9 + 0.6 * Math.sin(time * 0.37), -w - 0.25, 0.08];
@@ -395,16 +395,24 @@ export function crewSVG(P, sp, plan, shown, time) {
     }
     // Fixers and carpenters on the storey under way.
     const z = 0.3 + p.floor * hf;
-    const tools = { colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"] }[p.key] || ["hammer", "none"];
+    const tools = {
+      colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"],
+      wallLay: ["trowel", "trowel"], studs: ["hammer", "carry"], joists: ["hammer", "carry"],
+      steelCol: ["hammer", "none"], steelBeam: ["hammer", "carry"], brace: ["hammer", "none"], steelDeck: ["hose", "trowel"],
+    }[p.key] || ["hammer", "none"];
     crew.push([-w + 0.6, w - 0.3, p.key === "deckRebar" ? z + hf - 0.14 : z, tools[0]], [w - 0.5, -w + 0.7, z, tools[1]]);
+    // A labourer wheels bricks or stone from the pallets to the masons.
+    if (p.key === "wallLay") extra.push(barrow(P, [blockPallets(sp)[0] + 0.5, strip], [w + 0.5, w + 0.5], 0, time, sp.wall.faces[0]));
   } else if (p.key === "walls") {
     // Masons on the courses; a labourer brings blocks from the pallets.
     crew.push([w + 0.35, w * 0.2, 0, "trowel"], [-w * 0.3, w + 0.35, 0, "trowel"]);
     extra.push(barrow(P, [blockPallets(sp)[0] + 0.5, strip], [w + 0.5, w + 0.5], 0, time, "#e4e2db"));
   } else if (["roofFrame", "roofDeck", "roofTiles"].includes(p.key)) crew.push([0.4, 0.2, top + 0.1, "hammer"], [-0.6, -0.4, top + 0.1, "carry"]);
   else if (p.key === "openings") crew.push([w + 0.7, w * 0.3, 0, "carry"], [-w * 0.3, w + 0.7, 0, "hammer"]);
+  else if (p.key === "finish" && sp.wall.pattern === "panes") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.4 * k, "carry"], [-w * 0.4, w + 0.6, 0.3, "hammer"]);
   else if (p.key === "finish") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45, "roller"], [-w * 0.4, w + 0.6, 1.25, "trowel"]);
   // Insulated render: boards and anchors (a hammer drill), base coat with mesh, paint.
+  else if (p.key === "sheath") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "carry"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "hammer"]);
   else if (p.key === "eps") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "carry"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "hammer"]);
   else if (p.key === "render") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "trowel"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "trowel"]);
   else if (p.key === "paint") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45 * k, "roller"], [-w * 0.4, w + 0.6, 0.3 + sp.h * 0.3 * k, "roller"]);

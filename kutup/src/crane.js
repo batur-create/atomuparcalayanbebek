@@ -3,7 +3,7 @@
 // jib with a trolley, a counter-jib with counterweights, and a hook block that
 // carries what the work under way needs on a four-leg sling.
 import { box, outline, poly, seg } from "./iso.js";
-import { FRAME_END, phaseAt } from "./construction.js";
+import { phaseAt } from "./construction.js";
 import { blockPallets } from "./sitedetail.js";
 
 const YELLOW = ["#f6c945", "#dcae2c", "#c0951f"],
@@ -29,15 +29,26 @@ function loadFor(P, key, sp, x, y, z, roofT, full = true) {
     for (let i = 1; i < 5; i++) s += seg(P(x - 0.45, y + 0.31, z - 0.048 * i), P(x + 0.45, y + 0.31, z - 0.048 * i), "#b98e55", 0.6);
     return { s, at: [[x - 0.4, y - 0.25, z], [x + 0.4, y - 0.25, z], [x + 0.4, y + 0.25, z], [x - 0.4, y + 0.25, z]] };
   }
-  if (["footPour", "colPour", "deckPour"].includes(key)) {
+  if (["footPour", "colPour", "tieCol", "deckPour"].includes(key)) {
     // Concrete skip: a steel bucket with fresh concrete on top and a gate below.
     let s = box(P, x - 0.24, y - 0.24, x + 0.24, y + 0.24, z - 0.55, z, STEEL);
     s += poly([P(x - 0.21, y - 0.21, z + 0.01), P(x + 0.21, y - 0.21, z + 0.01), P(x + 0.21, y + 0.21, z + 0.01), P(x - 0.21, y + 0.21, z + 0.01)], full ? "#8e9298" : "#4a4f55");
     s += box(P, x - 0.08, y - 0.08, x + 0.08, y + 0.08, z - 0.7, z - 0.55, ["#68727c", "#555e67", "#454c54"]);
     return { s, at: [[x - 0.22, y - 0.22, z], [x + 0.22, y - 0.22, z], [x + 0.22, y + 0.22, z], [x - 0.22, y + 0.22, z]] };
   }
-  if (key === "walls") {
-    let s = box(P, x - 0.32, y - 0.27, x + 0.32, y + 0.27, z - 0.58, z - 0.5, PALLET) + box(P, x - 0.29, y - 0.24, x + 0.29, y + 0.24, z - 0.5, z, BLOCK);
+  if (["studs", "joists", "sheath"].includes(key)) {
+    // A bundle of sawn timber (or OSB sheets), slung at two points.
+    let s = box(P, x - 0.7, y - 0.18, x + 0.7, y + 0.18, z - 0.24, z, key === "sheath" ? ["#d6b27a", "#c29d63", "#a7824b"] : ["#efd3a1", "#dab47c", "#c29862"]);
+    for (let i = 1; i < 4; i++) s += seg(P(x - 0.7, y + 0.185, z - 0.06 * i), P(x + 0.7, y + 0.185, z - 0.06 * i), "#b98d58", 0.6);
+    return { s, at: [[x - 0.45, y, z], [x - 0.45, y, z], [x + 0.45, y, z], [x + 0.45, y, z]] };
+  }
+  if (["steelCol", "steelBeam", "brace", "steelDeck"].includes(key)) {
+    // A steel section on a two-leg sling, with a tag line hanging from one end.
+    const s = box(P, x - 0.8, y - 0.06, x + 0.8, y + 0.06, z - 0.14, z, ["#6f7c8a", "#5b6775", "#4a5562"]) + seg(P(x - 0.8, y + 0.065, z - 0.02), P(x + 0.8, y + 0.065, z - 0.02), "#9aa6b2", 0.8) + seg(P(x + 0.8, y, z - 0.14), P(x + 0.85, y, z - 0.6), "#e2d6b8", 0.7);
+    return { s, at: [[x - 0.5, y, z], [x - 0.5, y, z], [x + 0.5, y, z], [x + 0.5, y, z]] };
+  }
+  if (key === "walls" || key === "wallLay") {
+    let s = box(P, x - 0.32, y - 0.27, x + 0.32, y + 0.27, z - 0.58, z - 0.5, PALLET) + box(P, x - 0.29, y - 0.24, x + 0.29, y + 0.24, z - 0.5, z, key === "wallLay" ? sp.wall.faces : BLOCK);
     s += seg(P(x - 0.29, y + 0.25, z - 0.25), P(x + 0.29, y + 0.25, z - 0.25), "#c9c6bd", 0.7) + seg(P(x + 0.3, y - 0.24, z - 0.25), P(x + 0.3, y + 0.24, z - 0.25), "#c9c6bd", 0.7);
     return { s, at: [[x - 0.29, y - 0.24, z], [x + 0.29, y - 0.24, z], [x + 0.29, y + 0.24, z], [x - 0.29, y + 0.24, z]] };
   }
@@ -73,7 +84,7 @@ function hookAndLoad(P, sp, tx, ty, { p, k, hook, carrying, full, cycle }, trave
       for (const pt of load.at) s += seg(P(tx, ty, hook - 0.02), P(...pt), "#3c4146", 0.7);
       s += load.s;
     }
-    if (p.key === "colPour" && cycle >= 0.08 && cycle < 0.18) {
+    if ((p.key === "colPour" || p.key === "tieCol") && cycle >= 0.08 && cycle < 0.18) {
       // Concrete runs from the mixer's chute into the skip.
       const tip = P(-0.25, -sp.hw - 0.98, 0.38),
         into = P(tx, ty, hook - 0.55);
@@ -97,8 +108,8 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
   const edge = sp.hw + 0.2 + (2.9 - (sp.hw + 0.2)) / 2;
   const source = ["lean", "footRebar", "colRebar", "deckRebar"].includes(p.key) ? [-edge, -0.5, 0.45]
     : ["footForm", "colForm", "deckForm"].includes(p.key) ? [-edge, 1.4, 0.5]
-    : p.key === "colPour" ? [-0.3, -sp.hw - 0.95, 0.05] // the skip is filled at the mixer's chute
-    : p.key === "walls" ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
+    : p.key === "colPour" || p.key === "tieCol" ? [-0.3, -sp.hw - 0.95, 0.05] // the skip is filled at the mixer's chute
+    : ["walls", "wallLay", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck"].includes(p.key) ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
     : ["roofFrame", "roofDeck", "roofTiles"].includes(p.key) ? [edge, 0.6, 0.4]
     : null;
   const angleOf = ([x, y]) => Math.atan2(y - my, x - mx);
@@ -145,7 +156,7 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
     }
     // The concrete skip never leaves the hook: filled under the mixer's chute,
     // emptied into the column, brought back empty.
-    if (p.key === "colPour") {
+    if (p.key === "colPour" || p.key === "tieCol") {
       carrying = true;
       full = c >= 0.16 && c < 0.72;
     }
@@ -232,7 +243,10 @@ export function craneSVG(P, sp, plan, time, shown, built, workZ) {
 // A one- or two-storey building gets no tower crane: a truck-mounted
 // telescopic crane comes for the lifting work, sets its outriggers, raises its
 // boom, and leaves again while the pump truck pours (it would be in its way).
-const LIFTS = new Set(["footRebar", "footForm", "colRebar", "colForm", "colPour", "deckForm", "deckRebar", "walls", "roofFrame", "roofDeck", "roofTiles"]);
+const LIFTS = new Set([
+  "footRebar", "footForm", "colRebar", "colForm", "colPour", "deckForm", "deckRebar", "walls", "roofFrame", "roofDeck", "roofTiles",
+  "wallLay", "tieCol", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck",
+]);
 export function liftRuns(plan) {
   const runs = [];
   for (const ph of plan) {

@@ -33,7 +33,8 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 - **İnceleme:** `/mnt/project-files/kutup/insaat-inceleme/RAPOR.md`. Batur kademe kartında "Tam şov"u seçti; üç turda yapılıyor.
 - **1. tur** (`claude/n36-insaat-sov`): pil (katmanlı sahne, görünmezken durma), doğru başlık, kulübe/evde mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama. Göç yok.
-- **Sıradaki:** 2. tur yapıya göre yapım sistemi (ahşap karkas, yığma kagir, çelik + cam); 3. tur yapı denetim, slump, ruhsat tabelası, canlı metraj ve hakediş, TBDY ayrıntıları, yakınlaştırma.
+- **2. tur** (`claude/n36-insaat-sov-2`, 1. turun üstüne): duvara göre yapım sistemi. Tuğla/taş yığma kagir, ahşap karkas, cam sera çelik karkas; betonarme yalnız krem/adaçayı. Göç yok.
+- **Sıradaki:** 3. tur yapı denetim, slump, ruhsat tabelası, canlı metraj ve hakediş, TBDY ayrıntıları, yakınlaştırma.
 
 ---
 

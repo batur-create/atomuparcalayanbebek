@@ -24,6 +24,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
 | n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | PR (claude/n36-insaat-sov) |
+| n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | PR (claude/n36-insaat-sov-2) |
 | d28 | Katılma eşiği: arkadaşın oturumuna katılmak için en az 5 dakika | Birlikte | 17 Eki 16:00 | 62386ef8 (PR #21) |
 | n35 | Anket sonrası dört ekleme: rozet Pano duyurusu, zarf sallanması, cihaz adları, şifre değişince sor | Anket | 17 Eki 16:00 | 62386ef8 (PR #20) |
 | n34 | Plan paylaşma: plan linki WhatsApp grubuna, linkten "Varım" ya da "Gelemem" | Birlikte | 17 Eki 15:50 | 62386ef8 (PR #19) |
@@ -86,6 +87,26 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 ## Kayıtlar (yeniden eskiye)
 
+### n36b · İnşaat tam şov, 2. tur: yapım sistemleri
+Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov-2, 1. turun üstüne) · göç yok
+
+**Ne yapıldı:** Her yapı duvarının söylediği sistemle yapılıyor (`systemOf` in `src/construction.js`). Temel (hafriyat, grobeton, su yalıtımı, radye) hepsinde aynı; katlar ve cephe değişiyor. Taşıyıcı sistemin bittiği an betonarmede 0,55, diğerlerinde 0,68 (betonarmenin dolgu duvarı da o an biter); çatıdan sonrası herkeste aynı zamanda.
+- **Betonarme** (krem, adaçayı: Konak, Kır Kahvesi, Çiçekçi, Yel Değirmeni, Deniz Feneri): değişmedi. Dolgu duvar kalemi "Dolgu duvar: gazbeton bloklar ve lentolar" oldu.
+- **Yığma kagir** (tuğla, taş: Fırın, Köy Postanesi, Kütüphane, Saat Kulesi, Gözlemevi, rastgele tuğla/taş evler): her katta duvar sıra sıra örülür (tuğlada şaşırtmalı derz, taşta iri sıra), lentolar her iki yana 20 cm oturur. Köşe ve duvar birleşimlerinde düşey hatıl donatısı önce dikilir, duvar dişli örülür, sonra kalıp ve beton. Ardından yatay hatıl + döşeme kalıbı, donatısı, betonu (betonarmedeki kod). Hatıllar cephede gri bant olarak görünür; son kalem "Cephe: derz dolgusu, hatıllara tuğla kaplama" (taşta taş).
+- **Ahşap karkas** (ahşap: Bostan Evi, Sahaf, Çay Ocağı): taban kirişi ankrajı, 40 cm aralıklı dikmeler, pencere altı ve üstünde kısa dikmeler, lentolar, çift başlık, köşelerden gömme çaprazlar; döşeme (üst katta tavan) kirişleri ve OSB. Sonra dışa OSB levhalar ve rüzgâr bariyeri, en son ahşap dış kaplama. Betonda pompa ve mikser yalnız temelde.
+- **Çelik + cam** (Cam Sera): ankraj bulonları temel betonundan çıkar, taban plakalı I-kolonlar, çevre kirişleri ve bulonlar, kenar açıklıklarda X çaprazlar; çelik makaslar, alüminyum kayıtlar, temperli cam çatı; cam cephe kapılardan önce takılır.
+- Malzeme yığınları ve vinç yükleri sisteme göre: tuğla/taş paleti, kerestelik, çelik profil; vinç kereste demeti, OSB, I-profil (yönlendirme ipiyle) taşır, düşey hatıla betonu kovayla döker. İskele yığmada duvar baş hizasını geçince, ahşapta karkas çıkınca, çelikte cam için kurulur.
+- **Testler:** `tests/site.test.js` sistemlere göre: her sistemin kendi kalemleri her katta var, ahşapta kaplama kirişlerden sonra, çelikte cam kapıdan önce, betonarme dışında kolon kalemi yok; katalogdaki 8 yapının sistemi beklenen.
+
+**Kararlar ve nedenleri:**
+- Sistem duvardan çıkıyor, katalog değişmedi: tuğla/taş görünen yapının içinde betonarme iskelet + mantolama tutarsızdı.
+- Saat Kulesi ve kule 3 katlı yığma: TBDY 2018 yığma binada kat sayısını deprem tehlikesine göre sınırlar; 3 kat ancak düşük tehlikeli yerlerde olur. Oyunda bırakıldı, raporda not.
+- Tüm sistemlerde radye temel: yığma ve ahşapta sürekli temel de olur, ama ortak temel kodu ve süre dengesi için tek tip kaldı.
+- Cephe bitince (0,93) iç taşıyıcı çizilmiyor: görünmüyor, sahneyi hafifletiyor (Fırın'da 720 şekil gidiyor).
+
+**Geri alma:** dalı geri al; göç yok, veri değişmedi.
+**Dosyalar:** `src/construction.js`, `src/Village.jsx`, `src/crane.js`, `src/crew.js`, `src/sitedetail.js`, `tests/site.test.js`.
+
 ### n36 · İnşaat tam şov, 1. tur
 Şantiye · 17 Eki 2026 · PR (claude/n36-insaat-sov) · göç yok
 
@@ -102,7 +123,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 **Kararlar ve nedenleri:**
 - Mobil vinç pompalı dökümde gidiyor: gerçekte pompa ile vinç aynı şeritte çalışmaz, kiralık vinç işi bitince gider.
 - Kiriş derinliği 0,3 birim, kolonlar kiriş altına kadar: kolon-kiriş birleşimi kirişle beraber dökülür.
-- Mantolama yalnız boyalı cephelerde: tuğla ve taş gibi görünen yapıların doğru yapım sistemi 2. turun işi.
+- Mantolama yalnız boyalı cephelerde: tuğla ve taş gibi görünen yapıların doğru yapım sistemi 2. turun işi (n36b).
 - Ölçüm aracı: `/mnt/project-files/kutup/araclar/site_measure.py`.
 
 **Batur'un sözleri:** "aga inşaat işini animasyon ve sistem komple ele alırsak geliştirilecek yerler var mı" · "ben sonuçta ODTÜ'de inşaat mühendisliği okuyom ... sınırları zorlayalım, daha ne kadar accurate oluruz" · kademe kartında "Tam şov".

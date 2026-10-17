@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { beamsOf, sitePlan, siteSVG, workHeight } from '../src/construction.js';
+import { beamsOf, sitePlan, siteSVG, systemOf, workHeight } from '../src/construction.js';
 import { crewSVG } from '../src/crew.js';
 import { craneSVG, liftRuns, mobileCraneSVG } from '../src/crane.js';
 import { projector, spec } from '../src/iso.js';
@@ -19,11 +19,31 @@ test('the site plan covers the whole session in order, with beams, waterproofing
     plan.slice(1).forEach((p, i) => assert.ok(Math.abs(p.a - plan[i].b) < 1e-9, `${model}: ${p.key} starts where ${plan[i].key} ends`));
     const keys = plan.map((p) => p.key);
     assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
-    assert.equal(keys.filter((k) => k === 'deckPour').length, sp.floors);
-    assert.ok(plan.some((p) => /kiriş ve döşeme betonu/.test(p.label)));
     assert.deepEqual(keys.filter((k) => k.startsWith('roof')), ['roofFrame', 'roofDeck', 'roofTiles']);
-    if (sp.wall.pattern === 'trim') assert.deepEqual(keys.filter((k) => ['eps', 'render', 'paint'].includes(k)), ['eps', 'render', 'paint']);
+    const count = (key) => keys.filter((k) => k === key).length;
+    const sys = systemOf(sp);
+    if (sys === 'rc') {
+      assert.equal(count('deckPour'), sp.floors);
+      assert.ok(plan.some((p) => /kiriş ve döşeme betonu/.test(p.label)));
+      assert.deepEqual(keys.filter((k) => ['eps', 'render', 'paint'].includes(k)), ['eps', 'render', 'paint']);
+    } else assert.ok(!keys.includes('walls') && !keys.includes('eps'), `${model}: no infill or render on a ${sys} building`);
+    if (sys === 'masonry') {
+      for (const key of ['wallLay', 'tieCol', 'deckPour']) assert.equal(count(key), sp.floors, `${model}: ${key} every storey`);
+      assert.ok(plan.some((p) => /hatıl ve döşeme betonu/.test(p.label)));
+    }
+    if (sys === 'timber') assert.ok(count('studs') === sp.floors && count('joists') === sp.floors && keys.indexOf('sheath') > keys.lastIndexOf('joists'));
+    if (sys === 'steel') {
+      assert.ok(['steelCol', 'steelBeam', 'brace'].every((key) => count(key) === sp.floors));
+      // Glass goes on before the door is hung.
+      assert.ok(keys.indexOf('finish') < keys.indexOf('openings'));
+    }
+    assert.ok(!keys.some((k) => ['colRebar', 'colForm', 'colPour'].includes(k)) === (sys !== 'rc'));
   }
+});
+
+test('each building is built the way its walls say', () => {
+  const sys = (id) => systemOf(spec(CATALOG.find((c) => c.id === id).kind, 1, id));
+  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel']);
 });
 
 test('a wider plan gets beams across the middle too', () => {
@@ -32,7 +52,7 @@ test('a wider plan gets beams across the middle too', () => {
 });
 
 test('the mobile crane leaves for every pump pour and is there for the lifting', () => {
-  const sp = spec('house', 3, 'ev');
+  const sp = spec('house', 3, 'konak');
   const plan = sitePlan(sp);
   const runs = liftRuns(plan);
   for (const p of plan.filter((p) => p.key === 'footPour' || p.key === 'deckPour'))

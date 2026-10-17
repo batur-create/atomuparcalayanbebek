@@ -11,7 +11,7 @@ import {
   poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG, openingList, faceX, faceY,
   porticoSVG, sailsSVG, wallFittingsSVG, yardFittingsSVG,
 } from "./iso.js";
-import { FRAME_END, phaseAt, rendered, sitePlan, siteSVG, workHeight } from "./construction.js";
+import { FRAME_END, phaseAt, rendered, sitePlan, siteSVG, systemOf, workHeight } from "./construction.js";
 import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
@@ -51,7 +51,8 @@ function scaffoldSVG(P, sp, built = 1) {
 }
 // Infill walls are laid in aerated-concrete blocks, course by course; the
 // course being laid creeps along the two visible faces.
-const OSB = ["#d6b27a", "#c29d63", "#a7824b"],
+const ALU = ["#c9ced3", "#b3b9bf", "#dde1e4"],
+  OSB = ["#d6b27a", "#c29d63", "#a7824b"],
   UNDERLAY = ["#5b6b7d", "#4a5868", "#7d8b9a"];
 const BLOCK = { faces: ["#ecebe6", "#d9d7cf", "#c4c1b8"], grain: "#c9c6bd", pattern: "blocks" };
 function masonrySVG(P, sp, t) {
@@ -77,16 +78,6 @@ function masonrySVG(P, sp, t) {
   }
   return s;
 }
-// Render and paint go up the scaffold from the ground: only the two visible
-// faces sweep upward, then the finished wall (trim, floor bands) takes over.
-function facadeSVG(P, sp, t) {
-  if (t >= 1) return wallsSVG(P, sp, 1);
-  const w = sp.hw,
-    z1 = 0.3 + sp.h * t,
-    [, left, right] = sp.wall.faces;
-  return poly([P(-w, w, 0.3), P(w, w, 0.3), P(w, w, z1), P(-w, w, z1)], left) + poly([P(w, -w, 0.3), P(w, w, 0.3), P(w, w, z1), P(w, -w, z1)], right);
-}
-
 // Insulated render facade, on the two visible faces: insulation boards laid
 // course by course in a running bond and pinned with anchors; then the base
 // coat with its mesh and the paint, each going up from the ground.
@@ -138,21 +129,36 @@ function renderFacadeSVG(P, sp, t) {
 
 function sceneParts(P, sp, seed, plan) {
   const w = sp.hw,
-    look = sp.look || {};
+    look = sp.look || {},
+    sys = systemOf(sp),
+    rc = sys === "rc";
+  const phase = (key) => plan.find((p) => p.key === key),
+    first = plan.find((p) => p.floor >= 0),
+    facade = plan.filter((p) => ["eps", "render", "paint", "finish"].includes(p.key)),
+    openings = phase("openings");
+  const span = (from, to, p) => from + (to - from) * p;
+  // Scaffold goes up once there is something to reach: the infill walls of a
+  // concrete frame, the first storey's walls once they pass head height, the
+  // timber frame's sheathing, the glazing of a steel frame.
+  const scaffoldAt = rc ? FRAME_END - 0.02 : sys === "masonry" ? span(first.a, first.b, 0.4) : sys === "timber" ? phase("joists").a : 0.66;
   return [
-    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
+    { a: rc ? FRAME_END : first.a, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
     { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
-    { a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => masonrySVG(P, sp, t) },
-    { a: 0.86, b: 0.93, kind: "grow", draw: (t) => (rendered(sp) ? renderFacadeSVG(P, sp, t) : facadeSVG(P, sp, t)) },
+    ...(rc ? [{ a: FRAME_END, b: 0.68, kind: "grow", draw: (t) => masonrySVG(P, sp, t) }] : []),
+    // The finished wall goes up from the ground: insulated render on a
+    // concrete frame; pointing, timber cladding or glass otherwise.
+    { a: facade[0].a, b: facade[facade.length - 1].b, kind: "grow", draw: (t) => (rc ? renderFacadeSVG(P, sp, t) : wallsSVG(P, sp, t)) },
     // The door is fitted into its frame from the threshold up.
-    { a: 0.8, b: 0.84, kind: "reveal", fit: true, draw: () => doorSVG(P, sp) },
-    { a: 0.78, b: 0.86, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
-    { a: FRAME_END - 0.02, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
+    { a: span(openings.a, openings.b, 0.25), b: span(openings.a, openings.b, 0.75), kind: "reveal", fit: true, draw: () => doorSVG(P, sp) },
+    { a: openings.a, b: openings.b, kind: "grow", lights: true, draw: (t, lit) => windowsSVG(P, sp, lit, t) },
+    { a: scaffoldAt, b: 0.93, kind: "erect", draw: (time, shown, built) => scaffoldSVG(P, sp, built) },
     // Roof: trusses one by one, purlins across; OSB sheathing and the
     // waterproofing underlay go on from the eaves up, then the tiles.
-    { a: 0.68, b: 0.715, kind: "grow", draw: (t) => (sp.roofType === "dome" ? "" : trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t)) },
+    { a: 0.68, b: 0.715, kind: "grow", draw: (t) => (sp.roofType === "dome" ? "" : trussesSVG(P, sp, ridgeOf(sp), topOf(sp), t, sys === "steel")) },
     ...(sp.roofType === "dome"
       ? []
+      : sys === "steel"
+      ? [{ a: 0.715, b: 0.748, kind: "reveal", draw: () => roofSVG(P, { ...sp, roof: ALU }) }]
       : [
           { a: 0.712, b: 0.735, kind: "reveal", draw: () => roofSVG(P, { ...sp, roof: OSB }) },
           { a: 0.733, b: 0.75, kind: "reveal", draw: () => roofSVG(P, { ...sp, roof: UNDERLAY }) },
