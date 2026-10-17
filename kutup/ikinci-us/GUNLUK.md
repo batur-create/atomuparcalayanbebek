@@ -29,7 +29,15 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
-## 17 Ekim 2026 05:30 · n29 Anında ve hızlı
+## 17 Ekim 2026 04:40 · n24 Ses turu
+
+- **Dal:** `claude/n24-sesler` (n29 dalının üstünde).
+- **Durum:** altı ses yeniden yazıldı, düzeyler eskisiyle eşlendi. `test:all` 100/100, `test:browser` 71/71 (yeni: her ses tek başına çalıyor).
+- **Dinleme:** eski/yeni sayfası Batur'a verildi; MP3'ler `kutup/onizleme/n24/`.
+- **Batur'un kararı:** "kararları sen ver, geri alınabilir olsun"; varsayılan yeni sesler (KARARLAR n24).
+- **Pano:** n24 → review.
+
+## 17 Ekim 2026 04:10 · n29 Anında ve hızlı
 
 - **Dal:** `claude/n29-hizli` (n31 dalının üstünde).
 - **Durum:** kod ve kayıtlar hazır. `test:all` 100/100 (yeni: canlı oda zili < 1 sn, ayrılanın soketi kapanır), `test:browser` 70/70 (yeni: sunucuya ulaşılamazken son durumla açılış). Yerel workerd'de iki tarayıcıyla: geliş öbür telefonda 438 ms'de göründü.
@@ -37,7 +45,7 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 - **Yayında dikkat:** ilk yayında Cloudflare `LiveRoom` Durable Object sınıfını oluşturur. Canlı duman testine "live room rings" adımı eklendi.
 - **Pano:** n29 → review.
 
-## 17 Ekim 2026 04:30 · n31 Kara v2
+## 17 Ekim 2026 03:50 · n31 Kara v2
 
 - **Dal:** `claude/n31-kara-v2` (kurulum dalının üstünde). PR: davet gelince açılacak.
 - **Durum:** kod ve kayıtlar hazır, testler yeşil (`test:all` 99/99, `test:browser` 69/69). Batur'un görsel onayı bekleniyor.

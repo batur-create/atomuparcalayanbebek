@@ -23,8 +23,9 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 05:30 | PR (ikinci üs) |
-| n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 04:30 | PR (ikinci üs, davet bekliyor) |
+| n24 | Ses turu: altı odak sesi yeniden, daha gerçekçi | Ses | 17 Eki 04:40 | PR (ikinci üs) |
+| n29 | Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış | Altyapı | 17 Eki 04:10 | PR (ikinci üs) |
+| n31 | Kara v2: ChatGPT'nin yeni Kara hareketlerini yerleştir | Maskot | 17 Eki 03:50 | PR (ikinci üs, davet bekliyor) |
 | n25 | Hesaplar arası geçiş: bir cihazda birden fazla hesap | Hesap | 17 Eki 02:20 | 76381788 · eb4e2ba9 |
 | d22 | Ana sayfa hata avı: 6 hata (ekip kartı, üst çubuk, filtre, kart hizası, ay, odak halkası) | Düzeltme | 17 Eki 02:30 | 4d5a5cfb |
 | n23 | Tema revizyonu: altı kapsamlı tema paketi | Tema | 17 Eki 01:00 | 82f2136e · a0f366e1 |
@@ -71,6 +72,31 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n24 · Ses turu: altı odak sesi yeniden, daha gerçekçi
+Ses · 17 Eki 2026 · PR (ikinci üs) · göç yok
+
+**Ne yapıldı (`src/Sound.jsx`, yalnız ses motoru; arayüz ve kayıtlı ayarlar aynı):**
+- **Yağmur:** damlalar artık suya düşen damla gibi çınlıyor (damlanın hapsettiği hava kabarcığının yükselen tonu ve çarpma tıkırtısı), yakın ve uzak; oluktan ağır damlalar; sağanak rüzgârla kabarıp iniyor; camda ince tıslama; oda yankısı.
+- **Kütüphane:** büyük okuma salonunun havası, uzak havalandırma uğultusu ve salon yankısı; sayfa çevirme (kâğıt hışırtısı ve konuşu), kalemle yazı, uzakta ayak sesleri, bir sandalye.
+- **Şömine:** çıtırtılar kümeler halinde (bir patlama ve küçük yankıları), odundan gaz tıslaması, düzensiz titreyen alev uğultusu, ara ara yerine oturan kütük.
+- **Orman:** rüzgâr dalga dalga esiyor, sert estikçe ton yükseliyor ve yapraklar hışırdıyor; dört ayrı kuş türü (cıvıltı dizisi, iki notalı çağrı, karatavuk gibi flüt, kısa çiplemeler), yakın ve uzak, açık hava yankısı.
+- **Dalgalar:** her dalga başka boyda ve aralıkta; kabarır, kırılır, köpüğü kumdan geri çekilir; uğultu, kırılma ve köpük aynı dalgayı izler.
+- **Kafe:** üç masada sözleri seçilmeyen sohbet (farklı ses renkleri ve yerler, hece ve cümle ritmi, susmalar), salonun yankısı, fincanlar ve çay karıştıran kaşık.
+- Odak gürültüsü ve Kara delik değişmedi.
+- Tarayıcı testine kontrol eklendi: sekiz sesin her biri uygulamanın kendi ses panelinden tek başına açılıp gerçekten çalıyor.
+
+**Kararlar ve nedenleri:**
+- **Kayıt yerine yine cihazda üretim.** İnternet harcamaz, uygulama boyutu neredeyse aynı (ana JS gzip +2,2 KB), lisans derdi yok, arka sekmede çalmaya devam eder. Gerçek kayıtlar her ses için yüzlerce KB indirme ve lisans kontrolü isterdi.
+- **Ses düzeyleri eskisiyle eşlendi.** Her yeni ses, değiştirdiği sesin yüksekliğine getirildi (2 dakikalık çıktıda 3 ölçümün ortalaması, fark ≤ 0,5 dB; `TRIM` tablosu). Kayıtlı karışımların dengesi bozulmaz. Hiçbir seste kırpılma yok (tepe ≤ 0,25).
+- **Yankı her sese ayrı:** oda (yağmur, şömine), salon (kütüphane, kafe), açık hava (orman, dalgalar). Yankı, çözümleme maliyetini yaklaşık iki katına çıkarıyor; yine de 30 sn ses masaüstünde 1 sn'nin altında üretiliyor. İlk dokunuşta hazırlık en ağır seste (kafe) 4 kat yavaşlatılmış işlemcide yaklaşık 0,5 sn.
+- **Yavaş şekiller:** rüzgâr, dalga, alev ve sohbet ritmi düşük örnek hızlı (8 kHz) tamponlardan sürülüyor. Bunu desteklemeyen eski tarayıcıda eski usul yavaş dalgalanmaya düşer.
+
+**Batur'un sözleri:** "sesler daha gerçekçi olsun" (16 Ekim akşamı); "inisiyatif alarak ... kararları sen ver ... geri dönülebilir olsun" (17 Ekim).
+**Dinleme:** eski/yeni karşılaştırma sayfası ve MP3'ler proje klasöründe (`kutup/onizleme/n24/`).
+**Geri alma:** tek bir sesi eskiye döndürmek için o sesin `RECIPES` girdisini önceki commit'ten alıp `TRIM`'deki satırını silmek yeter; hepsi için `src/Sound.jsx`'i önceki hâline almak.
+**Açık:** Batur'un kulağı ve gerçek iPhone'da dinleme.
+**Dosyalar:** src/Sound.jsx, tests/browser_smoke.py
 
 ### n29 · Anında ve hızlı: canlı oda, ihtiyaç anında yüklenen ekranlar, anında açılış
 Altyapı · 17 Eki 2026 · PR (ikinci üs) · göç yok (D1 değişmedi; Cloudflare'de yeni Durable Object sınıfı)
