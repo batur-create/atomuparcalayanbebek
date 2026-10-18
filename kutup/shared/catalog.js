@@ -29,9 +29,12 @@ export const CATALOG = [
   { id: "serender", name: "Serender", emoji: "🌽", class: "small", kind: "cottage", category: "fancy", cost: 35, done: "serenderini", blurb: "Karadeniz'in kestane ambarı; dört ayak, fare taşları, ahşap pul çatı.", look: { special: "serender" } },
   { id: "kerpic", name: "Kerpiç Kubbe Evleri", emoji: "🏺", class: "medium", kind: "house", category: "home", cost: 65, done: "kerpiç kubbe evlerini", blurb: "Harran usulü; kalıpsız, sıra sıra bindirilmiş üç kubbe ve avlu.", look: { special: "kerpic" } },
   { id: "kemer", name: "Taş Kemer Köprü", emoji: "🌉", class: "medium", kind: "house", category: "fancy", cost: 75, done: "taş kemer köprüsünü", blurb: "Derenin üstünde kesme taş kemer; kilit taşı en son konur.", look: { special: "kemer" } },
+  { id: "konsol", name: "Konsol Ev", emoji: "🏗️", class: "medium", kind: "house", category: "home", cost: 95, done: "konsol evini", blurb: "Beton çekirdeğin üstünden 4,8 m boşluğa uzanan cam kutu; altında salıncak.", look: { special: "konsol" } },
+  { id: "pazar", name: "Kabuk Çatılı Pazar", emoji: "🍅", class: "medium", kind: "house", category: "work", cost: 90, done: "kabuk çatılı pazarını", blurb: "Dört ters şemsiye; 4 cm beton kabuk, her biri tek kolonda.", look: { special: "kabuk" } },
   { id: "kule", name: "Kule", emoji: "🏰", class: "large", kind: "tower", category: "home", cost: 90, done: "kulesini", blurb: "Bayraklı, üç katlı taş kule." },
   { id: "degirmen", name: "Yel Değirmeni", emoji: "🌾", class: "large", kind: "tower", category: "work", cost: 120, done: "yel değirmenini", blurb: "Kanatları rüzgârla döner.", effect: "Günün ilk seansı +20 🧱 (normalde +10)", look: { wall: "cream", roof: 1, sails: true, flag: false } },
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },
+  { id: "amfi", name: "Gergi Çadır Amfi", emoji: "🎭", class: "large", kind: "house", category: "fancy", cost: 130, done: "amfi tiyatrosunu", blurb: "Beton basamaklar, sahne ve iki direkten gerilmiş beyaz membran.", look: { special: "gergi" } },
   { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
 ];
 // Weekly buildings: each arrives on a Monday (since, Türkiye midnight), is

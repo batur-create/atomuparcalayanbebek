@@ -34,7 +34,21 @@ test('the site plan covers the whole session in order, with beams, waterproofing
       assert.ok(!plan.some((p) => p.lift), 'Harran domes go up without a crane');
       continue;
     }
+    if (sys === 'tensile') {
+      assert.deepEqual(keys, ['mobilize', 'layout', 'excavate', 'tiers', 'anchors', 'masts', 'cables', 'membrane', 'tension', 'seats', 'stage', 'lights', 'handover']);
+      continue;
+    }
+    if (sys === 'cantilever') {
+      // The props stay until the deck is cast; the deflection is read as they come down.
+      assert.deepEqual(keys, ['mobilize', 'layout', 'pit', 'raftRebar', 'raft', 'coreWall', 'corePour', 'props', 'truss', 'deck', 'release', 'glazing', 'cladding', 'openings', 'swing', 'handover']);
+      continue;
+    }
     assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
+    if (sys === 'shell') {
+      // One form, moved umbrella to umbrella: formed, checked, poured, struck.
+      assert.deepEqual(keys.slice(keys.indexOf('footPour') + 1), ['columns', 'shellForm', 'shellPour', 'shellForm', 'shellPour', 'shellForm', 'shellPour', 'shellForm', 'shellPour', 'floorFinish', 'stalls', 'openings', 'handover']);
+      continue;
+    }
     if (sys === 'geodesic') {
       // Ring beam, shoring tower, four rings of struts, bolts checked before the tower comes down, then the skin.
       assert.deepEqual(keys.slice(keys.indexOf('footPour') + 1), ['ringForm', 'ringPour', 'shore', 'strut', 'strut', 'strut', 'strut', 'bolts', 'unshore', 'panels', 'glazing', 'seal', 'openings', 'handover']);
@@ -63,7 +77,7 @@ test('the site plan covers the whole session in order, with beams, waterproofing
 
 test('each building is built the way its walls say', () => {
   const sys = (id) => systemOf(spec(CATALOG.find((c) => c.id === id).kind, 1, id));
-  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel']);
+  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel', 'shell', 'tensile', 'cantilever']);
 });
 
 test('a wider plan gets beams across the middle too', () => {
@@ -111,7 +125,7 @@ test('the inspector checks the rebar before every pour, and every pour starts wi
 
 test('the progress payment weighs work by cost and the quantities only grow', async () => {
   const { metraj } = await import('../src/metraj.js');
-  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic']) {
+  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 5, id);
     const plan = sitePlan(sp);
@@ -174,6 +188,29 @@ test('the old ways: the keystone goes in last, mouse stones are checked, the dom
   const bricks = parseInt(metraj(kerpic, domes, 1).items[0].replace(/\D/g, ''));
   assert.ok(bricks > 2000 && bricks < 8000, `${bricks} bricks`);
   for (const id of ['kemer', 'serender', 'kerpic']) {
+    const item = CATALOG.find((c) => c.id === id);
+    const sp = spec(item.kind, 4, id);
+    for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
+  }
+});
+
+test('modern structures: every shell checked before its pour, anchors pulled, the tip of the cantilever measured', async () => {
+  const { checkAt } = await import('../src/quality.js');
+  const { metraj } = await import('../src/metraj.js');
+  const { TIP } = await import('../src/modern.js');
+  const mid = (p, t) => p.a + (p.b - p.a) * t;
+  const market = sitePlan(spec('house', 2, 'pazar'));
+  for (const p of market.filter((q) => q.key === 'shellForm')) assert.match(checkAt(market, mid(p, 0.9))?.label, new RegExp(`${p.floor + 1}\\. şemsiyenin kabuk donatısı`));
+  for (const p of market.filter((q) => q.key === 'shellPour')) assert.equal(checkAt(market, mid(p, 0.1))?.kind, 'slump');
+  const shell = parseInt(metraj(spec('house', 2, 'pazar'), market, 1).items[1].match(/(\d+) m²/)[1]);
+  assert.ok(shell > 30 && shell < 80, `${shell} m² of shell`);
+  const amfi = sitePlan(spec('house', 2, 'amfi'));
+  assert.match(checkAt(amfi, mid(amfi.find((p) => p.key === 'anchors'), 0.9))?.label, /çekme testi/);
+  assert.match(metraj(spec('house', 2, 'amfi'), amfi, 1).items[1], /^Membran \d+ m²$/);
+  const house = sitePlan(spec('house', 2, 'konsol'));
+  assert.match(checkAt(house, mid(house.find((p) => p.key === 'release'), 0.9))?.label, new RegExp(`hesap ${TIP.calc} mm`));
+  assert.ok(TIP.measured <= TIP.calc);
+  for (const id of ['pazar', 'amfi', 'konsol']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 4, id);
     for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
