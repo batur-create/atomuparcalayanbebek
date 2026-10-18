@@ -51,3 +51,16 @@ export const rectOutline = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x
 // A worker's tuple for the crew layer: [x, y, z, tool].
 export const at = (x, y, z, tool) => [x, y, z, tool];
 
+export const ease = (t) => t * t * (3 - 2 * t);
+export const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+export const unit = (v) => v.map((c) => c / (Math.hypot(...v) || 1));
+const sub = (a, b) => a.map((v, i) => v - b[i]);
+export const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+// A surface cell: its corners, its depth along the view, its upward normal.
+export function cell(a, b, c, d) {
+  let n = unit(cross(sub(c, a), sub(d, b)));
+  if (n[2] < 0) n = n.map((v) => -v);
+  return { pts: [a, b, c, d], n, depth: (a[0] + b[0] + c[0] + d[0] + a[1] + b[1] + c[1] + d[1] + a[2] + b[2] + c[2] + d[2]) / 4 };
+}
+// Draw a list of { depth, s } far to near.
+export const painted = (list) => list.sort((a, b) => a.depth - b.depth).map((e) => e.s).join("");

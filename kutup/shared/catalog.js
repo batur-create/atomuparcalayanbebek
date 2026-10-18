@@ -10,7 +10,7 @@ export const CLASSES = {
   medium: { label: "Orta", minutes: 50 },
   large: { label: "Büyük", minutes: 75 },
 };
-export const CATEGORIES = { home: "Konut", work: "İşlevsel", fancy: "Süs" };
+export const CATEGORIES = { home: "Konut", work: "İşlevsel", fancy: "Süs", famous: "Ünlü Yapı" };
 
 // kind: the footprint and frame the site builds (cottage / house / tower);
 // look.special swaps the box for a building of its own (src/special.js).
@@ -38,6 +38,9 @@ export const CATALOG = [
   { id: "sukulesi", name: "Su Kulesi", emoji: "💧", class: "large", kind: "tower", category: "work", cost: 110, done: "su kulesini", blurb: "Altı kolon, kuşak kirişler, tepede Intze hazne; mavi kuşaklı.", look: { special: "sukulesi" } },
   { id: "kapsul", name: "Kapsül Kule", emoji: "🧊", class: "large", kind: "tower", category: "fancy", cost: 135, done: "kapsül kulesini", blurb: "Beton çekirdeğe bulonlanmış fabrika yapımı odalar; her birinde yuvarlak pencere.", look: { special: "kapsul" } },
   { id: "burgu", name: "Burgulu Kule", emoji: "🌀", class: "large", kind: "tower", category: "fancy", cost: 145, done: "burgulu kulesini", blurb: "Her katı bir alttakine göre 9° dönen cam kule.", look: { special: "burgu" } },
+  { id: "pisa", name: "Pisa Kulesi", emoji: "🗼", class: "large", kind: "tower", category: "famous", cost: 160, done: "Pisa Kulesi'ni", blurb: "1173'te yumuşak kile 3 m temel; 94 yıl ara, eğik devam, 2001'de 3,97°'ye düzeltme.", look: { special: "pisa" } },
+  { id: "kolezyum", name: "Kolezyum", emoji: "🏟️", class: "large", kind: "house", category: "famous", cost: 180, done: "Kolezyum'unu", blurb: "Nero'nun gölü kurutulur; traverten ayaklar, üç kat kemer, mermer basamaklar ve velarium.", look: { special: "kolezyum" } },
+  { id: "keops", name: "Keops Piramidi", emoji: "🔺", class: "large", kind: "house", category: "famous", cost: 200, done: "Keops Piramidi'ni", blurb: "2,3 milyon blok, kızaklar ve rampalar; tepede altın piramidion, en son beyaz Tura kaplama.", look: { special: "keops" } },
   { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
 ];
 // Weekly buildings: each arrives on a Monday (since, Türkiye midnight), is
