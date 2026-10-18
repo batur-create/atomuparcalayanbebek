@@ -107,6 +107,33 @@ export const JOIN_LEAD = 5 * 60000; // joining a friend's session needs this muc
 export const RUIN_DAYS = 3; // rubble left uncleared this long takes its 30% with it
 export const CHAIN_GAP = 10.5 * 60000; // a break of up to ten minutes keeps a streak going
 
+// n40, dürüst dakika: minutes count only while the app sees you. The app beats
+// every 20 seconds while it is on screen (on a computer, while the tab is open
+// and you answer "orada mısın?"). A longer silence is time away: it is taken off
+// a free session, and in build mode it shakes the site.
+export const BEAT_EVERY = 20000;
+export const BEAT_GAP = 90000; // a silence longer than this is time away
+export const FREE_LEAVE = 5 * 60000; // away longer than this ends a free session
+export const HONEST_MIN = 20; // a free session counts only with this many minutes seen
+// Build mode on a phone: leaving the app gives five quiet seconds (a stray
+// tap is free), then a notification counts 10, 9 … 1, buzzing every second.
+export const LEAVE_GRACE = 5000;
+export const COUNTDOWN = 10;
+export const BUILD_LEAVE = LEAVE_GRACE + COUNTDOWN * 1000; // back within 15 seconds…
+export const RESCUE_WINDOW = 5 * 60000; // …or the site cracks, and can be saved for five more minutes
+export const RESCUE_HOLD = BUILD_LEAVE + RESCUE_WINDOW + 40000; // the server waits this long (two missed beats of slack)
+export const RESCUE_SHARE = 0.2; // saving it costs a fifth of the session in extra minutes (25 → 5, 50 → 10, 75 → 15)
+export const rescueMinutes = (minutes) => Math.max(1, Math.round(minutes * RESCUE_SHARE));
+/** Minutes a free session was seen: its length less the time away, ending at the last beat if you never came back. */
+export function seenMinutes({ start, ends, beat, away = 0 }) {
+  let end = ends,
+    gone = away;
+  const tail = ends - beat;
+  if (tail > FREE_LEAVE) end = beat;
+  else if (tail > BEAT_GAP) gone += tail - BEAT_EVERY;
+  return Math.max(0, Math.floor((Math.min(end, ends) - start - gone) / 60000));
+}
+
 // Imece: every friend focusing alongside you for at least half of your session.
 export const IMECE_EACH = 0.05;
 export const IMECE_MAX = 0.2;

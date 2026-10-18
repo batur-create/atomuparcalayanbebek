@@ -10,7 +10,7 @@ import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shar
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
-import { BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BY_ID, CHAIN_GAP, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -45,6 +45,10 @@ const BADGE_NEWS_WINDOW = DAY; // a badge earned within a day is news on the Pan
 const BADGE_NEWS_MAX = 2; // more at once is the past being counted
 const TRANSFER_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const BEAT_GRACE = 90000; // a build-mode session must have been seen in its last 90 seconds
+// n40: a build-mode site whose app went quiet has cracked; until RESCUE_HOLD has
+// passed it can still be saved, so it is not settled (or collapsed) yet.
+const RESCUABLE = `focus_strict = 1 AND focus_rescued = 0 AND focus_beat < focus_end - ${BEAT_GRACE} AND ? - focus_beat <= ${RESCUE_HOLD}`;
+const rescuable = (m, now) => !!m.focusStrict && !m.focusRescued && m.focusBeat < m.focusEnd - BEAT_GRACE && now - m.focusBeat <= RESCUE_HOLD;
 /** A short, readable device label from the browser's user agent ("iPhone · Safari"). */
 export function deviceName(agent) {
   const ua = String(agent || "");
@@ -391,7 +395,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, board_seen AS boardSeen, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, board_seen AS boardSeen, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly] =
       await db.read([
@@ -459,7 +463,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         goal: monumentGoal(members.length),
         monument: monument ? { by: monument.memberId, at: monument.week } : null,
       },
-      expiredFocus: members.some((m) => m.focusEnd > 0 && m.focusEnd <= now && !m.focusPausedAt),
+      expiredFocus: members.some((m) => m.focusEnd > 0 && m.focusEnd <= now && !m.focusPausedAt && !rescuable(m, now)),
       expiredPause: members.some((m) => m.focusPausedAt > 0 && now - m.focusPausedAt >= teaBreakFor(m.focusMinutes)),
       expiredPresence: members.some((m) => m.status !== "away" && m.status_until <= now),
       members: members.map(({ status_until, ...m }) => {
@@ -666,12 +670,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // and half of its materials come back. A finished session pays its wage, the
   // day's first-session bonus, and clears any rubble, paying its remaining 30%.
   async function settleFocus(groupId, now, memberId) {
-    const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ? AND focus_paused_at = 0`;
-    const args = [memberId || groupId, now];
+    const due = `${memberId ? "id = ?" : "group_id = ?"} AND focus_end > 0 AND focus_end <= ? AND focus_paused_at = 0 AND NOT (${RESCUABLE})`;
+    const args = [memberId || groupId, now, now];
     const day = `(focus_end + ${TR_OFFSET}) / ${DAY} * ${DAY} - ${TR_OFFSET}`;
     const sessions = await db.all(
       `SELECT id, focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_model AS model,
               focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd,
+              focus_honest AS honest, focus_away AS away, focus_rescued AS rescued,
               EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
        FROM members WHERE ${due}`,
       args,
@@ -682,17 +687,20 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     for (const s of sessions) {
       const item = modelOf(s.model, kindFor(s.minutes));
       const ref = sessionRef(s.id, s.ends);
-      const finished = s.minutes > 0 && (!s.strict || s.beat >= s.ends - BEAT_GRACE);
+      const start = s.ends - s.minutes * 60000;
+      // Dürüst dakika (n40): a watched free session counts the minutes it was seen.
+      s.credit = !s.strict && s.honest ? seenMinutes({ start, ends: s.ends, beat: s.beat, away: s.away }) : s.minutes;
+      const finished = (s.done = s.minutes > 0 && (s.strict ? s.beat >= s.ends - BEAT_GRACE : !s.honest || s.credit >= HONEST_MIN));
       const pay = [];
       if (finished) {
         // A session started within ten minutes of the last one's end continues its streak.
-        const start = s.ends - s.minutes * 60000;
         const chain = s.chainEnd > 0 && start - s.chainEnd <= CHAIN_GAP ? s.chain + 1 : 1;
-        const wage = wageFor(s.minutes, !!s.strict);
+        const wage = wageFor(s.credit, !!s.strict);
         // Workshops already standing in the member's village help every session.
         const owned = new Set((await db.all("SELECT DISTINCT model FROM buildings WHERE member_id = ?", [s.id])).map((b) => b.model));
         const pct = (v) => `+%${Math.round(v * 100)}`;
-        pay.push([wage, "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat` : `${s.minutes} dk serbest çalışma (yarım maaş)`]);
+        const lost = s.minutes - s.credit;
+        pay.push([wage, "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat${s.rescued ? " (kurtarıldı)" : ""}` : `${s.credit} dk serbest çalışma (yarım maaş${lost > 0 ? `, uzakta geçen ${lost} dk sayılmadı` : ""})`]);
         const streak = streakBonus(chain) + (chain >= 2 && owned.has("kutuphane") ? 0.05 : 0);
         if (streak) pay.push([Math.round(wage * streak), "streak", `Seri: art arda ${chain}. seans (${pct(streak)}${owned.has("kutuphane") ? ", kütüphanen sayesinde" : ""})`]);
         const friends = await imeceOf(groupId, s.id, start, s.ends);
@@ -714,8 +722,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (s.ruinUntil > now && s.ruinRefund > 0) pay.push([s.ruinRefund, "ruin-refund", "Enkaz kaldırıldı: kalan %30"]);
         statements.push(
           [
-            "INSERT INTO focus_log (id, member_id, minutes, created, strict) SELECT ?, id, focus_minutes, focus_end, focus_strict FROM members WHERE id = ? AND focus_end = ?",
-            [randomHex(16), s.id, s.ends],
+            "INSERT INTO focus_log (id, member_id, minutes, created, strict, rescued) SELECT ?, id, ?, focus_end, focus_strict, focus_rescued FROM members WHERE id = ? AND focus_end = ?",
+            [randomHex(16), s.credit, s.id, s.ends],
           ],
           [
             "UPDATE members SET bricks = bricks + ?, ruin_until = 0, ruin_refund = 0, chain = ?, chain_end = focus_end WHERE id = ? AND focus_end = ?",
@@ -728,14 +736,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           statements.push(
             ...districtChanges(groupId, spot?.changes, guard),
             [
-              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id)
-               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ? FROM members WHERE id = ? AND focus_end = ?`,
+              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, patched)
+               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ?, focus_rescued FROM members WHERE id = ? AND focus_end = ?`,
               [randomHex(16), item.kind, item.id, now, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, s.id, s.ends],
             ],
             [`UPDATE districts SET buildings = buildings + 1 WHERE id = ? AND ${guard[0]}`, [spot?.district.id ?? null, ...guard[1]]],
             [
               "INSERT INTO messages (id, group_id, member_id, text, kind, created) SELECT ?, group_id, id, ?, 'system', focus_end FROM members WHERE id = ? AND focus_end = ?",
-              [crypto.randomUUID(), `${item.done} bitirdi ${item.emoji} ${s.minutes} dakika telefona dokunmadan!`, s.id, s.ends],
+              [crypto.randomUUID(), s.rescued ? `${item.done} bitirdi ${item.emoji} ${s.minutes} dakika, bir kez kurtararak 🩹` : `${item.done} bitirdi ${item.emoji} ${s.minutes} dakika telefona dokunmadan!`, s.id, s.ends],
             ],
           );
         }
@@ -761,7 +769,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       for (const [delta, reason, note] of pay) statements.push(ledgerRow(s.id, delta, reason, ref, note, now, s.ends));
     }
     if (planner) statements.push(bumpVillage(groupId));
-    const finishing = sessions.filter((s) => s.minutes > 0 && (!s.strict || s.beat >= s.ends - BEAT_GRACE));
+    const finishing = sessions.filter((s) => s.done);
     // Sessions that ended at the same moment were done together: one board line,
     // rewritten as more of them settle ("A ve B ile birlikte 50 dk çalıştı").
     for (const end of new Set(finishing.map((s) => s.ends))) {
@@ -773,16 +781,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const me = here.at(-1),
         others = names.filter((n) => n.id !== me).map((n) => n.name),
         list = others.length > 1 ? `${others.slice(0, -1).join(", ")} ve ${others.at(-1)}` : others[0];
-      const minutes = finishing.find((s) => s.id === me).minutes;
+      const minutes = finishing.find((s) => s.id === me).credit;
       statements.push([
         "INSERT OR REPLACE INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, 'system', ?)",
         [`together-${groupId}-${end}`, groupId, me, `${list} ile birlikte ${minutes} dk çalıştı 🤝`, end],
       ]);
     }
     if (finishing.length)
-      statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.minutes, 0), finishing.at(-1).id)));
+      statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.credit, 0), finishing.at(-1).id)));
     statements.push(
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0, focus_pause_used = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
@@ -904,12 +912,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     await deliver(ctx, subs, { tag: `${senderId}-${Date.now()}`, ...message }, "subscriptions", options);
   }
   // One person, on all of their devices.
-  async function notifyMember(ctx, memberId, message) {
+  async function notifyMember(ctx, memberId, message, options) {
     const subs = await db.all(
       `SELECT ${pushColumns} FROM subscriptions s JOIN members m ON m.id = s.member_id JOIN groups g ON g.id = m.group_id JOIN sessions a ON a.token = s.session_token AND a.member_id = s.member_id WHERE s.member_id = ? AND a.created > ?`,
       [memberId, Date.now() - SESSION_AGE],
     );
-    await deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message });
+    await deliver(ctx, subs, { tag: `request-${Date.now()}`, ...message }, "subscriptions", options);
   }
   // Batur’s own devices, for new requests.
   async function notifyOwner(ctx, message) {
@@ -1612,17 +1620,90 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return changed(m);
   });
 
+  // A watched free session ends at `at` (now, or where its owner left): it is
+  // cut to the whole minutes up to then and settled like any finished session.
+  async function endFree(m, current, at) {
+    const start = current.focus_end - current.focus_minutes * 60000,
+      minutes = Math.max(0, Math.floor((at - start) / 60000));
+    const cut = await db.run("UPDATE members SET focus_end = ?, focus_minutes = ? WHERE id = ? AND focus_end = ?", [start + minutes * 60000, minutes, m.id, current.focus_end]);
+    if (!cut.changes) fail("Odak oturumu değişti. Sayfayı yenile.", 409);
+    const row = await db.get("SELECT focus_beat AS beat, focus_away AS away FROM members WHERE id = ?", [m.id]);
+    const seen = seenMinutes({ start, ends: start + minutes * 60000, beat: row.beat, away: row.away });
+    await retrying(() => settleFocus(m.group_id, Date.now(), m.id), m.group_id);
+    return { credited: minutes > 0 && seen >= HONEST_MIN ? seen : 0, seen };
+  }
   route("POST", "/focus", async ({ member: m, body, ctx }) => {
     const action = body.action,
       now = Date.now();
     if (action === "finish") {
       const before = await db.get(
-        "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
+        "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_honest AS honest, focus_away AS away, focus_rescued AS rescued FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
         [m.id, now],
       );
+      // A cracked site that can still be saved waits for its owner (n40).
+      if (before && rescuable({ focusStrict: before.strict, focusRescued: before.rescued, focusBeat: before.beat, focusEnd: before.ends }, now))
+        return changed(m, { credited: 0, withered: false, cracked: true });
       if (before) await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
       const withered = !!before?.strict && before.beat < before.ends - BEAT_GRACE;
-      return changed(m, { credited: withered ? 0 : before?.minutes || 0, withered });
+      const seen = before && !before.strict && before.honest ? seenMinutes({ start: before.ends - before.minutes * 60000, ends: before.ends, beat: before.beat, away: before.away }) : before?.minutes || 0;
+      return changed(m, { credited: withered || seen < (before?.honest ? HONEST_MIN : 0) ? 0 : seen, withered });
+    }
+    // Kurtarma (n40): a build-mode site that cracked while you were away is saved
+    // once. The time away does not count, and a fifth of the session is added.
+    if (action === "rescue") {
+      const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
+      if (!current?.focus_strict || !current.focus_end) fail("Kurtarılacak bir inşaat yok.");
+      if (current.focus_rescued) fail("Bu inşaat bir kez kurtarıldı; ikinci şans yok.");
+      const gone = now - current.focus_beat;
+      if (gone > RESCUE_HOLD) fail("Kurtarma süresi geçti; bina çöktü.");
+      const extra = rescueMinutes(current.focus_minutes),
+        end = current.focus_end + Math.max(0, gone) + extra * 60000;
+      await db.batch([
+        ["UPDATE bricks_log SET ref = ? WHERE member_id = ? AND ref = ?", [sessionRef(m.id, end), m.id, sessionRef(m.id, current.focus_end)]],
+        ["UPDATE members SET focus_end = ?, focus_beat = ?, focus_rescued = 1, focus_left_at = 0 WHERE id = ? AND focus_end = ? AND focus_rescued = 0", [end, now, m.id, current.focus_end]],
+        bump(m.group_id),
+      ]);
+      return changed(m, { rescued: true, extra });
+    }
+    // The app was left (a phone going to another app): a push right away, and in
+    // build mode two more, at ten seconds and when the site cracks (n40).
+    if (action === "away") {
+      const current = await db.get("SELECT focus_end, focus_strict, focus_honest, focus_paused_at, focus_left_at, focus_rescued, focus_device FROM members WHERE id = ?", [m.id]);
+      if (!current || current.focus_end <= now || current.focus_paused_at || (!current.focus_strict && !current.focus_honest)) return json({ ok: true });
+      // A session started on a computer is the computer's to watch; a glance at the phone is fine.
+      if (current.focus_device === "desk") return json({ ok: true });
+      if (now - current.focus_left_at < 30000) return json({ ok: true });
+      // Bumped, so an open computer hears it at once and sounds its own alarm.
+      await db.batch([["UPDATE members SET focus_left_at = ? WHERE id = ? AND focus_end = ?", [now, m.id, current.focus_end]], bump(m.group_id)]);
+      const send = (message, ttl = 120) =>
+        notifyMember(ctx, m.id, { tag: "kutup-build", url: "/", sticky: true, ...message }, { urgency: "high", ttl }).catch(() => {});
+      const still = async () =>
+        !!(await db.get("SELECT 1 FROM members WHERE id = ? AND focus_left_at = ? AND focus_end = ?", [m.id, now, current.focus_end]));
+      // Tests set leaveStep: 0 so the countdown runs at once.
+      const wait = (ms) => new Promise((r) => setTimeout(r, config.leaveStep === 0 ? 0 : ms));
+      ctx.waitUntil(
+        (async () => {
+          // Five quiet seconds first: a stray tap on the home button costs nothing.
+          await wait(LEAVE_GRACE);
+          if (!(await still())) return;
+          if (!current.focus_strict)
+            return send({ title: "🎧 Seansın seni bekliyor", body: `Uzakta geçen dakika sayılmaz. ${FREE_LEAVE / 60000} dk içinde dönmezsen seans biter.` });
+          // Then 10, 9 … 1, one push a second, each one a buzz, like Forest's. The
+          // phone's own service worker counts too (left tells it where it is), so
+          // a late push only corrects the number on screen.
+          for (let left = COUNTDOWN; left > 0; left--) {
+            await send({ title: `⏳ ${left}`, body: left <= 3 ? "Son saniyeler, binan çatlamak üzere!" : "Kütüp'e dön, yoksa binan çatlar.", left }, 20);
+            await wait(1000);
+            if (!(await still())) return;
+          }
+          await send(
+            current.focus_rescued
+              ? { title: "🧱 Binan çöküyor", body: "Bu inşaatın kurtarma hakkı kullanılmıştı." }
+              : { title: "🩹 Binan çatladı!", body: `${RESCUE_WINDOW / 60000} dakika içinde dönersen kurtarabilirsin.` },
+          );
+        })().catch(() => {}),
+      );
+      return json({ ok: true });
     }
     // Çay molası: a build-mode session stops for a few minutes, once; the end
     // moves on by the time taken (and the session's ledger rows follow it).
@@ -1651,16 +1732,43 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     // Build mode: the app reports it is still on screen.
     if (action === "beat") {
-      await db.run(
-        "UPDATE members SET focus_beat = ? WHERE id = ? AND focus_strict = 1 AND focus_end > ?",
-        [now, m.id, now],
-      );
-      return json({ ok: true });
+      const current = await db.get("SELECT focus_end, focus_beat, focus_strict, focus_honest, focus_minutes, focus_left_at FROM members WHERE id = ?", [m.id]);
+      if (!current || current.focus_end <= now || (!current.focus_strict && !current.focus_honest)) return json({ ok: true });
+      // Phone and computer together (n40): while the phone is out of the app,
+      // the computer cannot keep the session alive; only the phone coming back can.
+      const desk = body.device === "desk";
+      if (desk && current.focus_left_at > 0) return json({ ok: true, phoneAway: true });
+      const back = !desk && current.focus_left_at > 0 ? [bump(m.group_id)] : [];
+      if (current.focus_strict) {
+        await db.batch([["UPDATE members SET focus_beat = ?, focus_left_at = 0 WHERE id = ? AND focus_strict = 1 AND focus_end > ?", [now, m.id, now]], ...back]);
+        return json({ ok: true });
+      }
+      // Dürüst dakika (n40): a free session's silences are time away; one longer
+      // than five minutes ends it where you left.
+      const gap = now - current.focus_beat;
+      if (gap > FREE_LEAVE) {
+        return changed(m, { stopped: true, ...(await endFree(m, current, current.focus_beat)) });
+      }
+      await db.batch([
+        ["UPDATE members SET focus_away = focus_away + ?, focus_beat = ?, focus_left_at = 0 WHERE id = ? AND focus_end = ?", [gap > BEAT_GAP ? gap - BEAT_EVERY : 0, now, m.id, current.focus_end]],
+        ...back,
+      ]);
+      return json({ ok: true, away: gap > BEAT_GAP ? Math.round((gap - BEAT_EVERY) / 60000) : 0 });
     }
     // Giving up, or leaving the app in build mode, ends the session without minutes.
     // In the first two minutes it costs nothing; after that the site collapses,
     // half of the materials come back now and 30% when the rubble is cleared.
     if (action === "cancel" || action === "wither") {
+      // A watched free session that is stopped keeps the minutes it was seen (n40).
+      if (action === "cancel") {
+        const current = await db.get("SELECT focus_end, focus_beat, focus_strict, focus_honest, focus_minutes FROM members WHERE id = ?", [m.id]);
+        if (current && !current.focus_strict && current.focus_honest && current.focus_end > now) {
+          const gap = now - current.focus_beat;
+          if (gap > BEAT_GAP && gap <= FREE_LEAVE) await db.run("UPDATE members SET focus_away = focus_away + ?, focus_beat = ? WHERE id = ? AND focus_end = ?", [gap - BEAT_EVERY, now, m.id, current.focus_end]);
+          const ended = await endFree(m, current, gap > FREE_LEAVE ? current.focus_beat : now);
+          return changed(m, { withered: false, refunded: 0, pending: 0, stopped: true, ...ended });
+        }
+      }
       let outcome = { withered: false, refunded: 0, pending: 0 };
       await retrying(async () => {
         const current = await db.get("SELECT * FROM members WHERE id = ?", [m.id]);
@@ -1685,7 +1793,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
                 ledgerRow(m.id, outcome.refunded, "refund", ref, early ? `${item.name}: ilk 2 dakikada vazgeçildi, tam iade` : `${item.name} yarım kaldı: %50 iade`, now),
               ]
             : []),
-          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0 WHERE id = ?", [m.id]],
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL WHERE id = ?", [m.id]],
           bump(m.group_id),
         ];
       }, m.group_id);
@@ -1747,8 +1855,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       // An expired, uncredited session is settled before the new one starts.
       ...(await settleFocus(m.group_id, now, m.id)),
       [
-        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ? WHERE id = ?",
-        [end, minutes, strict ? 1 : 0, now, seed, item?.id ?? null, cost, cost, m.id],
+        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ?, focus_honest = ?, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = ? WHERE id = ?",
+        [end, minutes, strict ? 1 : 0, now, seed, item?.id ?? null, cost, cost, !strict && body.honest === true ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
       bump(m.group_id),
@@ -2108,7 +2216,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [districts, buildings, liked, ruins, stages] = await db.read([
       ["SELECT id, member_id AS memberId, dx, dy, seed FROM districts WHERE group_id = ? ORDER BY created, id", [gid]],
       [
-        `SELECT id, member_id AS memberId, kind, model, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched
+        `SELECT id, member_id AS memberId, kind, model, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched, patched
          FROM buildings WHERE group_id = ? AND touched > ? AND pos_x IS NOT NULL${range} ORDER BY touched`,
         [gid, since, ...rangeArgs],
       ],

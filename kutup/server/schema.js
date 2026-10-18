@@ -234,6 +234,20 @@ export const migrations = [
   // 23 — open devices by name (anket, 17 Eki): a short label from the
   // browser ("iPhone · Safari"), filled in as each device opens the app.
   ["ALTER TABLE sessions ADD COLUMN device TEXT"],
+  // 24 — dürüst dakika (n40): a free session from a new app is watched too
+  // (focus_honest), its time away is kept (focus_away), a build-mode site that
+  // cracked can be saved once (focus_rescued, then a patched building), and the
+  // moment the phone said it was left drives the "come back" pushes and stops a
+  // computer keeping the session alive (focus_left_at); focus_device is where it started.
+  [
+    "ALTER TABLE members ADD COLUMN focus_honest INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_away INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_rescued INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_left_at INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_device TEXT",
+    "ALTER TABLE buildings ADD COLUMN patched INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE focus_log ADD COLUMN rescued INTEGER NOT NULL DEFAULT 0",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

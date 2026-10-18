@@ -5,7 +5,7 @@ import {
   FOOTPRINT, LANE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
-  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
+  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, patchSVG, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
 } from "./iso.js";
 
 export const GROUND = "#a4d078";
@@ -624,6 +624,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
         if (season === "winter" && v.detail >= 1) snowSVG(P, sp);
         // Five days without a finished session and the ivy creeps in; the next one clears it.
         if (v.detail === 2 && owner?.chainEnd && Date.now() - owner.chainEnd > 5 * 86400000) vinesSVG(P, sp, b.seed);
+        if (v.detail === 2 && b.patched) patchSVG(P, sp, b.seed);
       },
     });
   }
