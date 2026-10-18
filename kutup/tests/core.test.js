@@ -1207,56 +1207,104 @@ test("kurtarma: a site left at the very end is not collapsed while it can still 
   assert.ok(row().ruin_until > Date.now(), "rubble, as before");
 });
 
-test("telefon sayaç: leaving the app counts 10 … 1 on the phone, a computer start ignores phone glances (n40)", async (t) => {
+test("telefon sayaç: one countdown on the phone, one alert on the computer, and the server cracks the site once (n40)", async (t) => {
   const { focus, row, sqlite, id, app, cookie } = await honestFixture("sayac", { pushExtraHosts: "push.kutup.test" });
   const receiver = pushReceiver();
-  const session = sqlite.prepare("SELECT token FROM sessions WHERE member_id = ?").get(id).token;
-  sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?)").run(
-    "https://push.kutup.test/ada",
-    id,
-    JSON.stringify(receiver.subscription("https://push.kutup.test/ada")),
-    session,
-  );
+  const phone = sqlite.prepare("SELECT token FROM sessions WHERE member_id = ?").get(id).token;
+  sqlite.prepare("UPDATE sessions SET device = 'iPhone · ana ekran' WHERE token = ?").run(phone);
+  sqlite.prepare("INSERT INTO sessions (token, member_id, created, device) VALUES ('desk-token', ?, ?, 'Windows · Chrome')").run(id, Date.now());
+  const add = (endpoint, token) =>
+    sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?)").run(endpoint, id, JSON.stringify(receiver.subscription(endpoint)), token);
+  add("https://push.kutup.test/phone", phone);
+  add("https://push.kutup.test/desk", "desk-token");
   const sent = [];
   t.mock.method(globalThis, "fetch", async (url, init) => {
-    sent.push(JSON.parse(receiver.decrypt(new Uint8Array(await new Response(init.body).arrayBuffer()))));
+    sent.push({ to: String(url).split("/").pop(), ...JSON.parse(receiver.decrypt(new Uint8Array(await new Response(init.body).arrayBuffer()))) });
     return new Response(null, { status: 201 });
   });
   // Runs a request and every background job it starts (the countdown and its pushes).
   const settled = async (body) => {
     const pending = [];
-    const ctx = { ip: "test", waitUntil: (p) => pending.push(p) };
-    const request = new Request("http://kutup.test/api/focus", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Kutup": "1", Cookie: cookie },
-      body: JSON.stringify(body),
-    });
-    const response = await app.fetch(request, ctx);
+    const response = await app.fetch(
+      new Request("http://kutup.test/api/focus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Kutup": "1", Cookie: cookie },
+        body: JSON.stringify(body),
+      }),
+      { ip: "test", waitUntil: (p) => pending.push(p) },
+    );
     for (let i = 0; i < pending.length; i++) await pending[i];
     return response.json();
   };
   await focus({ action: "start", strict: true, model: "kulube", device: "phone" });
   assert.equal(row().focus_device, "phone");
   await settled({ action: "away" });
-  const titles = sent.map((p) => p.title);
-  assert.deepEqual(titles, ["⏳ 10", "⏳ 9", "⏳ 8", "⏳ 7", "⏳ 6", "⏳ 5", "⏳ 4", "⏳ 3", "⏳ 2", "⏳ 1", "🩹 Binan çatladı!"]);
-  assert.ok(sent.every((p) => p.tag === "kutup-build"), "one notification on screen, updated in place");
-  assert.deepEqual(sent.slice(0, 3).map((p) => p.left), [10, 9, 8], "the phone's own worker counts from here");
-  assert.ok(row().focus_left_at > 0);
-  // While the phone is out of the app, an open computer cannot keep the site alive.
-  const desk = await focus({ action: "beat", device: "desk" });
-  assert.equal(desk.data.phoneAway, true);
-  assert.ok(row().focus_left_at > 0);
-  // Back on the phone: the countdown stops.
+  const to = (who) => sent.filter((p) => p.to === who);
+  assert.deepEqual(to("phone").map((p) => p.title), ["⏳ 10 sn içinde dön!", "🩹 Binan çatladı!"], "one countdown, then the crack: no stream of pushes");
+  assert.equal(to("phone")[0].countdown, 10, "the phone's own worker counts it down");
+  assert.ok(to("phone").every((p) => p.tag === "kutup-build"));
+  assert.deepEqual(to("desk").map((p) => p.title), ["📱 Telefonuna bak!"], "the computer hears it once");
+  assert.ok(row().focus_cracked_at > 0, "the server cracked the site itself");
+  // Another "away" for the same absence starts nothing new.
+  sent.length = 0;
+  await settled({ action: "away" });
+  assert.equal(sent.length, 0);
+  // A beat from either device cannot undo the crack.
+  assert.equal((await focus({ action: "beat", device: "phone" })).data.cracked, true);
+  assert.equal((await focus({ action: "beat", device: "desk" })).data.cracked, true);
+  assert.ok(row().focus_cracked_at > 0);
+  // The state says so, for every open device.
+  const me = (await call(app, "/state", { headers: { Cookie: cookie } })).data.members.find((m) => m.id === id);
+  assert.ok(me.focusCrackedAt > 0);
+  // Saved once: the time since the phone left and a fifth of the session are added.
+  const before = row();
+  const saved = await focus({ action: "rescue" });
+  assert.equal(saved.status, 200);
+  const after = row();
+  assert.equal(after.focus_cracked_at, 0);
+  assert.equal(after.focus_left_at, 0);
+  assert.ok(after.focus_end - before.focus_end >= 5 * 60000, "five minutes of price, plus the time away");
+
+  // Back within the countdown: no crack.
+  sqlite.prepare("UPDATE members SET focus_rescued = 0 WHERE id = ?").run(id);
+  const pending = [];
+  await app.fetch(
+    new Request("http://kutup.test/api/focus", { method: "POST", headers: { "Content-Type": "application/json", "X-Kutup": "1", Cookie: cookie }, body: JSON.stringify({ action: "away" }) }),
+    { ip: "test", waitUntil: (p) => pending.push(p) },
+  );
   await focus({ action: "beat", device: "phone" });
+  for (let i = 0; i < pending.length; i++) await pending[i];
+  assert.equal(row().focus_cracked_at, 0);
   assert.equal(row().focus_left_at, 0);
 
+  // The app says it came back too late (the server's countdown never ran).
+  await focus({ action: "crack", away: 40000 });
+  assert.ok(row().focus_cracked_at > 0);
+  assert.ok(Date.now() - row().focus_left_at >= 40000);
+  // Let go: the site falls.
+  assert.equal((await focus({ action: "wither" })).status, 200);
+  assert.equal(row().focus_end, 0);
+  assert.equal(row().focus_cracked_at, 0, "cleared with the session");
+
   // A session started on the computer: the phone is free to glance at.
-  sqlite.prepare("UPDATE members SET focus_end = 0, focus_strict = 0, focus_device = NULL WHERE id = ?").run(id);
   await focus({ action: "start", minutes: 50, honest: true, device: "desk" });
   assert.equal(row().focus_device, "desk");
   sent.length = 0;
   await settled({ action: "away" });
   assert.equal(sent.length, 0);
   assert.equal(row().focus_left_at, 0);
+});
+
+test("kurtarma: a site the server cracked waits five minutes, then falls even if the app came back (n40)", async () => {
+  const { focus, row, sqlite, id, logged } = await honestFixture("crackend");
+  await focus({ action: "start", strict: true, model: "kulube" });
+  // Cracked two minutes ago, the session has just ended with the app on screen.
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ?, focus_left_at = ?, focus_cracked_at = ? WHERE id = ?").run(Date.now() - 1000, Date.now() - 2000, Date.now() - 140000, Date.now() - 120000, id);
+  assert.equal((await focus({ action: "finish" })).data.cracked, true, "still within the rescue window");
+  // Six minutes after the crack: rubble, no minutes, though the app beat to the end.
+  sqlite.prepare("UPDATE members SET focus_cracked_at = ? WHERE id = ?").run(Date.now() - 6 * 60000, id);
+  const late = await focus({ action: "finish" });
+  assert.equal(late.data.withered, true);
+  assert.equal(row().focus_end, 0);
+  assert.deepEqual(logged(), []);
 });

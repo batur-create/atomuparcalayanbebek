@@ -35,7 +35,7 @@ import {
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "../shared/village.js";
-import { BEAT_EVERY, BUILD_LEAVE, BY_ID, COUNTDOWN, FREE_LEAVE, GRACE, HONEST_MIN, LEAVE_GRACE, RESCUE_HOLD, fits, modelOf, rescueMinutes, streakBonus, teaBreakFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BUILD_LEAVE, BY_ID, COUNTDOWN, FREE_LEAVE, GRACE, HONEST_MIN, LEAVE_GRACE, RESCUE_HOLD, RESCUE_WINDOW, fits, modelOf, rescueMinutes, streakBonus, teaBreakFor } from "../shared/catalog.js";
 import { alarmSound, closeFloat, idleSupported, primeFloat } from "./float.js";
 import { FloatPanel, HereCard, RescueCard } from "./Watch.jsx";
 import { ReceiptCard } from "./Economy.jsx";
@@ -605,6 +605,13 @@ function KutupApp({ initial, restart }) {
   const crackRef = useRef(null);
   const [asking, setAsking] = useState(0); // computer: >0 asking since, <0 unanswered since
   const hereRef = useRef(() => {});
+  // The server's word that the site cracked (its countdown ran out, or another
+  // device said so): every open device shows the same rescue card.
+  const serverCrack = watchEnd && watchStrict && me?.focusCrackedAt > 0 ? me.focusCrackedAt : 0;
+  const crackedRef = useRef(() => {});
+  useEffect(() => {
+    if (serverCrack && !crackRef.current) crackedRef.current(Math.max(0, Date.now() - (meRef.current?.focusLeftAt || serverCrack)), serverCrack);
+  }, [serverCrack]);
   useEffect(() => {
     setCrack((crackRef.current = null));
     setAsking(0);
@@ -638,14 +645,22 @@ function KutupApp({ initial, restart }) {
       notify("İnşaatın çöktü 🧱 Uygulamadan çıkınca yıkılır. Bir dahakine!");
       navigator.vibrate?.(300);
     };
-    // A build that was left too long cracks: one rescue, if it is still within reach.
-    const cracked = (away) => {
-      if (!strict || gone) return;
+    // A build that was left too long cracks: one rescue, if it is still within
+    // reach. The server is told (unless it said so first), so the crack holds on
+    // every device and a beat cannot undo it.
+    const cracked = (away, at = 0) => {
+      if (!strict || gone || crackRef.current) return;
       if (meRef.current?.focusRescued || away > RESCUE_HOLD - 40000) return wither();
-      crackRef.current = { away };
-      setCrack({ away, minutes: meRef.current?.focusMinutes || 0 });
+      const since = at || Date.now();
+      crackRef.current = { away, at: since };
+      setCrack({ away, at: since, minutes: meRef.current?.focusMinutes || 0 });
       navigator.vibrate?.([200, 100, 200]);
+      if (!at)
+        api("/focus", { action: "crack", away })
+          .then((r) => epoch === sessionEpoch.current && r.state && updateData(r.state))
+          .catch(() => {});
     };
+    crackedRef.current = cracked;
     const stopped = (r) => {
       if (epoch !== sessionEpoch.current) return;
       if (r.state) updateData(r.state);
@@ -664,7 +679,8 @@ function KutupApp({ initial, restart }) {
           if (r?.stopped) {
             gone = true;
             stopped(r);
-          } else if (r?.away && epoch === sessionEpoch.current) notify(`${r.away} dk uzaktaydın; o süre sayılmadı. 🎧`);
+          } else if (r?.cracked) cracked(Math.max(0, Date.now() - (meRef.current?.focusLeftAt || Date.now())));
+          else if (r?.away && epoch === sessionEpoch.current) notify(`${r.away} dk uzaktaydın; o süre sayılmadı. 🎧`);
         })
         .catch(() => {});
     };
@@ -701,8 +717,10 @@ function KutupApp({ initial, restart }) {
       navigator.serviceWorker?.getRegistration?.().then((r) =>
         r?.showNotification(strict ? "🏗️ Şantiyen seni bekliyor" : "🎧 Seansın seni bekliyor", { body, tag: "kutup-build", renotify: true, requireInteraction: true, vibrate: [300, 120, 300, 120, 600], data: { url: location.href } }),
       ).catch(() => {});
-    const unwarn = () =>
+    const unwarn = () => {
+      navigator.serviceWorker?.controller?.postMessage({ back: true });
       navigator.serviceWorker?.getRegistration?.().then((r) => r?.getNotifications({ tag: "kutup-build" })).then((list) => list?.forEach((n) => n.close())).catch(() => {});
+    };
     let loud = 0,
       askingNow = false;
     // Computer: "orada mısın?"
@@ -775,7 +793,7 @@ function KutupApp({ initial, restart }) {
         if (pauseUntil.current > Date.now() || crackRef.current) return;
         leaving();
         // Five quiet seconds, then the phone's service worker counts 10 … 1 on
-        // the notification, buzzing each second (the server's pushes back it up).
+        // one notification (the server's single push starts it if this is lost).
         if (typeof Notification !== "undefined" && Notification.permission === "granted")
           navigator.serviceWorker?.controller?.postMessage({
             leave: {
@@ -785,10 +803,10 @@ function KutupApp({ initial, restart }) {
               sticky: true,
               ...(strict
                 ? {
-                    left: COUNTDOWN,
+                    countdown: COUNTDOWN,
                     done: meRef.current?.focusRescued
-                      ? { title: "🧱 Binan çöküyor", body: "Bu inşaatın kurtarma hakkı kullanılmıştı." }
-                      : { title: "🩹 Binan çatladı!", body: "Hemen dönersen kurtarabilirsin." },
+                      ? { title: "🧱 Binan çöktü", body: "Bu inşaatın kurtarma hakkı kullanılmıştı." }
+                      : { title: "🩹 Binan çatladı!", body: `${RESCUE_WINDOW / 60000} dakika içinde dönersen bir kez kurtarabilirsin.` },
                   }
                 : { title: "🎧 Seansın seni bekliyor", body: `Uzakta geçen dakika sayılmaz. ${FREE_LEAVE / 60000} dk içinde dön.` }),
             },
@@ -821,11 +839,12 @@ function KutupApp({ initial, restart }) {
   // Phone and computer together (n40): the phone was picked up mid-session.
   // An open computer rings too, and its floating window turns red, so the
   // computer helps call you back instead of covering for the phone.
-  const phoneGone = watchEnd > 0 && onComputer() && me?.focusLeftAt > 0 && now - me.focusLeftAt > LEAVE_GRACE;
+  // Only while the countdown runs: after it the rescue card speaks instead.
+  const phoneGone = watchEnd > 0 && onComputer() && watchDevice !== "desk" && me?.focusLeftAt > 0 && !serverCrack && !crack && now - me.focusLeftAt < BUILD_LEAVE + 5000;
   useEffect(() => {
     if (!phoneGone) return;
     alarmSound();
-    const ring = setInterval(alarmSound, 4000);
+    const ring = setInterval(alarmSound, 2500);
     return () => clearInterval(ring);
   }, [phoneGone]);
   // The rescue card's two answers.
