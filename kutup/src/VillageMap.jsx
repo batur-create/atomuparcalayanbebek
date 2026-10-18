@@ -147,7 +147,7 @@ function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
       <div className="building-card-who">
         {owner ? <Avatar member={owner} size="tiny" /> : null}
         <span>
-          {owner ? (mine ? "Senin eserin" : `Yapan: ${owner.name}`) : "Eski bir komşu"} · {minutesLabel(building.minutes)} odak
+          {owner ? (mine ? "Senin eserin" : `Yapan: ${owner.name}`) : "Eski bir komşu"} · {minutesLabel(building.minutes)} odak{building.patched ? " · 🩹 bir kez kurtarıldı" : ""}
         </span>
       </div>
       <button

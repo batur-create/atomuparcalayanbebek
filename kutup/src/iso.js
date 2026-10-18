@@ -718,6 +718,27 @@ export function vinesSVG(P, sp, seed = 1) {
   }
   return s;
 }
+/** n40: a building saved once after its site cracked: a fresh lime-plaster
+ * patch over the crack on the front wall, with the old crack still running out
+ * of it (a repair you can see, like a real one). */
+export function patchSVG(P, sp, seed = 1) {
+  const r = rng(seed + 41),
+    w = sp.hw,
+    h = Math.min(sp.h || 2, 3),
+    // Low on the back half of the side wall, under the windows and clear of the chimney.
+    y0 = -w * (0.55 + r() * 0.1),
+    z0 = 0.66,
+    a = Math.min(0.6, w * 0.38),
+    b = Math.min(0.28, h * 0.12),
+    x = w + 0.05;
+  const crack = [P(x, y0 + a * 0.8, z0 + b * 0.4), P(x, y0 + a * 1.25, z0 + b * 1.6), P(x, y0 + a * 1.1, z0 + b * 2.6)];
+  return (
+    seg(crack[0], crack[1], "#5b4a3a", 1.4) + seg(crack[1], crack[2], "#5b4a3a", 1.1) +
+    poly([P(x, y0 - a, z0 - b), P(x, y0 + a, z0 - b * 0.8), P(x, y0 + a * 0.9, z0 + b), P(x, y0 - a * 0.85, z0 + b * 0.9)], "#e9e1cf", 0.95) +
+    seg(P(x, y0 - a * 0.5, z0 - b * 0.5), P(x, y0 + a * 0.5, z0 + b * 0.5), "#b9ac93", 1) +
+    seg(P(x, y0 - a * 0.5, z0 + b * 0.5), P(x, y0 + a * 0.5, z0 - b * 0.5), "#b9ac93", 1)
+  );
+}
 /** A finished building. `detail` 2 = full, 1 = simple (far away), 0 = a block. */
 export function buildingSVG(P, sp, seed, { lit = sp.lit, detail = 2, shadowP = P } = {}) {
   if (sp.roofType === "special") return specialOf(sp).building(P, sp, seed, { lit, detail, shadowP });

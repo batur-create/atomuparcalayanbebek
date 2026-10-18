@@ -1093,3 +1093,116 @@ test("Hesap ve cihazlar signs the account out of its other devices; this one sta
   );
   assert.equal((await call(app, "/devices/signout", { method: "POST", body: {} })).status, 401, "needs a session");
 });
+
+// n40, dürüst dakika: a watched free session counts only the minutes it was seen,
+// and a build that cracked while its owner was away can be saved once.
+async function honestFixture(tag) {
+  const sqlite = new DatabaseSync(":memory:");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { leaveStep: 0 } });
+  const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", username: `ada_${tag}`, password: "honest-pass-1" } });
+  const id = sqlite.prepare("SELECT id FROM members WHERE username = ?").get(`ada_${tag}`).id;
+  const focus = (body) => call(app, "/focus", { method: "POST", headers: { Cookie: ada.cookie }, body });
+  const row = () => sqlite.prepare("SELECT * FROM members WHERE id = ?").get(id);
+  // Moves the whole session `ms` into the past (start, end and the last beat).
+  const shift = (ms, beatAgo) => {
+    const m = row();
+    sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ? WHERE id = ?").run(m.focus_end - ms, Date.now() - beatAgo, id);
+  };
+  const logged = () => sqlite.prepare("SELECT minutes, strict, rescued FROM focus_log WHERE member_id = ? ORDER BY created").all(id).map((r) => ({ ...r }));
+  return { sqlite, app, id, focus, row, shift, logged, cookie: ada.cookie };
+}
+
+test("dürüst dakika: a watched free session loses the time away (n40)", async () => {
+  const { focus, row, shift, logged, sqlite, id } = await honestFixture("away");
+  assert.equal((await focus({ action: "start", minutes: 50, honest: true })).status, 200);
+  assert.equal(row().focus_honest, 1);
+  // 20 minutes in, the app was quiet for the last 4 minutes: that is time away.
+  shift(20 * 60000, 4 * 60000);
+  const back = await focus({ action: "beat" });
+  assert.equal(back.data.away, 4 - 0, "about four minutes away (less one beat)");
+  assert.ok(row().focus_away > 3 * 60000 && row().focus_away < 4 * 60000);
+  // The session runs out with the app on screen.
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ? WHERE id = ?").run(Date.now() - 1000, Date.now() - 2000, id);
+  const done = await focus({ action: "finish" });
+  assert.equal(done.data.credited, 46, "50 minutes less the 4 away (rounded down)");
+  assert.deepEqual(logged().map((l) => l.minutes), [46]);
+  const wage = sqlite.prepare("SELECT note FROM bricks_log WHERE member_id = ? AND reason = 'wage'").get(id).note;
+  assert.match(wage, /46 dk serbest çalışma .*uzakta geçen 4 dk sayılmadı/);
+});
+
+test("dürüst dakika: five minutes away ends a free session where you left (n40)", async () => {
+  const { focus, row, shift, logged } = await honestFixture("leave");
+  await focus({ action: "start", minutes: 50, honest: true });
+  // Left 30 minutes in and came back 6 minutes later.
+  shift(36 * 60000, 6 * 60000);
+  const back = await focus({ action: "beat" });
+  assert.equal(back.data.stopped, true);
+  assert.equal(back.data.credited, 30);
+  assert.equal(row().focus_end, 0, "the session is over");
+  assert.deepEqual(logged().map((l) => l.minutes), [30]);
+});
+
+test("dürüst dakika: stopping a free session keeps the minutes seen, if there are 20 (n40)", async () => {
+  const short = await honestFixture("short");
+  await short.focus({ action: "start", minutes: 25, honest: true });
+  short.shift(12 * 60000, 5000);
+  const stop = await short.focus({ action: "cancel" });
+  assert.equal(stop.data.stopped, true);
+  assert.equal(stop.data.credited, 0, "12 minutes is not a session");
+  assert.deepEqual(short.logged(), []);
+  assert.equal(short.row().focus_end, 0);
+  const long = await honestFixture("long");
+  await long.focus({ action: "start", minutes: 75, honest: true });
+  long.shift(41 * 60000, 5000);
+  assert.equal((await long.focus({ action: "cancel" })).data.credited, 41);
+  // A free session without the flag (an older app) keeps the old rules.
+  await long.focus({ action: "start", minutes: 25 });
+  long.shift(10 * 60000, 9 * 60000);
+  assert.equal((await long.focus({ action: "beat" })).data.away, undefined, "not watched");
+});
+
+test("kurtarma: a cracked build waits for its owner and is saved once (n40)", async () => {
+  const { focus, row, shift, logged, sqlite, id } = await honestFixture("rescue");
+  await focus({ action: "start", strict: true, model: "kulube" });
+  // 20 minutes in, the phone was put away two minutes ago.
+  shift(20 * 60000, 2 * 60000);
+  assert.equal((await focus({ action: "away" })).status, 200);
+  const before = row();
+  const saved = await focus({ action: "rescue" });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.data.extra, 5, "a fifth of 25 minutes");
+  const after = row();
+  assert.equal(after.focus_rescued, 1);
+  const moved = after.focus_end - before.focus_end;
+  assert.ok(moved >= 7 * 60000 && moved < 7 * 60000 + 2000, "two minutes away + five as the price");
+  assert.equal(after.focus_left_at, 0);
+  const again = await focus({ action: "rescue" });
+  assert.equal(again.status, 400);
+  assert.match(again.data.error, /ikinci şans yok/);
+  // The session ends with the app on screen: a patched building, and no "telefona dokunmadan".
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ? WHERE id = ?").run(Date.now() - 1000, Date.now() - 2000, id);
+  assert.equal((await focus({ action: "finish" })).data.credited, 25);
+  assert.deepEqual(logged(), [{ minutes: 25, strict: 1, rescued: 1 }]);
+  assert.equal(sqlite.prepare("SELECT patched FROM buildings WHERE member_id = ?").get(id).patched, 1);
+  const line = sqlite.prepare("SELECT text FROM messages WHERE member_id = ? AND kind = 'system' AND text LIKE '%bitirdi%'").get(id).text;
+  assert.match(line, /bir kez kurtararak 🩹/);
+});
+
+test("kurtarma: a site left at the very end is not collapsed while it can still be saved (n40)", async () => {
+  const { focus, row, sqlite, id, logged } = await honestFixture("hold");
+  await focus({ action: "start", strict: true, model: "kulube" });
+  // The session ended a minute ago; the app was last seen two minutes before that.
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ? WHERE id = ?").run(Date.now() - 60000, Date.now() - 3 * 60000, id);
+  const waiting = await focus({ action: "finish" });
+  assert.equal(waiting.data.cracked, true);
+  assert.ok(row().focus_end > 0, "still standing, cracked");
+  assert.equal((await focus({ action: "rescue" })).status, 200);
+  assert.ok(row().focus_end > Date.now() + 2 * 60000, "two minutes of it left again, plus the price");
+  // Another session, left ten minutes ago: too late, it collapses.
+  sqlite.prepare("UPDATE members SET focus_end = ?, focus_beat = ?, focus_rescued = 0 WHERE id = ?").run(Date.now() - 60000, Date.now() - 10 * 60000, id);
+  const late = await focus({ action: "finish" });
+  assert.equal(late.data.withered, true);
+  assert.equal(row().focus_end, 0);
+  assert.deepEqual(logged(), []);
+  assert.ok(row().ruin_until > Date.now(), "rubble, as before");
+});

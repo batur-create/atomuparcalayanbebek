@@ -35,7 +35,9 @@ import {
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "../shared/village.js";
-import { BY_ID, GRACE, fits, modelOf, streakBonus, teaBreakFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BUILD_LEAVE, BY_ID, FREE_LEAVE, GRACE, HONEST_MIN, RESCUE_HOLD, fits, modelOf, rescueMinutes, streakBonus, teaBreakFor } from "../shared/catalog.js";
+import { alarmSound, closeFloat, idleSupported, primeFloat } from "./float.js";
+import { FloatPanel, HereCard, RescueCard } from "./Watch.jsx";
 import { ReceiptCard } from "./Economy.jsx";
 import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
@@ -535,6 +537,7 @@ function KutupApp({ initial, restart }) {
         seed: me.focusSeed,
         week: me.focusWeek || 0,
         cost: me.focusCost || 0,
+        honest: !!me.focusHonest,
       };
       return;
     }
@@ -556,11 +559,15 @@ function KutupApp({ initial, restart }) {
       notify(
         done.strict
           ? `${item.name} bitti! ${item.emoji} Köyüne eklendi.`
-          : `İşte bu! ${done.minutes} dakika cebinde. Şimdi bir nefes. 🌱`,
+          : done.honest && me.focusWeek - done.week < done.minutes
+            ? `Bitti! ${me.focusWeek - done.week} dakika cebinde; uzakta geçen ${done.minutes - (me.focusWeek - done.week)} dk sayılmadı. 🌱`
+            : `İşte bu! ${done.minutes} dakika cebinde. Şimdi bir nefes. 🌱`,
       );
       navigator.vibrate?.([120, 80, 120]);
       // The receipt waits for the handover ceremony to get going.
       setReceipt({ end: done.end, type: done.strict ? "built" : "plain", delay: done.strict ? 2600 : 600, at: Date.now(), together: togetherRef.current });
+    } else if (done.honest && !done.strict) {
+      notify(`Seans yazılmadı: ${HONEST_MIN} dk'dan az göründü. Uygulamada kal, dakikaların sayılsın.`, 7000);
     } else if (done.strict) {
       outcome("collapsed");
       notify("İnşaat çöktü 🧱 Bu sefer telefon kazandı.");
@@ -574,28 +581,48 @@ function KutupApp({ initial, restart }) {
         : null,
     [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed, me?.focusModel, me?.focusPausedAt],
   );
-  // Build mode: keep the screen on, report presence, and let the building collapse
-  // when the session is abandoned. On a phone that means leaving the app for
-  // more than a minute (with a notification when you leave and at 30 seconds);
-  // on a computer other tabs and apps are part of studying, so only closing the
-  // tab or the computer going to sleep for a while brings it down.
-  const strictEnd = me?.focusStrict && me.focusEnd > Date.now() ? me.focusEnd : 0;
+  // Presence (n40, dürüst dakika). Build mode and a watched free session keep
+  // the screen on and report that the app is on screen. On a phone, leaving the
+  // app is noticed at once: a push now, another at ten seconds, and after 20
+  // seconds a build cracks (saved once within five minutes, see the rescue
+  // card) while a free session just loses the time away (and ends after five
+  // minutes). On a computer other tabs and apps are part of studying; there the
+  // question is whether anyone is at the computer at all: after 15 minutes
+  // without mouse or keyboard (or every 25 minutes where the browser cannot
+  // tell) the floating window turns red, beeps and asks "orada mısın?", and an
+  // unanswered question for two minutes counts as leaving.
+  const watchEnd = me?.focusEnd > Date.now() && (me.focusStrict || me.focusHonest) ? me.focusEnd : 0;
+  const watchStrict = !!me?.focusStrict;
+  const meRef = useRef(me);
+  meRef.current = me;
   // While on a tea break (and until it would have ended) leaving the app is fine.
   const pauseUntil = useRef(0);
   pauseUntil.current = me?.focusPausedAt ? me.focusPausedAt + teaBreakFor(me.focusMinutes) : pauseUntil.current;
+  const [crack, setCrack] = useState(null); // { away, minutes }: the site cracked; save it or let it go
+  const crackRef = useRef(null);
+  const [asking, setAsking] = useState(0); // computer: >0 asking since, <0 unanswered since
+  const hereRef = useRef(() => {});
   useEffect(() => {
-    if (!strictEnd) return releaseScreen();
-    const desk = onComputer();
-    const GRACE = desk ? 120000 : 60000;
+    setCrack((crackRef.current = null));
+    setAsking(0);
+    if (!watchEnd) return releaseScreen();
+    const strict = watchStrict,
+      desk = onComputer();
+    // How long an absence may be before it counts: a page reload or a quick
+    // look at a message is fine.
+    const LEAVE = strict ? (desk ? 120000 : BUILD_LEAVE) : FREE_LEAVE;
     const epoch = sessionEpoch.current;
     const SEEN = "kutup-fidan";
     let hiddenAt = null,
-      gone = false;
-    const remember = () =>
-      storage.set(SEEN, JSON.stringify({ end: strictEnd, at: Date.now() }));
+      gone = false,
+      quietSince = 0,
+      answer = 0,
+      flash = 0;
+    const remember = () => storage.set(SEEN, JSON.stringify({ end: watchEnd, at: Date.now() }));
     const wither = async () => {
-      if (gone) return;
+      if (gone || !strict) return;
       gone = true;
+      setCrack((crackRef.current = null));
       releaseScreen();
       try {
         const r = await api("/focus", { action: "wither" });
@@ -606,78 +633,203 @@ function KutupApp({ initial, restart }) {
       notify("İnşaatın çöktü 🧱 Uygulamadan çıkınca yıkılır. Bir dahakine!");
       navigator.vibrate?.(300);
     };
-    const beat = () => {
-      remember();
-      api("/focus", { action: "beat" }).catch(() => {});
+    // A build that was left too long cracks: one rescue, if it is still within reach.
+    const cracked = (away) => {
+      if (!strict || gone) return;
+      if (meRef.current?.focusRescued || away > RESCUE_HOLD - 40000) return wither();
+      crackRef.current = { away };
+      setCrack({ away, minutes: meRef.current?.focusMinutes || 0 });
+      navigator.vibrate?.([200, 100, 200]);
     };
+    const stopped = (r) => {
+      if (epoch !== sessionEpoch.current) return;
+      if (r.state) updateData(r.state);
+      notify(
+        r.credited
+          ? `Seans bitti: ${FREE_LEAVE / 60000} dk'dan uzun uzaktaydın. Görülen ${r.credited} dk yazıldı.`
+          : `Seans bitti: ${FREE_LEAVE / 60000} dk'dan uzun uzaktaydın. ${HONEST_MIN} dk'dan az göründüğü için yazılmadı.`,
+        8000,
+      );
+    };
+    const beat = () => {
+      if (gone || crackRef.current || quietSince) return;
+      remember();
+      api("/focus", { action: "beat" })
+        .then((r) => {
+          if (r?.stopped) {
+            gone = true;
+            stopped(r);
+          } else if (r?.away && epoch === sessionEpoch.current) notify(`${r.away} dk uzaktaydın; o süre sayılmadı. 🎧`);
+        })
+        .catch(() => {});
+    };
+    // Tells the server the app was left, even as the page goes to the background.
+    const leaving = () =>
+      fetch("/api/focus", {
+        method: "POST",
+        keepalive: true,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-Kutup": "1" },
+        body: JSON.stringify({ action: "away" }),
+      }).catch(() => {});
     // Coming back to a session that kept running while the app was closed.
     try {
       const seen = JSON.parse(storage.get(SEEN) || "null");
-      if (seen?.end === strictEnd && Date.now() - seen.at > GRACE) {
-        wither();
-        return;
+      if (seen?.end === watchEnd && Date.now() - seen.at > LEAVE && Date.now() > pauseUntil.current) {
+        if (strict) {
+          cracked(Date.now() - seen.at);
+          return;
+        }
       }
     } catch {}
     keepScreenOn();
     beat();
-    // On a computer the tab keeps reporting while hidden (browsers slow such
-    // timers to about once a minute, well inside the server's 90 seconds).
     const pulse = setInterval(() => {
       if (desk || document.visibilityState === "visible") beat();
-    }, 20000);
+    }, BEAT_EVERY);
     // A local "still here" mark every few seconds, so a page reload is not
     // mistaken for leaving the app.
     const mark = setInterval(() => {
-      if (desk || document.visibilityState === "visible") remember();
+      if ((desk || document.visibilityState === "visible") && !crackRef.current && !quietSince) remember();
     }, 3000);
-    // Phone: a notification the moment you leave, another at 30 seconds.
-    let reminder = 0;
     const warn = (body) =>
       navigator.serviceWorker?.getRegistration?.().then((r) =>
-        r?.showNotification("🏗️ Şantiyen seni bekliyor", { body, tag: "kutup-build", renotify: true, requireInteraction: true, data: { url: location.href } }),
+        r?.showNotification(strict ? "🏗️ Şantiyen seni bekliyor" : "🎧 Seansın seni bekliyor", { body, tag: "kutup-build", renotify: true, requireInteraction: true, vibrate: [300, 120, 300, 120, 600], data: { url: location.href } }),
       ).catch(() => {});
-    const unwarn = () => {
-      clearTimeout(reminder);
+    const unwarn = () =>
       navigator.serviceWorker?.getRegistration?.().then((r) => r?.getNotifications({ tag: "kutup-build" })).then((list) => list?.forEach((n) => n.close())).catch(() => {});
+    let reminder = 0,
+      askingNow = false;
+    // Computer: "orada mısın?"
+    const ask = () => {
+      if (askingNow || quietSince || crackRef.current || Date.now() < pauseUntil.current) return;
+      askingNow = true;
+      setAsking(Date.now());
+      alarmSound();
+      warn("Orada mısın? 2 dakika içinde “Buradayım”a bas, yoksa bu süre sayılmaz.");
+      flash = setInterval(alarmSound, 30000);
+      answer = setTimeout(() => {
+        clearInterval(flash);
+        quietSince = Date.now();
+        setAsking(-quietSince);
+        if (!strict) notify("Cevap gelmedi: uzakta geçen dakika sayılmıyor.", 8000);
+      }, 2 * 60000);
     };
+    const here = () => {
+      clearTimeout(answer);
+      clearInterval(flash);
+      unwarn();
+      askingNow = false;
+      setAsking(0);
+      if (quietSince) {
+        const away = Date.now() - quietSince;
+        quietSince = 0;
+        if (strict && away > BUILD_LEAVE) return cracked(away);
+      }
+      beat();
+    };
+    hereRef.current = here;
+    let idle = null,
+      check = 0;
+    const controller = new AbortController();
+    if (desk) {
+      const fallback = () => {
+        check = setInterval(ask, 25 * 60000);
+      };
+      if (idleSupported())
+        navigator.permissions
+          ?.query({ name: "idle-detection" })
+          .then((p) => {
+            if (p.state !== "granted" || controller.signal.aborted) return fallback();
+            idle = new window.IdleDetector();
+            idle.addEventListener("change", () => {
+              if (idle.userState === "idle") ask();
+              else if (askingNow || quietSince) here();
+            });
+            return idle.start({ threshold: 15 * 60000, signal: controller.signal });
+          })
+          .catch(fallback);
+      else fallback();
+    }
     const visibility = () => {
       if (desk) {
-        if (document.visibilityState === "visible") beat();
+        if (document.visibilityState === "visible") quietSince ? here() : beat();
         return;
       }
       if (document.visibilityState === "hidden") {
         hiddenAt = Date.now();
         remember();
-        if (pauseUntil.current > Date.now()) return;
+        if (pauseUntil.current > Date.now() || crackRef.current) return;
+        leaving();
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          warn("1 dakika içinde dönmezsen inşaatın yıkılır. Dokun, hemen dön.");
-          reminder = setTimeout(() => warn("Son 30 saniye! Dönmezsen inşaat yıkılacak."), 30000);
+          warn(strict ? `${BUILD_LEAVE / 1000} saniye içinde dön, yoksa binan çatlar. Dokun, hemen dön.` : `Uzakta geçen dakika sayılmaz. ${FREE_LEAVE / 60000} dk içinde dön.`);
+          if (strict) reminder = setTimeout(() => warn("Son 10 saniye! Dönmezsen binan çatlayacak."), BUILD_LEAVE / 2);
         }
         return;
       }
+      clearTimeout(reminder);
       unwarn();
       const away = hiddenAt ? Date.now() - Math.max(hiddenAt, pauseUntil.current) : 0;
       hiddenAt = null;
-      if (away > GRACE) return wither();
-      if (away > 1500) notify("Az kalsın! Şantiye seni bekledi 🏗️");
+      if (crackRef.current) return;
+      if (strict && away > LEAVE) return cracked(away);
+      if (strict && away > 1500) notify("Az kalsın! Şantiye seni bekledi 🏗️");
       keepScreenOn();
       beat();
     };
     document.addEventListener("visibilitychange", visibility);
     return () => {
+      controller.abort();
+      clearTimeout(reminder);
+      clearTimeout(answer);
+      clearInterval(flash);
+      clearInterval(check);
       unwarn();
       clearInterval(pulse);
       clearInterval(mark);
       document.removeEventListener("visibilitychange", visibility);
       releaseScreen();
     };
-  }, [strictEnd]);
+  }, [watchEnd, watchStrict]);
+  // The rescue card's two answers.
+  const rescue = async () => {
+    const epoch = sessionEpoch.current;
+    try {
+      const r = await api("/focus", { action: "rescue" });
+      if (epoch !== sessionEpoch.current) return;
+      setCrack((crackRef.current = null));
+      if (r.state) updateData(r.state);
+      notify(`Bina kurtarıldı 🩹 Süren ${r.extra} dk uzadı. Bu inşaatın tek hakkıydı.`, 6000);
+      keepScreenOn();
+    } catch (e) {
+      notify(e.message);
+      letGo();
+    }
+  };
+  const letGo = async () => {
+    setCrack((crackRef.current = null));
+    try {
+      const r = await api("/focus", { action: "wither" });
+      if (r.state) updateData(r.state);
+    } catch {}
+    notify("İnşaatın çöktü 🧱 Bir dahakine sonuna kadar!");
+  };
   const focusLeft = me?.focusEnd > now ? Math.ceil((me.focusEnd - (me.focusPausedAt || now)) / 1000) : 0;
   useEffect(() => {
-    document.title = focusLeft
-      ? `${String(Math.floor(focusLeft / 60)).padStart(2, "0")}:${String(focusLeft % 60).padStart(2, "0")} · odakta · Kütüp`
-      : "Kütüp — aynı masa, aynı motivasyon.";
-  }, [focusLeft]);
+    document.title = crack
+      ? "🩹 Binan çatladı! · Kütüp"
+      : asking
+        ? focusLeft % 2
+          ? "⚠️ Orada mısın? · Kütüp"
+          : "🔴 Seni bekliyoruz · Kütüp"
+        : focusLeft
+          ? `${String(Math.floor(focusLeft / 60)).padStart(2, "0")}:${String(focusLeft % 60).padStart(2, "0")} · odakta · Kütüp`
+          : "Kütüp — aynı masa, aynı motivasyon.";
+  }, [focusLeft, !!crack, asking]);
+  // The floating window goes away with the session.
+  useEffect(() => {
+    if (!me?.focusEnd) closeFloat();
+  }, [!!me?.focusEnd]);
   const requireMember = (action) => {
     if (!session) {
       setModal("onboard");
@@ -697,7 +849,7 @@ function KutupApp({ initial, restart }) {
       const said = path === "/messages" ? String(body?.text || "") : "";
       if (shouting(said))
         notify("Şşşt! Burası kütüphane 🤫");
-      else if (success) notify(success);
+      else if (success) notify(typeof success === "function" ? success(result) : success);
       return result;
     } catch (e) {
       if (epoch !== sessionEpoch.current) return false;
@@ -753,10 +905,11 @@ function KutupApp({ initial, restart }) {
     requireMember(async () => {
       const strict = storage.get("kutup-fidan-on") !== "0",
         picked = BY_ID[pickedModel()];
-      if (strict) keepScreenOn();
+      keepScreenOn();
+      if (onComputer()) primeFloat();
       await mutate(
         "/focus",
-        { action: "start", joinMember: m.id, strict, model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
+        { action: "start", joinMember: m.id, strict, honest: !strict, model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
         "Aynı ritimdesiniz. İyi çalışmalar! 🤝",
       );
       setJoinAsk(null);
@@ -1158,6 +1311,7 @@ function KutupApp({ initial, restart }) {
                 rhythm={data.group.rhythm}
                 outcome={buildOutcome}
                 onJoin={joinFriend}
+                askNotifications={notificationsOn}
               />
               <div className="focus-side">
                 <VillagePanel
@@ -1336,6 +1490,9 @@ function KutupApp({ initial, restart }) {
       )}
       {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}
       {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
+      {crack && <RescueCard crack={crack} rescue={rescue} letGo={letGo} />}
+      {!crack && asking !== 0 && <HereCard asking={asking} strict={watchStrict} here={() => hereRef.current()} />}
+      {watchEnd > 0 && <FloatPanel me={me} now={now} asking={asking} crack={crack} here={() => hereRef.current()} />}
       <JoinBanner
         friend={data.members.find((x) => x.id === joinAsk)}
         me={me}

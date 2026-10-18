@@ -502,3 +502,51 @@ button.brick-pill {
   font-size: 12.5px;
   font-weight: 600;
 }
+
+/* n40 · kilit modu: the phone's own lock, step by step */
+.lock-steps {
+  margin: 4px 0 12px;
+  padding: 0;
+  list-style: none;
+  counter-reset: lock;
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+.lock-steps li {
+  counter-increment: lock;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+.lock-steps li::before {
+  content: counter(lock);
+  grid-row: span 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--pop, #f5b342);
+  color: #1d1b16;
+}
+.lock-steps b {
+  font-size: 14px;
+}
+.lock-steps span {
+  font-size: 12.5px;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+.lock-sheet .btn + .btn,
+.lock-sheet .form-error,
+.lock-sheet .form-footnote {
+  margin-top: 8px;
+}
+.lock-sheet .form-footnote {
+  text-align: left;
+  line-height: 1.5;
+}

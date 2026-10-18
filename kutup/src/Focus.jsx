@@ -1,17 +1,19 @@
 // The focus card of the Köy tab (timer, build or free mode, the team rhythm)
 // and the coffee card. Split out of App.jsx (n29).
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Expand, Headphones, Play, SlidersHorizontal, Square } from "lucide-react";
+import { ArrowUpRight, Expand, Headphones, PictureInPicture2, Play, SlidersHorizontal, Square } from "lucide-react";
 import { minutesLabel } from "./api.js";
 import { Busy, keepScreenOn, screenAwake, storage } from "./ui.jsx";
 import { KaraBuddy } from "./Kara.jsx";
 import { kindFor } from "../shared/village.js";
-import { BY_ID, CHAIN_GAP, CLASSES, GRACE, RHYTHMS, fits, minutesOf, modelOf, refundLater, refundNow, rhythmAt, rhythmEnd, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
+import { BUILD_LEAVE, BY_ID, CHAIN_GAP, CLASSES, GRACE, HONEST_MIN, RHYTHMS, fits, minutesOf, modelOf, refundLater, refundNow, rhythmAt, rhythmEnd, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 import { BuildingThumb, CatalogModal } from "./Economy.jsx";
 import { SoundButton, SoundPanel } from "./Sound.jsx";
 import { enterFullscreen } from "./fullscreen.js";
 import { DeskMates } from "./Together.jsx";
 import { Modal } from "./Modal.jsx";
+import { LockSheet } from "./Watch.jsx";
+import { floatSupported, floatWindow, onFloat, openFloat, primeFloat } from "./float.js";
 
 // Each digit is its own element keyed by value, so only the digit that changed
 // re-mounts and rolls in.
@@ -35,14 +37,18 @@ const clockTR = (t) => {
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };
 const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
-export function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin }) {
+const notificationState = () => (typeof Notification === "undefined" ? "unsupported" : Notification.permission);
+export function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin, askNotifications }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
     [model, setModel] = useState(pickedModel),
     [picking, setPicking] = useState(false),
     [mixer, setMixer] = useState(false),
-    [invite, setInvite] = useState(() => storage.get("kutup-invite") === "1");
+    [invite, setInvite] = useState(() => storage.get("kutup-invite") === "1"),
+    [lock, setLock] = useState(false),
+    [floating, setFloating] = useState(() => !!floatWindow());
+  useEffect(() => onFloat((w) => setFloating(!!w)), []);
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
   // Build mode: the building sets the length. Free focus: you pick it. Under
@@ -90,20 +96,41 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           : `Pes edersen ${name} yıkılır ve bu seansın dakikaları yazılmaz.`;
       if (!confirm(`${warning}\n\nEmin misin?`)) return;
     }
-    if (!running && fidan) keepScreenOn(); // needs the tap itself on some phones
-    setBusy(true);
-    await mutate(
-      "/focus",
-      running ? { action: "cancel" } : { action: "start", minutes: length, strict: fidan, rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
-      running
-        ? growing
+    // A phone build starts behind the lock guide (n40, kilit modu).
+    if (!running && fidan && !onComputer()) return setLock(true);
+    if (running) {
+      setBusy(true);
+      await mutate(
+        "/focus",
+        { action: "cancel" },
+        growing
           ? early
             ? "Vazgeçtin; malzeme kasana geri döndü. Hazır olunca yeniden."
             : "İnşaat çöktü 🧱 Bir dahakine sonuna kadar!"
-          : "Seans durdu. Hazır olunca yeniden başla."
-        : fidan
-          ? `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
-          : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧",
+          : (r) =>
+              r?.stopped
+                ? r.credited
+                  ? `Seans bitti: görülen ${r.credited} dk yazıldı. 🌱`
+                  : `Seans durdu. ${HONEST_MIN} dk'dan kısa sürdüğü için yazılmadı.`
+                : "Seans durdu. Hazır olunca yeniden başla.",
+      );
+      setBusy(false);
+      return;
+    }
+    return begin();
+  };
+  const begin = async () => {
+    keepScreenOn(); // needs the tap itself on some phones
+    // A computer gets the floating window, the alarm sound and the idle check,
+    // each asked for inside this tap.
+    if (onComputer()) primeFloat();
+    setBusy(true);
+    await mutate(
+      "/focus",
+      { action: "start", minutes: length, strict: fidan, honest: !fidan, rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
+      fidan
+        ? `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
+        : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧 Burada geçen her dakika sayılır.",
     );
     setBusy(false);
   };
@@ -167,9 +194,11 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
             {growing
               ? onComputer()
                 ? "🏗️ sekmeler serbest, bu sekmeyi kapatma"
-                : "🏗️ çıkarsan 1 dk içinde dön"
+                : `🏗️ çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön`
               : running
-                ? "sen, işin ve biraz sessizlik"
+                ? onComputer()
+                  ? "sekmeler serbest, uzakta geçen dakika sayılmaz"
+                  : "uygulamada kal, uzakta geçen dakika sayılmaz"
                 : "dakika sadece kendine"}
           </span>
         </div>
@@ -178,7 +207,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
         <div className="studio-mode" role="group" aria-label="Çalışma şekli">
           {[
             [true, "🏗️", "İnşaat", "köye bina, tam maaş"],
-            [false, "🎧", "Serbest", "risk yok, yarım maaş"],
+            [false, "🎧", "Serbest", "bina yok, yarım maaş"],
           ].map(([on, icon, label, hint]) => (
             <button
               key={label}
@@ -232,8 +261,8 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           {fidan
             ? onComputer()
               ? "Bitince köyüne eklenir. Bu sekmeyi kapatma."
-              : "Bitince köyüne eklenir. Çıkarsan 1 dk içinde dön."
-            : `Yapı yok, risk yok: ${duration} dk → ${wageFor(duration, false)} 🧱.`}
+              : `Bitince köyüne eklenir. Çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön.`
+            : `Yapı yok: ${duration} dk → ${wageFor(duration, false)} 🧱. Uzakta geçen dakika sayılmaz.`}
         </p>
       )}
       {round && !running && !finishing && (
@@ -276,7 +305,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
         <p className={`awake-note ${screenAwake() ? "ok" : "warn"}`}>
           {screenAwake()
             ? "🔆 Ekran açık tutuluyor; telefonu önünde açık bırakabilirsin."
-            : "⚠️ Bu telefon ekranı kendi kapatabilir: pil tasarrufunu kapat ya da ekran zaman aşımını uzat. Ekran kararırsa 1 dakika içinde dokun."}
+            : `⚠️ Bu telefon ekranı kendi kapatabilir: pil tasarrufunu kapat ya da ekran zaman aşımını uzat. Ekran kararırsa ${BUILD_LEAVE / 1000} saniye içinde dokun.`}
         </p>
       )}
       {streakLeft > 0 && streakNext > 0 && (
@@ -348,6 +377,12 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </button>
         )}
         <SoundButton />
+        {running && onComputer() && floatSupported() && !floating && (
+          <button type="button" className="sound-pill screen-pill" title="Sayaç her uygulamanın üstünde dursun" onClick={() => openFloat()}>
+            <PictureInPicture2 size={14} />
+            <span>Yüzen pencere</span>
+          </button>
+        )}
         <button type="button" className="sound-pill icon-only" aria-label="Ses karışımı" onClick={() => setMixer(true)}>
           <SlidersHorizontal size={14} />
         </button>
@@ -375,6 +410,18 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           "Küçük bir başlangıç, büyük bir iyi his."
         )}
       </p>
+      {lock && (
+        <LockSheet
+          minutes={length}
+          notifications={notificationState()}
+          askNotifications={askNotifications || (async () => {})}
+          close={() => setLock(false)}
+          start={async () => {
+            setLock(false);
+            await begin();
+          }}
+        />
+      )}
       {mixer && (
         <Modal title="Şehir biraz sussun." subtitle="Yağmur, kütüphane, şömine… ya da bir kara delik." close={() => setMixer(false)}>
           <SoundPanel />
