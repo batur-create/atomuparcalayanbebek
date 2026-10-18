@@ -64,3 +64,27 @@ export function cell(a, b, c, d) {
 }
 // Draw a list of { depth, s } far to near.
 export const painted = (list) => list.sort((a, b) => a.depth - b.depth).map((e) => e.s).join("");
+// A surface of revolution round (cx, cy): prof is [[r, z], …] bottom to top;
+// from/to limit the sweep (radians), upto cuts it off while it is being built.
+export function lathe(P, cx, cy, prof, faces, { n = 24, from = 0, to = Math.PI * 2, upto = Infinity, paint = null } = {}) {
+  let s = "";
+  for (let j = 0; j < prof.length - 1; j++) {
+    const [r0, z0] = prof[j],
+      [r1, z1] = prof[j + 1];
+    if (z0 >= upto) break;
+    const zt = Math.min(z1, upto),
+      rt = r0 + ((r1 - r0) * (zt - z0)) / (z1 - z0 || 1);
+    for (let i = 0; i < n; i++) {
+      const a0 = from + ((to - from) * i) / n,
+        a1 = from + ((to - from) * (i + 1)) / n,
+        am = (a0 + a1) / 2,
+        nu = unit([Math.cos(am) * (zt - z0), Math.sin(am) * (zt - z0), -(rt - r0)]);
+      if (!facing(nu)) continue;
+      const q = (r, a, z) => P(cx + r * Math.cos(a), cy + r * Math.sin(a), z);
+      s += poly([q(r0, a0, z0), q(r0, a1, z0), q(rt, a1, zt), q(rt, a0, zt)], shade(P, nu, paint ? paint(j, i) : faces));
+    }
+  }
+  return s;
+}
+// A dome's profile: a squashed quarter circle of radius r and height h.
+export const domeProfile = (r, z, h, n = 7) => Array.from({ length: n + 1 }, (_, i) => [r * Math.cos((i / n) * (Math.PI / 2)), z + h * Math.sin((i / n) * (Math.PI / 2))]);

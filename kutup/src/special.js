@@ -19,12 +19,13 @@
 //   craneEnd, liftUntil     when the crane leaves; when lifting stops
 import { DOME } from "./geodesic.js";
 import { COLOSSEUM, KEOPS, PISA } from "./landmarks1.js";
+import { ANITKABIR, GALATA, SULEYMANIYE } from "./landmarks2.js";
 import { CANTILEVER, SHELL_MARKET, TENSILE } from "./modern.js";
 import { CAPSULE_TOWER, TWIST_TOWER, WATER_TOWER } from "./towers.js";
 import { ARCH_BRIDGE, SERENDER, BEEHIVE } from "./vernacular.js";
 
 let registry = null;
 // Built on first use: the modules import iso.js, which imports this one.
-const all = () => (registry ||= { geodesic: DOME, kemer: ARCH_BRIDGE, serender: SERENDER, kerpic: BEEHIVE, kabuk: SHELL_MARKET, gergi: TENSILE, konsol: CANTILEVER, kapsul: CAPSULE_TOWER, burgu: TWIST_TOWER, sukulesi: WATER_TOWER, keops: KEOPS, kolezyum: COLOSSEUM, pisa: PISA });
+const all = () => (registry ||= { geodesic: DOME, kemer: ARCH_BRIDGE, serender: SERENDER, kerpic: BEEHIVE, kabuk: SHELL_MARKET, gergi: TENSILE, konsol: CANTILEVER, kapsul: CAPSULE_TOWER, burgu: TWIST_TOWER, sukulesi: WATER_TOWER, keops: KEOPS, kolezyum: COLOSSEUM, pisa: PISA, suleymaniye: SULEYMANIYE, galata: GALATA, anitkabir: ANITKABIR });
 export const specialOf = (sp) => (sp?.special ? all()[sp.special] || null : null);
 export const specialById = (id) => all()[id] || null;
