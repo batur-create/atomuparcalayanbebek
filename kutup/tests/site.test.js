@@ -44,6 +44,21 @@ test('the site plan covers the whole session in order, with beams, waterproofing
       continue;
     }
     assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
+    const after = keys.slice(keys.indexOf('footPour') + 1);
+    if (sys === 'capsule') {
+      // The core is finished and the bolt templates checked before the first capsule goes up.
+      assert.deepEqual(after, ['core', 'core', 'core', 'plates', 'capsules', 'capsules', 'capsules', 'torque', 'lobby', 'services', 'roof', 'handover']);
+      continue;
+    }
+    if (sys === 'twist') {
+      assert.deepEqual(after, ['core', 'core', 'floors', 'floors', 'floors', 'floors', 'glazing', 'crown', 'openings', 'handover']);
+      continue;
+    }
+    if (sys === 'watertower') {
+      // The tank is cast in one go and only takes water once the test holds.
+      assert.deepEqual(after, ['shaft', 'shaft', 'shaft', 'tankForm', 'tankPour', 'dome', 'waterTest', 'stair', 'paint', 'openings', 'handover']);
+      continue;
+    }
     if (sys === 'shell') {
       // One form, moved umbrella to umbrella: formed, checked, poured, struck.
       assert.deepEqual(keys.slice(keys.indexOf('footPour') + 1), ['columns', 'shellForm', 'shellPour', 'shellForm', 'shellPour', 'shellForm', 'shellPour', 'shellForm', 'shellPour', 'floorFinish', 'stalls', 'openings', 'handover']);
@@ -77,7 +92,7 @@ test('the site plan covers the whole session in order, with beams, waterproofing
 
 test('each building is built the way its walls say', () => {
   const sys = (id) => systemOf(spec(CATALOG.find((c) => c.id === id).kind, 1, id));
-  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel', 'shell', 'tensile', 'cantilever']);
+  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol', 'kapsul', 'burgu', 'sukulesi'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel', 'shell', 'tensile', 'cantilever', 'capsule', 'twist', 'watertower']);
 });
 
 test('a wider plan gets beams across the middle too', () => {
@@ -125,7 +140,7 @@ test('the inspector checks the rebar before every pour, and every pour starts wi
 
 test('the progress payment weighs work by cost and the quantities only grow', async () => {
   const { metraj } = await import('../src/metraj.js');
-  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol']) {
+  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol', 'kapsul', 'burgu', 'sukulesi']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 5, id);
     const plan = sitePlan(sp);
@@ -213,6 +228,31 @@ test('modern structures: every shell checked before its pour, anchors pulled, th
   for (const id of ['pazar', 'amfi', 'konsol']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 4, id);
+    for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
+  }
+});
+
+test('the towers: every capsule bolted and torqued, each floor turned 9°, the tank holds its water', async () => {
+  const { checkAt } = await import('../src/quality.js');
+  const { metraj } = await import('../src/metraj.js');
+  const { TANK_M3 } = await import('../src/towers.js');
+  const mid = (p, t) => p.a + (p.b - p.a) * t;
+  const capsules = spec('tower', 2, 'kapsul'),
+    cp = sitePlan(capsules);
+  assert.match(checkAt(cp, mid(cp.find((p) => p.key === 'torque'), 0.9))?.label, /tork/);
+  assert.equal(metraj(capsules, cp, 1).items[1], 'Kapsül 30/30');
+  const twist = spec('tower', 2, 'burgu'),
+    tp = sitePlan(twist);
+  assert.match(checkAt(tp, mid(tp.find((p) => p.key === 'floors'), 0.9))?.label, /9°/);
+  for (const p of tp.filter((q) => q.key === 'floors')) assert.equal(checkAt(tp, mid(p, 0.1))?.kind, 'slump');
+  assert.equal(metraj(twist, tp, 1).items[1], 'Dönüş 99°');
+  const water = spec('tower', 2, 'sukulesi'),
+    wp = sitePlan(water);
+  assert.match(checkAt(wp, mid(wp.find((p) => p.key === 'waterTest'), 0.9))?.label, /sızıntı yok/);
+  assert.equal(metraj(water, wp, 1).items[1], `Su ${TANK_M3} m³`);
+  assert.ok(TANK_M3 > 15 && TANK_M3 < 60);
+  for (const id of ['kapsul', 'burgu', 'sukulesi']) {
+    const sp = spec('tower', 4, id);
     for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
   }
 });
