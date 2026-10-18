@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { Modal } from "./Modal.jsx";
 import { isIOS, keepScreenOn, storage } from "./ui.jsx";
 import { kindFor } from "../shared/village.js";
-import { BUILD_LEAVE, FREE_LEAVE, RESCUE_WINDOW, modelOf, rescueMinutes } from "../shared/catalog.js";
+import { BUILD_LEAVE, COUNTDOWN, FREE_LEAVE, LEAVE_GRACE, RESCUE_WINDOW, modelOf, rescueMinutes } from "../shared/catalog.js";
 import { floatWindow, onFloat } from "./float.js";
 
 const minSec = (ms) => {
@@ -65,18 +65,18 @@ export function HereCard({ asking, now, strict, here }) {
 }
 
 /** The floating window's content, drawn into Chrome's picture-in-picture window. */
-export function FloatPanel({ me, now, asking, crack, here }) {
+export function FloatPanel({ me, now, asking, crack, phoneGone, here }) {
   const [win, setWin] = useState(floatWindow);
   useEffect(() => onFloat(setWin), []);
   if (!win || !me?.focusEnd) return null;
   const left = Math.max(0, Math.ceil((me.focusEnd - (me.focusPausedAt || now)) / 1000));
   const total = (me.focusMinutes || 1) * 60;
   const item = me.focusStrict ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : null;
-  const alarm = !!asking || !!crack;
+  const alarm = !!asking || !!crack || !!phoneGone;
   // The first minute of a question is quiet (yellow); then red, shaking and loud.
   const soft = asking > 0 && now - asking < 60000;
   return createPortal(
-    <div className={`float ${alarm ? (soft ? "soft" : "alarm") : ""}`} onClick={alarm && !crack ? here : undefined}>
+    <div className={`float ${alarm ? (soft ? "soft" : "alarm") : ""}`} onClick={asking && !crack ? here : undefined}>
       <div className="top">{item ? `${item.emoji} ${item.name}` : "🎧 Serbest odak"}</div>
       <div className="clock">
         {String(Math.floor(left / 60)).padStart(2, "0")}:{String(left % 60).padStart(2, "0")}
@@ -86,6 +86,8 @@ export function FloatPanel({ me, now, asking, crack, here }) {
       </div>
       {crack ? (
         <p>Binan çatladı! Kütüp'e dön.</p>
+      ) : phoneGone ? (
+        <p>📱 Telefonu eline aldın! Kütüp'e dön.</p>
       ) : alarm ? (
         <>
           <p>{asking < 0 ? "Uzaktaydın, süre sayılmıyor." : "Orada mısın?"}</p>
@@ -149,12 +151,12 @@ export function LockSheet({ minutes, start, close, notifications, askNotificatio
             ))}
           </ol>
           <p className="form-footnote">
-            Kural: uygulamadan çıktığın an bildirim gelir, {BUILD_LEAVE / 2000}. saniyede bir daha. {BUILD_LEAVE / 1000} saniyede dönmezsen binan çatlar; {RESCUE_WINDOW / 60000} dk içinde dönersen bir kez kurtarabilirsin (+%20 süre). Çay molasında telefon serbest.
+            Kural: uygulamadan çıkarsan {LEAVE_GRACE / 1000} saniye sessiz payın var. Sonra bildirimde {COUNTDOWN}'dan geri sayım başlar, telefon her saniye titrer. 1'e kadar dönmezsen binan çatlar; {RESCUE_WINDOW / 60000} dk içinde dönersen bir kez kurtarabilirsin (+%20 süre). Çay molasında telefon serbest.
           </p>
         </>
       ) : (
         <p>
-          Yan tuşa üç kez basıp kilitlemeyi unutma. Çıkarsan {BUILD_LEAVE / 1000} saniyede binan çatlar.{" "}
+          Yan tuşa üç kez basıp kilitlemeyi unutma. Çıkarsan {LEAVE_GRACE / 1000} sn sonra geri sayım başlar, {BUILD_LEAVE / 1000} saniyede binan çatlar.{" "}
           <button type="button" className="text-button" onClick={() => setFull(true)}>
             Nasıl?
           </button>

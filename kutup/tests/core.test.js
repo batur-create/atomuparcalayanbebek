@@ -1096,9 +1096,9 @@ test("Hesap ve cihazlar signs the account out of its other devices; this one sta
 
 // n40, dürüst dakika: a watched free session counts only the minutes it was seen,
 // and a build that cracked while its owner was away can be saved once.
-async function honestFixture(tag) {
+async function honestFixture(tag, config = {}) {
   const sqlite = new DatabaseSync(":memory:");
-  const app = createApp({ db: sqliteAdapter(sqlite), config: { leaveStep: 0 } });
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { leaveStep: 0, ...config } });
   const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", username: `ada_${tag}`, password: "honest-pass-1" } });
   const id = sqlite.prepare("SELECT id FROM members WHERE username = ?").get(`ada_${tag}`).id;
   const focus = (body) => call(app, "/focus", { method: "POST", headers: { Cookie: ada.cookie }, body });
@@ -1205,4 +1205,58 @@ test("kurtarma: a site left at the very end is not collapsed while it can still 
   assert.equal(row().focus_end, 0);
   assert.deepEqual(logged(), []);
   assert.ok(row().ruin_until > Date.now(), "rubble, as before");
+});
+
+test("telefon sayaç: leaving the app counts 10 … 1 on the phone, a computer start ignores phone glances (n40)", async (t) => {
+  const { focus, row, sqlite, id, app, cookie } = await honestFixture("sayac", { pushExtraHosts: "push.kutup.test" });
+  const receiver = pushReceiver();
+  const session = sqlite.prepare("SELECT token FROM sessions WHERE member_id = ?").get(id).token;
+  sqlite.prepare("INSERT INTO subscriptions (endpoint, member_id, subscription, session_token) VALUES (?, ?, ?, ?)").run(
+    "https://push.kutup.test/ada",
+    id,
+    JSON.stringify(receiver.subscription("https://push.kutup.test/ada")),
+    session,
+  );
+  const sent = [];
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    sent.push(JSON.parse(receiver.decrypt(new Uint8Array(await new Response(init.body).arrayBuffer()))));
+    return new Response(null, { status: 201 });
+  });
+  // Runs a request and every background job it starts (the countdown and its pushes).
+  const settled = async (body) => {
+    const pending = [];
+    const ctx = { ip: "test", waitUntil: (p) => pending.push(p) };
+    const request = new Request("http://kutup.test/api/focus", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Kutup": "1", Cookie: cookie },
+      body: JSON.stringify(body),
+    });
+    const response = await app.fetch(request, ctx);
+    for (let i = 0; i < pending.length; i++) await pending[i];
+    return response.json();
+  };
+  await focus({ action: "start", strict: true, model: "kulube", device: "phone" });
+  assert.equal(row().focus_device, "phone");
+  await settled({ action: "away" });
+  const titles = sent.map((p) => p.title);
+  assert.deepEqual(titles, ["⏳ 10", "⏳ 9", "⏳ 8", "⏳ 7", "⏳ 6", "⏳ 5", "⏳ 4", "⏳ 3", "⏳ 2", "⏳ 1", "🩹 Binan çatladı!"]);
+  assert.ok(sent.every((p) => p.tag === "kutup-build"), "one notification on screen, updated in place");
+  assert.deepEqual(sent.slice(0, 3).map((p) => p.left), [10, 9, 8], "the phone's own worker counts from here");
+  assert.ok(row().focus_left_at > 0);
+  // While the phone is out of the app, an open computer cannot keep the site alive.
+  const desk = await focus({ action: "beat", device: "desk" });
+  assert.equal(desk.data.phoneAway, true);
+  assert.ok(row().focus_left_at > 0);
+  // Back on the phone: the countdown stops.
+  await focus({ action: "beat", device: "phone" });
+  assert.equal(row().focus_left_at, 0);
+
+  // A session started on the computer: the phone is free to glance at.
+  sqlite.prepare("UPDATE members SET focus_end = 0, focus_strict = 0, focus_device = NULL WHERE id = ?").run(id);
+  await focus({ action: "start", minutes: 50, honest: true, device: "desk" });
+  assert.equal(row().focus_device, "desk");
+  sent.length = 0;
+  await settled({ action: "away" });
+  assert.equal(sent.length, 0);
+  assert.equal(row().focus_left_at, 0);
 });

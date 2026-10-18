@@ -72,6 +72,17 @@ export function primeSound() {
     audio = null;
   }
 }
+// Any tap or key on the computer makes the sound ready, so the alarm can ring
+// even for a session the phone started.
+if (typeof document !== "undefined") {
+  const ready = () => {
+    primeSound();
+    document.removeEventListener("pointerdown", ready, true);
+    document.removeEventListener("keydown", ready, true);
+  };
+  document.addEventListener("pointerdown", ready, true);
+  document.addEventListener("keydown", ready, true);
+}
 export function alarmSound() {
   if (!audio) return;
   try {

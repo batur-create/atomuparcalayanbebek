@@ -13,7 +13,7 @@ import { enterFullscreen } from "./fullscreen.js";
 import { DeskMates } from "./Together.jsx";
 import { Modal } from "./Modal.jsx";
 import { LockSheet } from "./Watch.jsx";
-import { floatSupported, floatWindow, onFloat, openFloat, primeFloat } from "./float.js";
+import { floatSupported, floatWindow, onFloat, primeFloat } from "./float.js";
 
 // Each digit is its own element keyed by value, so only the digit that changed
 // re-mounts and rolls in.
@@ -127,7 +127,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     setBusy(true);
     await mutate(
       "/focus",
-      { action: "start", minutes: length, strict: fidan, honest: !fidan, rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
+      { action: "start", minutes: length, strict: fidan, honest: !fidan, device: onComputer() ? "desk" : "phone", rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
       fidan
         ? `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
         : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧 Burada geçen her dakika sayılır.",
@@ -378,7 +378,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
         )}
         <SoundButton />
         {running && onComputer() && floatSupported() && !floating && (
-          <button type="button" className="sound-pill screen-pill" title="Sayaç her uygulamanın üstünde dursun" onClick={() => openFloat()}>
+          <button type="button" className="sound-pill screen-pill" title="Sayaç her uygulamanın üstünde dursun" onClick={() => primeFloat()}>
             <PictureInPicture2 size={14} />
             <span>Yüzen pencere</span>
           </button>

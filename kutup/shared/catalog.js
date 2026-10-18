@@ -115,7 +115,11 @@ export const BEAT_EVERY = 20000;
 export const BEAT_GAP = 90000; // a silence longer than this is time away
 export const FREE_LEAVE = 5 * 60000; // away longer than this ends a free session
 export const HONEST_MIN = 20; // a free session counts only with this many minutes seen
-export const BUILD_LEAVE = 20000; // build mode on a phone: back within 20 seconds…
+// Build mode on a phone: leaving the app gives five quiet seconds (a stray
+// tap is free), then a notification counts 10, 9 … 1, buzzing every second.
+export const LEAVE_GRACE = 5000;
+export const COUNTDOWN = 10;
+export const BUILD_LEAVE = LEAVE_GRACE + COUNTDOWN * 1000; // back within 15 seconds…
 export const RESCUE_WINDOW = 5 * 60000; // …or the site cracks, and can be saved for five more minutes
 export const RESCUE_HOLD = BUILD_LEAVE + RESCUE_WINDOW + 40000; // the server waits this long (two missed beats of slack)
 export const RESCUE_SHARE = 0.2; // saving it costs a fifth of the session in extra minutes (25 → 5, 50 → 10, 75 → 15)

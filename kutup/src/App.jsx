@@ -35,7 +35,7 @@ import {
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
 import { kindFor } from "../shared/village.js";
-import { BEAT_EVERY, BUILD_LEAVE, BY_ID, FREE_LEAVE, GRACE, HONEST_MIN, RESCUE_HOLD, fits, modelOf, rescueMinutes, streakBonus, teaBreakFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BUILD_LEAVE, BY_ID, COUNTDOWN, FREE_LEAVE, GRACE, HONEST_MIN, LEAVE_GRACE, RESCUE_HOLD, fits, modelOf, rescueMinutes, streakBonus, teaBreakFor } from "../shared/catalog.js";
 import { alarmSound, closeFloat, idleSupported, primeFloat } from "./float.js";
 import { FloatPanel, HereCard, RescueCard } from "./Watch.jsx";
 import { ReceiptCard } from "./Economy.jsx";
@@ -593,6 +593,9 @@ function KutupApp({ initial, restart }) {
   // unanswered question for two minutes counts as leaving.
   const watchEnd = me?.focusEnd > Date.now() && (me.focusStrict || me.focusHonest) ? me.focusEnd : 0;
   const watchStrict = !!me?.focusStrict;
+  // Where the session started (n40): a phone start makes the phone the timer
+  // and the computer its helper; a computer start leaves the phone free to glance at.
+  const watchDevice = me?.focusDevice || "";
   const meRef = useRef(me);
   meRef.current = me;
   // While on a tea break (and until it would have ended) leaving the app is fine.
@@ -608,6 +611,8 @@ function KutupApp({ initial, restart }) {
     if (!watchEnd) return releaseScreen();
     const strict = watchStrict,
       desk = onComputer();
+    // A phone opened beside a session the computer started: nothing to watch here.
+    if (!desk && watchDevice === "desk") return;
     // How long an absence may be before it counts: a page reload or a quick
     // look at a message is fine.
     const LEAVE = strict ? (desk ? 120000 : BUILD_LEAVE) : FREE_LEAVE;
@@ -654,7 +659,7 @@ function KutupApp({ initial, restart }) {
     const beat = () => {
       if (gone || crackRef.current || quietSince) return;
       remember();
-      api("/focus", { action: "beat" })
+      api("/focus", { action: "beat", device: desk ? "desk" : "phone" })
         .then((r) => {
           if (r?.stopped) {
             gone = true;
@@ -698,8 +703,7 @@ function KutupApp({ initial, restart }) {
       ).catch(() => {});
     const unwarn = () =>
       navigator.serviceWorker?.getRegistration?.().then((r) => r?.getNotifications({ tag: "kutup-build" })).then((list) => list?.forEach((n) => n.close())).catch(() => {});
-    let reminder = 0,
-      loud = 0,
+    let loud = 0,
       askingNow = false;
     // Computer: "orada mısın?"
     const ask = () => {
@@ -739,7 +743,9 @@ function KutupApp({ initial, restart }) {
     let idle = null,
       check = 0;
     const controller = new AbortController();
-    if (desk) {
+    // With the phone as the timer, the phone does the watching; the computer
+    // only sounds the alarm when the phone leaves the app (see phoneGone).
+    if (desk && watchDevice !== "phone") {
       const fallback = () => {
         check = setInterval(ask, 25 * 60000);
       };
@@ -768,13 +774,27 @@ function KutupApp({ initial, restart }) {
         remember();
         if (pauseUntil.current > Date.now() || crackRef.current) return;
         leaving();
-        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          warn(strict ? `${BUILD_LEAVE / 1000} saniye içinde dön, yoksa binan çatlar. Dokun, hemen dön.` : `Uzakta geçen dakika sayılmaz. ${FREE_LEAVE / 60000} dk içinde dön.`);
-          if (strict) reminder = setTimeout(() => warn("Son 10 saniye! Dönmezsen binan çatlayacak."), BUILD_LEAVE / 2);
-        }
+        // Five quiet seconds, then the phone's service worker counts 10 … 1 on
+        // the notification, buzzing each second (the server's pushes back it up).
+        if (typeof Notification !== "undefined" && Notification.permission === "granted")
+          navigator.serviceWorker?.controller?.postMessage({
+            leave: {
+              grace: LEAVE_GRACE,
+              tag: "kutup-build",
+              url: location.href,
+              sticky: true,
+              ...(strict
+                ? {
+                    left: COUNTDOWN,
+                    done: meRef.current?.focusRescued
+                      ? { title: "🧱 Binan çöküyor", body: "Bu inşaatın kurtarma hakkı kullanılmıştı." }
+                      : { title: "🩹 Binan çatladı!", body: "Hemen dönersen kurtarabilirsin." },
+                  }
+                : { title: "🎧 Seansın seni bekliyor", body: `Uzakta geçen dakika sayılmaz. ${FREE_LEAVE / 60000} dk içinde dön.` }),
+            },
+          });
         return;
       }
-      clearTimeout(reminder);
       unwarn();
       const away = hiddenAt ? Date.now() - Math.max(hiddenAt, pauseUntil.current) : 0;
       hiddenAt = null;
@@ -787,7 +807,6 @@ function KutupApp({ initial, restart }) {
     document.addEventListener("visibilitychange", visibility);
     return () => {
       controller.abort();
-      clearTimeout(reminder);
       clearTimeout(loud);
       clearTimeout(answer);
       clearInterval(flash);
@@ -798,7 +817,17 @@ function KutupApp({ initial, restart }) {
       document.removeEventListener("visibilitychange", visibility);
       releaseScreen();
     };
-  }, [watchEnd, watchStrict]);
+  }, [watchEnd, watchStrict, watchDevice]);
+  // Phone and computer together (n40): the phone was picked up mid-session.
+  // An open computer rings too, and its floating window turns red, so the
+  // computer helps call you back instead of covering for the phone.
+  const phoneGone = watchEnd > 0 && onComputer() && me?.focusLeftAt > 0 && now - me.focusLeftAt > LEAVE_GRACE;
+  useEffect(() => {
+    if (!phoneGone) return;
+    alarmSound();
+    const ring = setInterval(alarmSound, 4000);
+    return () => clearInterval(ring);
+  }, [phoneGone]);
   // The rescue card's two answers.
   const rescue = async () => {
     const epoch = sessionEpoch.current;
@@ -826,6 +855,10 @@ function KutupApp({ initial, restart }) {
   useEffect(() => {
     document.title = crack
       ? "🩹 Binan çatladı! · Kütüp"
+      : phoneGone
+        ? focusLeft % 2
+          ? "📱 Telefonu bırak! · Kütüp"
+          : "🔴 Kütüp'e dön · Kütüp"
       : asking
         ? focusLeft % 2
           ? "⚠️ Orada mısın? · Kütüp"
@@ -833,7 +866,7 @@ function KutupApp({ initial, restart }) {
         : focusLeft
           ? `${String(Math.floor(focusLeft / 60)).padStart(2, "0")}:${String(focusLeft % 60).padStart(2, "0")} · odakta · Kütüp`
           : "Kütüp — aynı masa, aynı motivasyon.";
-  }, [focusLeft, !!crack, asking]);
+  }, [focusLeft, !!crack, asking, phoneGone]);
   // The floating window goes away with the session.
   useEffect(() => {
     if (!me?.focusEnd) closeFloat();
@@ -917,7 +950,7 @@ function KutupApp({ initial, restart }) {
       if (onComputer()) primeFloat();
       await mutate(
         "/focus",
-        { action: "start", joinMember: m.id, strict, honest: !strict, model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
+        { action: "start", joinMember: m.id, strict, honest: !strict, device: onComputer() ? "desk" : "phone", model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
         "Aynı ritimdesiniz. İyi çalışmalar! 🤝",
       );
       setJoinAsk(null);
@@ -1500,7 +1533,7 @@ function KutupApp({ initial, restart }) {
       {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
       {crack && <RescueCard crack={crack} rescue={rescue} letGo={letGo} />}
       {!crack && asking !== 0 && <HereCard asking={asking} now={now} strict={watchStrict} here={() => hereRef.current()} />}
-      {watchEnd > 0 && <FloatPanel me={me} now={now} asking={asking} crack={crack} here={() => hereRef.current()} />}
+      {watchEnd > 0 && <FloatPanel me={me} now={now} asking={asking} crack={crack} phoneGone={phoneGone} here={() => hereRef.current()} />}
       <JoinBanner
         friend={data.members.find((x) => x.id === joinAsk)}
         me={me}
