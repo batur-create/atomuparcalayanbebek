@@ -65,7 +65,7 @@ export function metraj(sp, plan, shown) {
     if (p.key === "steelBeam") steel += (k * 4 * side * 20) / 1000;
     if (p.key === "brace") steel += (k * 16 * Math.hypot(side / 3, hf * M) * 8) / 1000;
     const add = own?.metraj(sp, p, k);
-    if (add) for (const q in add) extra[q] += add[q];
+    if (add) for (const q in add) extra[q] = (extra[q] || 0) + add[q];
   }
   concrete += extra.concrete;
   rebar += extra.rebar;
@@ -73,7 +73,7 @@ export function metraj(sp, plan, shown) {
   timber += extra.timber;
   wall += extra.wall;
   const hakedis = Math.round((earned / cost) * 100),
-    mine = own?.items({ concrete, rebar, steel, timber, wall, stone: extra.stone }, num);
+    mine = own?.items({ ...extra, concrete, rebar, steel, timber, wall }, num);
   // A building with no concrete to speak of names both of its own items.
   if (Array.isArray(mine)) return { hakedis, items: mine };
   const items = [`Beton ${num(concrete)} m³`];

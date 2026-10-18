@@ -3,58 +3,11 @@
 // and Harran's corbelled mud-brick beehive houses. Each is drawn from its own
 // geometry and goes up in the order a usta would build it; src/special.js
 // wires them into the site, the crew, the crane and the quantities.
-import { GLASS, LIT, STONE, WOOD, box, circle, ellipse, faceX, faceY, poly, rng, seg } from "./iso.js";
+import { GLASS, LIT, STONE, box, circle, ellipse, faceX, faceY, poly, rng, seg } from "./iso.js";
+import { CONCRETE, M, PLY, V, WET, at, castShadow, clamp, facing, mix, mixAll, progress, rectOutline, shade } from "./kit.js";
 
-const clamp = (v) => Math.max(0, Math.min(1, v));
-const M = 1.6,
-  V = M * M * M;
-const mix = (a, b, t) => {
-  const pa = parseInt(a.slice(1), 16),
-    pb = parseInt(b.slice(1), 16);
-  const ch = (s) => Math.round(((pa >> s) & 255) + (((pb >> s) & 255) - ((pa >> s) & 255)) * t);
-  return `#${((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1)}`;
-};
-const mixAll = (a, b, t) => a.map((c, i) => mix(c, b[i], t));
-const WET = ["#8e9298", "#7a7e85", "#676b71"],
-  CONCRETE = ["#cdcac2", "#b2afa7", "#99968f"],
-  PLY = ["#e6c383", "#cfa56a", "#b98e55"],
-  REBAR = "#8a4b33",
-  WATER = "#7db7d8",
+const WATER = "#7db7d8",
   MUD = "#9c8463";
-// A face's shade from its outward normal, lit from the upper left on screen.
-const LIGHT = [0.2, 0.6, 0.8].map((v) => v / Math.hypot(0.2, 0.6, 0.8));
-function shade(P, n, faces) {
-  const m = P.mirror ? [n[1], n[0], n[2]] : n;
-  const t = clamp((m[0] * LIGHT[0] + m[1] * LIGHT[1] + m[2] * LIGHT[2]) / 0.8);
-  return t > 0.5 ? mix(faces[1], faces[0], (t - 0.5) * 2) : mix(faces[2], faces[1], t * 2);
-}
-const facing = (n) => n[0] + n[1] + n[2] > 0;
-const progress = (plan, shown) => {
-  const k = {};
-  for (const p of plan) k[p.floor >= 0 ? `${p.key}${p.floor}` : p.key] = clamp((shown - p.a) / (p.b - p.a));
-  return k;
-};
-// A shadow: the outline of the footprint and its copy thrown to the right.
-function castShadow(P, outline, length) {
-  const pts = [];
-  for (const [x, y] of outline) pts.push(P(x, y, 0.01), P(x + length, y + length * 0.35, 0.01));
-  const p = pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const lo = [],
-    hi = [];
-  for (const q of p) {
-    while (lo.length >= 2 && turn(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop();
-    lo.push(q);
-  }
-  for (const q of p.reverse()) {
-    while (hi.length >= 2 && turn(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop();
-    hi.push(q);
-  }
-  return poly([...lo.slice(0, -1), ...hi.slice(0, -1)], "#344a22", 0.2);
-}
-const rectOutline = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
-// A worker's tuple for the crew layer: [x, y, z, tool].
-const at = (x, y, z, tool) => [x, y, z, tool];
 
 // =====================================================================
 // Taş kemer köprü: a semicircular arch of cut-stone voussoirs over a

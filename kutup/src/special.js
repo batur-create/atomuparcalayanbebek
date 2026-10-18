@@ -18,10 +18,11 @@
 //                           one item after the concrete, or both items as an array
 //   craneEnd, liftUntil     when the crane leaves; when lifting stops
 import { DOME } from "./geodesic.js";
+import { CANTILEVER, SHELL_MARKET, TENSILE } from "./modern.js";
 import { ARCH_BRIDGE, SERENDER, BEEHIVE } from "./vernacular.js";
 
 let registry = null;
 // Built on first use: the modules import iso.js, which imports this one.
-const all = () => (registry ||= { geodesic: DOME, kemer: ARCH_BRIDGE, serender: SERENDER, kerpic: BEEHIVE });
+const all = () => (registry ||= { geodesic: DOME, kemer: ARCH_BRIDGE, serender: SERENDER, kerpic: BEEHIVE, kabuk: SHELL_MARKET, gergi: TENSILE, konsol: CANTILEVER });
 export const specialOf = (sp) => (sp?.special ? all()[sp.special] || null : null);
 export const specialById = (id) => all()[id] || null;
