@@ -22,13 +22,18 @@ export function checkAt(plan, shown) {
   if (!p) return null;
   const k = (shown - p.a) / (p.b - p.a);
   const floor = p.floor >= 0 ? `${p.floor + 1}. kat ` : "";
+  // Buildings of their own name their checks and pours on the phase itself.
+  if (p.inspect && k > 0.84) {
+    const t = (k - 0.84) / 0.16;
+    return { kind: "inspect", k: t, label: t < 0.7 ? `Yapı denetim: ${p.inspect}` : `Denetim onayı ✓ ${p.next || "beton dökülebilir"}` };
+  }
   if (INSPECT[p.key] && k > 0.84) {
     const what = p.key === "colRebar" && /perde/.test(p.label) ? "kolon ve perde donatısı" : p.key === "deckRebar" && /hatıl/.test(p.label) ? "hatıl ve döşeme donatısı" : INSPECT[p.key];
     const t = (k - 0.84) / 0.16;
     const next = { wallLay: "hatıllar dökülebilir", studs: "kirişlere geçilebilir", steelBeam: "çaprazlara geçilebilir" }[p.key] || "beton dökülebilir";
     return { kind: "inspect", k: t, label: t < 0.7 ? `Yapı denetim: ${floor}${what}` : `Denetim onayı ✓ ${next}` };
   }
-  if (POURS.has(p.key) && k < 0.2) return { kind: "slump", k: k / 0.2, label: "Slump testi ve küp numuneleri" };
+  if ((POURS.has(p.key) || p.pour) && k < 0.2) return { kind: "slump", k: k / 0.2, label: "Slump testi ve küp numuneleri" };
   return null;
 }
 

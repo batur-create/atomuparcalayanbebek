@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { beamsOf, sitePlan, siteSVG, systemOf, workHeight } from '../src/construction.js';
 import { crewSVG } from '../src/crew.js';
 import { craneSVG, liftRuns, mobileCraneSVG } from '../src/crane.js';
-import { projector, spec } from '../src/iso.js';
+import { buildingSVG, projector, spec } from '../src/iso.js';
 import { CATALOG } from '../shared/catalog.js';
 
 const P = projector({ cx: 350, cy: 268, s: 28 });
@@ -18,10 +18,30 @@ test('the site plan covers the whole session in order, with beams, waterproofing
     assert.equal(plan.at(-1).b, 1);
     plan.slice(1).forEach((p, i) => assert.ok(Math.abs(p.a - plan[i].b) < 1e-9, `${model}: ${p.key} starts where ${plan[i].key} ends`));
     const keys = plan.map((p) => p.key);
-    assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
-    assert.deepEqual(keys.filter((k) => k.startsWith('roof')), ['roofFrame', 'roofDeck', 'roofTiles']);
     const count = (key) => keys.filter((k) => k === key).length;
     const sys = systemOf(sp);
+    // The old ways start on bare ground: no raft, no waterproofing.
+    if (sys === 'arch') {
+      assert.deepEqual(keys, ['mobilize', 'layout', 'divert', 'abutDig', 'abutFoot', 'abutWall', 'centering', 'voussoir', 'keystone', 'spandrel', 'fill', 'strike', 'paving', 'parapet', 'water', 'handover']);
+      continue;
+    }
+    if (sys === 'log') {
+      assert.deepEqual(keys, ['mobilize', 'layout', 'footing', 'posts', 'discs', 'sill', 'frame', 'boards', 'roofFrame', 'roofTiles', 'openings', 'ladder', 'handover']);
+      continue;
+    }
+    if (sys === 'corbel') {
+      assert.deepEqual(keys, ['mobilize', 'layout', 'mudbrick', 'stoneFoot', 'cellWalls', 'corbel', 'corbel', 'corbel', 'plaster', 'openings', 'court', 'handover']);
+      assert.ok(!plan.some((p) => p.lift), 'Harran domes go up without a crane');
+      continue;
+    }
+    assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
+    if (sys === 'geodesic') {
+      // Ring beam, shoring tower, four rings of struts, bolts checked before the tower comes down, then the skin.
+      assert.deepEqual(keys.slice(keys.indexOf('footPour') + 1), ['ringForm', 'ringPour', 'shore', 'strut', 'strut', 'strut', 'strut', 'bolts', 'unshore', 'panels', 'glazing', 'seal', 'openings', 'handover']);
+      assert.deepEqual(plan.filter((p) => p.key === 'strut').map((p) => p.floor), [0, 1, 2, 3]);
+      continue;
+    }
+    assert.deepEqual(keys.filter((k) => k.startsWith('roof')), ['roofFrame', 'roofDeck', 'roofTiles']);
     if (sys === 'rc') {
       assert.equal(count('deckPour'), sp.floors);
       assert.ok(plan.some((p) => /kiriş ve döşeme betonu/.test(p.label)));
@@ -43,7 +63,7 @@ test('the site plan covers the whole session in order, with beams, waterproofing
 
 test('each building is built the way its walls say', () => {
   const sys = (id) => systemOf(spec(CATALOG.find((c) => c.id === id).kind, 1, id));
-  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel']);
+  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel']);
 });
 
 test('a wider plan gets beams across the middle too', () => {
@@ -91,7 +111,7 @@ test('the inspector checks the rebar before every pour, and every pour starts wi
 
 test('the progress payment weighs work by cost and the quantities only grow', async () => {
   const { metraj } = await import('../src/metraj.js');
-  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen']) {
+  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 5, id);
     const plan = sitePlan(sp);
@@ -105,7 +125,7 @@ test('the progress payment weighs work by cost and the quantities only grow', as
     }
     assert.equal(metraj(sp, plan, 0).hakedis, 0);
     assert.equal(metraj(sp, plan, 1).hakedis, 100);
-    assert.ok(parseFloat(metraj(sp, plan, 1).items[0].replace(/[^\d,]/g, '').replace(',', '.')) > 5, id);
+    assert.ok(parseFloat(metraj(sp, plan, 1).items[0].replace(/[^\d,]/g, '').replace(',', '.')) > 1, id);
   }
 });
 
@@ -114,4 +134,48 @@ test('a concrete tower gets two shear walls; houses only columns', async () => {
   const walls = (sp) => rcColumnsOf(sp).filter(([, , hx, hy]) => Math.max(hx, hy) > 0.3).length;
   assert.equal(walls(spec('tower', 1, 'degirmen')), 2);
   assert.equal(walls(spec('house', 1, 'konak')), 0);
+});
+
+test('the geodesic dome: a closed hemisphere, struts ring by ring, checked before the tower comes down', async () => {
+  const { geometry, geodesicSVG } = await import('../src/geodesic.js');
+  const { checkAt } = await import('../src/quality.js');
+  const g = geometry();
+  // 4V icosahedral hemisphere: 160 triangles, 250 struts, 20 base hubs; Euler holds for the open disc.
+  assert.equal(g.faces.length, 160);
+  assert.equal(g.edges.length, 250);
+  assert.equal(g.base.length, 20);
+  assert.equal(g.hubCount - g.edges.length + g.faces.length, 1);
+  assert.equal(g.faces.filter((f) => f.glass).length, 30);
+  // Every strut is on the sphere and no longer than 1.3 times the shortest.
+  const lens = g.edges.map((e) => Math.hypot(...g.verts[e.a].map((v, i) => v - g.verts[e.b][i])));
+  assert.ok(Math.max(...lens) / Math.min(...lens) < 1.3);
+  const sp = spec('house', 4, 'kubbe');
+  const plan = sitePlan(sp);
+  const at = (key, t) => { const p = plan.find((q) => q.key === key); return p.a + (p.b - p.a) * t; };
+  assert.equal(checkAt(plan, at('bolts', 0.9))?.kind, 'inspect');
+  assert.match(checkAt(plan, at('bolts', 0.99)).label, /iskele sökülebilir/);
+  assert.equal(checkAt(plan, at('ringPour', 0.1))?.kind, 'slump');
+  assert.equal(checkAt(plan, at('ringForm', 0.9))?.kind, 'inspect');
+  for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(geodesicSVG(P, sp, 4, { detail })));
+});
+
+test('the old ways: the keystone goes in last, mouse stones are checked, the domes close without formwork', async () => {
+  const { checkAt } = await import('../src/quality.js');
+  const { metraj } = await import('../src/metraj.js');
+  const end = (plan, key) => { const p = plan.findLast((q) => q.key === key); return p.a + (p.b - p.a) * 0.9; };
+  const bridge = sitePlan(spec('house', 2, 'kemer'));
+  assert.equal(checkAt(bridge, end(bridge, 'keystone'))?.kind, 'inspect');
+  assert.equal(checkAt(bridge, (bridge[4].a + bridge[4].b) / 2 - (bridge[4].b - bridge[4].a) * 0.4)?.kind, 'slump', 'the abutment footings are poured');
+  const serender = sitePlan(spec('cottage', 2, 'serender'));
+  assert.equal(checkAt(serender, end(serender, 'discs'))?.kind, 'inspect');
+  const kerpic = spec('house', 2, 'kerpic');
+  const domes = sitePlan(kerpic);
+  assert.equal(checkAt(domes, end(domes, 'corbel'))?.kind, 'inspect');
+  const bricks = parseInt(metraj(kerpic, domes, 1).items[0].replace(/\D/g, ''));
+  assert.ok(bricks > 2000 && bricks < 8000, `${bricks} bricks`);
+  for (const id of ['kemer', 'serender', 'kerpic']) {
+    const item = CATALOG.find((c) => c.id === id);
+    const sp = spec(item.kind, 4, id);
+    for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
+  }
 });

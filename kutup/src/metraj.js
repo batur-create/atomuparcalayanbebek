@@ -4,6 +4,7 @@
 // it takes. One drawing unit is taken as 1.6 m.
 import { beamsOf, rcColumnsOf, columnsOf, steelColumns, systemOf } from "./construction.js";
 import { openingList } from "./iso.js";
+import { specialOf } from "./special.js";
 
 const M = 1.6,
   V = M * M * M;
@@ -36,9 +37,11 @@ export function metraj(sp, plan, shown) {
   const deckVol = ((2 * w) ** 2 * 0.14 + beamsOf(sp).reduce((n, b) => n + (b.x1 - b.x0) * (b.y1 - b.y0) * 0.3, 0)) * V;
   const tieVol = columnsOf(sp).length * 0.24 * 0.24 * hf * V;
   const studLen = steelColumns(sp).length * hf * M;
+  const own = specialOf(sp),
+    extra = { concrete: 0, rebar: 0, steel: 0, timber: 0, wall: 0, stone: 0 };
   for (const p of plan) {
     const k = clamp((shown - p.a) / (p.b - p.a)),
-      c = COST[p.key] || 1;
+      c = p.cost ?? COST[p.key] ?? 1;
     cost += c;
     earned += c * k;
     // Concrete placed and rebar fixed (t/m³ by element: raft, columns and
@@ -61,11 +64,23 @@ export function metraj(sp, plan, shown) {
     if (p.key === "steelCol") steel += (k * studLen * 20) / 1000;
     if (p.key === "steelBeam") steel += (k * 4 * side * 20) / 1000;
     if (p.key === "brace") steel += (k * 16 * Math.hypot(side / 3, hf * M) * 8) / 1000;
+    const add = own?.metraj(sp, p, k);
+    if (add) for (const q in add) extra[q] += add[q];
   }
+  concrete += extra.concrete;
+  rebar += extra.rebar;
+  steel += extra.steel;
+  timber += extra.timber;
+  wall += extra.wall;
+  const hakedis = Math.round((earned / cost) * 100),
+    mine = own?.items({ concrete, rebar, steel, timber, wall, stone: extra.stone }, num);
+  // A building with no concrete to speak of names both of its own items.
+  if (Array.isArray(mine)) return { hakedis, items: mine };
   const items = [`Beton ${num(concrete)} m³`];
   if (sys === "rc") items.push(shown < 0.55 || !wall ? `Donatı ${num(rebar, 2)} t` : `Duvar ${Math.round(wall)} m²`);
   if (sys === "masonry") items.push(wall > 0 ? `Duvar ${Math.round(wall)} m²` : `Donatı ${num(rebar, 2)} t`);
   if (sys === "timber") items.push(timber > 0 ? `Kereste ${num(timber)} m³` : `Donatı ${num(rebar, 2)} t`);
+  if (own) items.push(mine);
   if (sys === "steel") items.push(steel > 0 ? `Çelik ${num(steel, 2)} t` : `Donatı ${num(rebar, 2)} t`);
-  return { hakedis: Math.round((earned / cost) * 100), items };
+  return { hakedis, items };
 }

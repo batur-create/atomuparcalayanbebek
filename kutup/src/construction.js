@@ -6,6 +6,7 @@
 // session's progress: pieces are placed, laid or poured, never faded in.
 import { STONE, WOOD, box, faceX, faceY, openingList, outline, poly, seg } from "./iso.js";
 import { materialsSVG } from "./sitedetail.js";
+import { specialOf } from "./special.js";
 
 // Share of the session for the substructure and the frame; the rest is walls,
 // roof, openings, finishes and handover (drawn by the scene's later parts).
@@ -15,8 +16,9 @@ export const FRAME_END = 0.55;
 export const WALLS_END = 0.68;
 // How the building stands up, from what its walls are: rendered walls hide a
 // reinforced-concrete frame; brick and stone are load-bearing masonry with
-// concrete ties; planks clad a timber frame; glass hangs on a steel frame.
-export const systemOf = (sp) => ({ rows: "masonry", blocks: "masonry", planks: "timber", panes: "steel" })[sp.wall.pattern] || "rc";
+// concrete ties; planks clad a timber frame; glass hangs on a steel frame; a
+// building of its own (src/special.js) says what it is.
+export const systemOf = (sp) => specialOf(sp)?.system || ({ rows: "masonry", blocks: "masonry", planks: "timber", panes: "steel" })[sp.wall.pattern] || "rc";
 export const frameEndOf = (sp) => (systemOf(sp) === "rc" ? FRAME_END : WALLS_END);
 // Walls that are rendered and painted get an insulated render facade (ETICS):
 // boards and anchors, mesh and base coat, then paint.
@@ -89,7 +91,8 @@ function storeySteps(sp, i) {
 }
 
 export function sitePlan(sp) {
-  const steps = [
+  const own = specialOf(sp);
+  let steps = [
     ["mobilize", "Mobilizasyon: çit, konteyner ve ruhsat tabelası", 1],
     ["layout", "Aplikasyon: kazık ve ip iskelesi", 1.2],
     ["dig", "Hafriyat", 2.2],
@@ -99,19 +102,23 @@ export function sitePlan(sp) {
     ["footForm", "Temel kalıbı", 0.9],
     ["footPour", "Temel betonu ve kür", 1.4],
   ].map(([key, label, w]) => ({ key, label, w, floor: -1 }));
-  for (let i = 0; i < sp.floors; i++)
+  if (own) {
+    if (own.ground) steps = steps.filter((s) => own.ground.includes(s.key));
+    steps.push(...own.steps.map((s) => ({ floor: -1, ...s })));
+  } else for (let i = 0; i < sp.floors; i++)
     for (const [key, label, w] of storeySteps(sp, i)) steps.push({ key, label: `${i + 1}. kat ${label}`, w, floor: i });
   // A timber frame is sheathed and wrapped once it stands.
   if (systemOf(sp) === "timber") steps.push({ key: "sheath", label: "Dış OSB kaplama ve rüzgâr bariyeri", w: 1, floor: -1 });
   const total = steps.reduce((n, s) => n + s.w, 0),
-    end = frameEndOf(sp);
+    end = own ? own.frameEnd : frameEndOf(sp);
   let at = 0;
   const phases = steps.map((s) => {
     const a = at;
     at += (s.w / total) * end;
     return { ...s, a, b: at };
   });
-  for (const [key, label, a, b] of laterPhases(sp)) phases.push({ key, label, a, b, floor: -1 });
+  if (own) phases.push(...own.later.map((s) => ({ floor: -1, ...s })));
+  else for (const [key, label, a, b] of laterPhases(sp)) phases.push({ key, label, a, b, floor: -1 });
   return phases;
 }
 
@@ -123,6 +130,8 @@ export function phaseAt(plan, shown) {
 export function workHeight(plan, sp, shown) {
   const hf = sp.h / sp.floors;
   const p = phaseAt(plan, shown);
+  const own = specialOf(sp);
+  if (own) return own.workHeight(sp, p, clamp((shown - p.a) / (p.b - p.a))) ?? (shown < plan[own.ground?.length ?? 8].a ? 0.4 : 0.3 + sp.h);
   if (p.floor >= 0) return 0.3 + (p.floor + 1) * hf;
   return shown < plan.find((q) => q.floor >= 0).a ? 0.4 : 0.3 + sp.h;
 }
@@ -304,7 +313,10 @@ export function siteSVG(P, sp, plan, shown) {
     }
     pit += "</g>";
   }
-  const spoil = Math.max(0, k.dig - (k.colRebar0 || 0) / 0.75);
+  // It goes back with the first work after the foundation (the excavator
+  // pushes it in round the raft).
+  const after = plan[plan.findIndex((p) => p.key === "footPour") + 1];
+  const spoil = after ? Math.max(0, k.dig - (k[after.floor >= 0 ? `${after.key}${after.floor}` : after.key] || 0) / 0.75) : 0;
   // The spoil kept for backfill lies in a windrow along the right-hand edge,
   // clear of the crane, the stockpiles and both truck lanes.
   if (spoil > 0) back += windrow(P, 2.76, 3.36, -2.1, -2.1 + 1.9 * Math.sqrt(spoil), 0.42 * Math.sqrt(spoil));
@@ -323,7 +335,9 @@ export function siteSVG(P, sp, plan, shown) {
   const sys = systemOf(sp);
   let frame = "";
   // Once the facade is up, walls, ties and frame are all out of sight.
-  for (let i = 0; i < sp.floors && !(sys !== "rc" && shown >= 0.93); i++) {
+  const own = specialOf(sp);
+  if (own?.site) frame += own.site(P, sp, k, shown);
+  for (let i = 0; i < sp.floors && !own && !(sys !== "rc" && shown >= 0.93); i++) {
     const z0 = 0.3 + i * hf,
       zs = 0.3 + (i + 1) * hf;
     const piece = { rc: rcStorey, masonry: masonryStorey, timber: timberStorey, steel: steelStorey }[sys](P, sp, i, k, z0, zs, shown);

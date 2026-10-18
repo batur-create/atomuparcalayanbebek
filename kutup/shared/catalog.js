@@ -12,7 +12,8 @@ export const CLASSES = {
 };
 export const CATEGORIES = { home: "Konut", work: "İşlevsel", fancy: "Süs" };
 
-// kind: the footprint and frame the site builds (cottage / house / tower).
+// kind: the footprint and frame the site builds (cottage / house / tower);
+// look.special swaps the box for a building of its own (src/special.js).
 // look: what makes it this building: wall, roof colour (index into iso.js
 // ROOFS) and its fittings. done: "… bitirdi" on the team board.
 export const CATALOG = [
@@ -24,6 +25,10 @@ export const CATALOG = [
   { id: "sahaf", name: "Sahaf", emoji: "📚", class: "medium", kind: "house", category: "work", cost: 60, done: "sahafını", blurb: "Eski kitaplar, mavi tente.", effect: "Her seansta +3 🧱", look: { wall: "wood", roof: 0, awning: "#4a76b0", sign: "SAHAF", shutters: "#345d93" } },
   { id: "firin", name: "Fırın", emoji: "🥖", class: "medium", kind: "house", category: "work", cost: 70, done: "fırınını", blurb: "Taş fırının bacası hiç sönmez.", effect: "Her seansta maaşa +%5", look: { wall: "brick", roof: 3, chimney: true, awning: "#d4a24c", sign: "FIRIN" } },
   { id: "konak", name: "Konak", emoji: "🏘️", class: "medium", kind: "house", category: "home", cost: 80, done: "konağını", blurb: "Balkonlu, kepenkli beyaz konak.", look: { wall: "cream", roof: 5, balcony: true, shutters: "#4f9d8a", chimney: true } },
+  { id: "kubbe", name: "Jeodezik Kubbe", emoji: "🌐", class: "medium", kind: "house", category: "fancy", cost: 85, done: "jeodezik kubbesini", blurb: "Üçgen çelik çubuklardan yarım küre; beş beşgen pencere, tepede cam fener.", look: { special: "geodesic" } },
+  { id: "serender", name: "Serender", emoji: "🌽", class: "small", kind: "cottage", category: "fancy", cost: 35, done: "serenderini", blurb: "Karadeniz'in kestane ambarı; dört ayak, fare taşları, ahşap pul çatı.", look: { special: "serender" } },
+  { id: "kerpic", name: "Kerpiç Kubbe Evleri", emoji: "🏺", class: "medium", kind: "house", category: "home", cost: 65, done: "kerpiç kubbe evlerini", blurb: "Harran usulü; kalıpsız, sıra sıra bindirilmiş üç kubbe ve avlu.", look: { special: "kerpic" } },
+  { id: "kemer", name: "Taş Kemer Köprü", emoji: "🌉", class: "medium", kind: "house", category: "fancy", cost: 75, done: "taş kemer köprüsünü", blurb: "Derenin üstünde kesme taş kemer; kilit taşı en son konur.", look: { special: "kemer" } },
   { id: "kule", name: "Kule", emoji: "🏰", class: "large", kind: "tower", category: "home", cost: 90, done: "kulesini", blurb: "Bayraklı, üç katlı taş kule." },
   { id: "degirmen", name: "Yel Değirmeni", emoji: "🌾", class: "large", kind: "tower", category: "work", cost: 120, done: "yel değirmenini", blurb: "Kanatları rüzgârla döner.", effect: "Günün ilk seansı +20 🧱 (normalde +10)", look: { wall: "cream", roof: 1, sails: true, flag: false } },
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },

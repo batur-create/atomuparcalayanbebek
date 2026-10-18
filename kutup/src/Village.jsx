@@ -17,6 +17,7 @@ import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
 import { checkAt } from "./quality.js";
 import { metraj } from "./metraj.js";
+import { specialOf } from "./special.js";
 import { skyAt } from "./villageWorld.js";
 
 export const KINDS = {
@@ -129,7 +130,26 @@ function renderFacadeSVG(P, sp, t) {
   return sweep(P, sp, top, BASECOAT, 0.05) + sweep(P, sp, 0.3 + sp.h * ((t - 0.65) / 0.35), [left, right], 0.051);
 }
 
+// A building of its own (src/special.js): the site as usual, then the
+// building drawn straight from progress, the garden, and the crane: a tower
+// crane for a tall one, otherwise the mobile crane for the lifts.
+function specialParts(P, sp, seed, plan, own) {
+  return [
+    { a: plan.find((p) => p.key === own.shadowFrom).a, b: own.frameEnd, kind: "grow", draw: (t) => own.shadow(P, sp, t) },
+    { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
+    { a: 0, b: 1, kind: "grow", lights: true, live: !!own.live, draw: (shown, lit, time) => own.scene(P, sp, plan, shown, lit, time) },
+    ...(own.garden === false ? [] : [{ a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) }]),
+    ...(!plan.some((p) => p.lift)
+      ? []
+      : sp.kind === "tower"
+      ? [{ a: plan.find((p) => p.lift).a, b: own.craneEnd ?? 0.82, kind: "erect", live: true, crane: true, draw: (time, shown, built) => craneSVG(P, sp, plan, time, shown, built, workHeight(plan, sp, shown)) }]
+      : [{ a: liftRuns(plan)[0][0], b: own.craneEnd ?? 0.86, kind: "erect", live: true, crane: true, draw: (time, shown) => mobileCraneSVG(P, sp, plan, time, shown, workHeight(plan, sp, shown)) }]),
+  ];
+}
+
 function sceneParts(P, sp, seed, plan) {
+  const own = specialOf(sp);
+  if (own) return specialParts(P, sp, seed, plan, own);
   const w = sp.hw,
     look = sp.look || {},
     sys = systemOf(sp),

@@ -10,7 +10,9 @@ const REBAR = ["#9a5a40", "#84492f", "#6f3c26"],
   BLOCK = ["#ecebe6", "#d9d7cf", "#c4c1b8"],
   PALLET = ["#c7a06a", "#ad8754", "#946f42"],
   BAG = ["#f2efe6", "#dcd7ca", "#c7c1b2"],
-  TIMBER = ["#efd3a1", "#dab47c", "#c29862"];
+  TIMBER = ["#efd3a1", "#dab47c", "#c29862"],
+  // Stone blocks and sun-dried mud bricks for buildings of their own.
+  STOCK = { stone: ["#e0dacf", "#c8c0b2", "#aea596"], kerpic: ["#d8b98c", "#c4a273", "#a8875b"] };
 
 // The plot: lawn edge, gravel apron around the dug area, a gate gap in front,
 // tyre tracks from the gate and a couple of trees left standing at the back.
@@ -57,8 +59,8 @@ export function materialsSVG(P, sp, k, shown, plan) {
     const ps = plan.filter((p) => keys.includes(p.key));
     return ps.length ? [ps[0].a, ps[ps.length - 1].b] : null;
   };
-  const rebarEnd = span(["footRebar", "colRebar", "deckRebar"])[1],
-    formEnd = span(["footPour", "colPour", "deckPour", "tieCol"])[1];
+  const rebarEnd = span(["footRebar", "colRebar", "deckRebar"])?.[1] ?? 0,
+    formEnd = span(["footPour", "colPour", "deckPour", "tieCol"])?.[1] ?? 0;
   const has = (key) => plan.some((p) => p.key === key);
   const w = sp.hw,
     edge = w + 0.2 + (2.9 - (w + 0.2)) / 2; // middle of the strip between foundation and fence
@@ -68,7 +70,7 @@ export function materialsSVG(P, sp, k, shown, plan) {
   const handover = clamp((shown - 0.93) / 0.05);
   // Rebar bundles along the back-left fence.
   const rebarJobs = plan.filter((p) => ["footRebar", "colRebar", "deckRebar"].includes(p.key)).length;
-  const rebarUsed = (k.footRebar + sum("colRebar") + sum("deckRebar")) / rebarJobs;
+  const rebarUsed = rebarJobs ? (k.footRebar + sum("colRebar") + sum("deckRebar")) / rebarJobs : 1;
   const bundles = shown < 0.08 || shown > rebarEnd + 0.01 ? 0 : Math.max(1, Math.ceil(4 * (1 - rebarUsed)));
   for (let i = 0; i < bundles; i++) {
     const z = 0.06 + Math.floor(i / 2) * 0.13,
@@ -104,24 +106,28 @@ export function materialsSVG(P, sp, k, shown, plan) {
   // blocks, bricks or stone, sawn timber, or steel sections; delivered before
   // the work and used up as it goes.
   const walls = span(["walls", "wallLay"]) || span(["studs", "joists", "sheath"]) || span(["steelCol", "steelBeam", "brace", "steelDeck"]);
-  if (walls && shown > walls[0] - 0.05 && shown < walls[1] + 0.02) {
-    const pallets = Math.max(0, Math.ceil(3 * (1 - clamp((shown - walls[0]) / (walls[1] - walls[0])))));
+  // A building of its own marks the phases that use up its stock.
+  const stocked = plan.filter((p) => p.stock),
+    stock = stocked[0]?.stock;
+  const supply = walls || (stocked.length ? [stocked[0].a, stocked[stocked.length - 1].b] : null);
+  if (supply && shown > supply[0] - 0.05 && shown < supply[1] + 0.02) {
+    const pallets = Math.max(0, Math.ceil(3 * (1 - clamp((shown - supply[0]) / (supply[1] - supply[0])))));
     const xs = blockPallets(sp);
     for (let i = 0; i < pallets; i++) {
       const x = xs[i];
-      if (has("studs")) {
+      if (has("studs") || stock === "timber") {
         // Sawn timber in stickered layers.
         for (let l = 0; l < 4; l++) front += box(P, x + 0.03, edge - 0.22, x + 0.57, edge + 0.22, 0.05 + l * 0.1, 0.13 + l * 0.1, TIMBER);
         for (let u = 0.08; u < 0.55; u += 0.1) front += seg(P(x + u, edge + 0.225, 0.05), P(x + u, edge + 0.225, 0.43), "#b98d58", 0.5);
         continue;
       }
       front += box(P, x, edge - 0.25, x + 0.6, edge + 0.25, 0, 0.07, PALLET);
-      if (has("steelCol")) {
+      if (has("steelCol") || stock === "steel") {
         // Steel sections on bearers, flanges catching the light.
         for (let l = 0; l < 3; l++) front += box(P, x + 0.03, edge - 0.22 + l * 0.15, x + 0.57, edge - 0.1 + l * 0.15, 0.07, 0.19, ["#6f7c8a", "#5b6775", "#4a5562"]) + seg(P(x + 0.03, edge - 0.1 + l * 0.15, 0.19), P(x + 0.57, edge - 0.1 + l * 0.15, 0.19), "#9aa6b2", 0.7);
         continue;
       }
-      const units = has("wallLay") ? sp.wall.faces : BLOCK;
+      const units = has("wallLay") ? sp.wall.faces : STOCK[stock] || BLOCK;
       front += box(P, x + 0.03, edge - 0.22, x + 0.57, edge + 0.22, 0.07, 0.5, units);
       front += seg(P(x + 0.03, edge + 0.23, 0.28), P(x + 0.57, edge + 0.23, 0.28), has("wallLay") ? "#f6e3d6" : "#c9c6bd", 0.8);
     }
@@ -131,7 +137,8 @@ export function materialsSVG(P, sp, k, shown, plan) {
       front += ellipse(sx, sy - 3, 15, 6, "#d8c08a") + ellipse(sx - 3, sy - 6, 9, 4, "#e3cd99");
     }
   }
-  // Roof tiles on a pallet, front right, until the roof is on.
+  // Roof tiles on a pallet, front right, until the roof is on (a dome's
+  // panels come in crates the same way).
   if (shown > 0.62 && shown < 0.78) {
     const stacks = Math.max(1, Math.ceil(3 * (1 - clamp((shown - 0.748) / 0.032))));
     for (let i = 0; i < stacks; i++) {
