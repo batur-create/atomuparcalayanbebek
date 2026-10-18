@@ -699,15 +699,21 @@ function KutupApp({ initial, restart }) {
     const unwarn = () =>
       navigator.serviceWorker?.getRegistration?.().then((r) => r?.getNotifications({ tag: "kutup-build" })).then((list) => list?.forEach((n) => n.close())).catch(() => {});
     let reminder = 0,
+      loud = 0,
       askingNow = false;
     // Computer: "orada mısın?"
     const ask = () => {
       if (askingNow || quietSince || crackRef.current || Date.now() < pauseUntil.current) return;
       askingNow = true;
       setAsking(Date.now());
-      alarmSound();
-      warn("Orada mısın? 2 dakika içinde “Buradayım”a bas, yoksa bu süre sayılmaz.");
-      flash = setInterval(alarmSound, 30000);
+      // Gently first: for a minute only the floating window and the tab title
+      // change (someone reading moves the mouse and it is gone); then the sound
+      // and a notification.
+      loud = setTimeout(() => {
+        alarmSound();
+        warn("Orada mısın? 1 dakika içinde fareyi oynat ya da “Buradayım”a bas, yoksa bu süre sayılmaz.");
+        flash = setInterval(alarmSound, 20000);
+      }, 60000);
       answer = setTimeout(() => {
         clearInterval(flash);
         quietSince = Date.now();
@@ -716,6 +722,7 @@ function KutupApp({ initial, restart }) {
       }, 2 * 60000);
     };
     const here = () => {
+      clearTimeout(loud);
       clearTimeout(answer);
       clearInterval(flash);
       unwarn();
@@ -753,7 +760,7 @@ function KutupApp({ initial, restart }) {
     }
     const visibility = () => {
       if (desk) {
-        if (document.visibilityState === "visible") quietSince ? here() : beat();
+        if (document.visibilityState === "visible") quietSince || askingNow ? here() : beat();
         return;
       }
       if (document.visibilityState === "hidden") {
@@ -781,6 +788,7 @@ function KutupApp({ initial, restart }) {
     return () => {
       controller.abort();
       clearTimeout(reminder);
+      clearTimeout(loud);
       clearTimeout(answer);
       clearInterval(flash);
       clearInterval(check);
@@ -1491,7 +1499,7 @@ function KutupApp({ initial, restart }) {
       {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}
       {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
       {crack && <RescueCard crack={crack} rescue={rescue} letGo={letGo} />}
-      {!crack && asking !== 0 && <HereCard asking={asking} strict={watchStrict} here={() => hereRef.current()} />}
+      {!crack && asking !== 0 && <HereCard asking={asking} now={now} strict={watchStrict} here={() => hereRef.current()} />}
       {watchEnd > 0 && <FloatPanel me={me} now={now} asking={asking} crack={crack} here={() => hereRef.current()} />}
       <JoinBanner
         friend={data.members.find((x) => x.id === joinAsk)}

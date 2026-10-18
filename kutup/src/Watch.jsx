@@ -41,8 +41,9 @@ export function RescueCard({ crack, rescue, letGo }) {
 }
 
 /** Computer: nobody touched the mouse or keyboard for a while. */
-export function HereCard({ asking, strict, here }) {
+export function HereCard({ asking, now, strict, here }) {
   const unanswered = asking < 0;
+  const left = Math.max(0, Math.ceil((asking + 2 * 60000 - now) / 1000));
   return (
     <Modal
       title={unanswered ? "🔴 Uzaktaydın" : "⚠️ Orada mısın?"}
@@ -54,7 +55,7 @@ export function HereCard({ asking, strict, here }) {
           ? strict
             ? "Dönünce binana bakacağız: kısa sürdüyse kurtarabilirsin."
             : `Döndüğün an saymaya devam ederiz. ${FREE_LEAVE / 60000} dk'dan uzun sürerse seans biter.`
-          : "2 dakika içinde bas, yoksa bu süre sayılmaz. Kitaptan çalışıyorsan da bas, sorun yok."}
+          : `${left} saniye içinde fareyi oynat ya da bas, yoksa bu süre sayılmaz. Kitaptan çalışıyorsan da bas, sorun yok.`}
       </p>
       <button type="button" className="btn primary full" onClick={here}>
         Buradayım
@@ -72,8 +73,10 @@ export function FloatPanel({ me, now, asking, crack, here }) {
   const total = (me.focusMinutes || 1) * 60;
   const item = me.focusStrict ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : null;
   const alarm = !!asking || !!crack;
+  // The first minute of a question is quiet (yellow); then red, shaking and loud.
+  const soft = asking > 0 && now - asking < 60000;
   return createPortal(
-    <div className={`float ${alarm ? "alarm" : ""}`} onClick={alarm && !crack ? here : undefined}>
+    <div className={`float ${alarm ? (soft ? "soft" : "alarm") : ""}`} onClick={alarm && !crack ? here : undefined}>
       <div className="top">{item ? `${item.emoji} ${item.name}` : "🎧 Serbest odak"}</div>
       <div className="clock">
         {String(Math.floor(left / 60)).padStart(2, "0")}:{String(left % 60).padStart(2, "0")}

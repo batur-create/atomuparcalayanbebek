@@ -26,6 +26,8 @@ const CSS = `
   .float .bar i { display: block; height: 100%; background: #f5b342; }
   .float p { margin: 0; font-size: 12.5px; opacity: .85; }
   .float button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 8px 18px; background: #fff; color: #b3261e; cursor: pointer; }
+  .float.soft { background: #8a6a12; }
+  .float.soft button { color: #6b4f00; }
   .float.alarm { background: #b3261e; animation: shake .5s ease-in-out infinite; }
   .float.alarm .bar i { background: #fff; }
   .float.alarm p { opacity: 1; font-weight: 600; }
