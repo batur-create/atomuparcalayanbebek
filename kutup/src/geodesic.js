@@ -14,7 +14,7 @@ const CONCRETE = ["#d3d0c8", "#bdb9b0", "#a6a299"],
   PLY = ["#e6c383", "#cfa56a", "#b98e55"],
   REBAR = "#8a4b33",
   STRUT = "#5d6976",
-  STRUT_BACK = "#7f8a96",
+  STRUT_BACK = "#66717d",
   HUB = "#3f4852",
   INSIDE = "#9c9385",
   SEAM = "#a39b8d",
@@ -233,14 +233,16 @@ function strutsSVG(P, sp, bands, front) {
     const n = seen[e.band]++;
     if (n >= Math.ceil(clamp(bands[e.band]) * counts[e.band] - 1e-6)) continue;
     if (e.front !== front) continue;
-    s += seg(P(...at(sp, verts[e.a])), P(...at(sp, verts[e.b])), front ? STRUT : STRUT_BACK, front ? 1.5 : 1.1);
+    // Struts on the far side read darker than the fence behind them, so
+    // their hubs never seem to float on their own.
+    s += seg(P(...at(sp, verts[e.a])), P(...at(sp, verts[e.b])), front ? STRUT : STRUT_BACK, front ? 1.5 : 1.2, front ? 1 : 0.85);
     done.add(e.a).add(e.b);
   }
   for (const i of done) {
     const v = verts[i];
     if (front === dot(v, VIEW) > 0.05) {
       const [x, y] = P(...at(sp, v));
-      s += circle(x, y, front ? 1.5 : 1.1, HUB);
+      s += circle(x, y, front ? 1.5 : 0.9, front ? HUB : STRUT_BACK);
     }
   }
   return s;
