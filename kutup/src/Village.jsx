@@ -17,6 +17,7 @@ import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
 import { checkAt } from "./quality.js";
 import { metraj } from "./metraj.js";
+import { domeShadowSVG, domeSiteSVG } from "./geodesic.js";
 import { skyAt } from "./villageWorld.js";
 
 export const KINDS = {
@@ -129,7 +130,21 @@ function renderFacadeSVG(P, sp, t) {
   return sweep(P, sp, top, BASECOAT, 0.05) + sweep(P, sp, 0.3 + sp.h * ((t - 0.65) / 0.35), [left, right], 0.051);
 }
 
+// A geodesic dome: the site as usual, then the dome itself drawn straight
+// from progress (struts, shoring tower, panels, glass, entrance), the garden,
+// and the mobile crane for the lifts.
+function domeParts(P, sp, seed, plan) {
+  return [
+    { a: plan.find((p) => p.key === "strut").a, b: 0.62, kind: "grow", draw: (t) => domeShadowSVG(P, sp, t) },
+    { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
+    { a: 0, b: 1, kind: "grow", lights: true, draw: (shown, lit) => domeSiteSVG(P, sp, plan, shown, lit) },
+    { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) },
+    { a: liftRuns(plan)[0][0], b: 0.86, kind: "erect", live: true, crane: true, draw: (time, shown) => mobileCraneSVG(P, sp, plan, time, shown, workHeight(plan, sp, shown)) },
+  ];
+}
+
 function sceneParts(P, sp, seed, plan) {
+  if (systemOf(sp) === "geodesic") return domeParts(P, sp, seed, plan);
   const w = sp.hw,
     look = sp.look || {},
     sys = systemOf(sp),

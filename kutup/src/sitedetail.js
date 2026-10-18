@@ -103,7 +103,7 @@ export function materialsSVG(P, sp, k, shown, plan) {
   // In front, what the walls or the frame are made of: aerated-concrete
   // blocks, bricks or stone, sawn timber, or steel sections; delivered before
   // the work and used up as it goes.
-  const walls = span(["walls", "wallLay"]) || span(["studs", "joists", "sheath"]) || span(["steelCol", "steelBeam", "brace", "steelDeck"]);
+  const walls = span(["walls", "wallLay"]) || span(["studs", "joists", "sheath"]) || span(["steelCol", "steelBeam", "brace", "steelDeck"]) || span(["shore", "strut"]);
   if (walls && shown > walls[0] - 0.05 && shown < walls[1] + 0.02) {
     const pallets = Math.max(0, Math.ceil(3 * (1 - clamp((shown - walls[0]) / (walls[1] - walls[0])))));
     const xs = blockPallets(sp);
@@ -116,7 +116,7 @@ export function materialsSVG(P, sp, k, shown, plan) {
         continue;
       }
       front += box(P, x, edge - 0.25, x + 0.6, edge + 0.25, 0, 0.07, PALLET);
-      if (has("steelCol")) {
+      if (has("steelCol") || has("strut")) {
         // Steel sections on bearers, flanges catching the light.
         for (let l = 0; l < 3; l++) front += box(P, x + 0.03, edge - 0.22 + l * 0.15, x + 0.57, edge - 0.1 + l * 0.15, 0.07, 0.19, ["#6f7c8a", "#5b6775", "#4a5562"]) + seg(P(x + 0.03, edge - 0.1 + l * 0.15, 0.19), P(x + 0.57, edge - 0.1 + l * 0.15, 0.19), "#9aa6b2", 0.7);
         continue;
@@ -131,7 +131,8 @@ export function materialsSVG(P, sp, k, shown, plan) {
       front += ellipse(sx, sy - 3, 15, 6, "#d8c08a") + ellipse(sx - 3, sy - 6, 9, 4, "#e3cd99");
     }
   }
-  // Roof tiles on a pallet, front right, until the roof is on.
+  // Roof tiles on a pallet, front right, until the roof is on (a dome's
+  // panels come in crates the same way).
   if (shown > 0.62 && shown < 0.78) {
     const stacks = Math.max(1, Math.ceil(3 * (1 - clamp((shown - 0.748) / 0.032))));
     for (let i = 0; i < stacks; i++) {
