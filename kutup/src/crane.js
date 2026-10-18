@@ -36,6 +36,14 @@ function loadFor(P, key, sp, x, y, z, roofT, full = true) {
     s += seg(P(x + 0.75, y, z - 0.1), P(x + 0.8, y, z - 0.6), "#e2d6b8", 0.7);
     return { s, at: [[x - 0.45, y, z], [x - 0.45, y, z], [x + 0.45, y, z], [x + 0.45, y, z]] };
   }
+  if (key === "capsule") {
+    // A capsule straight off the truck: a steel box with its round window.
+    let s = box(P, x - 0.45, y - 0.25, x + 0.45, y + 0.25, z - 0.5, z - 0.04, ["#f2efe6", "#dcd8cc", "#c2bdb0"]);
+    const [cx, cy] = P(x, y + 0.255, z - 0.27);
+    s += `<ellipse cx="${n1(cx)}" cy="${n1(cy)}" rx="4" ry="4.6" fill="#2e3a4a"/>`;
+    s += seg(P(x - 0.5, y, z - 0.02), P(x + 0.5, y, z - 0.02), "#5b6775", 1.4) + seg(P(x + 0.45, y, z - 0.5), P(x + 0.5, y, z - 0.95), "#e2d6b8", 0.7);
+    return { s, at: [[x - 0.4, y - 0.2, z - 0.02], [x + 0.4, y - 0.2, z - 0.02], [x + 0.4, y + 0.2, z - 0.02], [x - 0.4, y + 0.2, z - 0.02]] };
+  }
   if (key === "panels" || key === "glazing") {
     // One triangular panel in a lifting frame, held level by a tag line.
     const c = key === "glazing" ? ["#3f4d69", "#566a86"] : [sp.wall.faces[0], sp.wall.faces[2]];
@@ -130,7 +138,7 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
     : ["footForm", "colForm", "deckForm"].includes(key) ? [-edge, 1.4, 0.5]
     : key === "colPour" || key === "tieCol" ? [-0.3, -sp.hw - 0.95, 0.05] // the skip is filled at the mixer's chute
     : ["walls", "wallLay", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck", "shore", "strut"].includes(key) ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
-    : ["roofFrame", "roofDeck", "roofTiles", "panels", "glazing"].includes(key) ? [edge, 0.6, 0.4]
+    : ["roofFrame", "roofDeck", "roofTiles", "panels", "glazing", "capsule"].includes(key) ? [edge, 0.6, 0.4]
     : null;
   const angleOf = ([x, y]) => Math.atan2(y - my, x - mx);
   const reachOf = ([x, y]) => Math.min(0.97, Math.max(0.2, Math.hypot(x - mx, y - my) / JIB));

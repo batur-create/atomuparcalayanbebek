@@ -35,6 +35,9 @@ export const CATALOG = [
   { id: "degirmen", name: "Yel Değirmeni", emoji: "🌾", class: "large", kind: "tower", category: "work", cost: 120, done: "yel değirmenini", blurb: "Kanatları rüzgârla döner.", effect: "Günün ilk seansı +20 🧱 (normalde +10)", look: { wall: "cream", roof: 1, sails: true, flag: false } },
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },
   { id: "amfi", name: "Gergi Çadır Amfi", emoji: "🎭", class: "large", kind: "house", category: "fancy", cost: 130, done: "amfi tiyatrosunu", blurb: "Beton basamaklar, sahne ve iki direkten gerilmiş beyaz membran.", look: { special: "gergi" } },
+  { id: "sukulesi", name: "Su Kulesi", emoji: "💧", class: "large", kind: "tower", category: "work", cost: 110, done: "su kulesini", blurb: "Altı kolon, kuşak kirişler, tepede Intze hazne; mavi kuşaklı.", look: { special: "sukulesi" } },
+  { id: "kapsul", name: "Kapsül Kule", emoji: "🧊", class: "large", kind: "tower", category: "fancy", cost: 135, done: "kapsül kulesini", blurb: "Beton çekirdeğe bulonlanmış fabrika yapımı odalar; her birinde yuvarlak pencere.", look: { special: "kapsul" } },
+  { id: "burgu", name: "Burgulu Kule", emoji: "🌀", class: "large", kind: "tower", category: "fancy", cost: 145, done: "burgulu kulesini", blurb: "Her katı bir alttakine göre 9° dönen cam kule.", look: { special: "burgu" } },
   { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
 ];
 // Weekly buildings: each arrives on a Monday (since, Türkiye midnight), is
