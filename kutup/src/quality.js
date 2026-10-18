@@ -13,6 +13,8 @@ const INSPECT = {
   wallLay: "duvar, lento ve hatıl donatısı",
   studs: "karkas ve bağlantılar",
   steelBeam: "bulon sıkma torku",
+  anchor: "ankraj plakaları ve bulonlar",
+  nodes: "düğüm bulonlarının torku",
 };
 const POURS = new Set(["footPour", "colPour", "deckPour", "steelDeck"]);
 
@@ -25,7 +27,7 @@ export function checkAt(plan, shown) {
   if (INSPECT[p.key] && k > 0.84) {
     const what = p.key === "colRebar" && /perde/.test(p.label) ? "kolon ve perde donatısı" : p.key === "deckRebar" && /hatıl/.test(p.label) ? "hatıl ve döşeme donatısı" : INSPECT[p.key];
     const t = (k - 0.84) / 0.16;
-    const next = { wallLay: "hatıllar dökülebilir", studs: "kirişlere geçilebilir", steelBeam: "çaprazlara geçilebilir" }[p.key] || "beton dökülebilir";
+    const next = { wallLay: "hatıllar dökülebilir", studs: "kirişlere geçilebilir", steelBeam: "çaprazlara geçilebilir", anchor: "çubuk montajına geçilebilir", nodes: "paneller takılabilir" }[p.key] || "beton dökülebilir";
     return { kind: "inspect", k: t, label: t < 0.7 ? `Yapı denetim: ${floor}${what}` : `Denetim onayı ✓ ${next}` };
   }
   if (POURS.has(p.key) && k < 0.2) return { kind: "slump", k: k / 0.2, label: "Slump testi ve küp numuneleri" };

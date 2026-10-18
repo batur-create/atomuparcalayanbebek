@@ -19,9 +19,10 @@ test('the site plan covers the whole session in order, with beams, waterproofing
     plan.slice(1).forEach((p, i) => assert.ok(Math.abs(p.a - plan[i].b) < 1e-9, `${model}: ${p.key} starts where ${plan[i].key} ends`));
     const keys = plan.map((p) => p.key);
     assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
-    assert.deepEqual(keys.filter((k) => k.startsWith('roof')), ['roofFrame', 'roofDeck', 'roofTiles']);
-    const count = (key) => keys.filter((k) => k === key).length;
     const sys = systemOf(sp);
+    // A geodesic dome has no roof: its panels close the triangles instead.
+    assert.deepEqual(keys.filter((k) => k.startsWith('roof')), sys === 'geodesic' ? [] : ['roofFrame', 'roofDeck', 'roofTiles']);
+    const count = (key) => keys.filter((k) => k === key).length;
     if (sys === 'rc') {
       assert.equal(count('deckPour'), sp.floors);
       assert.ok(plan.some((p) => /kiriş ve döşeme betonu/.test(p.label)));
@@ -30,6 +31,11 @@ test('the site plan covers the whole session in order, with beams, waterproofing
     if (sys === 'masonry') {
       for (const key of ['wallLay', 'tieCol', 'deckPour']) assert.equal(count(key), sp.floors, `${model}: ${key} every storey`);
       assert.ok(plan.some((p) => /hatıl ve döşeme betonu/.test(p.label)));
+    }
+    if (sys === 'geodesic') {
+      assert.deepEqual(keys.filter((k) => ['anchor', 'struts', 'nodes', 'panels', 'seal'].includes(k)), ['anchor', 'struts', 'nodes', 'panels', 'seal']);
+      // Struts go up before the hubs are bolted, and the panels close it last.
+      assert.ok(keys.indexOf('nodes') > keys.indexOf('struts') && keys.indexOf('panels') > keys.indexOf('nodes') && keys.indexOf('openings') > keys.indexOf('seal'));
     }
     if (sys === 'timber') assert.ok(count('studs') === sp.floors && count('joists') === sp.floors && keys.indexOf('sheath') > keys.lastIndexOf('joists'));
     if (sys === 'steel') {
@@ -43,7 +49,7 @@ test('the site plan covers the whole session in order, with beams, waterproofing
 
 test('each building is built the way its walls say', () => {
   const sys = (id) => systemOf(spec(CATALOG.find((c) => c.id === id).kind, 1, id));
-  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel']);
+  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'jeodezik'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic']);
 });
 
 test('a wider plan gets beams across the middle too', () => {
@@ -91,7 +97,7 @@ test('the inspector checks the rebar before every pour, and every pour starts wi
 
 test('the progress payment weighs work by cost and the quantities only grow', async () => {
   const { metraj } = await import('../src/metraj.js');
-  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen']) {
+  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'jeodezik']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 5, id);
     const plan = sitePlan(sp);
@@ -114,4 +120,26 @@ test('a concrete tower gets two shear walls; houses only columns', async () => {
   const walls = (sp) => rcColumnsOf(sp).filter(([, , hx, hy]) => Math.max(hx, hy) > 0.3).length;
   assert.equal(walls(spec('tower', 1, 'degirmen')), 2);
   assert.equal(walls(spec('house', 1, 'konak')), 0);
+});
+
+test('the geodesic dome is a 2V hemisphere: 40 panels, 65 struts of two lengths, 26 hubs, 10 on the base ring', async () => {
+  const { COUNTS, MESH } = await import('../src/geodesic.js');
+  assert.deepEqual(COUNTS, { nodes: 26, struts: 65, panels: 40, A: 30, B: 35 });
+  assert.equal(MESH.base.length, 10);
+  // Euler: V - E + F = 1 for a disc.
+  assert.equal(COUNTS.nodes - COUNTS.struts + COUNTS.panels, 1);
+  assert.ok(MESH.verts.every((v) => Math.abs(Math.hypot(...v) - 1) < 1e-9 && v[2] > -1e-9));
+});
+
+test('the dome closes panel by panel and draws the same on the map and on the site', async () => {
+  const { geoSVG } = await import('../src/geodesic.js');
+  const { buildingSVG } = await import('../src/iso.js');
+  const sp = spec('house', 4, 'jeodezik');
+  const count = (svg) => (svg.match(/<polygon/g) || []).length;
+  const none = geoSVG(P, sp, { anchor: 1, struts: 1, nodes: 1, panels: 0 });
+  const half = geoSVG(P, sp, { anchor: 1, struts: 1, nodes: 1, panels: 0.5 });
+  const all = geoSVG(P, sp, { anchor: 1, struts: 1, nodes: 1, panels: 1, seal: 1 });
+  assert.ok(count(none) < count(half) && count(half) < count(all));
+  assert.ok(!/NaN|undefined|Infinity/.test(all));
+  for (const detail of [0, 1, 2]) assert.ok(buildingSVG(P, sp, 4, { detail }).length > 500, `detail ${detail}`);
 });

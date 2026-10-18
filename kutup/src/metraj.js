@@ -4,6 +4,7 @@
 // it takes. One drawing unit is taken as 1.6 m.
 import { beamsOf, rcColumnsOf, columnsOf, steelColumns, systemOf } from "./construction.js";
 import { openingList } from "./iso.js";
+import { COUNTS, strutMetres } from "./geodesic.js";
 
 const M = 1.6,
   V = M * M * M;
@@ -12,6 +13,7 @@ const COST = {
   mobilize: 2, layout: 1, dig: 4, lean: 1, footWater: 2, footRebar: 6, footForm: 3, footPour: 7,
   colRebar: 3, colForm: 2, colPour: 3, deckForm: 4, deckRebar: 4, deckPour: 5, walls: 8,
   wallLay: 9, tieCol: 2, studs: 7, joists: 4, sheath: 4, steelCol: 7, steelBeam: 6, brace: 2, steelDeck: 5,
+  anchor: 4, struts: 9, nodes: 5, panels: 12, seal: 3,
   roofFrame: 4, roofDeck: 3, roofTiles: 5, openings: 9, eps: 5, render: 3, paint: 2, finish: 8, handover: 4,
 };
 const clamp = (v) => Math.max(0, Math.min(1, v));
@@ -29,7 +31,9 @@ export function metraj(sp, plan, shown) {
     rebar = 0,
     wall = 0,
     timber = 0,
-    steel = 0;
+    steel = 0,
+    bolts = 0,
+    panels = 0;
   const holes = openingList(sp).reduce((n, o) => n + (o.b - o.a) * (o.z1 - o.z0), 0) * M * M;
   const wf = w + 0.2;
   const colVol = rcColumnsOf(sp).reduce((n, [, , hx, hy]) => n + 4 * hx * hy * (hf - 0.44), 0) * V;
@@ -58,6 +62,10 @@ export function metraj(sp, plan, shown) {
     if (p.key === "studs") timber += k * 4 * side * hf * M * 0.02;
     if (p.key === "joists") timber += k * side * side * 0.03;
     // Columns, perimeter beams (about 20 kg/m) and the braces (8 kg/m).
+    // Dome: 60.3 x 3.6 tube is 5 kg/m; a bolt at each end of every strut.
+    if (p.key === "struts") steel += (k * strutMetres(sp) * 5.03) / 1000;
+    if (p.key === "nodes") bolts += k * COUNTS.struts * 2;
+    if (p.key === "panels") panels += k * COUNTS.panels;
     if (p.key === "steelCol") steel += (k * studLen * 20) / 1000;
     if (p.key === "steelBeam") steel += (k * 4 * side * 20) / 1000;
     if (p.key === "brace") steel += (k * 16 * Math.hypot(side / 3, hf * M) * 8) / 1000;
@@ -66,6 +74,7 @@ export function metraj(sp, plan, shown) {
   if (sys === "rc") items.push(shown < 0.55 || !wall ? `Donatı ${num(rebar, 2)} t` : `Duvar ${Math.round(wall)} m²`);
   if (sys === "masonry") items.push(wall > 0 ? `Duvar ${Math.round(wall)} m²` : `Donatı ${num(rebar, 2)} t`);
   if (sys === "timber") items.push(timber > 0 ? `Kereste ${num(timber)} m³` : `Donatı ${num(rebar, 2)} t`);
+  if (sys === "geodesic") items.push(panels > 0 ? `Panel ${Math.round(panels)}/${COUNTS.panels}` : bolts > 0 ? `Bulon ${Math.round(bolts)}/${COUNTS.struts * 2}` : steel > 0 ? `Çelik ${num(steel, 2)} t` : `Donatı ${num(rebar, 2)} t`);
   if (sys === "steel") items.push(steel > 0 ? `Çelik ${num(steel, 2)} t` : `Donatı ${num(rebar, 2)} t`);
   return { hakedis: Math.round((earned / cost) * 100), items };
 }

@@ -404,6 +404,7 @@ export function crewSVG(P, sp, plan, shown, time) {
       colRebar: ["tie", "bar"], colForm: ["hammer", "carry"], deckForm: ["hammer", "carry"], deckRebar: ["tie", "bar"],
       wallLay: ["trowel", "trowel"], studs: ["hammer", "carry"], joists: ["hammer", "carry"],
       steelCol: ["hammer", "none"], steelBeam: ["hammer", "carry"], brace: ["hammer", "none"], steelDeck: ["hose", "trowel"],
+      anchor: ["hammer", "carry"], struts: ["hammer", "carry"], nodes: ["hammer", "none"],
     }[p.key] || ["hammer", "none"];
     crew.push([-w + 0.6, w - 0.3, p.key === "deckRebar" ? z + hf - 0.14 : z, tools[0]], [w - 0.5, -w + 0.7, z, tools[1]]);
     // A labourer wheels bricks or stone from the pallets to the masons.
@@ -412,7 +413,8 @@ export function crewSVG(P, sp, plan, shown, time) {
     // Masons on the courses; a labourer brings blocks from the pallets.
     crew.push([w + 0.35, w * 0.2, 0, "trowel"], [-w * 0.3, w + 0.35, 0, "trowel"]);
     extra.push(barrow(P, [blockPallets(sp)[0] + 0.5, strip], [w + 0.5, w + 0.5], 0, time, "#e4e2db"));
-  } else if (["roofFrame", "roofDeck", "roofTiles"].includes(p.key)) crew.push([0.4, 0.2, top + 0.1, "hammer"], [-0.6, -0.4, top + 0.1, "carry"]);
+  } else if (p.key === "panels" || p.key === "seal") crew.push([w + 0.6, -w * 0.2, 0.3, p.key === "seal" ? "roller" : "carry"], [-w * 0.4, w + 0.6, 0.3, "hammer"]);
+  else if (["roofFrame", "roofDeck", "roofTiles"].includes(p.key)) crew.push([0.4, 0.2, top + 0.1, "hammer"], [-0.6, -0.4, top + 0.1, "carry"]);
   else if (p.key === "openings") crew.push([w + 0.7, w * 0.3, 0, "carry"], [-w * 0.3, w + 0.7, 0, "hammer"]);
   else if (p.key === "finish" && sp.wall.pattern === "panes") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.4 * k, "carry"], [-w * 0.4, w + 0.6, 0.3, "hammer"]);
   else if (p.key === "finish") crew.push([w + 0.6, -w * 0.2, 0.3 + sp.h * 0.45, "roller"], [-w * 0.4, w + 0.6, 1.25, "trowel"]);

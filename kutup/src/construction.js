@@ -6,6 +6,7 @@
 // session's progress: pieces are placed, laid or poured, never faded in.
 import { STONE, WOOD, box, faceX, faceY, openingList, outline, poly, seg } from "./iso.js";
 import { materialsSVG } from "./sitedetail.js";
+import { geoSVG } from "./geodesic.js";
 
 // Share of the session for the substructure and the frame; the rest is walls,
 // roof, openings, finishes and handover (drawn by the scene's later parts).
@@ -16,12 +17,20 @@ export const WALLS_END = 0.68;
 // How the building stands up, from what its walls are: rendered walls hide a
 // reinforced-concrete frame; brick and stone are load-bearing masonry with
 // concrete ties; planks clad a timber frame; glass hangs on a steel frame.
-export const systemOf = (sp) => ({ rows: "masonry", blocks: "masonry", planks: "timber", panes: "steel" })[sp.wall.pattern] || "rc";
+export const systemOf = (sp) => (sp.geo ? "geodesic" : ({ rows: "masonry", blocks: "masonry", planks: "timber", panes: "steel" }[sp.wall.pattern] || "rc"));
 export const frameEndOf = (sp) => (systemOf(sp) === "rc" ? FRAME_END : WALLS_END);
 // Walls that are rendered and painted get an insulated render facade (ETICS):
 // boards and anchors, mesh and base coat, then paint.
 export const rendered = (sp) => systemOf(sp) === "rc";
 export function laterPhases(sp) {
+  // A geodesic dome: the panels close the triangles, then gaskets, door and vent.
+  if (sp.geo)
+    return [
+      ["panels", "Üçgen paneller: alt halkadan tepeye, panel panel", 0.68, 0.86],
+      ["seal", "Contalar ve silikon derz", 0.86, 0.9],
+      ["openings", "Giriş kapısı ve havalandırma kapağı", 0.9, 0.93],
+      ["handover", "Peyzaj ve teslim", 0.93, 1],
+    ];
   const dome = sp.roofType === "dome",
     sys = systemOf(sp),
     steel = sys === "steel";
@@ -54,6 +63,12 @@ export function laterPhases(sp) {
 function storeySteps(sp, i) {
   const top = i === sp.floors - 1;
   switch (systemOf(sp)) {
+    case "geodesic":
+      return [
+        ["anchor", "taban halkası: ankraj plakaları ve bulonlar", 0.8],
+        ["struts", "çubuk montajı: A ve B boylar, halka halka", 2.6],
+        ["nodes", "düğüm birleşimleri: bulon sıkma ve tork işareti", 1.4],
+      ];
     case "masonry":
       return [
         ["wallLay", `${sp.wall.pattern === "rows" ? "tuğla" : "taş"} duvar örme ve lentolar`, 1.7],
@@ -99,8 +114,11 @@ export function sitePlan(sp) {
     ["footForm", "Temel kalıbı", 0.9],
     ["footPour", "Temel betonu ve kür", 1.4],
   ].map(([key, label, w]) => ({ key, label, w, floor: -1 }));
+  // A dome stands on a slab (raft) rather than strip footings.
+  if (sp.geo)
+    for (const s of steps) s.label = { footRebar: "Radye donatısı", footForm: "Radye kalıbı", footPour: "Radye betonu ve kür" }[s.key] || s.label;
   for (let i = 0; i < sp.floors; i++)
-    for (const [key, label, w] of storeySteps(sp, i)) steps.push({ key, label: `${i + 1}. kat ${label}`, w, floor: i });
+    for (const [key, label, w] of storeySteps(sp, i)) steps.push({ key, label: sp.geo ? label.replace(/^./, (c) => c.toUpperCase()) : `${i + 1}. kat ${label}`, w, floor: i });
   // A timber frame is sheathed and wrapped once it stands.
   if (systemOf(sp) === "timber") steps.push({ key: "sheath", label: "Dış OSB kaplama ve rüzgâr bariyeri", w: 1, floor: -1 });
   const total = steps.reduce((n, s) => n + s.w, 0),
@@ -123,6 +141,8 @@ export function phaseAt(plan, shown) {
 export function workHeight(plan, sp, shown) {
   const hf = sp.h / sp.floors;
   const p = phaseAt(plan, shown);
+  // On a dome the hook climbs with the ring being built.
+  if (sp.geo) return 0.3 + sp.h * (["struts", "nodes", "panels"].includes(p.key) ? 0.1 + 0.9 * clamp((shown - p.a) / (p.b - p.a)) : 0.1);
   if (p.floor >= 0) return 0.3 + (p.floor + 1) * hf;
   return shown < plan.find((q) => q.floor >= 0).a ? 0.4 : 0.3 + sp.h;
 }
@@ -251,7 +271,7 @@ export function siteSVG(P, sp, plan, shown) {
   const d = D * k.dig;
   // Starter bars for the columns (or a masonry building's tie columns); a
   // steel frame gets anchor bolts instead, a timber one is bolted down later.
-  const cols = { rc: rcColumnsOf(sp), masonry: columnsOf(sp), steel: steelColumns(sp) }[systemOf(sp)] || [],
+  const cols = { rc: rcColumnsOf(sp), masonry: columnsOf(sp), steel: steelColumns(sp) }[systemOf(sp)] || [], // (a dome has none: its plates come later)
     bolts = systemOf(sp) === "steel";
   const formZ = bottom + (0.32 - bottom) * k.footForm,
     struck = k.footPour > 0.8,
@@ -323,10 +343,10 @@ export function siteSVG(P, sp, plan, shown) {
   const sys = systemOf(sp);
   let frame = "";
   // Once the facade is up, walls, ties and frame are all out of sight.
-  for (let i = 0; i < sp.floors && !(sys !== "rc" && shown >= 0.93); i++) {
+  for (let i = 0; i < sp.floors && !(sys !== "rc" && sys !== "geodesic" && shown >= 0.93); i++) {
     const z0 = 0.3 + i * hf,
       zs = 0.3 + (i + 1) * hf;
-    const piece = { rc: rcStorey, masonry: masonryStorey, timber: timberStorey, steel: steelStorey }[sys](P, sp, i, k, z0, zs, shown);
+    const piece = { rc: rcStorey, masonry: masonryStorey, timber: timberStorey, steel: steelStorey, geodesic: geoStorey }[sys](P, sp, i, k, z0, zs, shown);
     if (piece == null) break;
     frame += piece;
   }
@@ -686,6 +706,13 @@ function sheathSVG(P, sp, t) {
   return s;
 }
 
+// Geodesic dome: base plates on the raft, then struts ring by ring, then the
+// hubs bolted. From the cladding on, the dome is drawn with its panels.
+function geoStorey(P, sp, i, k, z0, zs, shown) {
+  if (!(k.anchor0 > 0)) return null;
+  if (shown > WALLS_END) return "";
+  return geoSVG(P, sp, { anchor: k.anchor0, struts: k.struts0 || 0, nodes: k.nodes0 || 0 });
+}
 // Steel frame: columns on base plates over the anchor bolts, beams bolted to
 // them through end plates, cross-bracing in the end bays.
 export function steelColumns(sp) {

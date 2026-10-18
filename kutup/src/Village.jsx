@@ -16,6 +16,7 @@ import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
 import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
 import { checkAt } from "./quality.js";
+import { geoDoorSVG, geoSVG } from "./geodesic.js";
 import { metraj } from "./metraj.js";
 import { skyAt } from "./villageWorld.js";
 
@@ -139,6 +140,27 @@ function sceneParts(P, sp, seed, plan) {
     facade = plan.filter((p) => ["eps", "render", "paint", "finish"].includes(p.key)),
     openings = phase("openings");
   const span = (from, to, p) => from + (to - from) * p;
+  // A geodesic dome has no walls to render, no scaffold, no roof: the frame is
+  // drawn by the site, then panels close the triangles, gaskets go in, the door
+  // is hung.
+  if (sp.geo) {
+    const pa = phase("panels"),
+      se = phase("seal");
+    return [
+      { a: first.a, b: 0.68, kind: "grow", draw: (t) => shadowSVG(P, sp, t) },
+      { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
+      {
+        a: pa.a, b: se.b, kind: "grow", lights: true,
+        draw: (t, lit) => {
+          const at = pa.a + t * (se.b - pa.a);
+          return geoSVG(P, sp, { anchor: 1, struts: 1, nodes: 1, panels: clamp((at - pa.a) / (pa.b - pa.a)), seal: clamp((at - se.a) / (se.b - se.a)), deck: true }, { lit });
+        },
+      },
+      { a: span(openings.a, openings.b, 0.25), b: span(openings.a, openings.b, 0.75), kind: "reveal", fit: true, draw: () => geoDoorSVG(P, sp) },
+      { a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) },
+      { a: liftRuns(plan)[0][0], b: pa.b, kind: "erect", live: true, crane: true, draw: (time, shown) => mobileCraneSVG(P, sp, plan, time, shown, workHeight(plan, sp, shown)) },
+    ];
+  }
   // Scaffold goes up once there is something to reach: the infill walls of a
   // concrete frame, the first storey's walls once they pass head height, the
   // timber frame's sheathing, the glazing of a steel frame.

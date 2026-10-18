@@ -28,6 +28,7 @@ export const CATALOG = [
   { id: "degirmen", name: "Yel Değirmeni", emoji: "🌾", class: "large", kind: "tower", category: "work", cost: 120, done: "yel değirmenini", blurb: "Kanatları rüzgârla döner.", effect: "Günün ilk seansı +20 🧱 (normalde +10)", look: { wall: "cream", roof: 1, sails: true, flag: false } },
   { id: "saat", name: "Saat Kulesi", emoji: "🕰️", class: "large", kind: "tower", category: "fancy", cost: 140, done: "saat kulesini", blurb: "Dört yüzünde saat, köyün buluşma yeri.", look: { wall: "stone", roof: 5, clock: true } },
   { id: "kutuphane", name: "Kütüphane", emoji: "🏛️", class: "large", kind: "house", category: "work", cost: 150, done: "kütüphanesini", blurb: "Sütunlu giriş; köyün en ağır yapısı.", effect: "Seri bonusuna +%5", look: { wall: "stone", roof: 0, columns: true, sign: "KÜTÜPHANE", chimney: false } },
+  { id: "jeodezik", name: "Jeodezik Kubbe", emoji: "🔮", class: "medium", kind: "house", category: "fancy", cost: 110, done: "jeodezik kubbesini", blurb: "Çelik çubuklardan kürenin yarısı: bulonlu düğümler, üçgen paneller.", look: { geo: true, wall: "glass", chimney: false, flag: false } },
 ];
 // Weekly buildings: each arrives on a Monday (since, Türkiye midnight), is
 // sold for two weeks, and after that only comes with a blueprint.

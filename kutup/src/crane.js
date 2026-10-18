@@ -109,7 +109,7 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
   const source = ["lean", "footRebar", "colRebar", "deckRebar"].includes(p.key) ? [-edge, -0.5, 0.45]
     : ["footForm", "colForm", "deckForm"].includes(p.key) ? [-edge, 1.4, 0.5]
     : p.key === "colPour" || p.key === "tieCol" ? [-0.3, -sp.hw - 0.95, 0.05] // the skip is filled at the mixer's chute
-    : ["walls", "wallLay", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck"].includes(p.key) ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
+    : ["walls", "wallLay", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck", "anchor", "struts", "panels"].includes(p.key) ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
     : ["roofFrame", "roofDeck", "roofTiles"].includes(p.key) ? [edge, 0.6, 0.4]
     : null;
   const angleOf = ([x, y]) => Math.atan2(y - my, x - mx);
@@ -123,7 +123,7 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
     carrying = false,
     full = true,
     cycle = -1;
-  if (source && shown < 0.8) {
+  if (source && shown < (sp.geo ? 0.9 : 0.8)) {
     const place = [0.35 * sp.hw, -0.25 * sp.hw, workZ + 0.05];
     const a0 = angleOf(source),
       u0 = reachOf(source),
@@ -245,7 +245,7 @@ export function craneSVG(P, sp, plan, time, shown, built, workZ) {
 // boom, and leaves again while the pump truck pours (it would be in its way).
 const LIFTS = new Set([
   "footRebar", "footForm", "colRebar", "colForm", "colPour", "deckForm", "deckRebar", "walls", "roofFrame", "roofDeck", "roofTiles",
-  "wallLay", "tieCol", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck",
+  "wallLay", "tieCol", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck", "anchor", "struts", "panels",
 ]);
 export function liftRuns(plan) {
   const runs = [];

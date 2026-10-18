@@ -5,6 +5,7 @@
 // the same order on both backends.
 
 import { BY_ID } from "../shared/catalog.js";
+import { geoDoorSVG, geoSVG } from "./geodesic.js";
 
 export const COS = 0.866,
   SIN = 0.5;
@@ -195,10 +196,12 @@ export function spec(kind, seed, model) {
     roofType: look.dome ? "dome" : base.roofType,
     chimney: look.chimney ?? base.chimney,
     flag: look.flag === false ? null : base.flag,
+    // A geodesic dome has no walls, floors or ridge of its own: a sphere of struts, 3.1 m in radius.
+    ...(look.geo ? { geo: true, hw: 2, h: 1.95, floors: 1, roofType: "geodesic", chimney: false, flag: null } : {}),
   };
 }
 export const topOf = (sp) => 0.3 + sp.h;
-export const ridgeOf = (sp) => topOf(sp) + (sp.roofType === "pyramid" ? 2.4 : sp.roofType === "dome" ? sp.hw + 0.25 : sp.hw * 0.85);
+export const ridgeOf = (sp) => topOf(sp) + (sp.roofType === "pyramid" ? 2.4 : sp.roofType === "dome" ? sp.hw + 0.25 : sp.roofType === "geodesic" ? 0.05 : sp.hw * 0.85);
 
 // ---------- building pieces ----------
 export function shadowSVG(P, sp, t = 1) {
@@ -662,7 +665,7 @@ export function snowSVG(P, sp) {
     SNOW = "#f4f7fa",
     SHADE = "#dde5ee";
   const along = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-  if (sp.roofType === "dome") {
+  if (sp.roofType === "dome" || sp.roofType === "geodesic") {
     const [cx, cy] = P(0, 0, ridge - 0.05),
       unit = Math.abs(P(0, 0, 1)[1] - P(0, 0, 0)[1]);
     return ellipse(cx, cy + unit * 0.35, unit * w * 0.85, unit * 0.45, SNOW, 0.95);
@@ -715,6 +718,10 @@ export function vinesSVG(P, sp, seed = 1) {
 }
 /** A finished building. `detail` 2 = full, 1 = simple (far away), 0 = a block. */
 export function buildingSVG(P, sp, seed, { lit = sp.lit, detail = 2, shadowP = P } = {}) {
+  if (sp.geo) {
+    const done = { anchor: 1, struts: 1, nodes: 1, panels: 1, seal: 1, deck: detail >= 2 };
+    return shadowSVG(shadowP, sp) + foundationSVG(P, sp) + geoSVG(P, sp, done, { lit, detail }) + (detail >= 2 ? geoDoorSVG(P, sp) + gardenSVG(P, sp, seed) : "");
+  }
   if (detail === 0) return box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + roofSVG(P, sp, false);
   if (detail === 1)
     return shadowSVG(shadowP, sp) + box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + windowsSVG(P, sp, lit, 1, false) + wallFittingsSVG(P, sp, 1) + roofSVG(P, sp, false) + frontFittingsSVG(P, sp, 1, seed);
