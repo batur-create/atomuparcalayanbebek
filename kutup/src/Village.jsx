@@ -2,7 +2,7 @@
 // isometric plot; finished ones join their owner's village for good.
 // Everything is hand-built SVG driven by one requestAnimationFrame loop, so it
 // stays light enough to run for a whole session with the screen kept on.
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { reducedMotion } from "./ui.jsx";
 import { kindFor } from "../shared/village.js";
 import { modelOf } from "../shared/catalog.js";
@@ -19,6 +19,7 @@ import { checkAt } from "./quality.js";
 import { metraj } from "./metraj.js";
 import { specialOf } from "./special.js";
 import { skyAt } from "./villageWorld.js";
+import { stageInfo } from "./stageInfo.js";
 
 export const KINDS = {
   cottage: { label: "Kulübe", emoji: "🏡", minutes: 25 },
@@ -229,6 +230,9 @@ export function ConstructionScene({ run, outcome, idle = false }) {
   const live = useRef({ run, outcome, idle });
   live.current = { run, outcome, idle };
   const wakeRef = useRef(null);
+  // The (i) beside the caption, and the explanation it opened (n39).
+  const [tip, setTip] = useState(null);
+  const [open, setOpen] = useState(null);
   const subject = run || outcome;
   const kind = subject?.kind || "cottage",
     seed = subject?.seed || 1,
@@ -242,6 +246,26 @@ export function ConstructionScene({ run, outcome, idle = false }) {
     const s = { cottage: 31, house: 28, tower: 23.5 }[kind];
     const P = projector({ cx: 350, cy: 268, s });
     root.innerHTML = "";
+    setTip(null);
+    setOpen(null);
+    let tipLabel = null;
+    const showTip = (label, info) => {
+      if (label === tipLabel) return;
+      tipLabel = label;
+      if (!info) return setTip(null);
+      // Just after the label, or after the line under it when a long label
+      // leaves no room before the scene's right edge.
+      const width = (el, fallback) => {
+        try {
+          return el.getComputedTextLength() || fallback;
+        } catch {
+          return fallback;
+        }
+      };
+      const w = width(caption.firstChild, label.length * 12);
+      if (22 + w + 30 <= 676) setTip({ ...info, x: 22 + w + 17, y: 32 });
+      else setTip({ ...info, x: Math.min(22 + width(caption.lastChild, 330) + 16, 660), y: 61 });
+    };
     // The scene is a stack of SVG sheets. The moving ones (machines, workers,
     // the crane) sit on their own compositor layers, so redrawing them 15 times
     // a second does not repaint the sky, the plot and the building under them.
@@ -322,6 +346,11 @@ export function ConstructionScene({ run, outcome, idle = false }) {
     paintSky();
     const skyTimer = setInterval(paintSky, 180000);
     const caption = layer("caption", labelSheet);
+    // Measure the label again once the web font is in.
+    document.fonts?.ready.then(() => {
+      tipLabel = null;
+      caption.dataset.text = "";
+    });
     const plan = sitePlan(sp);
     let crewKey = "";
     const parts = sceneParts(P, sp, seed, plan).map((p) => ({ ...p, el: (p.crane ? craneLayer : building).appendChild(document.createElementNS(NS, "g")) }));
@@ -366,6 +395,7 @@ export function ConstructionScene({ run, outcome, idle = false }) {
       }
       if (mode === "collapse") {
         caption.innerHTML = "";
+        showTip("", null);
         crewBack.innerHTML = "";
         const tau = motionReduced ? 3 : (now - eventAt) / 1000;
         // 1) Cracks open and the structure shakes harder and harder; 2) it comes
@@ -540,7 +570,9 @@ export function ConstructionScene({ run, outcome, idle = false }) {
         patch(crewFront, []);
         crewKey = "";
       }
-      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : checkAt(plan, shown)?.label || phaseAt(plan, shown).label;
+      const working = mode === "build" && !resting,
+        check = working ? checkAt(plan, shown) : null;
+      const label = mode === "done" ? "Teslim edildi 🎉" : resting ? "☕ Çay molası: işçiler demlikte" : check?.label || phaseAt(plan, shown).label;
       // The progress payment weighs each work item by its cost; beside it,
       // what has gone into the building so far.
       const m = metraj(sp, plan, mode === "done" ? 1 : shown);
@@ -550,6 +582,7 @@ export function ConstructionScene({ run, outcome, idle = false }) {
         caption.dataset.text = text;
         const dark = daylight.night > 0.4;
         caption.innerHTML = `<text x="22" y="40" fill="${dark ? "#f1efe6" : "#4f4a3f"}" font-size="24" font-weight="700" font-family="DM Sans, sans-serif">${escapeText(label)}</text><text x="22" y="68" fill="${dark ? "#b9bdd4" : "#8a8170"}" font-size="20" font-family="DM Sans, sans-serif">${escapeText(line)}</text>`;
+        showTip(label, working ? stageInfo(sp, phaseAt(plan, shown), check, label) : null);
       }
     };
     // Nothing is drawn while nobody can see it: scrolled away, or covered by
@@ -605,5 +638,40 @@ export function ConstructionScene({ run, outcome, idle = false }) {
     // The scene lives for one building; run/outcome are read live through the ref.
   }, [kind, seed, model]);
   useEffect(() => wakeRef.current?.(), [idle]);
-  return <div ref={ref} className="village-scene" role="img" aria-label={`${item.emoji} ${item.name} inşaatı`} />;
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e) => e.key === "Escape" && setOpen(null);
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [open]);
+  // Taps on the (i) and its card stay theirs: the zoom box around the scene
+  // would otherwise capture the pointer and swallow the click.
+  const own = { onPointerDown: (e) => e.stopPropagation() };
+  return (
+    <div className="scene-box">
+      <div ref={ref} className="village-scene" role="img" aria-label={`${item.emoji} ${item.name} inşaatı`} />
+      {tip && (
+        <button
+          type="button"
+          className={`stage-info-dot${open ? " on" : ""}`}
+          style={{ left: `${((tip.x / 680) * 100).toFixed(2)}%`, top: `${((tip.y / 400) * 100).toFixed(2)}%` }}
+          aria-label={`Bu evre ne demek: ${tip.title}`}
+          aria-expanded={!!open}
+          onClick={() => setOpen(open ? null : tip)}
+          {...own}
+        >
+          i
+        </button>
+      )}
+      {open && (
+        <div className="stage-info-card" role="dialog" aria-label={open.title} {...own}>
+          <button type="button" className="stage-info-close" aria-label="Kapat" onClick={() => setOpen(null)}>
+            ×
+          </button>
+          <strong>{open.title}</strong>
+          <p>{open.text}</p>
+        </div>
+      )}
+    </div>
+  );
 }

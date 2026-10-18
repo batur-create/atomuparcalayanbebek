@@ -1505,3 +1505,82 @@ h3,
   border-radius: 9px;
   opacity: 0.88;
 }
+
+/* n39: the (i) beside the stage caption, and what it opens. */
+.scene-box {
+  position: relative;
+}
+.stage-info-dot {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  padding: 0 0 1px;
+  border: 1.5px solid rgba(79, 74, 63, 0.5);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(40, 30, 20, 0.2);
+  transform: translate(-50%, -50%);
+  font: italic 700 12px/1 Georgia, "Times New Roman", serif;
+  color: #4f4a3f;
+}
+/* A finger-sized target around the small dot. */
+.stage-info-dot::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+}
+.stage-info-dot.on,
+.stage-info-dot:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+.stage-info-card {
+  position: absolute;
+  top: 15%;
+  left: 3%;
+  z-index: 3;
+  width: min(330px, 94%);
+  max-height: 80%;
+  overflow: auto;
+  padding: 12px 36px 12px 14px;
+  border-radius: 13px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 10px 30px rgba(40, 30, 70, 0.24);
+  text-align: left;
+  white-space: normal;
+  animation: building-card-in 0.25s var(--ease-spring) backwards;
+}
+.stage-info-card strong {
+  display: block;
+  margin-bottom: 4px;
+  font: 700 14px "Bricolage Grotesque Variable", "DM Sans", sans-serif;
+}
+.stage-info-card p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.stage-info-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-info-card {
+    animation: none;
+  }
+}

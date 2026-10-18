@@ -29,6 +29,14 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 18 Ekim 2026 18:40 · n39 Evre bilgi noktası
+
+- **İstek:** Batur: inşaat evresinin adının yanına küçük bir bilgi noktası; basınca evrenin ne olduğunu mühendis olmayanların anlayacağı dilde anlatsın.
+- **Yapılan** (`claude/n39-evre-bilgi`): sahne başlığının yanında (i). Dokununca kart açılır: evrenin adı ve 2-3 cümlelik açıklama (ne yapılıyor, neden). Metinler `src/stageInfo.js`: genel evreler (betonarme, yığma, ahşap, çelik, çatı, cephe), 19 özel yapının kendi evreleri, yapı denetim ve slump. Çay molasında ve teslimde nokta yok. Uzun başlıkta nokta alt satıra geçer.
+- **Test:** her katalog yapısının her evresinin açıklaması var (site.test.js). Göç yok.
+
+---
+
 ## 17 Ekim 2026 22:35 · Yayın: n36 inşaat tam şov canlıda
 
 - **Yayın:** `Yayın tamam · 62386ef8 → 825c5561 · Worker b690b171 · canlı duman testi geçti · push: members 7/7 bound, owner 5/5 bound`.
