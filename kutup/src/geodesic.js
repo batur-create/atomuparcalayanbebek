@@ -435,3 +435,72 @@ export function domeSnowSVG(P, sp) {
   for (const f of faces) if (f.front && f.z > 0.62 && !f.sky) s += poly(tri(P, sp, f), f.z > 0.8 ? "#f4f7fa" : "#e6edf3", 0.95);
   return s;
 }
+
+// ---------- how it is built ----------
+const M = 1.6,
+  V = M * M * M;
+/** The dome as src/special.js describes buildings of their own. */
+export const DOME = {
+  system: "geodesic",
+  ridge: 0.45,
+  spec: () => ({ hw: DOME_R, domeR: DOME_R, h: STEM + DOME_R, floors: 1, wall: PANEL, roof: PANEL.faces }),
+  // The raft, a ring beam with the anchor bolts, a shoring tower in the
+  // middle, the struts ring by ring up to the top hub, the bolts torqued and
+  // the geometry surveyed, the tower struck; then the skin.
+  steps: [
+    { key: "ringForm", label: "Halka kiriş: donatı, kalıp ve ankraj bulonları", w: 1.3, cost: 4, lift: true, liftAs: "footForm", inspect: "halka kiriş donatısı ve ankraj bulonları" },
+    { key: "ringPour", label: "Halka kiriş betonu ve kür", w: 0.9, cost: 3, pour: true },
+    { key: "shore", label: "Geçici merkez iskele kulesi", w: 0.7, cost: 2, lift: true, stock: "steel" },
+    ...["taban halkası: düğümler ve alt çubuklar", "2. halka çubukları", "3. halka çubukları", "tepe halkası ve kilit düğümü"].map((label, i) => ({ key: "strut", label: `Kubbe ${label}`, w: i === 3 ? 0.6 : 0.9, cost: 5, floor: i, lift: true, stock: "steel" })),
+    { key: "bolts", label: "Bulon sıkma ve kubbe geometrisi ölçümü", w: 0.6, cost: 2, inspect: "düğüm bulonları ve kubbe geometrisi", next: "iskele sökülebilir" },
+    { key: "unshore", label: "Merkez iskele söküm: kubbe kendini taşıyor", w: 0.5, cost: 1 },
+  ],
+  frameEnd: 0.62,
+  later: [
+    { key: "panels", label: "Taş yünü dolgulu üçgen sandviç paneller", a: 0.62, b: 0.78, cost: 10, lift: true },
+    { key: "glazing", label: "Lamine cam: beş pencere ve tepe feneri", a: 0.78, b: 0.83, cost: 6, lift: true },
+    { key: "seal", label: "Derzler: EPDM conta ve kapak profilleri", a: 0.83, b: 0.86, cost: 3 },
+    { key: "openings", label: "Giriş tüneli ve cam kapı", a: 0.86, b: 0.93 },
+    { key: "handover", label: "Peyzaj ve teslim", a: 0.93, b: 1 },
+  ],
+  liftUntil: 0.83,
+  craneEnd: 0.86,
+  site: (P, sp, k) => ringBeamSVG(P, sp, k.ringForm, k.ringPour),
+  scene: domeSiteSVG,
+  shadow: domeShadowSVG,
+  shadowFrom: "strut",
+  building: geodesicSVG,
+  snow: domeSnowSVG,
+  workHeight: domeWorkHeight,
+  chute: (sp) => [0.5, -sp.hw + 0.1, 0.85],
+  // Fixers on the ring beam, erectors on the scissor lift and the shoring
+  // tower, a surveyor checking the hubs, panel fitters.
+  crew(sp, p, k, kk, time) {
+    const tools = {
+      ringForm: ["tie", "carry"], ringPour: ["hose", "trowel"], shore: ["hammer", "carry"], strut: ["hammer", "carry"],
+      bolts: ["hammer", "none"], unshore: ["carry", "carry"], panels: ["hammer", "carry"], glazing: ["carry", "carry"], seal: ["trowel", "none"],
+    }[p.key];
+    if (!tools) return null;
+    const w = sp.hw,
+      list = [];
+    if (["shore", "strut", "bolts", "panels", "glazing", "seal"].includes(p.key)) list.push([LIFT[0], LIFT[1] - 0.05, 0.37 + Math.max(0.3, liftHeight(sp, p, kk)), tools[0]]);
+    else list.push([w * 0.62, w * 0.62, 0.3, tools[0]]);
+    if (p.key === "strut" && p.floor >= 2) list.push([0.1, 0.1, 0.3 + (sp.h - 0.05) * 0.95 - 0.55, "hammer"]);
+    if (p.key === "bolts") list.push([w + 1.0, -w - 0.2, 0, "survey"]);
+    list.push([w * 0.2 + 0.6 * Math.sin(time * 0.2), w + 0.55, 0, tools[1]]);
+    return list;
+  },
+  // The ring beam (26 × 50 cm), and the struts (Ø60 tube, about 4.5 kg/m)
+  // with their hubs (about 6 kg each), ring by ring.
+  metraj(sp, p, k) {
+    const ring = 2 * Math.PI * sp.domeR * 0.26 * STEM * V;
+    if (p.key === "ringPour") return { concrete: k * ring };
+    if (p.key === "ringForm") return { rebar: k * ring * 0.12 };
+    if (p.key !== "strut") return null;
+    const { verts, edges, hubCount } = geometry();
+    const band = edges.filter((e) => e.band === p.floor);
+    const metres = band.reduce((n, e) => n + Math.hypot(...verts[e.a].map((v, i) => v - verts[e.b][i])), 0) * sp.domeR * M;
+    return { steel: (k * (metres * 4.5 + (band.length / edges.length) * hubCount * 6)) / 1000 };
+  },
+  items: (q, num) => (q.steel > 0 ? `Çelik ${num(q.steel, 2)} t` : `Donatı ${num(q.rebar, 2)} t`),
+};

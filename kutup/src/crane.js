@@ -5,6 +5,7 @@
 import { box, outline, poly, seg } from "./iso.js";
 import { phaseAt } from "./construction.js";
 import { blockPallets } from "./sitedetail.js";
+import { specialOf } from "./special.js";
 
 const YELLOW = ["#f6c945", "#dcae2c", "#c0951f"],
   LACE = "#c99622",
@@ -42,7 +43,7 @@ function loadFor(P, key, sp, x, y, z, roofT, full = true) {
     s += seg(P(x - 0.55, y, z - 0.04), P(x + 0.55, y, z - 0.04), "#5b6775", 1.4) + seg(P(x + 0.5, y, z - 0.6), P(x + 0.55, y, z - 1.0), "#e2d6b8", 0.7);
     return { s, at: [[x - 0.5, y, z - 0.04], [x - 0.5, y, z - 0.04], [x + 0.5, y, z - 0.04], [x + 0.5, y, z - 0.04]] };
   }
-  if (["footForm", "colForm", "deckForm", "ringForm"].includes(key)) {
+  if (["footForm", "colForm", "deckForm"].includes(key)) {
     let s = box(P, x - 0.45, y - 0.3, x + 0.45, y + 0.3, z - 0.24, z, PLY);
     for (let i = 1; i < 5; i++) s += seg(P(x - 0.45, y + 0.31, z - 0.048 * i), P(x + 0.45, y + 0.31, z - 0.048 * i), "#b98e55", 0.6);
     return { s, at: [[x - 0.4, y - 0.25, z], [x + 0.4, y - 0.25, z], [x + 0.4, y + 0.25, z], [x - 0.4, y + 0.25, z]] };
@@ -97,7 +98,7 @@ function hookAndLoad(P, sp, tx, ty, { p, k, hook, carrying, full, cycle }, trave
   // The load on its sling, swaying a little while it travels.
   if (carrying) {
     const sway = hook > travel - 0.1 ? 0.05 * Math.sin(time * 1.3) : 0;
-    const load = loadFor(P, p.key, sp, tx + sway, ty - sway, hook - 0.55, k, full);
+    const load = loadFor(P, p.liftAs || p.key, sp, tx + sway, ty - sway, hook - 0.55, k, full);
     if (load) {
       for (const pt of load.at) s += seg(P(tx, ty, hook - 0.02), P(...pt), "#3c4146", 0.7);
       s += load.s;
@@ -123,12 +124,13 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
   // floor under way, set the load down, unhook, hoist and slew back.
   const p = phaseAt(plan, shown);
   const k = Math.max(0, Math.min(1, (shown - p.a) / (p.b - p.a)));
+  const key = p.liftAs || p.key;
   const edge = sp.hw + 0.2 + (2.9 - (sp.hw + 0.2)) / 2;
-  const source = ["lean", "footRebar", "colRebar", "deckRebar"].includes(p.key) ? [-edge, -0.5, 0.45]
-    : ["footForm", "colForm", "deckForm", "ringForm"].includes(p.key) ? [-edge, 1.4, 0.5]
-    : p.key === "colPour" || p.key === "tieCol" ? [-0.3, -sp.hw - 0.95, 0.05] // the skip is filled at the mixer's chute
-    : ["walls", "wallLay", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck", "shore", "strut"].includes(p.key) ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
-    : ["roofFrame", "roofDeck", "roofTiles", "panels", "glazing"].includes(p.key) ? [edge, 0.6, 0.4]
+  const source = ["lean", "footRebar", "colRebar", "deckRebar"].includes(key) ? [-edge, -0.5, 0.45]
+    : ["footForm", "colForm", "deckForm"].includes(key) ? [-edge, 1.4, 0.5]
+    : key === "colPour" || key === "tieCol" ? [-0.3, -sp.hw - 0.95, 0.05] // the skip is filled at the mixer's chute
+    : ["walls", "wallLay", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck", "shore", "strut"].includes(key) ? [blockPallets(sp)[0] + 0.3, edge, 0.55]
+    : ["roofFrame", "roofDeck", "roofTiles", "panels", "glazing"].includes(key) ? [edge, 0.6, 0.4]
     : null;
   const angleOf = ([x, y]) => Math.atan2(y - my, x - mx);
   const reachOf = ([x, y]) => Math.min(0.97, Math.max(0.2, Math.hypot(x - mx, y - my) / JIB));
@@ -141,7 +143,7 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
     carrying = false,
     full = true,
     cycle = -1;
-  if (source && shown < (sp.roofType === "geodesic" ? 0.83 : 0.8)) {
+  if (source && shown < (specialOf(sp)?.liftUntil ?? 0.8)) {
     const place = [0.35 * sp.hw, -0.25 * sp.hw, workZ + 0.05];
     const a0 = angleOf(source),
       u0 = reachOf(source),
@@ -264,12 +266,12 @@ export function craneSVG(P, sp, plan, time, shown, built, workZ) {
 const LIFTS = new Set([
   "footRebar", "footForm", "colRebar", "colForm", "colPour", "deckForm", "deckRebar", "walls", "roofFrame", "roofDeck", "roofTiles",
   "wallLay", "tieCol", "studs", "joists", "sheath", "steelCol", "steelBeam", "brace", "steelDeck",
-  "ringForm", "shore", "strut", "panels", "glazing",
+  "shore", "strut", "panels", "glazing",
 ]);
 export function liftRuns(plan) {
   const runs = [];
   for (const ph of plan) {
-    if (!LIFTS.has(ph.key)) continue;
+    if (!LIFTS.has(ph.key) && !ph.lift) continue;
     const last = runs[runs.length - 1];
     if (last && Math.abs(last[1] - ph.a) < 1e-9) last[1] = ph.b;
     else runs.push([ph.a, ph.b]);

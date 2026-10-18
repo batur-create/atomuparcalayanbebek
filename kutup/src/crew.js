@@ -7,7 +7,7 @@ import { box, poly, seg } from "./iso.js";
 import { phaseAt } from "./construction.js";
 import { blockPallets } from "./sitedetail.js";
 import { LAB, approvedSVG, checkAt, slumpSVG } from "./quality.js";
-import { LIFT, liftHeight } from "./geodesic.js";
+import { specialOf } from "./special.js";
 
 const YELLOW = ["#f6c945", "#dcae2c", "#c0951f"],
   STEEL = ["#9aa4ae", "#7f8994", "#68727c"],
@@ -317,15 +317,18 @@ function backfill(P, w, k, time, behind) {
   const wrist = c < 0.5 ? lerp3(heap, trench, ease(c / 0.5)) : lerp3(trench, heap, ease((c - 0.5) / 0.5));
   behind.push(excavator(P, 1.9 + (1 - ease(arrival(k / 0.75))) * 4.5, -w - 0.62, wrist, { full: c < 0.5, time, side: 1 }));
 }
-// Tools on the dome's phases: on the lift (or the ring), and on the ground.
-const DOME_CREW = {
-  ringForm: ["tie", "carry"], ringPour: ["hose", "trowel"], shore: ["hammer", "carry"], strut: ["hammer", "carry"],
-  bolts: ["hammer", "none"], unshore: ["carry", "carry"], panels: ["hammer", "carry"], glazing: ["carry", "carry"], seal: ["trowel", "none"],
-};
+// Every phase's progress, by key (and storey).
+function progressOf(plan, shown) {
+  const kk = {};
+  for (const q of plan) kk[q.floor >= 0 ? `${q.key}${q.floor}` : q.key] = clamp((shown - q.a) / (q.b - q.a));
+  return kk;
+}
 
 /** Live layer: the machines and workers the work under way needs. */
 export function crewSVG(P, sp, plan, shown, time) {
   const p = phaseAt(plan, shown);
+  const own = specialOf(sp);
+  let ownCrew;
   const k = clamp((shown - p.a) / (p.b - p.a));
   const w = sp.hw,
     hf = sp.h / sp.floors;
@@ -405,19 +408,12 @@ export function crewSVG(P, sp, plan, shown, time) {
   else if (p.key === "layout") crew.push([w + 1.0, -w - 0.2, 0, "survey"], [-w - 0.7, w + 0.6, 0, "hammer"]);
   else if (p.key === "footRebar") crew.push([-w + 0.3, w + 0.4, -0.4, "tie"], [w + 0.4, -w + 0.2, 0, "bar"], [0.2, 0.1, -0.4, "tie"]);
   else if (p.key === "footForm") crew.push([-w + 0.3, w + 0.4, 0, "hammer"], [w + 0.4, -w + 0.2, 0, "carry"]);
-  else if (sp.roofType === "geodesic" && DOME_CREW[p.key]) {
-    // The dome: fixers on the ring beam, erectors on the scissor lift and the
-    // shoring tower, a surveyor checking the hubs, panel fitters.
-    if (p.key === "ringForm") backfill(P, w, k, time, behind);
-    if (p.key === "ringPour") behind.push(mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time, 1, away < 0.02 ? [0.5, -w + 0.1, 0.85] : null));
-    const kk = {};
-    for (const q of plan) kk[q.floor >= 0 ? `${q.key}${q.floor}` : q.key] = clamp((shown - q.a) / (q.b - q.a));
-    const [t1, t2] = DOME_CREW[p.key];
-    if (["shore", "strut", "bolts", "panels", "glazing", "seal"].includes(p.key)) crew.push([LIFT[0], LIFT[1] - 0.05, 0.37 + Math.max(0.3, liftHeight(sp, p, kk)), t1]);
-    else crew.push([w * 0.62, w * 0.62, 0.3, t1]);
-    if (p.key === "strut" && p.floor >= 2) crew.push([0.1, 0.1, 0.3 + (sp.h - 0.05) * 0.95 - 0.55, "hammer"]);
-    if (p.key === "bolts") crew.push([w + 1.0, -w - 0.2, 0, "survey"]);
-    crew.push([w * 0.2 + 0.6 * Math.sin(time * 0.2), w + 0.55, 0, t2]);
+  else if (own && (ownCrew = own.crew(sp, p, k, progressOf(plan, shown), time))) {
+    // A building of its own: its crew, the backfill after the foundation,
+    // and the mixer at the chute for its pours.
+    if (plan[plan.findIndex((q) => q.key === "footPour") + 1] === p) backfill(P, w, k, time, behind);
+    if (p.pour) behind.push(mixerTruck(P, 1.3 + away * 4.5, -w - 0.62, time, 1, away < 0.02 && own.chute ? own.chute(sp) : null));
+    crew.push(...ownCrew);
   } else if (p.floor >= 0) {
     if (p === plan.find((q) => q.floor >= 0) && k < 0.75) backfill(P, w, k, time, behind);
     // Fixers and carpenters on the storey under way.
