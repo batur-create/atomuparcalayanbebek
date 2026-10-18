@@ -53,6 +53,19 @@ test('the site plan covers the whole session in order, with beams, waterproofing
       assert.deepEqual(keys, ['mobilize', 'layout', 'drain', 'foundation', 'piers', 'radial', 'tiers', 'tiers', 'tiers', 'attic', 'cavea', 'arena', 'velarium', 'statues', 'handover']);
       continue;
     }
+    if (sys === 'mosque') {
+      // The main dome waits for the piers, the arches and both semi-domes.
+      assert.deepEqual(keys, ['mobilize', 'layout', 'found', 'walls', 'walls', 'piers', 'semi', 'aisles', 'dome', 'minarets', 'lead', 'court', 'interior', 'handover']);
+      continue;
+    }
+    if (sys === 'genoese') {
+      assert.deepEqual(keys, ['mobilize', 'layout', 'found', 'body', 'body', 'body', 'gallery', 'top', 'roof', 'storm', 'restore', 'lights', 'handover']);
+      continue;
+    }
+    if (sys === 'monument') {
+      assert.deepEqual(keys, ['mobilize', 'layout', 'level', 'raftRebar', 'raft', 'podium', 'frame', 'columns', 'roof', 'lahit', 'square', 'lions', 'towers', 'flag', 'handover']);
+      continue;
+    }
     if (sys === 'leaning') {
       // The 94-year pause comes between the third and fourth floors.
       assert.deepEqual(keys, ['mobilize', 'layout', 'found', 'floors0', 'pause', 'floors1', 'bellChamber', 'bells', 'creep', 'stabilize', 'handover']);
@@ -107,7 +120,7 @@ test('the site plan covers the whole session in order, with beams, waterproofing
 
 test('each building is built the way its walls say', () => {
   const sys = (id) => systemOf(spec(CATALOG.find((c) => c.id === id).kind, 1, id));
-  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol', 'kapsul', 'burgu', 'sukulesi', 'keops', 'kolezyum', 'pisa'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel', 'shell', 'tensile', 'cantilever', 'capsule', 'twist', 'watertower', 'pyramid', 'amphitheatre', 'leaning']);
+  assert.deepEqual(['konak', 'firin', 'saat', 'kutuphane', 'bostan', 'sahaf', 'cay', 'sera', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol', 'kapsul', 'burgu', 'sukulesi', 'keops', 'kolezyum', 'pisa', 'suleymaniye', 'galata', 'anitkabir'].map(sys), ['rc', 'masonry', 'masonry', 'masonry', 'timber', 'timber', 'timber', 'steel', 'geodesic', 'arch', 'log', 'corbel', 'shell', 'tensile', 'cantilever', 'capsule', 'twist', 'watertower', 'pyramid', 'amphitheatre', 'leaning', 'mosque', 'genoese', 'monument']);
 });
 
 test('a wider plan gets beams across the middle too', () => {
@@ -155,7 +168,7 @@ test('the inspector checks the rebar before every pour, and every pour starts wi
 
 test('the progress payment weighs work by cost and the quantities only grow', async () => {
   const { metraj } = await import('../src/metraj.js');
-  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol', 'kapsul', 'burgu', 'sukulesi', 'keops', 'kolezyum', 'pisa']) {
+  for (const id of ['konak', 'firin', 'bostan', 'sera', 'degirmen', 'kubbe', 'kemer', 'serender', 'kerpic', 'pazar', 'amfi', 'konsol', 'kapsul', 'burgu', 'sukulesi', 'keops', 'kolezyum', 'pisa', 'suleymaniye', 'galata', 'anitkabir']) {
     const item = CATALOG.find((c) => c.id === id);
     const sp = spec(item.kind, 5, id);
     const plan = sitePlan(sp);
@@ -290,6 +303,29 @@ test('the famous ones: the pyramid squared to the north, the Colosseum clamped, 
   assert.match(metraj(pisa, pp, 1).items[0], /^Eğim 3,97°$/);
   assert.match(metraj(pisa, pp, pp.find((p) => p.key === 'creep').b).items[0], /^Eğim 5,45°$/);
   for (const [kind, id] of [['house', 'keops'], ['house', 'kolezyum'], ['tower', 'pisa']]) {
+    const sp = spec(kind, 4, id);
+    for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
+  }
+});
+
+test('Süleymaniye, Galata and Anıtkabir: the dome checked, the cap lost and restored, the lions and towers counted', async () => {
+  const { checkAt } = await import('../src/quality.js');
+  const { metraj } = await import('../src/metraj.js');
+  const mid = (p, t) => p.a + (p.b - p.a) * t;
+  const mosque = spec('house', 2, 'suleymaniye'),
+    mp = sitePlan(mosque);
+  assert.match(checkAt(mp, mid(mp.find((p) => p.key === 'dome'), 0.9))?.label, /32 pencere/);
+  assert.deepEqual(metraj(mosque, mp, 1).items, ['Kubbe tepesi 53 m', 'Şerefe 10/10']);
+  const galata = spec('tower', 2, 'galata'),
+    gp = sitePlan(galata);
+  assert.match(metraj(galata, gp, gp.find((p) => p.key === 'storm').b).items[0], /^Yükseklik 49,9 m$/);
+  assert.deepEqual(metraj(galata, gp, 1).items, ['Yükseklik 66,9 m', 'Kat 9/9']);
+  const anit = spec('house', 2, 'anitkabir'),
+    ap = sitePlan(anit);
+  assert.equal(checkAt(ap, mid(ap.find((p) => p.key === 'raft'), 0.1))?.kind, 'slump');
+  assert.match(checkAt(ap, mid(ap.find((p) => p.key === 'raftRebar'), 0.9))?.label, /radye/);
+  assert.deepEqual(metraj(anit, ap, 1).items, ['Aslan 24/24', 'Kule 10/10']);
+  for (const [kind, id] of [['house', 'suleymaniye'], ['tower', 'galata'], ['house', 'anitkabir']]) {
     const sp = spec(kind, 4, id);
     for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, sp, 4, { detail })), `${id} at detail ${detail}`);
   }
