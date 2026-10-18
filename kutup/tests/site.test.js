@@ -368,3 +368,26 @@ test('Eiffel, Sydney and Burj Khalifa: the legs meet, every rib from one sphere,
     for (const detail of [0, 1, 2]) assert.ok(!/NaN|undefined|Infinity/.test(buildingSVG(P, s, 4, { detail })), `${id} at detail ${detail}`);
   }
 });
+
+test('every construction stage of every building has a plain explanation behind its (i)', async () => {
+  const { phaseInfo, stageInfo } = await import('../src/stageInfo.js');
+  const { checkAt } = await import('../src/quality.js');
+  for (const [kind, model] of [...models, ['cottage', null], ['house', null], ['tower', null]])
+    for (const seed of [1, 2, 3, 7]) {
+      const sp = spec(kind, seed, model);
+      for (const p of sitePlan(sp)) {
+        const text = phaseInfo(sp, p);
+        assert.ok(text && text.length > 30, `${model || kind}: ${p.key} (${p.label}) has no explanation`);
+        assert.ok(text.length < 420, `${model || kind}: ${p.key} explanation is too long to read on a phone`);
+      }
+    }
+  // Checks on site explain themselves, whatever the phase.
+  const sp = spec('house', 2, null),
+    plan = sitePlan(sp);
+  const kinds = new Set();
+  for (const s of steps) {
+    const c = checkAt(plan, s);
+    if (c) kinds.add(c.kind) && assert.ok(stageInfo(sp, null, c, c.label)?.text, c.label);
+  }
+  assert.deepEqual([...kinds].sort(), ['inspect', 'slump']);
+});
