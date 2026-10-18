@@ -6,7 +6,7 @@ import { box, circle, ellipse, poly, seg } from "./iso.js";
 import { at, castShadow, cell, clamp, facing, mix, mixAll, painted, progress, rectOutline, shade, unit } from "./kit.js";
 
 const TIMBER = ["#c99a62", "#ad7f48", "#8f6638"];
-const thousands = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(".", ",")} milyon` : n >= 1e3 ? `${Math.round(n / 1e3)} bin` : `${Math.round(n)}`);
+export const thousands = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(".", ",")} milyon` : n >= 1e3 ? `${Math.round(n / 1e3)} bin` : `${Math.round(n)}`);
 // A treadwheel crane of timber: men walk inside the wheel, the rope runs over
 // the jib's head to the stone.
 export function treadwheelSVG(P, x, y, tip, load, time = 0) {
