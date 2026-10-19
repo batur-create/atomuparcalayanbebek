@@ -1,0 +1,322 @@
+/* ---------- n42, Kara'ya sor ---------- */
+
+/* Kara's face in the top bar, drawn like the look button and the bell beside it. */
+.help-button {
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+}
+.help-button:hover {
+  background: var(--accent-soft);
+}
+.help-button .kara-face {
+  display: block;
+  transition: transform 0.25s ease;
+}
+.help-button:hover .kara-face,
+.help-button:focus-visible .kara-face {
+  transform: rotate(-8deg) scale(1.06);
+}
+.kara-face-head {
+  fill: #14151f;
+}
+/* At night Kara wears its warm rim, like on the roof. */
+:root[data-mode="dark"] .kara-face-head {
+  stroke: #e9a75c;
+  stroke-width: 0.9;
+}
+@media (max-width: 760px) {
+  .help-button {
+    height: 32px;
+    width: 32px;
+  }
+}
+@media (max-width: 370px) {
+  .help-button {
+    height: 30px;
+    width: 30px;
+  }
+}
+/* 44px to the finger, growing away from the look button on its right. */
+.help-button::after {
+  inset: -6px 0 -6px -10px !important;
+  width: auto !important;
+  height: auto !important;
+  transform: none !important;
+}
+
+/* The small "?" beside a word that needs explaining. */
+.ask-dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  font: 800 11px/1 inherit;
+  font-family: inherit;
+  vertical-align: middle;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ask-dot:hover,
+.ask-dot:focus-visible {
+  opacity: 1;
+}
+.ask-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+/* In the rhythm row it sits between the label and the first chip: room for a finger. */
+.rhythm-chips .ask-dot {
+  padding: 0;
+  margin: 0 8px 0 6px;
+  border-color: currentColor;
+}
+
+/* ---------- the sheet ---------- */
+.modal.help-sheet {
+  width: 520px;
+}
+.help-kara {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 4px 0 16px;
+}
+.help-kara-art {
+  flex: 0 0 74px;
+}
+.help-kara-art svg,
+.tour-kara svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.help-say {
+  position: relative;
+  margin: 0 0 22px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 16px 4px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 14.5px;
+  line-height: 1.45;
+  animation: help-say-in 0.28s ease-out;
+}
+@keyframes help-say-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.help-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.help-tabs button {
+  flex: 1 0 auto;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.help-tabs button.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.help-list {
+  display: grid;
+  gap: 8px;
+}
+.help-item {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.help-item.on {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.help-item > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.help-item > button i {
+  flex: 0 0 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-style: normal;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+}
+.help-item > p {
+  margin: -2px 0 0;
+  padding: 0 14px 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  animation: help-say-in 0.22s ease-out;
+}
+.help-foot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+.help-foot .btn {
+  justify-content: center;
+}
+.help-foot .text-button {
+  grid-column: 1 / -1;
+  justify-self: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---------- the tour ---------- */
+.tour {
+  position: fixed;
+  z-index: 140;
+  inset: 0;
+}
+.tour-shade {
+  position: absolute;
+  inset: 0;
+}
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  background: #0d0d14a6;
+  pointer-events: none;
+}
+.tour-hole {
+  position: fixed;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px #0d0d14a6, 0 0 0 3px var(--accent);
+  pointer-events: none;
+  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+.tour-card,
+.tour-offer {
+  position: fixed;
+  left: 50%;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: min(380px, calc(100vw - 32px));
+  padding: 14px 16px 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 18px 60px #0d0d1440;
+  translate: -50% 0;
+  animation: help-say-in 0.25s ease-out;
+}
+.tour-kara {
+  flex: 0 0 58px;
+  align-self: flex-start;
+}
+.tour-card p,
+.tour-offer p {
+  margin: 2px 0 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.tour-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.tour-row .btn {
+  min-height: 40px;
+  padding: 9px 16px;
+}
+.tour-dots {
+  display: flex;
+  gap: 5px;
+  margin-right: auto;
+}
+.tour-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.tour-dots i.on {
+  background: var(--accent);
+}
+/* The offer asks without covering anything: a card above the tab bar. */
+.tour-offer {
+  z-index: 90;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+}
+.tour-offer .tour-row {
+  justify-content: flex-start;
+}
+@media (min-width: 761px) {
+  .tour-offer {
+    left: auto;
+    right: 28px;
+    bottom: 28px;
+    translate: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .help-say,
+  .help-item > p,
+  .tour-card,
+  .tour-offer {
+    animation: none;
+  }
+  .tour-hole {
+    transition: none;
+  }
+}
+:root[data-motion="still"] :is(.help-say, .help-item > p, .tour-card, .tour-offer) {
+  animation: none;
+}
+:root[data-motion="still"] .tour-hole {
+  transition: none;
+}

@@ -20,6 +20,7 @@ export const YENILIKLER = [
       "Seansı telefondan başlattıysan bilgisayara tek bir \"📱 Telefonuna bak!\" bildirimi gelir, açık sekme geri sayım boyunca öter.",
       "iPhone'da iki bildirim gelir: \"10 sn içinde dön!\" ve \"Binan çatladı!\". Kilit ekranında görmek için kurulum adımları kilit modu ekranında.",
       "Bu sayfa geldi: Ben → Yenilikler. Her güncellemede neyin değiştiğini buradan okursun.",
+      "Kara’ya sor: sağ üstteki kedi yüzüne dokun, Kara bulunduğun ekranı anlatır; her soru tek dokunuşla açılır. Köy’deki küçük “?” de oraya götürür. Yeni gelenlere Kara 5 adımlık kısa bir tur önerir.",
     ],
   },
   {

@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR #37 |
 | n41 | Yenilikler: her sürümde neler değişti, herkes için, Ben'de; 1–16. sürüm geriye dönük | Herkes | 19 Eki 07:30 | PR #36 |
 | n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | 825c5561 (PR #22 via #24, Worker b690b171) |
 | n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | 825c5561 (PR #23 via #24, Worker b690b171) |
@@ -88,6 +89,26 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n42 · Kara’ya sor: istenince açılan yardım
+Herkes · 19 Eki 2026 · PR #37 · göç yok, sunucu değişmedi
+
+**Batur'un sözleri:** "onlar istediğinde açılan açıklamalar, yerinde fazla fazla gereksiz her yerde çıkan yazılardansa … hiçbir şey bilmeyen birisi bile sistemi güzelce kullanabilsin … maskotumuzu bile kullanabiliriz."
+
+**Ne yapıldı:**
+- **Kara'ya sor düğmesi:** üst çubukta, gece/gündüz düğmesinin solunda Kara'nın yüzü (kadife baş, iki kara delik göz; gece sıcak kenar ışığıyla). Dokununca pencere açılır: Kara o ekranın ne işe yaradığını tek cümleyle söyler, altında o ekranın soruları; her soru dokununca açılır, aynı anda bir tane. Kütüp / Köy / Pano / Ben arasında geçilir. Altta "Kısa turu izle", "Yenilikler" (n41) ve "Cevap yok mu? Batur'a sor".
+- **"?" noktaları:** yalnız en karışık ekranda, Köy'de iki yerde: inşaat/serbest kuralının satırı ve Masa ritmi. Dokununca pencere o soruda açılır.
+- **Kısa tur:** yeni ekip kuran ya da davetle katılana, hoş geldin yazısı kaybolduktan 3 sn sonra ana sayfada küçük bir kart: "Kütüp'ü 5 adımda göstereyim mi?" Kart sayfayı kapatmaz. "Göster" deyince 5 durak, her biri gerçek düğmenin etrafını aydınlatır: Geldim kartı, planlar, Köy, Pano, Kara'ya sor. Uygulamayı zaten bilenler yalnız bir kez tek durak görür: "Yeni: bir şey anlamazsan bana dokun." Cihaz başına bir kez (`localStorage` `kutup-tur`).
+- **Kara'nın kendisi:** çatıdaki ve odak kartındaki Kara'ya dokununca dönen cümlelerin sonuncusu artık "Bir şeye takıldın mı? Sor, bu ekranı anlatayım." ve "Sor →" düğmesi.
+- **Sadeleşen:** Köy, Pano ve Ben başlıklarının altındaki sabit tanıtım cümleleri ("Her seans köye bir bina. Kulaklıkları tak…", "Yer tutmalar, küçük notlar…", "Profilin, görünümün…") ve Köy'ün dibindeki "Küçük bir başlangıç, büyük bir iyi his." kalktı; anlatımları Kara'ya sor'da. "Bugün X dk kendine ayırdın" duruyor.
+
+**Kararlar ve nedenleri:**
+- **Rehber Kara.** Uygulamanın zaten kedisi; yeni maskot yok.
+- **Sayılar kuraldan geliyor.** Cevaplardaki 15 sn, 5 dk, maaşlar, çay molası `shared/catalog.js`'ten okunuyor; kural değişirse yardım kendiliğinden doğru kalır.
+- **Tur bir kez, kapatmayan teklifle.** İstemeyen "Gerek yok" der, bir daha çıkmaz; sonra pencereden yeniden izlenir.
+- **Feedback sayfasının alt cümlesi kaldı** ("Fikirler, takılan şeyler…"): orada açıklama değil, ne yazılacağını söylüyor.
+
+**Geri alma:** düğme `App.jsx`'te `<HelpButton>`; tur `tourAsked` etkisi; alt yazılar `PAGE`; metinler `src/helpTopics.js`. Dosyalar: src/Help.jsx, src/help.css, src/helpTopics.js, src/App.jsx, src/Focus.jsx, src/Kara.jsx, src/yenilikler.js, tests/browser_smoke.py. Ekran görüntüleri: proje klasörü `kutup/n42/`, araç `kutup/araclar/n42_help_shots.py`.
 
 ### n41 · Yenilikler: her sürümde neler değişti
 Herkes · 19 Eki 2026 · PR #36 · göç yok

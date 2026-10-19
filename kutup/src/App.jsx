@@ -58,6 +58,8 @@ import { Home, Kinetic } from "./Home.jsx";
 import { MePage, TeamModal } from "./MePage.jsx";
 import { AccountsModal } from "./Accounts.jsx";
 import { useMotionPref } from "./motionPref.js";
+import { HelpButton, HelpSheet, Tour, tourFor } from "./Help.jsx";
+import { TOUR } from "./helpTopics.js";
 import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
 import { paintBar, useColorMode } from "./colorMode.js";
@@ -71,10 +73,12 @@ const nav = [
   { id: "me", label: "Ben", icon: CircleUserRound },
 ];
 const TABS = ["home", "focus", "board", "me", "feedback"];
+// n42: what each page is for lives in Kara'ya sor now (src/helpTopics.js); the
+// heading keeps its name, and a line under it only where it is an instruction.
 const PAGE = {
-  focus: ["EKİPLE HER ŞEY DAHA İYİ", "Odaklan, köy büyüsün.", "Her seans köye bir bina. Kulaklıkları tak, telefonu bırak."],
-  board: ["EKİPLE HER ŞEY DAHA İYİ", "Bizim küçük köşe.", "Yer tutmalar, küçük notlar, büyük motivasyonlar."],
-  me: ["TAM SENLİK BİR KÖŞE", "Ben.", "Profilin, görünümün, hesabın. Bir de Batur’a iletmek istediklerin."],
+  focus: ["EKİPLE HER ŞEY DAHA İYİ", "Odaklan, köy büyüsün."],
+  board: ["EKİPLE HER ŞEY DAHA İYİ", "Bizim küçük köşe."],
+  me: ["TAM SENLİK BİR KÖŞE", "Ben."],
   feedback: ["BU PLATFORM BİRAZ DA SENİN", "Söz sende.", "Fikirler, takılan şeyler, güzel iki kelime. Hepsi Batur’a."],
 };
 const startParams = new URLSearchParams(location.search);
@@ -82,6 +86,8 @@ const startParams = new URLSearchParams(location.search);
 // signed in, even if signing in comes first (the app may mount afresh for it).
 let sharedPlan = startParams.get("plan");
 let introPlayed = false;
+// n42: someone who just made or joined a team on this device is offered the tour.
+let joinedNow = false;
 // Nothing is shown before signing in: no sample people, no sample village.
 const EMPTY = { group: { name: "", invite: "", rev: 0 }, members: [], messages: [], plans: [] };
 // Browser push steps (service worker start-up, subscribing) can hang without
@@ -926,6 +932,26 @@ function KutupApp({ initial, restart }) {
     setTab(id);
     if (id !== "board") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  // n42, Kara'ya sor: any screen opens help with openHelp({ tab, topic }).
+  const [help, setHelp] = useState(null),
+    [tour, setTour] = useState(null);
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+  useEffect(() => {
+    const show = (e) => setHelp({ tab: e.detail?.tab || tabRef.current, topic: e.detail?.topic || null });
+    window.addEventListener("kutup:help", show);
+    return () => window.removeEventListener("kutup:help", show);
+  }, []);
+  // Once per device, after the opening has played and nothing else is open.
+  const tourAsked = useRef(false);
+  useEffect(() => {
+    if (tourAsked.current || !session || tab !== "home" || modal || help || tour || toast) return;
+    const timer = setTimeout(() => {
+      tourAsked.current = true;
+      setTour(tourFor(joinedNow));
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [!!session, tab, !!modal, !!help, !!tour, !!toast]);
   const [markSpin, setMarkSpin] = useState(false);
   const topTap = () => {
     setMarkSpin(true);
@@ -1004,6 +1030,7 @@ function KutupApp({ initial, restart }) {
     friendsBefore.current = next;
   }, [data.members]);
   const joinSuccess = (d, welcome = "Ekibine hoş geldin. Şimdi güzel şeyler olur. ✨") => {
+    if (!welcome.startsWith("Tekrar")) joinedNow = true;
     // Added next to the open account: start afresh in the new one.
     if (session) {
       history.replaceState({}, "", "/");
@@ -1211,6 +1238,7 @@ function KutupApp({ initial, restart }) {
           {nav.map((item) => (
             <button
               key={item.id}
+              data-tab={item.id}
               className={`nav-item ${tab === item.id || (item.id === "me" && tab === "feedback") ? "active" : ""}`}
               onClick={() => navigate(item.id)}
             >
@@ -1278,6 +1306,7 @@ function KutupApp({ initial, restart }) {
                 timeZone: "Europe/Istanbul",
               })}
             </span>
+            <HelpButton tab={tab} />
             <ModeButton mode={mode} setMode={setMode} />
             <button
               className={`icon-button notification-button ${notificationOn ? "enabled" : ""} ${notificationWorking ? "working" : ""}`}
@@ -1324,7 +1353,7 @@ function KutupApp({ initial, restart }) {
                 )}
                 <div className="eyebrow">{PAGE[tab][0]}</div>
                 <Kinetic as="h1" when="mount" delay={0.08} text={PAGE[tab][1]} />
-                <p>{PAGE[tab][2]}</p>
+                {PAGE[tab][2] && <p>{PAGE[tab][2]}</p>}
               </div>
             </div>
           )}
@@ -1455,6 +1484,7 @@ function KutupApp({ initial, restart }) {
           return (
             <button
               key={item.id}
+              data-tab={item.id}
               className={active ? "active" : ""}
               aria-current={active ? "page" : undefined}
               onClick={() => navigate(item.id)}
@@ -1470,6 +1500,26 @@ function KutupApp({ initial, restart }) {
           );
         })}
       </nav>
+      {help && (
+        <HelpSheet
+          {...help}
+          close={() => setHelp(null)}
+          startTour={() => {
+            setHelp(null);
+            navigate("home");
+            setTour({ steps: TOUR });
+          }}
+          ask={() => {
+            setHelp(null);
+            navigate("feedback");
+          }}
+          news={() => {
+            setHelp(null);
+            setModal("yenilikler");
+          }}
+        />
+      )}
+      {tour && (tab === "home" || !tour.offer) && <Tour key={tour.steps.length + String(tour.offer)} {...tour} done={() => setTour(null)} />}
       {modal === "profile" && me && <ProfileModal me={me} close={() => setModal(null)} mutate={mutate} />}
       {modal === "look" && <LookModal theme={theme} setTheme={setTheme} mode={mode} setMode={setMode} motion={motion} setMotion={setMotion} close={() => setModal(null)} />}
       {modal === "team" && (

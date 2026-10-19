@@ -148,6 +148,8 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 context = browser.new_context(viewport={'width':375,'height':812}, device_scale_factor=2, reduced_motion='reduce')
                 # "auto" turns the page dark after sunset in Ankara; colour checks below expect the light page.
                 context.add_init_script("try{localStorage.getItem('kutup-mode')||localStorage.setItem('kutup-mode','light')}catch(e){}")
+                # n42: Kara's first-visit tour would cover the page; it is checked on its own below.
+                context.add_init_script("try{localStorage.setItem('kutup-tur','done')}catch(e){}")
                 page = context.new_page(); errors=[]
                 page.on('pageerror', lambda e: errors.append(str(e)))
                 page.goto(base)
@@ -202,6 +204,16 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
                 page.locator('.me-page').wait_for()
                 check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
+                # n42: Kara'ya sor opens on the screen you are on; every answer opens on a tap.
+                page.locator('.help-button').click()
+                expect(page.locator('.help-sheet')).to_be_visible()
+                ben_intro = page.locator('.help-say').inner_text()
+                page.locator('.help-tabs button', has_text='Köy').click()
+                page.locator('.help-item button', has_text='Telefondan çıkarsam').click()
+                check("Kara'ya sor: Ben first, Köy on a tap, answers from the rules", 'senin köşen' in ben_intro
+                    and '15 saniye' in page.locator('.help-item.on p').inner_text() and page.locator('.help-item p').count()==1)
+                page.keyboard.press('Escape')
+                expect(page.locator('.help-sheet')).to_have_count(0)
                 # d27: the account is also open on a laptop; Hesap ve cihazlar signs it out from here.
                 laptop = browser.new_context()
                 laptop.request.post(base + '/api/login', headers={'X-Kutup': '1'}, data={'username': 'audit_ada', 'password': 'audit-password-123'})
@@ -292,6 +304,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.screenshot(path=str(artifacts/'kara-mobile.png'))
                 page.emulate_media(reduced_motion='reduce')
                 second = browser.new_context(viewport={'width':375,'height':812}, reduced_motion='reduce')
+                second.add_init_script("try{localStorage.setItem('kutup-tur','done')}catch(e){}")
                 friend = second.new_page(); friend.on('pageerror', lambda e: errors.append(str(e)))
                 # n27 privacy: while Ada is at the library, the invite shows names and faces only.
                 json_call(page, '/presence', {'status': 'here', 'location': 'Gizli salon'})
@@ -645,6 +658,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 # n25: one phone, two teams. A second account is added without signing out; one tap switches.
                 phone = browser.new_context(viewport={'width':375,'height':812}, device_scale_factor=2, reduced_motion='reduce')
                 phone.add_init_script("try{localStorage.getItem('kutup-mode')||localStorage.setItem('kutup-mode','light')}catch(e){}")
+                phone.add_init_script("try{localStorage.setItem('kutup-tur','done')}catch(e){}")
                 two = phone.new_page(); two.on('pageerror', lambda e: errors.append(str(e)))
                 two.goto(base); two.get_by_role('button', name='Giriş yap', exact=True).click()
                 two.get_by_label('Kullanıcı adı', exact=True).fill('audit_ece')
