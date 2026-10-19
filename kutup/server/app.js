@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
-import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
+import { CAPACITY, cellKey, cellLayout, createPlanner, freeSpots, isMonument, kindFor, monumentCells } from "../shared/village.js";
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
@@ -836,8 +836,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             const spot = planner.place(b.memberId, b.kind, newDistrictId, { model: b.model });
             if (!spot) continue;
             statements.push(...districtChanges(groupId, spot.changes), [
-              "UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ? WHERE id = ? AND pos_x IS NULL",
-              [spot.x, spot.y, spot.facing, spot.district.id, b.id],
+              "UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ?, touched = ? WHERE id = ? AND pos_x IS NULL",
+              [spot.x, spot.y, spot.facing, spot.district.id, Date.now(), b.id],
             ]);
           }
           await db.batch([
@@ -2322,8 +2322,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ],
     ]);
     const spots = [];
+    // A monument keeps its district of its own (n44), and nothing moves into one.
+    if (isMonument(building.model)) return spots;
+    const monuments = monumentCells(member.group_id, districts.map((d) => [d.q, d.r]), inside);
     for (const d of districts) {
       if (d.id !== building.district_id && d.n >= CAPACITY) continue;
+      if (monuments.has(cellKey(d.q, d.r))) continue;
       const others = inside.filter((b) => b.districtId === d.id && b.id !== building.id);
       for (const s of freeSpots(cellLayout(member.group_id, d.q, d.r), others, building.kind, 6, building.model))
         if (Math.hypot(s.x - building.pos_x, s.y - building.pos_y) > 1) spots.push({ ...s, district: d.id });
@@ -2582,7 +2586,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     let now;
     await retrying(async () => {
       now = Date.now();
-      const spot = (await loadPlanner(member.group_id)).place(member.id, item.kind, newDistrictId);
+      const spot = (await loadPlanner(member.group_id)).place(member.id, item.kind, newDistrictId, { model: item.id });
       if (!spot) fail("Köyde bu yapıya yer bulunamadı.", 409);
       return [
         ...districtChanges(member.group_id, spot.changes),

@@ -341,9 +341,12 @@ export const GALATA = {
 // flagpole on its east stairs, the Peace Park all around.
 //
 // Local plan: x runs from the hall (back) to the square's east edge, y is
-// the Road of Lions' axis. 1 local unit ≈ 30 m in plan; heights are drawn
-// ×1.5 (1 unit ≈ 20 m), as the village's houses are. The square and the
-// road are shortened to fit, the buildings keep their own proportions.
+// the Road of Lions' axis. The constants below are 1 unit ≈ 30 m in plan and
+// 20 m in height; the drawing is then squeezed to SQUEEZE in plan and raised
+// by RAISE (n44): the complex has a district of its own but no more, so the
+// square and the road are shortened and the heights drawn taller, the way the
+// village's houses are taller than their plan. The flag keeps its own true
+// proportions.
 // =====================================================================
 const AK = {
   // terrace (podium) under the hall, and its top
@@ -359,6 +362,13 @@ const AK = {
   rx0: 1.08, rx1: 1.32,
   pole: [1.99, -0.7], poleTop: 1.75,
 };
+const SQUEEZE = 0.8,
+  RAISE = 1.25;
+const squeezed = (P) => {
+  const S = (x, y, z) => P(x * SQUEEZE, y * SQUEEZE, z * RAISE);
+  if (P.mirror) S.mirror = true;
+  return S;
+};
 const TRAVERTINE = ["#f1e3c0", "#dac9a1", "#bba982"],
   WHITE_TRAV = ["#faf5ea", "#e7dfcc", "#cbc0a8"],
   CONC = ["#c9c7c1", "#b0aea7", "#96948d"],
@@ -371,7 +381,7 @@ const TRAVERTINE = ["#f1e3c0", "#dac9a1", "#bba982"],
   FLAG_RED = "#e30a17";
 // Ten towers: İstiklal and Hürriyet at the head of the road, four on the
 // north side of the square (two flanking the road), four on the south.
-const T = 0.13;
+const T = 0.15;
 const TOWER_LIST = [
   [0.95, 1.96], [1.45, 1.96],
   [0.55, 0.56], [0.95, 0.56], [1.45, 0.56], [1.85, 0.56],
@@ -477,39 +487,39 @@ function flagSVG(P, px, py, z, G, wave = 0) {
 }
 // A seated Hittite-style lion on its plinth, looking across the road (dir ±1 along x).
 function lionSVG(P, x, y, dir, detail) {
-  let s = box(P, x - 0.035, y - 0.026, x + 0.035, y + 0.026, 0, 0.03, TRAVERTINE);
+  let s = box(P, x - 0.035, y - 0.026, x + 0.035, y + 0.026, 0, 0.02, TRAVERTINE);
   const b = x - dir * 0.012;
-  s += box(P, b - 0.024, y - 0.017, b + 0.024, y + 0.017, 0.03, 0.06, LION);
+  s += box(P, b - 0.024, y - 0.017, b + 0.024, y + 0.017, 0.02, 0.04, LION);
   if (detail >= 1) {
     const hx = x + dir * 0.016;
-    s += box(P, hx - 0.016, y - 0.016, hx + 0.016, y + 0.016, 0.03, 0.1, LION);
-    s += box(P, hx + dir * 0.008 - 0.012, y - 0.013, hx + dir * 0.008 + 0.012, y + 0.013, 0.1, 0.12, LION);
+    s += box(P, hx - 0.016, y - 0.016, hx + 0.016, y + 0.016, 0.02, 0.065, LION);
+    s += box(P, hx + dir * 0.008 - 0.012, y - 0.013, hx + dir * 0.008 + 0.012, y + 0.013, 0.065, 0.08, LION);
   }
   return s;
 }
 // A statue group of three on a plinth (the men's and the women's groups).
 function groupSVG(P, x, y, women) {
-  let s = box(P, x - 0.09, y - 0.035, x + 0.09, y + 0.035, 0, 0.045, TRAVERTINE);
-  for (const [dx, h] of [[-0.05, 0.1], [0, women ? 0.105 : 0.115], [0.05, 0.1]]) {
-    s += box(P, x + dx - 0.012, y - 0.012, x + dx + 0.012, y + 0.012, 0.045, 0.045 + h, WHITE_TRAV);
-    s += circle(...P(x + dx, y, 0.045 + h + 0.012), ballR(P, x + dx, y, 0.045 + h + 0.012, 0.012), WHITE_TRAV[1]);
+  let s = box(P, x - 0.09, y - 0.035, x + 0.09, y + 0.035, 0, 0.03, TRAVERTINE);
+  for (const [dx, h] of [[-0.05, 0.07], [0, women ? 0.072 : 0.08], [0.05, 0.07]]) {
+    s += box(P, x + dx - 0.012, y - 0.012, x + dx + 0.012, y + 0.012, 0.03, 0.03 + h, WHITE_TRAV);
+    s += circle(...P(x + dx, y, 0.03 + h + 0.008), ballR(P, x + dx, y, 0.03 + h + 0.008, 0.008), WHITE_TRAV[1]);
   }
-  if (women) s += box(P, x - 0.07, y + 0.012, x + 0.07, y + 0.02, 0.06, 0.08, ["#e3cf8f", "#cdb672", "#b39b5a"]);
+  if (women) s += box(P, x - 0.07, y + 0.012, x + 0.07, y + 0.02, 0.04, 0.055, ["#e3cf8f", "#cdb672", "#b39b5a"]);
   return s;
 }
 // A tower: travertine walls, a relief on its face, the Seljuk sawtooth under
 // the eave, a low pyramidal roof like a Turkish tent and a bronze spearhead.
 function towerSVG(P, x, y, t, lit, detail, trav) {
-  const H = 0.55,
+  const H = 0.4,
     top = H * t;
   let s = box(P, x - T, y - T, x + T, y + T, 0, top, trav);
   if (t < 1) return s;
   if (detail >= 1) {
     // relief panel on the +x face, door on the +y face
-    s += poly([P(x + T + 0.002, y - 0.08, 0.16), P(x + T + 0.002, y + 0.08, 0.16), P(x + T + 0.002, y + 0.08, 0.45), P(x + T + 0.002, y - 0.08, 0.45)], mix(trav[2], "#ffffff", 0.25));
+    s += poly([P(x + T + 0.002, y - 0.08, 0.12), P(x + T + 0.002, y + 0.08, 0.12), P(x + T + 0.002, y + 0.08, 0.33), P(x + T + 0.002, y - 0.08, 0.33)], mix(trav[2], "#ffffff", 0.25));
     if (detail >= 2)
-      for (const [a, b, c, d] of [[-0.05, 0.2, -0.03, 0.4], [-0.01, 0.2, 0.0, 0.42], [0.03, 0.2, 0.05, 0.38], [-0.06, 0.33, 0.06, 0.33]]) s += seg(P(x + T + 0.003, y + a, b), P(x + T + 0.003, y + c, d), trav[2], 0.8);
-    s += poly([P(x - 0.035, y + T + 0.002, 0), P(x + 0.035, y + T + 0.002, 0), P(x + 0.035, y + T + 0.002, 0.13), P(x - 0.035, y + T + 0.002, 0.13)], lit ? mix(BRONZE, "#ffd36e", 0.6) : BRONZE);
+      for (const [a, b, c, d] of [[-0.05, 0.15, -0.03, 0.29], [-0.01, 0.15, 0.0, 0.31], [0.03, 0.15, 0.05, 0.28], [-0.06, 0.24, 0.06, 0.24]]) s += seg(P(x + T + 0.003, y + a, b), P(x + T + 0.003, y + c, d), trav[2], 0.8);
+    s += poly([P(x - 0.035, y + T + 0.002, 0), P(x + 0.035, y + T + 0.002, 0), P(x + 0.035, y + T + 0.002, 0.1), P(x - 0.035, y + T + 0.002, 0.1)], lit ? mix(BRONZE, "#ffd36e", 0.6) : BRONZE);
   }
   if (detail >= 2) s += sawtooth(P, "y", x + T + 0.001, y - T, y + T, H - 0.005, trav, 0.03) + sawtooth(P, "x", y + T + 0.001, x - T, x + T, H - 0.005, trav, 0.03);
   const e = T + 0.025;
@@ -523,7 +533,7 @@ function towerSVG(P, x, y, t, lit, detail, trav) {
 }
 // A portico: square pillars under a flat roof, open both sides; x0..x1 by y0..y1.
 function porticoSVG(P, x0, y0, x1, y1, t, trav, detail) {
-  const H = 0.36,
+  const H = 0.26,
     alongY = y1 - y0 > x1 - x0,
     len = alongY ? y1 - y0 : x1 - x0,
     n = Math.max(2, Math.round(len / 0.12) + 1),
@@ -540,8 +550,8 @@ function porticoSVG(P, x0, y0, x1, y1, t, trav, detail) {
   }
   s += box(P, x0 + 0.03, y0 + 0.03, x1 - 0.03, y1 - 0.03, 0, 0.01, ["#e3d6b8", "#cfc09f", "#b5a684"]) + painted(pillars);
   if (t < 1) return s;
-  s += box(P, x0, y0, x1, y1, H, H + 0.05, trav);
-  if (detail >= 2) s += sawtooth(P, "y", x1 + 0.001, y0, y1, H + 0.045, trav, 0.03) + sawtooth(P, "x", y1 + 0.001, x0, x1, H + 0.045, trav, 0.03);
+  s += box(P, x0, y0, x1, y1, H, H + 0.04, trav);
+  if (detail >= 2) s += sawtooth(P, "y", x1 + 0.001, y0, y1, H + 0.035, trav, 0.03) + sawtooth(P, "x", y1 + 0.001, x0, x1, H + 0.035, trav, 0.03);
   return s;
 }
 // The kilim of the Ceremonial Square: a border and rows of diamond medallions.
@@ -635,7 +645,7 @@ function hallSVG(P, k, trav, lit, detail) {
     if (frame >= 1) s += box(P, hx0, hy0, hx1, hy1, zt, zs, WHITE_TRAV);
     const zTop = zs + (zc - zs) * frame,
       zWall = zs + (ze - zs) * frame,
-      pillar = (x, y, clad) => box(P, x - 0.026, y - 0.026, x + 0.026, y + 0.026, zs, zTop, clad ? WHITE_TRAV : CONC);
+      pillar = (x, y, clad) => box(P, x - 0.045, y - 0.045, x + 0.045, y + 0.045, zs, zTop, clad ? WHITE_TRAV : CONC);
     const posts = [];
     for (let i = 0; i < 8; i++) {
       const y = hy0 + 0.03 + ((hy1 - hy0 - 0.06) * i) / 7;
@@ -681,7 +691,8 @@ function hallSVG(P, k, trav, lit, detail) {
   }
   return s;
 }
-function anitkabirSVG(P, k, lit = false, detail = 2, time = 0) {
+function anitkabirSVG(P0, k, lit = false, detail = 2, time = 0) {
+  const P = squeezed(P0);
   let s = "";
   const trav = lit ? mixAll(TRAVERTINE, FLOODLIT, 0.4) : TRAVERTINE;
   // Rasattepe: the Phrygian tumuli, dug away as the hill is levelled.
@@ -723,20 +734,22 @@ function anitkabirSVG(P, k, lit = false, detail = 2, time = 0) {
     f += box(P, px - 0.03, py - 0.03, px + 0.03, py + 0.03, 0.06, 0.12, ["#9c7a45", "#7c5a32", "#634626"]);
     f += seg(P(px, py, 0.12), P(px, py, top), "#8d949b", 1.8) + seg(P(px - 0.004, py + 0.004, 0.12), P(px - 0.004, py + 0.004, top), "#e9edf0", 0.6);
     f += circle(...P(px, py, top + 0.012), ballR(P, px, py, top + 0.012, 0.012), GOLD);
-    const G = 0.26,
+    const G = 0.3,
       ftop = 0.3 + (top - 0.33) * raise;
-    f += flagSVG(P, px, py, ftop, G, time * 2.2);
+    f += flagSVG(P0, px * SQUEEZE, py * SQUEEZE, ftop * RAISE, G, time * 2.2);
     list.push({ depth: px + py + 0.2, s: f });
   }
   s += painted(list);
   return s;
 }
 const ANITKABIR_DONE = { level: 1, raftRebar: 1, raft: 1, podium: 1, frame: 1, columns: 1, roof: 1, lahit: 1, square: 1, lions: 1, towers: 1, flag: 1, done: true };
-const HALL_OUTLINE = rectOutline(AK.tx0, AK.ty0, AK.tx1, AK.ty1);
+const HALL_OUTLINE = rectOutline(AK.tx0 * SQUEEZE, AK.ty0 * SQUEEZE, AK.tx1 * SQUEEZE, AK.ty1 * SQUEEZE);
+// A worker's place in the squeezed drawing.
+const atS = (x, y, z, tool) => at(x * SQUEEZE, y * SQUEEZE, z * RAISE, tool);
 export const ANITKABIR = {
   system: "monument",
-  ridge: AK.poleTop - AK.za,
-  spec: () => ({ hw: 2, h: AK.za - 0.3, floors: 1, wall: { faces: TRAVERTINE, grain: "#bba982", pattern: "anitkabir" }, roof: TRAVERTINE }),
+  ridge: (AK.poleTop - AK.za) * RAISE,
+  spec: () => ({ hw: 2, h: AK.za * RAISE - 0.3, floors: 1, wall: { faces: TRAVERTINE, grain: "#bba982", pattern: "anitkabir" }, roof: TRAVERTINE }),
   ground: ["mobilize", "layout"],
   steps: [
     { key: "level", label: "Rasattepe tesviye: kazıda Frig tümülüsleri çıkıyor, müzeye taşınıyor", w: 1, cost: 3 },
@@ -759,28 +772,28 @@ export const ANITKABIR = {
   garden: false,
   live: true,
   scene: (P, sp, plan, shown, lit, time = 0) => anitkabirSVG(P, progress(plan, shown), lit, 2, time),
-  shadow: (P, sp, t) => castShadow(P, HALL_OUTLINE, AK.za * 0.5 * t + 0.1),
+  shadow: (P, sp, t) => castShadow(P, HALL_OUTLINE, AK.za * RAISE * 0.5 * t + 0.1),
   shadowFrom: "frame",
   building(P, sp, seed, { lit = false, detail = 2, shadowP = P } = {}) {
-    const s = detail ? castShadow(shadowP, HALL_OUTLINE, AK.za * 0.5 + 0.1) : "";
+    const s = detail ? castShadow(shadowP, HALL_OUTLINE, AK.za * RAISE * 0.5 + 0.1) : "";
     return s + anitkabirSVG(P, ANITKABIR_DONE, lit, detail);
   },
   snow: () => "",
   workHeight: () => null,
   crew(sp, p, k) {
-    if (p.key === "level") return [at(0.5 + 0.9 * k, -0.6, 0, "shovel"), at(1.3, 0.2, 0, "carry")];
-    if (p.key === "raftRebar") return [at(-1.5, -0.4, 0, "tie"), at(-0.6, -1.1, 0, "tie")];
-    if (p.key === "raft") return [at(-1.2, -0.3, 0, "hose"), at(-0.5, -1.0, 0, "trowel")];
-    if (p.key === "podium") return [at(0.2, -0.05, 0, "trowel")];
-    if (p.key === "frame" || p.key === "columns") return [at(-0.05, -0.4, AK.zt, p.key === "frame" ? "hose" : "trowel"), at(0.4, 0.1, 0, "carry")];
-    if (p.key === "roof") return [at(-0.9, -0.3, AK.ze, "hammer")];
+    if (p.key === "level") return [atS(0.5 + 0.9 * k, -0.6, 0, "shovel"), atS(1.3, 0.2, 0, "carry")];
+    if (p.key === "raftRebar") return [atS(-1.5, -0.4, 0, "tie"), atS(-0.6, -1.1, 0, "tie")];
+    if (p.key === "raft") return [atS(-1.2, -0.3, 0, "hose"), atS(-0.5, -1.0, 0, "trowel")];
+    if (p.key === "podium") return [atS(0.2, -0.05, 0, "trowel")];
+    if (p.key === "frame" || p.key === "columns") return [atS(-0.05, -0.4, AK.zt, p.key === "frame" ? "hose" : "trowel"), atS(0.4, 0.1, 0, "carry")];
+    if (p.key === "roof") return [atS(-0.9, -0.3, AK.ze, "hammer")];
     if (p.key === "lahit") {
       const [x, y, z] = lahitAt(k);
-      return [at(x + 0.16, y + 0.12, z, "bar"), at(x + 0.16, y - 0.16, z, "bar")];
+      return [atS(x + 0.16, y + 0.12, z, "bar"), atS(x + 0.16, y - 0.16, z, "bar")];
     }
-    if (p.key === "square") return [at(0.6 + 1.2 * k, -1.2, 0, "trowel"), at(1.5, 0.1, 0, "carry")];
-    if (p.key === "lions") return [at(1.2, 0.8 + 0.9 * k, 0, "carry")];
-    if (p.key === "towers") return [at(1.2, 0.3, 0, "trowel")];
+    if (p.key === "square") return [atS(0.6 + 1.2 * k, -1.2, 0, "trowel"), atS(1.5, 0.1, 0, "carry")];
+    if (p.key === "lions") return [atS(1.2, 0.8 + 0.9 * k, 0, "carry")];
+    if (p.key === "towers") return [atS(1.2, 0.3, 0, "trowel")];
     return null;
   },
   metraj(sp, p, k) {

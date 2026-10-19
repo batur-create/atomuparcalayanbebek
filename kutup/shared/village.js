@@ -8,7 +8,7 @@
 // gate facing the square to a small hub, and lanes on to the cells further out.
 // Roads therefore never cut through houses that were placed earlier.
 
-import { claimOf } from "./olcek.js";
+import { MONUMENTS, claimOf } from "./olcek.js";
 
 export const CAPACITY = 9; // buildings per district
 export const SPACING = 31; // between neighbouring district centres (world units)
@@ -26,6 +26,24 @@ const shareOf = (kind, model) => ((claimOf(model) || 0) > (FOOTPRINT[kind] || FO
 // A footprint this big opens a new district rather than squeeze in smaller.
 export const LANDMARK = 5;
 export const footprintOf = (kind, model) => Math.max(FOOTPRINT[kind] || FOOTPRINT.cottage, claimOf(model) || 0);
+// n44: the widest landmarks (Anıtkabir, Keops…) get a district of their own:
+// they stand at its centre and its lanes become a ring road just inside the
+// edge, so they can be drawn about as big as a district allows. Such a
+// district is recognised by its monument standing exactly on its centre.
+export const RING = 1.4; // the ring road's distance from the district's edge
+export const isMonument = (model) => MONUMENTS.has(model);
+const atCentre = (layout, b) => isMonument(b.model) && Math.hypot(b.x - layout.center[0], b.y - layout.center[1]) < 0.05;
+/** Keys ("q,r") of the cells whose district holds a monument on its centre. */
+export function monumentCells(groupKey, cells, buildings) {
+  const out = new Set();
+  const big = buildings.filter((b) => isMonument(b.model) && b.x != null);
+  if (!big.length) return out;
+  for (const [q, r] of cells) {
+    const L = cellLayout(groupKey, q, r);
+    if (big.some((b) => atCentre(L, b))) out.add(cellKey(q, r));
+  }
+  return out;
+}
 
 export const kindFor = (minutes) =>
   minutes >= 70 ? "tower" : minutes >= 40 ? "house" : "cottage";
@@ -164,8 +182,8 @@ export function nearestOnLine(p, line) {
 }
 
 const layoutCache = new Map();
-export function cellLayout(groupKey, q, r) {
-  const cacheKey = `${groupKey}|${q},${r}`;
+export function cellLayout(groupKey, q, r, monument = false) {
+  const cacheKey = `${groupKey}|${q},${r}${monument ? "|m" : ""}`;
   if (layoutCache.has(cacheKey)) return layoutCache.get(cacheKey);
   if (layoutCache.size > 600) layoutCache.clear();
   const seed = hashSeed(`${groupKey}:${q}:${r}`);
@@ -197,6 +215,7 @@ export function cellLayout(groupKey, q, r) {
   const entranceAngle = towards(parent);
   layout.entrance = edge(entranceAngle);
   layout.entranceAngle = entranceAngle;
+  if (monument) return monumentLayout(layout, { R, edge, towards, children, entranceAngle, cacheKey });
   const hub = [center[0] + (R() * 2 - 1) * 1.6, center[1] + (R() * 2 - 1) * 1.6];
   layout.hub = hub;
   layout.lanes.push(curve(layout.entrance, hub, (R() * 2 - 1) * 2.6));
@@ -246,6 +265,51 @@ export function cellLayout(groupKey, q, r) {
   if (R() < 0.6) {
     const a = R() * Math.PI * 2;
     layout.hill = { x: center[0] + Math.cos(a) * RADIUS * 0.5, y: center[1] + Math.sin(a) * RADIUS * 0.5, r: 4 + R() * 3 };
+  }
+  layout.laneDistance = laneDistance;
+  layoutCache.set(cacheKey, layout);
+  return layout;
+}
+// A monument's district: the ring road from the entrance round to each gate
+// (the shorter way), trees only near the edge, no pond or hill; `room` is the
+// radius the monument may fill.
+function monumentLayout(layout, { R, edge, towards, children, entranceAngle, cacheKey }) {
+  const ring = (a0, a1) => {
+    let d = a1 - a0;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    const n = Math.max(2, Math.ceil(Math.abs(d) / 0.12)),
+      out = [];
+    for (let i = 0; i <= n; i++) out.push(edge(a0 + (d * i) / n, RING));
+    return out;
+  };
+  layout.monument = true;
+  layout.hub = layout.center;
+  const ends = children.map((child) => {
+    const a = towards(child);
+    layout.gates[cellKey(...child)] = edge(a);
+    return a;
+  });
+  // With no cell beyond, the ring runs two thirds of the way round both sides.
+  if (!ends.length) ends.push(entranceAngle + Math.PI * 0.68, entranceAngle - Math.PI * 0.68);
+  for (const a of ends) {
+    const gate = edge(a);
+    layout.lanes.push([layout.entrance, ...ring(entranceAngle, a), ...(children.length ? [gate] : [])]);
+  }
+  const laneDistance = (p) => Math.min(...layout.lanes.map((l) => lineDistance(p, l).d));
+  const side = R() < 0.5 ? 1 : -1;
+  const inward = entranceAngle + Math.PI;
+  layout.sign = [
+    layout.entrance[0] + Math.cos(entranceAngle) * -1.6 + Math.cos(inward + Math.PI / 2) * 2.0 * side,
+    layout.entrance[1] + Math.sin(entranceAngle) * -1.6 + Math.sin(inward + Math.PI / 2) * 2.0 * side,
+  ];
+  let room = Infinity;
+  for (let i = 0; i < 48; i++) room = Math.min(room, layout.radiusAt((i / 48) * Math.PI * 2));
+  layout.room = Math.round((room - RING - LANE - 0.4) * 100) / 100;
+  for (let k = 0; k < 14; k++) {
+    const a = R() * Math.PI * 2,
+      p = edge(a, 0.3 + R() * 0.8);
+    layout.trees.push({ x: p[0], y: p[1], size: 0.75 + R() * 0.5, tone: R() });
   }
   layout.laneDistance = laneDistance;
   layoutCache.set(cacheKey, layout);
@@ -386,6 +450,10 @@ export function createPlanner(groupKey, districts, buildings, fullIds = []) {
   // Full districts are only counted, never loaded.
   for (const id of fullIds) if (inside.has(id)) inside.set(id, { length: CAPACITY });
   const mine = (memberId) => list.filter((d) => d.memberId === memberId);
+  const holdsMonument = (d) => {
+    const placed = inside.get(d.id);
+    return Array.isArray(placed) && placed.some((b) => atCentre(cellLayout(groupKey, d.q, d.r), b));
+  };
   // Returns { district, change } where change is "insert", "claim" or null.
   function takeCell(memberId, newId) {
     const own = mine(memberId).map((d) => [d.q, d.r]);
@@ -423,7 +491,7 @@ export function createPlanner(groupKey, districts, buildings, fullIds = []) {
       const attempt = (fallback) => {
         for (const district of mine(memberId)) {
           const placed = inside.get(district.id);
-          if (placed.length >= CAPACITY) continue;
+          if (placed.length >= CAPACITY || holdsMonument(district)) continue;
           const spot = placeIn(cellLayout(groupKey, district.q, district.r), placed, kind, model, { fallback });
           if (spot) return into(district, spot);
         }
@@ -435,6 +503,17 @@ export function createPlanner(groupKey, districts, buildings, fullIds = []) {
         const spot = placeIn(cellLayout(groupKey, taken.district.q, taken.district.r), inside.get(taken.district.id), kind, model);
         return spot ? into(taken.district, spot) : null;
       };
+      // A monument opens a district of its own and stands on its centre.
+      if (isMonument(model) && allocate)
+        for (let tries = 0; tries < 4; tries++) {
+          const taken = takeCell(memberId, newId);
+          changes.push(taken);
+          const placed = inside.get(taken.district.id),
+            L = cellLayout(groupKey, taken.district.q, taken.district.r, true);
+          if (placed.length) continue;
+          const round = (v) => Math.round(v * 100) / 100;
+          return into(taken.district, { x: round(L.center[0]), y: round(L.center[1]), facing: facingFor(L, L.center) });
+        }
       const full = footprintOf(kind, model),
         big = full > (FOOTPRINT[kind] || FOOTPRINT.cottage);
       const found = attempt(false) || (full >= LANDMARK && allocate ? fresh() : null) || (big ? attempt(true) : null);
@@ -449,7 +528,7 @@ export function createPlanner(groupKey, districts, buildings, fullIds = []) {
 }
 
 /** Every lane and road that links the given districts to the square. */
-export function roadNetwork(groupKey, cells) {
+export function roadNetwork(groupKey, cells, monuments = new Set()) {
   const seen = new Set(),
     lanes = [],
     links = [],
@@ -459,9 +538,9 @@ export function roadNetwork(groupKey, cells) {
       cr = r;
     while (!(cq === 0 && cr === 0) && !seen.has(cellKey(cq, cr))) {
       seen.add(cellKey(cq, cr));
-      const layout = cellLayout(groupKey, cq, cr);
+      const layout = cellLayout(groupKey, cq, cr, monuments.has(cellKey(cq, cr)));
       const [pq, pr] = parentOf(cq, cr);
-      const parent = cellLayout(groupKey, pq, pr);
+      const parent = cellLayout(groupKey, pq, pr, monuments.has(cellKey(pq, pr)));
       links.push([parent.gates[cellKey(cq, cr)] || parent.center, layout.entrance]);
       lanes.push(...layout.lanes);
       cq = pq;

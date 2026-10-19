@@ -409,7 +409,7 @@ test('the scale table: real heights in order, Burj at most five houses, claims c
 
 test('a building of its own is enlarged by one k: never below its drawing, within its claim, capped by the room around it', async () => {
   const { drawnSize, ridgeOf, screenBox } = await import('../src/iso.js');
-  const { claimOf, REAL } = await import('../shared/olcek.js');
+  const { claimOf, MONUMENTS, MONUMENT_ROOM, REAL } = await import('../shared/olcek.js');
   const house = spec('house', 7, 'ev');
   const rows = {};
   for (const item of CATALOG) {
@@ -422,7 +422,7 @@ test('a building of its own is enlarged by one k: never below its drawing, withi
     // Its drawing really is k times bigger: height and reach.
     const b = screenBox(sp);
     assert.ok(Math.abs(b.ridge - size.ridge * sp.k) < 0.02, `${item.id}: drawn height follows k`);
-    assert.ok(b.reach <= Math.max(size.reach, claimOf(item.id)) + 0.02, `${item.id}: stays inside its claim`);
+    assert.ok(b.reach <= Math.max(size.reach, MONUMENTS.has(item.id) ? MONUMENT_ROOM : claimOf(item.id)) + 0.02, `${item.id}: stays inside its claim`);
     assert.ok(Math.abs(ridgeOf(sp) - ridgeOf(local) * sp.k) < 1e-6, `${item.id}: ridge scales with k`);
     // No room: as drawn today; half the room: half way.
     assert.equal(spec(item.kind, 7, item.id, { room: 0.5 }).k, 1, `${item.id}: never below today`);
@@ -494,4 +494,46 @@ test('buildings placed before n44 grow only into the room around them', async ()
   const pyramid = world.items.find((i) => i.id === 'p');
   assert.ok(pyramid.sp.k >= 1);
   assert.ok(pyramid.sp.reach <= Math.max(spec('house', 1, 'keops', { scale: 1 }).reach, d - FOOTPRINT.house - 0.25) + 1e-9, 'the pyramid stops short of the house');
+});
+
+test('a monument gets a district of its own: on its centre, ring road round it, taller than a house', async () => {
+  const { createPlanner, cellLayout, monumentCells, roadNetwork, lineDistance, isMonument, LANE } = await import('../shared/village.js');
+  const { ridgeOf } = await import('../src/iso.js');
+  const house = ridgeOf(spec('house', 7, 'ev'));
+  for (let g = 0; g < 12; g++) {
+    const key = `anit-${g}`;
+    let n = 0;
+    const planner = createPlanner(key, [], []);
+    const newId = () => `d${n++}`;
+    const placed = [];
+    const put = (model) => {
+      const item = CATALOG.find((c) => c.id === model);
+      const spot = planner.place('ada', item.kind, newId, { model });
+      assert.ok(spot, `${key}: ${model} placed`);
+      placed.push({ ...spot, model, kind: item.kind, districtId: spot.district.id });
+      return spot;
+    };
+    put('ev');
+    const anit = put('anitkabir');
+    for (const m of ['ev', 'konak', 'kule', 'kulube', 'keops', 'saat', 'firin']) put(m);
+    const L = cellLayout(key, anit.district.q, anit.district.r, true);
+    assert.ok(Math.hypot(anit.x - L.center[0], anit.y - L.center[1]) < 0.01, 'on the centre');
+    assert.ok(L.room > 7, `${key}: room ${L.room}`);
+    for (const lane of L.lanes) assert.ok(lineDistance(L.center, lane).d - LANE >= L.room, 'ring keeps off the monument');
+    // Nothing else moves into a monument's district; each monument has its own.
+    const inAnit = placed.filter((b) => b.districtId === anit.district.id);
+    assert.equal(inAnit.length, 1);
+    const keops = placed.find((b) => b.model === 'keops');
+    assert.notEqual(keops.districtId, anit.district.id);
+    const cells = planner.districts.map((d) => [d.q, d.r]);
+    const marks = monumentCells(key, cells, placed);
+    assert.equal(marks.size, 2);
+    assert.ok(roadNetwork(key, cells, marks).lanes.length > 0);
+    // Drawn as big as its district allows, it stands taller than a house.
+    for (const id of ['anitkabir', 'keops', 'kolezyum', 'sidney', 'suleymaniye']) {
+      assert.ok(isMonument(id));
+      const sp = spec('house', 7, id, { room: L.room });
+      assert.ok(ridgeOf(sp) > house, `${id}: ${ridgeOf(sp).toFixed(2)} > ${house}`);
+    }
+  }
 });

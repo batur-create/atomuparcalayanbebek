@@ -2,7 +2,7 @@
 // buildings, signs and lamps, each with a screen-space box and a depth, indexed
 // in a coarse grid so the map only draws what a tile or the viewport needs.
 import {
-  FOOTPRINT, LANE, LANE_SHARE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
+  FOOTPRINT, LANE, LANE_SHARE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, monumentCells, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
   LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, drawnSize, ellipse, mirrored, poly, patchSVG, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
@@ -390,8 +390,11 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   const people = new Map(members.map((m) => [m.id, m]));
   // September to November in Ankara: some leaves turn.
   const season = (sky || skyAt()).season;
-  const districts = village.districts.map((d) => ({ ...d, layout: cellLayout(groupKey, d.q, d.r) }));
-  const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]));
+  // A monument's district (n44) has a ring road round its centre.
+  const monuments = monumentCells(groupKey, village.districts.map((d) => [d.q, d.r]), village.buildings);
+  const layoutOf = (q, r) => cellLayout(groupKey, q, r, monuments.has(cellKey(q, r)));
+  const districts = village.districts.map((d) => ({ ...d, layout: layoutOf(d.q, d.r) }));
+  const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]), monuments);
   const linkSet = new Set(network.links);
   const built = new Set(districts.map((d) => cellKey(d.q, d.r)));
   const ground = [],
@@ -424,7 +427,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   for (const d of districts) cellsDrawn.set(cellKey(d.q, d.r), d);
   for (const key of network.cells) if (!cellsDrawn.has(key)) {
     const [q, r] = key.split(",").map(Number);
-    cellsDrawn.set(key, { q, r, layout: cellLayout(groupKey, q, r), passThrough: true });
+    cellsDrawn.set(key, { q, r, layout: layoutOf(q, r), passThrough: true });
   }
   const homes = village.buildings.filter((b) => b.x !== null);
   // Coarse spatial hashes keep the checks below cheap in a village of thousands.
@@ -624,12 +627,12 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   for (const link of network.links) roads.push({ line: link, kind: "road" });
   for (const key of network.cells) {
     const [q, r] = key.split(",").map(Number);
-    const L = cellLayout(groupKey, q, r);
+    const L = layoutOf(q, r);
     const childKeys = Object.keys(L.gates);
     L.lanes.forEach((line, i) => {
       // Lanes towards cells nobody has settled yet are only a dirt track.
       const leadsTo = i > 0 ? childKeys[i - 1] : null;
-      const live = i === 0 || (leadsTo && (network.cells.has(leadsTo) || built.has(leadsTo)));
+      const live = L.monument || i === 0 || (leadsTo && (network.cells.has(leadsTo) || built.has(leadsTo)));
       roads.push({ line, kind: live ? "road" : "track" });
     });
   }
@@ -766,7 +769,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     } else if (m.status === "coming") {
       const d = districts.find((dd) => dd.memberId === m.id);
       if (d) {
-        const path = pathToPlaza(groupKey, d);
+        const path = pathToPlaza(groupKey, d, monuments);
         walkers.push({ member: m, path, box: pathBox(path) });
       }
     }
@@ -804,7 +807,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     })
     .sort((a, b) => a.turn - b.turn)
     .slice(0, 6)
-    .map(({ d }) => villagerOf(groupKey, d));
+    .map(({ d }) => villagerOf(groupKey, d, monuments));
   const mine = districts.filter((d) => d.memberId === me);
   // One name per person at distant zoom; repeating it on every district hides
   // the buildings once a friend owns dozens of neighbourhoods.
@@ -864,9 +867,9 @@ function pathBox(path) {
 }
 // A neighbour of a lived-in district: how they look, how fast they stroll and
 // where they stand when nothing moves.
-function villagerOf(groupKey, district) {
+function villagerOf(groupKey, district, monuments) {
   const r = rng(district.layout.seed + 41);
-  const path = pathToPlaza(groupKey, district);
+  const path = pathToPlaza(groupKey, district, monuments);
   const hat = Math.floor(r() * 3);
   return {
     id: district.id,
@@ -883,24 +886,26 @@ function villagerOf(groupKey, district) {
 }
 
 // From a district's hub, along its lanes and the roads, to the plaza.
-function pathToPlaza(groupKey, district) {
+function pathToPlaza(groupKey, district, monuments = new Set()) {
   const path = [];
-  let L = cellLayout(groupKey, district.q, district.r);
+  const layoutOf = (q, r) => cellLayout(groupKey, q, r, monuments.has(cellKey(q, r)));
+  let L = layoutOf(district.q, district.r);
   path.push(...[...L.lanes[0]].reverse());
   let q = district.q,
     r = district.r;
   while (!(q === 0 && r === 0)) {
     const [pq, pr] = parentOf(q, r);
-    const parent = cellLayout(groupKey, pq, pr);
+    const parent = layoutOf(pq, pr);
     const gate = parent.gates[cellKey(q, r)];
     if (pq === 0 && pr === 0) {
       path.push(gate, [gate[0] * 0.35, gate[1] * 0.35]);
       break;
     }
     const keys = Object.keys(parent.gates);
-    const lane = parent.lanes[1 + keys.indexOf(cellKey(q, r))];
+    // A monument's ring lanes run from its entrance straight to each gate.
+    const lane = parent.lanes[(parent.monument ? 0 : 1) + keys.indexOf(cellKey(q, r))];
     if (lane) path.push(...[...lane].reverse());
-    path.push(...[...parent.lanes[0]].reverse());
+    if (!parent.monument) path.push(...[...parent.lanes[0]].reverse());
     q = pq;
     r = pr;
     L = parent;

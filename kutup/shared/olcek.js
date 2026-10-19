@@ -10,8 +10,8 @@
 //
 // Real heights are compressed above a house's height so the village still
 // fits on a phone: near-linear up to 10 m, then a power law. Plan sizes are
-// compressed harder, so even the biggest landmark claims about a third of a
-// district. The app enlarges every drawing by one uniform factor (no
+// compressed harder, so a landmark claims at most about a third of a
+// district; the widest ones (MONUMENTS) get a district of their own. The app enlarges every drawing by one uniform factor (no
 // stretching: the pyramid keeps its slope, domes stay round):
 //   k = max(1, min(height(real) / drawn height, claim(plan) / drawn radius))
 
@@ -34,7 +34,7 @@ export const REAL = {
   pazar: { boy: 8, plan: 24, not: "Candela tipi şemsiye kabuklar" },
   kemer: { boy: 9, plan: 30, not: "15 m açıklıklı taş kemer köprü" },
   amfi: { boy: 14, plan: 34, not: "gergi membranlı amfi, direkler 14 m" },
-  anitkabir: { boy: 27, plan: 150, not: "mozole 27 m (Şeref Holü sütunları 14,4 m); Tören Meydanı 129 × 84 m" },
+  anitkabir: { boy: 33.5, plan: 150, not: "bayrak direği 33,5 m; Şeref Holü 17 m, kaidesiyle ~24 m, sütunlar 14,4 m; Tören Meydanı 129 × 84 m" },
   sukulesi: { boy: 30, plan: 12, not: "Intze tipi betonarme su kulesi" },
   kolezyum: { boy: 48, plan: 189, not: "48 m; elips 189 × 156 m" },
   kapsul: { boy: 54, plan: 20, not: "Nakagin Kapsül Kulesi, 13 kat" },
@@ -52,6 +52,11 @@ export const REAL = {
 export const heightUnits = (m) => (m <= H0 ? m / METRE : (H0 / METRE) * (m / H0) ** ALPHA);
 /** Radius (world units) a real plan span (m) may claim in a district. */
 export const claimUnits = (m) => Math.min(CLAIM_MAX, m <= P0 ? m / 2 / METRE : (P0 / 2 / METRE) * (m / P0) ** BETA);
+// The widest landmarks stand alone on the centre of a district of their own
+// (shared/village.js), so they may fill about as much of it as the ring road
+// leaves: up to MONUMENT_ROOM, less where the district's edge comes closer.
+export const MONUMENTS = new Set(["anitkabir", "keops", "kolezyum", "sidney", "suleymaniye"]);
+export const MONUMENT_ROOM = 10;
 export const targetHeightOf = (model) => (REAL[model] ? heightUnits(REAL[model].boy) : null);
 /** The space a building of its own claims around its centre, or null for a box building. */
 export const claimOf = (model) => (REAL[model] ? claimUnits(REAL[model].plan) : null);
@@ -59,5 +64,6 @@ export const claimOf = (model) => (REAL[model] ? claimUnits(REAL[model].plan) : 
 export function scaleFor(model, ridge, reach) {
   const r = REAL[model];
   if (!r || !(ridge > 0) || !(reach > 0)) return 1;
-  return Math.max(1, Math.min(heightUnits(r.boy) / ridge, claimUnits(r.plan) / reach));
+  const room = MONUMENTS.has(model) ? MONUMENT_ROOM : claimUnits(r.plan);
+  return Math.max(1, Math.min(heightUnits(r.boy) / ridge, room / reach));
 }
