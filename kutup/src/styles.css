@@ -1,5 +1,9 @@
 :root {
   font-family: "DM Sans", sans-serif;
+  /* iPhone enlarges text when turned sideways unless told not to; that was the
+     sudden zoom on the focus screen in landscape. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   /* page, card, ink and accent tokens live in src/themes.css */
   color: var(--ink);
   background: var(--canvas);

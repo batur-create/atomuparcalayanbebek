@@ -7,7 +7,7 @@ import { createPushOutbox } from '../server/outbox.js';
 import { createRelaxedNotices } from '../server/relaxed.js';
 import { migrate, migrations } from '../server/schema.js';
 import { restoreBackup } from '../server/restore.js';
-import { BY_ID, refundNow } from '../shared/catalog.js';
+import { BY_ID, refundNow, wageFor } from '../shared/catalog.js';
 
 const call = (app, path, cookie, body) => app.fetch(new Request(`https://kutup.test/api${path}`, {
   method: body === undefined ? 'GET' : 'POST',
@@ -73,6 +73,9 @@ test('relaxed builds survive absence and restart, credit once, and acknowledge o
   assert.equal(receipts[0].seed, original.focus_seed);
   assert.equal(receipts[0].model, 'kulube');
   assert.equal(receipts[0].minutes, 25);
+  // Unwatched, so half the wage (n40 düzeltme); the day's first-session bonus stays.
+  const wage = f.sql.prepare("SELECT delta FROM bricks_log WHERE member_id=? AND reason='wage'").get(f.id).delta;
+  assert.equal(wage, wageFor(25, false));
   const backupResponse = await f.app.fetch(new Request('https://kutup.test/api/owner/backup', { headers: { 'X-Owner-Key': 'relaxed-backup-test-key' } }));
   assert.equal(backupResponse.status, 200);
   const backup = await backupResponse.json(), copy = new DatabaseSync(':memory:');

@@ -234,12 +234,12 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       )}
       {!running && !finishing && fidan && (
         <div className="build-mode-pick" role="group" aria-label="İnşaat şekli">
-          {[[false, "Sıkı", "Kütüp açık kalsın, odağın bölünmesin."], [true, "Rahat", "Ekranı kilitle, inşaat devam etsin."]].map(([value, label, hint]) => (
+          {[[false, "Sıkı", "Kütüp açık kalsın · tam maaş"], [true, "Rahat", "Ekranı kilitle · yarım maaş"]].map(([value, label, hint]) => (
             <button key={label} type="button" aria-pressed={relaxed === value} onClick={() => { setRelaxed(value); storage.set("kutup-build-mode", value ? "relaxed" : "strict"); }}>
               <b>{value ? "☾" : "✳"} {label}</b><small>{hint}</small>
             </button>
           ))}
-          <p>{relaxed ? "Telefonu kilitlemek, başka uygulamaya geçmek veya sekmeyi kapatmak inşaatı durdurmaz. Yalnız Pes et ile iptal edilir. Aşama bildirimleri telefon ve internet koşullarına bağlıdır." : "Mevcut çıkış, çatlama ve kurtarma kuralları geçerlidir."}</p>
+          <p>{relaxed ? "Ekranı kilitleyebilir, başka uygulamaya geçebilirsin; inşaat sürer, ara sıra bildirim gelir. Kimse izlemediği için maaş yarım, bina yine senin." : `Ekran açık kalır, pil biraz gider. Çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön, yoksa binan çatlar. Tam maaş.`}</p>
           {relaxed && askNotifications && notificationState() !== "granted" && notificationState() !== "unsupported" && (
             <button type="button" className="build-notice-enable" onClick={() => requireMember(askNotifications)}>Aşama bildirimlerini aç</button>
           )}
@@ -253,7 +253,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
               {item.emoji} {item.name}
             </b>
             <small>
-              {CLASSES[item.class].label} · {length} dk · {item.cost ? `${item.cost} 🧱 malzeme` : "bedava"} · bitince +{wageFor(length)} 🧱
+              {CLASSES[item.class].label} · {length} dk · {item.cost ? `${item.cost} 🧱 malzeme` : "bedava"} · bitince +{wageFor(length, !relaxed)} 🧱
             </small>
           </span>
           <span className="build-pick-change">Değiştir</span>

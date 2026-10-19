@@ -10,6 +10,19 @@
 
 export const YENILIKLER = [
   {
+    surum: 17,
+    tarih: "2026-10-19",
+    vakit: "gece",
+    baslik: "Rahat inşaat: ekran kapalıyken de",
+    maddeler: [
+      "İnşaatta iki seçenek var. Sıkı: ekran açık kalır, çıkarsan geri sayım başlar, tam maaş. Rahat: ekranı kilitleyebilirsin, inşaat sürer, pil gitmez.",
+      "Rahat inşaatta kimse izlemediği için maaş yarım; bina yine köyüne eklenir. Pano'da \"rahat inşaatla\" diye yazar.",
+      "Rahat inşaat sürerken telefona ara sıra sessiz bir ilerleme bildirimi gelir, bitince \"Binan hazır\". Bilgisayara bu bildirimler gelmez.",
+      "Rahat inşaat bitince geri dönünce şantiyenin 18 saniyelik hızlandırılmış yapımını izlersin, istersen atlarsın.",
+      "iPhone'da odak ekranı yan çevrilince yazıların birden büyümesi düzeldi; sayaç ve şantiye ekrana sığıyor.",
+    ],
+  },
+  {
     surum: 16,
     tarih: "2026-10-19",
     vakit: "sabah",

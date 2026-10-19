@@ -33,7 +33,7 @@ export function createRelaxedNotices({ db, notifyMember, now = Date.now }) {
         tag: relaxedTag(event.memberId, event.ends),
         url: '/?tab=focus', sticky: true, quiet: !done,
         buildEnd: event.ends, buildProgress: event.stage,
-      }, { ttl, defer: !memberId, urgency: done ? 'high' : 'normal', dedupe: { ...event, id } });
+      }, { ttl, defer: !memberId, urgency: done ? 'high' : 'normal', dedupe: { ...event, id } }, 'phone'); // the computer stays quiet
     }
     await db.run('DELETE FROM build_push_events WHERE ends < ?', [at - 7 * 86400000]);
   };
