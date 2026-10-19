@@ -1,0 +1,75 @@
+/* ---------- Yenilikler (n41) ----------
+   One card per version: the date line, the title, and the lines under it.
+   Older versions start folded; a tap on the title opens them. */
+.modal.news-modal {
+  width: 520px;
+}
+.news-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.news-list > li {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--canvas);
+}
+.news-list summary {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  min-height: 44px;
+  padding: 12px 40px 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 16px;
+}
+.news-list summary::-webkit-details-marker {
+  display: none;
+}
+.news-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.news-list strong {
+  font-size: 15px;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+.news-new {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+.news-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--muted);
+  transition: rotate 0.2s ease;
+}
+.news-list details[open] .news-chevron {
+  rotate: 90deg;
+}
+.news-list ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0 16px 14px 32px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+html[data-motion="still"] .news-chevron {
+  transition: none;
+}

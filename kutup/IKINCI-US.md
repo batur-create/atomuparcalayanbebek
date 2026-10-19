@@ -204,6 +204,7 @@ Her yazma okuduğun sürümle `if_version` taşır.
    - **KARARLAR.md:** dizinin en üstüne `| <kod> | <iş> | <alan> | <gün Ay saat> | PR #<n> |` satırını, "Kayıtlar (yeniden eskiye)" başlığının hemen altına da kaydı ekle (şablon aşağıda).
    - **DESIGN.md §9:** görsel bir karar varsa bir satır (`- ✔ **<kod> …:** …`).
    - **HANDOFF.md 6b:** kısa not (öğrenilen tuzaklar, sonrakinin bilmesi gerekenler).
+   - **src/yenilikler.js (n41):** arkadaşların fark edeceği bir değişiklikse Yenilikler'e sade bir dille madde ekle. En üstteki sürüm yayınlanmadıysa ona, yayınlandıysa en üste yeni sürüm (`surum` + 1, PR günü).
    - **GUNLUK.md:** paket kaydı (§9).
 9. **Commit:**
    - Mesajlar İngilizce, kısa başlık ve gövde; sonunda uygulamanın verdiği Claude atıf satırı.

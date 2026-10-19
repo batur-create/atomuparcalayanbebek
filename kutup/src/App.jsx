@@ -43,7 +43,8 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { AchievementCheer, AchievementsModal, DeskMap, FocusScreen, OwnerPage, VillagePanel, WeekStory, prefetchScreens } from "./later.jsx";
+import { AchievementCheer, AchievementsModal, DeskMap, FocusScreen, OwnerPage, VillagePanel, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
+import { useYenilik } from "./yenilikNokta.js";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
 import { shouting, teaCall } from "../shared/pano.js";
 import { useAchievementWatch } from "./achievementWatch.js";
@@ -141,6 +142,7 @@ function KutupApp({ initial, restart }) {
   const notificationBusy = useRef(false);
   const ownerPage = location.pathname === "/batur";
   const requestUpdates = useRequestUpdates(session, tab);
+  const yenilik = useYenilik();
   // The opening sequence plays once per visit, never when switching tabs.
   const [intro, setIntro] = useState(() => {
     const play = !introPlayed && !reducedMotion();
@@ -1216,6 +1218,7 @@ function KutupApp({ initial, restart }) {
               <span>{item.label}</span>
               {item.id === "board" && unread > 0 && <b className="nav-count" aria-label={`${unread} okunmamış mesaj`}>{unread}</b>}
               {item.id === "me" && requestUpdates.count > 0 && <b className="nav-count" aria-label={`${requestUpdates.count} yeni gelişme`}>{requestUpdates.count}</b>}
+              {item.id === "me" && !requestUpdates.count && session && yenilik.yeni && <span className="nav-dot news" title="Yenilikler" aria-label="Yenilikler var" />}
               {item.id === "focus" && focusMembers.length > 0 && (
                 <span className="nav-dot" />
               )}
@@ -1426,7 +1429,7 @@ function KutupApp({ initial, restart }) {
             </div>
           )}
           {tab === "me" && (
-            <MePage me={me} group={data.group} size={data.members.length} openStory={() => setStory(true)} requests={requestUpdates.count} setModal={setModal} navigate={navigate} leave={leave} accounts={{ onSwitch: switchAccount, onAdd: addAccount, onSignOut: signOutHere }} />
+            <MePage me={me} group={data.group} size={data.members.length} openStory={() => setStory(true)} requests={requestUpdates.count} yenilik={yenilik} setModal={setModal} navigate={navigate} leave={leave} accounts={{ onSwitch: switchAccount, onAdd: addAccount, onSignOut: signOutHere }} />
           )}
           {tab === "feedback" && (
             <FeedbackPage
@@ -1462,7 +1465,7 @@ function KutupApp({ initial, restart }) {
               </M.span>
               <span>{item.label}</span>
               {item.id === "board" && unread > 0 && <i className="nav-badge" aria-hidden="true" />}
-              {item.id === "me" && requestUpdates.count > 0 && <i className="nav-badge" aria-hidden="true" />}
+              {item.id === "me" && (requestUpdates.count > 0 || (session && yenilik.yeni)) && <i className="nav-badge" aria-hidden="true" />}
             </button>
           );
         })}
@@ -1538,6 +1541,7 @@ function KutupApp({ initial, restart }) {
         />
       )}
       {modal === "achievements" && me && <AchievementsModal me={me} close={() => setModal(null)} />}
+      {modal === "yenilikler" && <YenilikModal gorulen={yenilik.gorulen} gordu={yenilik.gordu} close={() => setModal(null)} />}
       {cheer && !focusScreen && (
         <AchievementCheer
           cheer={cheer}

@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n41 | Yenilikler: her sürümde neler değişti, herkes için, Ben'de; 1–16. sürüm geriye dönük | Herkes | 19 Eki 07:30 | PR #36 |
 | n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | 825c5561 (PR #22 via #24, Worker b690b171) |
 | n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | 825c5561 (PR #23 via #24, Worker b690b171) |
 | n36c | İnşaat tam şov, 3. tur: yapı denetim, slump ve küp, ruhsat tabelası, canlı metraj, maliyet ağırlıklı hakediş, TBDY ayrıntıları, şantiyede yakınlaştırma | Şantiye | 17 Eki | 825c5561 (PR #24, Worker b690b171) |
@@ -87,6 +88,23 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n41 · Yenilikler: her sürümde neler değişti
+Herkes · 19 Eki 2026 · PR #36 · göç yok
+
+**Ne yapıldı:** Ben → KÜTÜP → Yenilikler. Her yayınlanan sürüm bir kart: "Sürüm N · tarih · vakit", başlık, 2–5 sade madde. En yenisi üstte; en yeni iki sürüm ve okunmamışlar açık, eskiler katlı (başlığa dokununca açılır). Okunmamış sürüm varken Ben sekmesinde kırmızı nokta, satırda "Yeni: <başlık>". Pencere açılınca nokta gider (cihaz başına, `localStorage` `kutup-yenilik`). Geçmiş 13 Ekim'den bu yana 15 yayın KARARLAR, HANDOFF, GUNLUK ve git geçmişinden geriye dönük yazıldı; 16. sürüm bir sonraki yayın (n40 düzeltmesi #35 + bu iş).
+
+**Kararlar ve nedenleri:**
+- **Tek veri dosyası: `src/yenilikler.js`.** Her iş kendi PR'ında oraya satır ekler (kural aşağıda). Kod bilmeyen biri de okuyup düzeltebilsin diye düz bir liste.
+- **Notlar ilk yüklemeye girmiyor.** Liste kendi parçasında; telefon boşta kalınca yüklenir (n29'un hafif ilk açılış kuralı), nokta ondan sonra çıkar.
+- **Sürümler gün gün gruplandı,** her Worker yayını ayrı sürüm değil: 13–16 Ekim arasında günde 5–10 yayın vardı, arkadaşlar için gün ve vakit yeterli.
+- **Yazım:** mühendis değil arkadaş için; ne fark edecekleri, kısa cümle. Kod adları (n40, d23), commit, göç yok.
+- **"Yeni" etiketi:** cihazda hiç açılmadıysa yalnız en yeni sürüm "Yeni"; daha önce açıldıysa o zamandan sonra gelen her sürüm.
+- **Masaüstü yan menüde Ben'in yanında kırmızı nokta** (yeşil nokta "odakta biri var" demek, karışmasın diye renk ayrı).
+
+**Kural (bundan sonraki her iş):** Arkadaşların fark edeceği bir değişiklik yapan her PR, `src/yenilikler.js`'e de yazar. En üstteki sürüm henüz yayınlanmadıysa ona madde ekler; yayınlandıysa en üste yeni sürüm açar (`surum` bir fazlası, PR günü, vakit). Test (`tests/client.test.js`) sıra, tarih, uzunluk ve tekrarı denetler.
+
+**Dosyalar:** src/yenilikler.js, src/Yenilikler.jsx, src/yenilikler.css, src/yenilikNokta.js, src/later.jsx, src/App.jsx, src/MePage.jsx, src/styles.css, tests/client.test.js, tests/browser_smoke.py. Ekran görüntüleri: proje klasörü `kutup/n41/`, araç `kutup/araclar/n41_shots.py`.
 
 ### n36c · İnşaat tam şov, 3. tur: denetim, metraj, TBDY, yakınlaştırma
 Şantiye · 17 Eki 2026 · 825c5561 (PR #24, Worker b690b171) · göç yok

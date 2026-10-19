@@ -1,6 +1,6 @@
 // Screens that most visits never open load on demand (n29): the owner panel,
 // the focus screen, the village map, the statistics, the week's story, the
-// desk map and the badges. Each wrapper keeps the component's name and props, so call sites
+// desk map, the badges and Yenilikler. Each wrapper keeps the component's name and props, so call sites
 // read as before. Once the app has painted and the phone is idle, they are
 // fetched quietly in the background, so a tab switch later is as instant as
 // before (not the owner panel).
@@ -30,6 +30,7 @@ export const DeskMap = later(() => import("./DeskMap.jsx"), "DeskMap");
 export const AchievementsModal = later(() => import("./Achievements.jsx"), "AchievementsModal");
 export const AchievementShelf = later(() => import("./Achievements.jsx"), "AchievementShelf");
 export const AchievementCheer = later(() => import("./Achievements.jsx"), "AchievementCheer");
+export const YenilikModal = later(() => import("./Yenilikler.jsx"), "YenilikModal");
 
 /** Fetches every on-demand screen once the first paint is done and the phone is idle. */
 export function prefetchScreens() {
