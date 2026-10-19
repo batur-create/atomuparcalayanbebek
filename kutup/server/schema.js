@@ -248,6 +248,10 @@ export const migrations = [
     "ALTER TABLE buildings ADD COLUMN patched INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE focus_log ADD COLUMN rescued INTEGER NOT NULL DEFAULT 0",
   ],
+  // 25 — one countdown (n40 düzeltme): the moment a build-mode site cracked is
+  // kept on the server, so every device shows the same crack and it cannot be
+  // beaten away.
+  ["ALTER TABLE members ADD COLUMN focus_cracked_at INTEGER NOT NULL DEFAULT 0"],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

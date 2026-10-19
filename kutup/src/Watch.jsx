@@ -18,7 +18,17 @@ const minSec = (ms) => {
 /** The site cracked while you were away: save it once, or let it fall. */
 export function RescueCard({ crack, rescue, letGo }) {
   const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(Date.now);
   const extra = rescueMinutes(crack.minutes);
+  const left = (crack.at || now) + RESCUE_WINDOW - now;
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+  // The rescue window closed with the card open: the site falls.
+  useEffect(() => {
+    if (left <= 0 && !busy) act(letGo);
+  }, [left <= 0]);
   const act = async (fn) => {
     setBusy(true);
     await fn();
@@ -29,6 +39,7 @@ export function RescueCard({ crack, rescue, letGo }) {
       <p>
         Bir kez kurtarabilirsin. Uzakta geçen süre sayılmaz, üstüne <b>{extra} dk</b> ceza eklenir: binan o kadar geç biter.
       </p>
+      <p className="form-footnote">Kurtarmak için {minSec(left)} kaldı.</p>
       <p className="form-footnote">Kurtarılan bina köyünde yamalı durur ve Pano'da “telefona dokunmadan” yazmaz. Bu inşaatta ikinci şans yok.</p>
       <button type="button" className="btn primary full" disabled={busy} onClick={() => act(rescue)}>
         Kurtar · +{extra} dk
@@ -128,13 +139,13 @@ export function LockSheet({ minutes, start, close, notifications, askNotificatio
   const steps = isIOS
     ? [
         ["Rehberli Erişim'i aç", "Ayarlar → Erişilebilirlik → Rehberli Erişim. Bir parola koy."],
-        ["Odak modu kur", "Ayarlar → Odak → + → Özel, adı “Kütüp”. Bildirimleri kapat, Aramalar'da Favoriler'e izin ver. Acil arayan yine ulaşır."],
+        ["Odak modu kur", "Ayarlar → Odak → + → Özel, adı “Kütüp”. Bildirimlerde sadece Kütüp'e izin ver (geri sayım ondan gelir), Aramalar'da Favoriler'e. Ayarlar → Ses ve Dokunuş → Dokunsal: Her zaman, yoksa sessizde titremez."],
         ["Kilitle", "Şimdi yan tuşa üç kez bas → Başlat, sonra aşağıdaki düğmeye dokun. Bitince yine üç kez bas, parolanı gir."],
       ]
     : android()
       ? [
           ["Uygulama sabitlemeyi aç", "Ayarlar → Güvenlik → Uygulama sabitleme (bazı telefonlarda “Ekran sabitleme”)."],
-          ["Rahatsız Etmeyin'i ayarla", "Ayarlar → Bildirimler → Rahatsız Etmeyin. Yıldızlı kişilerin aramalarına izin ver."],
+          ["Rahatsız Etmeyin'i ayarla", "Ayarlar → Bildirimler → Rahatsız Etmeyin. Yıldızlı kişilerin aramalarına ve Kütüp uygulamasına izin ver. Kütüp'ün bildirim ayarında ses ve titreşim açık olsun: geri sayım her saniye titrer."],
           ["Sabitle", "Son uygulamalar ekranında Kütüp'ün simgesine dokun → Sabitle, sonra aşağıdaki düğmeye dokun."],
         ]
       : [["Telefonunun kilidini aç", "Tek uygulamaya kilitleme (iPhone'da Rehberli Erişim, Android'de Uygulama sabitleme) ve sadece seçtiğin aramalara izin veren bir odak modu."]];
@@ -151,7 +162,7 @@ export function LockSheet({ minutes, start, close, notifications, askNotificatio
             ))}
           </ol>
           <p className="form-footnote">
-            Kural: uygulamadan çıkarsan {LEAVE_GRACE / 1000} saniye sessiz payın var. Sonra bildirimde {COUNTDOWN}'dan geri sayım başlar, telefon her saniye titrer. 1'e kadar dönmezsen binan çatlar; {RESCUE_WINDOW / 60000} dk içinde dönersen bir kez kurtarabilirsin (+%20 süre). Çay molasında telefon serbest.
+            Kural: uygulamadan çıkarsan {LEAVE_GRACE / 1000} saniye sessiz payın var. Sonra bildirimde {COUNTDOWN} saniyelik geri sayım başlar{isIOS ? "" : ", telefon her saniye titrer"}. Bitince dönmediysen binan çatlar; {RESCUE_WINDOW / 60000} dk içinde dönersen bir kez kurtarabilirsin (+%20 süre). Çay molasında telefon serbest.
           </p>
         </>
       ) : (

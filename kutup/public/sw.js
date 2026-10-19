@@ -8,54 +8,60 @@ const show = (payload) =>
     icon: "/icon-192.png",
     badge: "/badge-96.png", // Android's status bar: the K alone, in white
     tag: payload.tag || "kutup",
-    renotify: true,
+    renotify: payload.quiet !== true,
+    silent: payload.quiet === true,
     requireInteraction: !!payload.sticky,
-    vibrate: payload.left ? [400] : payload.sticky ? [300, 120, 300, 120, 600] : [200, 100, 200],
-    data: { url: payload.url || "/", account: payload.account || "" },
+    // (A silent notification may not carry a vibration, or showNotification throws.)
+    ...(payload.quiet === true ? {} : { vibrate: payload.tick ? [500] : payload.sticky ? [300, 120, 300, 120, 600] : [200, 100, 200] }),
+    data: { url: payload.url || "/", account: payload.account || "", started: payload.started || 0, crack: !!payload.crack },
   });
-// n40: the leave countdown. Once it starts, this worker counts 10, 9 … 1 by
-// itself, one notification a second under the same tag (each one a buzz), and
-// stops the moment a Kütüp window is visible again. The server's pushes for
-// the same countdown only move the number when this worker was asleep.
-let counting = null;
+// n40: leaving a build on the phone. One countdown per absence: it starts once
+// (from the page as it hides, or the server's single push, whichever comes
+// first) and never again until the app has been seen. On Android this worker
+// redraws the same notification every second, 10 … 1, each redraw a buzz; an
+// iPhone cannot redraw or buzz a web notification, so it gets one notification
+// with the deadline and one when the site cracks.
+const BUILD = "kutup-build";
+const ios = /iPhone|iPad|iPod/.test(self.navigator.userAgent);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const visible = () =>
   self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => list.some((c) => c.visibilityState === "visible"));
-const clearBuild = () =>
-  self.registration.getNotifications({ tag: "kutup-build" }).then((list) => list.forEach((n) => n.close()));
-function countdown(payload) {
-  if (counting) {
-    counting.left = Math.min(counting.left, payload.left);
-    return counting.done;
-  }
-  const state = { left: payload.left };
-  counting = state;
-  state.done = (async () => {
-    try {
-      while (state.left > 0) {
-        if (await visible()) return clearBuild();
-        const left = state.left;
-        await show({ ...payload, title: `⏳ ${left}`, body: left <= 3 ? "Son saniyeler, binan çatlamak üzere!" : "Kütüp'e dön, yoksa binan çatlar.", left });
-        await new Promise((r) => setTimeout(r, 1000));
-        state.left = Math.min(state.left, left - 1);
-      }
-      if (payload.done && !(await visible())) await show({ ...payload, ...payload.done, left: 0 });
-    } finally {
-      counting = null;
+const shown = () => self.registration.getNotifications({ tag: BUILD });
+const clearBuild = () => shown().then((list) => list.forEach((n) => n.close()));
+let counting = null, // the countdown running now
+  lastStart = 0; // when the last one started (memory; the notification's data keeps it too)
+async function countdown(job) {
+  if (counting) return counting;
+  const now = Date.now();
+  const earlier = (await shown()).some((n) => now - (n.data?.started || 0) < 60000);
+  if (now - lastStart < 60000 || earlier) return;
+  lastStart = now;
+  const base = { ...job, tag: BUILD, sticky: true, started: now };
+  counting = (async () => {
+    if (ios) return show({ ...base, title: `⏳ ${job.countdown} sn içinde dön!`, body: "Kütüp'e dön, yoksa binan çatlar." });
+    for (let left = job.countdown; left > 0; left--) {
+      if (await visible()) return clearBuild();
+      await show({ ...base, tick: true, title: `⏳ ${left}`, body: left <= 3 ? "Son saniyeler! Kütüp'e dön, yoksa binan çatlar." : "Kütüp'e dön, yoksa binan çatlar." });
+      await wait(1000);
     }
-  })();
-  return state.done;
+    if (await visible()) return clearBuild();
+    await show({ ...base, ...job.done, crack: true });
+  })().finally(() => (counting = null));
+  return counting;
 }
-// The page says "I was hidden" as it goes; after the quiet seconds this worker
-// starts the countdown itself, without waiting for the server's push.
+// The page says "I am being hidden"; after the quiet seconds the countdown
+// starts here, without waiting for the network.
 self.addEventListener("message", (event) => {
+  // Back in the app: the next absence gets its own countdown.
+  if (event.data?.back) return event.waitUntil(clearBuild().then(() => (lastStart = 0)));
   const job = event.data?.leave;
   if (!job) return;
   event.waitUntil(
     (async () => {
-      await new Promise((r) => setTimeout(r, job.grace));
+      await wait(job.grace);
       if (await visible()) return;
-      if (job.left > 0) return countdown(job);
-      if (!counting) return show(job);
+      if (job.countdown > 0) return countdown(job);
+      return show({ ...job, tag: BUILD });
     })().catch(() => {}),
   );
 });
@@ -64,7 +70,23 @@ self.addEventListener("push", (event) => {
   try {
     payload = { ...payload, ...event.data.json() };
   } catch {}
-  if (payload.left > 0) return event.waitUntil(countdown(payload));
+  if (payload.countdown > 0)
+    return event.waitUntil(
+      (async () => {
+        await countdown({ ...payload, done: { title: "🩹 Binan çatladı!", body: "5 dakika içinde dönersen bir kez kurtarabilirsin." } });
+        // Something must be on screen for every push; the countdown's notification is.
+        if (!counting && !(await shown()).length && !(await visible())) await show(payload);
+      })().catch(() => {}),
+    );
+  if (payload.crack)
+    return event.waitUntil(
+      (async () => {
+        if (counting) await counting;
+        // The countdown here already said it: change the words without a second buzz.
+        const already = (await shown()).some((n) => n.data?.crack);
+        await show({ ...payload, quiet: already, started: Date.now() });
+      })().catch(() => {}),
+    );
   // Arrivals stay on screen until dismissed (Android/desktop) and buzz harder.
   // Options a browser does not know (iOS ignores most) are simply skipped.
   event.waitUntil(show(payload));
