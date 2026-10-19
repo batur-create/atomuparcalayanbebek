@@ -297,7 +297,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
           </div>
           <p className="village-caption">
             {run
-              ? "Odaklandıkça yükseliyor. Uygulamadan çıkarsan yıkılır."
+              ? me?.focusRelaxed ? "Rahat inşaat sürüyor. Ekranı kilitleyebilirsin; dönünce yapımını izle." : "Odaklandıkça yükseliyor. Uygulamadan çıkarsan yıkılır."
               : outcome?.type === "built"
                 ? "Bitti! Mahallene taşınıyor."
                 : "İnşaat çöktü. Enkaz 3 gün mahallende kalır; bir sonraki seansın onu kaldırır ve malzemenin %30'u geri gelir."}

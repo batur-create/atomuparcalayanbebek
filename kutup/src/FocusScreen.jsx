@@ -3,7 +3,7 @@
 // landscape, the construction site hidden, beside the clock or filling the
 // screen, and the sounds a tap away. The controls stay out of sight until the
 // screen is touched.
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Expand, Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
 import { ConstructionScene } from "./Village.jsx";
 import { useZoom } from "./zoom.js";
@@ -102,6 +102,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
     [landscape, setLandscape] = useState(() => matchMedia("(orientation: landscape)").matches),
     [full, setFull] = useState(() => !!document.fullscreenElement),
     [drift, setDrift] = useState([0, 0]);
+  const screen = useRef(null);
   const opened = useRef(Date.now()),
     hide = useRef(0);
   const zoom = useZoom();
@@ -122,7 +123,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
   };
   useEffect(() => {
     wake();
-    keepScreenOn();
+    if (!me?.focusRelaxed) keepScreenOn();
     const orient = matchMedia("(orientation: landscape)"),
       onOrient = () => setLandscape(orient.matches),
       onFull = () => setFull(!!document.fullscreenElement),
@@ -142,7 +143,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
       // A build-mode session keeps its own hold on the screen.
-      if (!(me?.focusStrict && me.focusEnd > Date.now())) releaseScreen();
+      if (!(me?.focusStrict && !me?.focusRelaxed && me.focusEnd > Date.now())) releaseScreen();
     };
   }, []);
   const exit = () => {
@@ -167,9 +168,51 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
   }
   const progress = session ? Math.min(1, Math.max(0, 1 - (session.end - session.at) / session.total)) : 0;
   const done = !session && outcome?.type === "built";
+  // iOS standalone changes its usable rectangle after rotation. Fit to that
+  // rectangle, not the large CSS layout viewport, and reset only this scene.
+  const flipUnits = parts.reduce((n, part) => n + part.length * .79, 0) + (parts.length - 1) * .92;
+  useLayoutEffect(() => {
+    const root = screen.current;
+    let frame = 0, previousLandscape = landscape;
+    const measure = () => {
+      const v = window.visualViewport;
+      const width = v?.width || window.innerWidth, height = v?.height || window.innerHeight;
+      root.style.setProperty("--focus-w", `${width}px`);
+      root.style.setProperty("--focus-h", `${height}px`);
+      root.style.setProperty("--focus-top", `${v?.offsetTop || 0}px`);
+      root.style.setProperty("--focus-left", `${v?.offsetLeft || 0}px`);
+      const bar = root.querySelector('.fs-bar').getBoundingClientRect();
+      root.style.setProperty('--focus-toolbar', `${bar.bottom - root.getBoundingClientRect().top + 12}px`);
+      const nextLandscape = width > height;
+      if (nextLandscape !== previousLandscape) { previousLandscape = nextLandscape; zoom.reset(); }
+      setLandscape(nextLandscape);
+      const stage = root.querySelector('.fs-stage'), clock = root.querySelector('.fs-clock'), scene = root.querySelector('.fs-scene');
+      const style = getComputedStyle(stage);
+      const available = Math.max(1, stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom));
+      root.style.setProperty('--flip-size', `${Math.max(18, Math.min(240, clock.clientWidth / flipUnits, (available - 65) / 1.1))}px`);
+      root.style.setProperty('--digits-size', `${Math.max(28, Math.min(220, clock.clientWidth / (parts.join(':').length * .58), available * .4))}px`);
+      if (scene) {
+        const box = getComputedStyle(scene);
+        const sceneWidth = scene.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight);
+        const sceneHeight = scene.clientHeight - parseFloat(box.paddingTop) - parseFloat(box.paddingBottom);
+        root.style.setProperty('--fs-site-width', `${Math.max(1, Math.min(sceneWidth, Math.max(1, sceneHeight - 32) * 1.7))}px`);
+      }
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(root); observer.observe(root.querySelector('.fs-clock'));
+    const scene = root.querySelector('.fs-scene'); if (scene) observer.observe(scene);
+    window.addEventListener('resize', schedule);
+    window.visualViewport?.addEventListener('resize', schedule);
+    window.visualViewport?.addEventListener('scroll', schedule);
+    measure();
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); window.removeEventListener('resize', schedule); window.visualViewport?.removeEventListener('resize', schedule); window.visualViewport?.removeEventListener('scroll', schedule); };
+  }, [pref.scene, showScene, flipUnits, parts.join(':').length]);
+
 
   return (
     <div
+      ref={screen}
       className={`focus-screen ${landscape ? "landscape" : "portrait"} scene-${showScene ? pref.scene : "hidden"} ${controls ? "show-controls" : ""}`}
       role="dialog"
       aria-label="Odak ekranı"
@@ -184,7 +227,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
           </div>
         )}
         <div className="fs-clock">
-          {landscape ? (
+          {landscape && pref.scene !== "full" ? (
             <FlipClock parts={parts} />
           ) : (
             <div className="fs-digits" aria-live="off">

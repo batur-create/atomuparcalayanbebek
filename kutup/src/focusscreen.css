@@ -375,3 +375,34 @@
   bottom: max(64px, calc(env(safe-area-inset-bottom) + 56px));
   right: 16px;
 }
+
+/* Fit the focus screen to the actually visible PWA area, including rotation. */
+.focus-screen {
+  inset:auto;
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
+  top:var(--focus-top, 0px); left:var(--focus-left, 0px);
+  width:var(--focus-w, 100vw); height:var(--focus-h, 100dvh);
+}
+.focus-screen .fs-stage {
+  min-width:0; min-height:0; gap:min(4vmin,20px);
+  padding:max(72px,var(--focus-toolbar,0px),calc(env(safe-area-inset-top) + 58px)) max(20px,env(safe-area-inset-right)) max(64px,calc(env(safe-area-inset-bottom) + 48px)) max(20px,env(safe-area-inset-left));
+}
+.focus-screen .fs-clock { width:100%; max-width:100%; flex-shrink:0; }
+.focus-screen .fs-digits { font-size:var(--digits-size,clamp(48px,18vw,180px)); }
+.focus-screen .flip-clock { font-size:var(--flip-size,clamp(28px,12vmin,120px)); }
+.focus-screen.landscape:not(.scene-full) .fs-clock { flex:1 1 0; width:0; }
+.focus-screen .fs-scene { display:flex; align-items:center; justify-content:center; min-height:0; min-width:0; }
+.focus-screen.scene-side .fs-scene { flex:1 1 0; width:100%; max-height:none; align-self:stretch; }
+.focus-screen .fs-scene > .fs-zoom { width:var(--fs-site-width,100%); flex-shrink:0; }
+.focus-screen.scene-full .fs-scene { padding:inherit; }
+.focus-screen.scene-full .fs-clock { width:auto; max-width:calc(100% - 32px); }
+.focus-screen.scene-full .fs-digits { font-size:clamp(26px,7vmin,56px); }
+.focus-screen .fs-bar { left:max(12px,env(safe-area-inset-left)); right:max(12px,env(safe-area-inset-right)); }
+.focus-screen .fs-foot { padding:0 max(12px,env(safe-area-inset-left)) 0 max(12px,env(safe-area-inset-right)); }
+@media (max-height:450px) and (orientation:landscape) {
+  .focus-screen .fs-stage { padding-top:max(58px,var(--focus-toolbar,0px),calc(env(safe-area-inset-top) + 48px)); padding-bottom:max(48px,calc(env(safe-area-inset-bottom) + 38px)); }
+  .focus-screen .fs-caption { margin-top:8px; font-size:11px; max-width:100%; }
+  .focus-screen .fs-caption + .desk-mates { display:none; }
+  .focus-screen .fs-bar { gap:5px; }
+  .focus-screen .fs-seg button { padding:6px; font-size:10px; }
+}

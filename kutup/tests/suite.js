@@ -1056,6 +1056,31 @@ export function defineSuite(target) {
     assert.equal((await accounts()).length, 3);
   });
 
+  test(`[${target}] relaxed construction completes without foreground proof and delivery cannot pay twice`, async () => {
+    const created = await request("/groups", { body: { name: "RahatDeneme", groupName: "Rahat test" } });
+    assert.equal(created.status, 201);
+    const cookie = created.cookie;
+    const started = await request("/focus", { cookie, body: { action: "start", model: "kulube", strict: true, relaxed: true } });
+    assert.equal(started.status, 200);
+    const person = started.data.state.members.find((m) => m.id === created.data.memberId);
+    assert.equal(person.focusRelaxed, 1);
+    for (const action of ["away", "crack", "beat"])
+      assert.equal((await request("/focus", { cookie, body: { action } })).status, 200);
+    await request("/__test/expire", { body: { name: "RahatDeneme", away: true } });
+    const delivered = await request("/build-deliveries", { cookie });
+    assert.equal(delivered.status, 200);
+    assert.equal(delivered.data.length, 1);
+    assert.equal(delivered.data[0].seed, person.focusSeed);
+    const before = (await request("/wallet", { cookie })).data;
+    assert.equal(before.built.kulube, 1);
+    const path = `/build-deliveries/${delivered.data[0].id}`;
+    assert.equal((await request(path, { cookie: people.alice, body: {} })).status, 404);
+    for (let i = 0; i < 2; i++) assert.equal((await request(path, { cookie, body: {} })).status, 200);
+    assert.deepEqual((await request("/build-deliveries", { cookie })).data, []);
+    assert.deepEqual((await request("/wallet", { cookie })).data, before);
+    assert.equal((await request("/leave", { cookie, body: {} })).status, 200);
+  });
+
   test(`[${target}] data survives a restart`, async () => {
     await stop();
     await start();

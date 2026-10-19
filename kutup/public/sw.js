@@ -2,19 +2,25 @@ self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) =>
   event.waitUntil(self.clients.claim()),
 );
-const show = (payload) =>
-  self.registration.showNotification(payload.title, {
+const show = async (payload) => {
+  if (Number.isFinite(payload.buildProgress) && payload.tag) {
+    const previous = (await self.registration.getNotifications({ tag: payload.tag }))[0];
+    // Provider delivery order can differ from enqueue order: never regress a visible build.
+    if (previous?.data?.buildEnd === payload.buildEnd && previous.data.buildProgress > payload.buildProgress)
+      payload = { ...payload, title: previous.title, body: previous.body, buildProgress: previous.data.buildProgress, quiet: true };
+  }
+  return self.registration.showNotification(payload.title, {
     body: payload.body,
     icon: "/icon-192.png",
-    badge: "/badge-96.png", // Android's status bar: the K alone, in white
+    badge: "/badge-96.png",
     tag: payload.tag || "kutup",
     renotify: payload.quiet !== true,
     silent: payload.quiet === true,
     requireInteraction: !!payload.sticky,
-    // (A silent notification may not carry a vibration, or showNotification throws.)
     ...(payload.quiet === true ? {} : { vibrate: payload.tick ? [500] : payload.sticky ? [300, 120, 300, 120, 600] : [200, 100, 200] }),
-    data: { url: payload.url || "/", account: payload.account || "", started: payload.started || 0, crack: !!payload.crack },
+    data: { url: payload.url || "/", account: payload.account || "", started: payload.started || 0, crack: !!payload.crack, buildEnd: payload.buildEnd || 0, buildProgress: payload.buildProgress ?? null },
   });
+};
 // n40: leaving a build on the phone. One countdown per absence: it starts once
 // (from the page as it hides, or the server's single push, whichever comes
 // first) and never again until the app has been seen. On Android this worker

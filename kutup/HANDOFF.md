@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **19 Ekim, bu teslimin sınırı:** Batur Rahat inşaat modunu ve dar iPhone PWA odak ekranı düzeltmesini onayladı. Teslim `codex/relaxed-construction` dalından `kutup-platform` hedefine PR; birleştirme ve yayın Batur'da. Aşağıdaki eski otomatik yayın talimatı bu teslim için uygulanmaz. Başka açık işe geçilmedi.
+
 > **İkinci üs (17–22 Ekim 2026):** Batur'un Claude sınırı dolu; işler arkadaşının bilgisayarında, onun Claude hesabıyla, fork + PR ile yapılıyor. Kurulum, sınırlar, devir promptu ve sıradaki işlerin tanımı: `IKINCI-US.md`.
 
 Her oturum işe bu sırayla başlar:
@@ -38,7 +40,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 - Durum (Kütüpte / Yolda / Molada / Dışarıda), salon ve masa, "burada · 1 sa 35 dk"; durum 8 saat sonra kapanır.
 - Web Push (kendi yazdığımız Web Crypto RFC 8291 + VAPID), 45 dakikalık geliş bildirimi soğuması, bildirime dokununca ilgili sekme (`/?tab=…`).
 - Planlar (iki hafta ileri, "Ben de gelirim"), pano (mesaj, kalp, kahve daveti), haftalık odak tablosu.
-- **İnşaat modu ve köy (Forest tarzı):** Odak seansları 25/50/75 dk. İnşaat modu açıkken seans süresi binayı belirler: 25 → kulübe, 50 → iki katlı ev, 75 → kule (eşikler 40 ve 70 dk). Seans boyunca canlı izometrik şantiye çizilir. Uygulamadan 10 saniyeden uzun çıkılırsa (sekme kapatma dahil) bina çöker; tamamlanınca köye kalıcı olarak eklenir. Ekran Wake Lock ile açık tutulur. Tek ortak köyde herkesin kendi mahallesi var; Paket 1 tamamlandı.
+- **İnşaat modu ve köy (Forest tarzı):** Odak seansları 25/50/75 dk; katalogdaki bina süreyi ve maliyeti belirler. Seans boyunca canlı izometrik şantiye çizilir. Varsayılan **Sıkı** modda telefondan çıkınca 15 saniye içinde dönmek gerekir; çatlama/kurtarma kuralları ve Wake Lock korunur. Bu PR'daki ayrı **Rahat** mod ekran kilitliyken de sürer, ekranı açık tutmaz; dönüşte hızlandırılmış yapım ve teslim gösterir (§6b). Tamamlanan bina ortak köydeki kendi mahallene kalıcı eklenir.
 - **"Batur'a ilet":** fikir, hata ya da sohbet. Kargo takibi gibi aşamaları var: new → seen → accepted → building → done, ya da declined. Kendine ait ilham örnekleri, gönderme animasyonu, "yeni gelişme" rozeti ve her aşamada gönderene push.
 - **`/batur` yönetici paneli:** istekler (açınca "İncelendi" olur, tek tuşla aşama, not, geçmiş, arkadaşın gördüğü takip çizgisinin önizlemesi, silme), yeni istek push'u, ekipler, davet yenileme, üye çıkarma. Giriş: `ADMIN_KEY` ya da ilk ziyarette belirlenen anahtar; sonra 30 günlük `kutup_owner` çerezi (yolu `/api/owner`, SameSite=Strict). Yönetici şu an hiçbir üyeye bağlı değil. Sağ üstteki "Uygulamaya dön" düğmesi ana uygulamaya götürür.
 - Hareket katmanı: başlıklar Bricolage Grotesque, gövde DM Sans. Ziyaret başına bir kez oynayan açılış koreografisi. Diğer hareketler sadece bir eyleme cevap verir. `prefers-reduced-motion` destekleniyor.
@@ -48,7 +50,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 ```
 kutup/
   server/app.js     Tüm API: Fetch Request/Response + async DB adaptörü (all/get/run/read/batch). Node ve Worker'da aynı kod.
-  server/schema.js  Sürümlü göçler (`export const migrations`, şu an 20). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
+  server/schema.js  Sürümlü göçler (`export const migrations`, bu PR ile 26). Yayınlanmış göçü ASLA değiştirme; yenisini sona ekle.
                     D1 yüzünden her eleman TEK SQL ifadesi olmalı.
   server/push.js    Web Push (Web Crypto)
   server/sqlite.js  node:sqlite adaptörü
@@ -72,7 +74,7 @@ kutup/
 **Önemli mekanizmalar:**
 - **Her yazma işlemi** grubun `rev` sayacını artırır (`bump(groupId)`) ve yanıtta `state` döner. İstemci `mutate()` ile bunu kullanır. Yoklama: `/api/state?rev=N` → değişmediyse `{unchanged:true}`.
 - **Anlık görüntü** sabit sayıda sorgu (`db.read`) ile kurulur. Biten odak seanslarını kim okursa o kredilendirir (`finalizeFocus`, koşullu SQL, eşzamanlı çalışmaya güvenli).
-- **İnşaat modu sütunları:** `members.focus_strict / focus_beat / focus_seed`.
+- **İnşaat modu sütunları:** `members.focus_strict / focus_relaxed / focus_beat / focus_seed` (Rahat ayrıntıları §6b).
   - İstemci görünürken 20 sn'de bir `beat` atar, 3 sn'de bir `localStorage` işareti bırakır.
   - Sunucu, sonundan 90 sn öncesine kadar sinyal görmüşse binayı ekler (`buildings` tablosu: id, member_id, group_id, kind, minutes, seed, created).
   - `wither` / `cancel` → çöküş ve panoya mesaj.
@@ -86,9 +88,10 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (93 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (bu PR: 146 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
-npm run test:browser # gerçek tarayıcı, 39 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
+npm run test:browser # gerçek tarayıcı, 100 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
+npm run test:browser:relaxed -- --artifacts /tmp/kutup-relaxed # Rahat/teslim ve iPhone boyut-yön kontrolleri (Chromium)
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
@@ -122,7 +125,16 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 4. **Mini oyunlar** sadece molada açılır (durum "Molada" ya da seans yeni bitmiş). İnşaat sırasında kapalıdır.
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. KARARLAR.md arşivi, Paket 5 ve 6).
 
-## 6b. Durum (son güncelleme 16 Ekim 2026)
+## 6b. Durum (son güncelleme 19 Ekim 2026)
+
+> **Rahat inşaat + iPhone PWA, 19 Ekim 2026 (PR; Batur yayınlayacak):**
+> - İnşaat içinde **Sıkı / Rahat** seçimi var; yeni kullanıcıda Sıkı varsayılan. Sıkı'nın 15 saniye, çatlama, tek kurtarma ve çay molası kuralları korunur. Seans içinde mod değişmez. Rahat ekran kilidine, başka uygulamaya ve sekmenin kapanmasına dayanır; Wake Lock, `beat`, `away`, `crack`, pasif `wither`, mola ve kurtarma akışı yoktur. Açık iptal eski malzeme/iade kurallarını kullanır.
+> - **Göç 26:** `members.focus_relaxed` (eski üyelerde 0), `build_deliveries`, `build_push_events` ve indeksleri. 1–25 aynen korunur. `focus_strict=1` hâlâ bina üreten seans anlamına gelir; ekran gözetimi için ayrıca `focus_relaxed=0` aranır. Var olan seans/cüzdanın korunması ve tekrar açılış testi var. **Yayın öncesi mevcut yedek akışını çalıştır.**
+> - Sunucudaki `focus_end` belirleyicidir. İlk normal durum okuması/teslim sorgusu biten Rahat seansı atomik olarak kredilendirir; uygulamanın arka planda çalışması gerekmez. Bina, tuğla ve teslim kaydı aynı korumalı işlemde oluşur. `GET /api/build-deliveries` yalnız kendi bekleyen kayıtlarını verir; `POST /api/build-deliveries/:id` sadece alındı işareti koyar, ödül dağıtmaz. Farklı hesap erişimi ve eşzamanlı tamamlama testli. Yedek/geri yükleme yeni teslim ve bildirim kayıtlarını da içerir.
+> - `server/relaxed.js`: başlama, %25/%50/%75 ve bitiş için mevcut Web Push/outbox altyapısı. Aynı seans aynı bildirim etiketini kullanır. Ara güncellemeler sessizdir; bitiş sesli olabilir. Kalıcı olay kaydı eşzamanlı cron/istekte tekrar kuyruğa almayı engeller; kaçırılmış aşamalardan yalnız güncel olan gönderilir. Cron en fazla 4 olayı kuyruğa yazar; mevcut sınırlı gönderici izleyen cron turunda gönderebilir. Gönderim, internet ve işletim sistemine bağlıdır; kesintisiz sayaç/kalıcı kilit ekranı bildirimi iddiası yoktur. iOS Web Push için ana ekrana kurulum ve kullanıcı izni gerekir. Kabul/iptal, kalan kuyruk satırlarını ve bu cihazdaki eşleşen bildirimi temizler; sağlayıcıya önceden teslim edilmiş bildirim geri çekilemez.
+> - `src/BuildDelivery.jsx`: aynı model/seed ile **18 saniyelik hızlandırılmış yapım**, atlanabilir. `ConstructionScene` ve korunan çizim dosyaları değiştirilmedi. Hareket azaltmada bitmiş bina doğrudan görünür. Teslim alınmayan kayıt yenileme/yeniden girişte kalır; izlemek, atlamak veya tekrar kabul ödülü çoğaltmaz.
+> - iPhone dar düzeltmesi yalnız `FocusScreen.jsx` / `focusscreen.css`: `visualViewport`, güvenli alanlar, dönen ekrana sığan sayaç ve sahne, yön değişince yalnız yerel sahne yakınlaştırmasını sıfırlama. Tam sahne yazısı üst araçlardan uzak tutulur. Genel sayfa yakınlaştırması değişmedi. **Gerçek iPhone Safari/kurulu PWA henüz doğrulanmadı:** 390×844, 844×390, 667×375 ve 375×667 Chromium dokunmatik/iPhone benzetimi geçti; fiziksel cihazda kontrol edilmeli.
+> - Doğrulama: `npm run test:all` **146/146** (Node + yerel Worker/D1); mevcut `test:browser` **100/100**; yeni `test:browser:relaxed` **18/18**. Canlıya veya gerçek kullanıcı verisine dokunulmadı.
 
 > **n14 (ikinci üs, 17 Eki):** Başarımlar: liste ve eşikler `shared/achievements.js`, hesap `server/achievements.js` `achievementsOf()` (kayıtlardan, geriye dönük; kazanılan `achievements` tablosuna yazılır ve kalır), çizimler `src/achievementArt.js`. Yeni rozet eklerken: listeye ekle, hesabı `achievementsOf()`'a yaz, çizimi `ART`'a koy, testteki sayıyı (16) güncelle. Görüntü almak için `kutup/araclar/badge_shots.py` (yerel deneme verisi).
 >
