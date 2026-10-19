@@ -699,7 +699,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (finished) {
         // A session started within ten minutes of the last one's end continues its streak.
         const chain = s.chainEnd > 0 && start - s.chainEnd <= CHAIN_GAP ? s.chain + 1 : 1;
-        const wage = wageFor(s.credit, !!s.strict);
+        // Rahat inşaat is not watched (the screen may be off), so like a free
+        // session it pays half; the building is still yours.
+        const wage = wageFor(s.credit, !!s.strict && !s.relaxed);
         // Workshops already standing in the member's village help every session.
         const owned = new Set((await db.all("SELECT DISTINCT model FROM buildings WHERE member_id = ?", [s.id])).map((b) => b.model));
         const pct = (v) => `+%${Math.round(v * 100)}`;
