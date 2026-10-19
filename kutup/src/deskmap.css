@@ -400,3 +400,56 @@
     animation: none;
   }
 }
+
+/* Adnan: the supplied 425 individual seats, redrawn with Kütüp's theme tokens. */
+.modal.desk-map.has-plan { width: 880px; }
+.dm-plan-heading { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:4px 0 12px; }
+.dm-plan-heading > span { color:var(--accent-deep); font-size:10px; font-weight:800; letter-spacing:.1em; }
+.dm-plan-heading > b { color:var(--muted); font-size:11px; font-weight:500; }
+.dm-plan-toolbar { display:flex; gap:8px; align-items:center; }
+.dm-search { display:flex; align-items:center; gap:8px; flex:1; min-width:0; padding:3px 4px 3px 12px; border:1px solid var(--border); border-radius:12px; background:var(--paper); }
+.dm-search > svg { flex-shrink:0; color:var(--muted); }
+.dm-search input { min-width:0; width:100%; min-height:40px; border:0; background:transparent; padding:0; font-size:13px; box-shadow:none; }
+.dm-search button { min-height:44px; padding:0 14px; border-radius:9px; color:var(--accent-deep); background:var(--accent-soft); font-size:12px; font-weight:700; }
+.dm-zoom { display:flex; padding:3px; border:1px solid var(--border); border-radius:12px; background:var(--canvas); }
+.dm-zoom button { display:grid; place-items:center; width:44px; height:44px; padding:0; background:transparent; border-radius:9px; color:var(--ink); }
+.dm-zoom button:hover:enabled { background:var(--paper); color:var(--accent-deep); }
+.dm-zoom button:disabled { cursor:default; opacity:.35; }
+.dm-map-instruction { margin:10px 0; color:var(--muted); font-size:11px; line-height:1.5; }
+.dm-plan-viewport { position:relative; max-width:100%; height:360px; overflow:auto; overscroll-behavior:contain; touch-action:pan-x pan-y pinch-zoom; border:1px solid var(--border); border-radius:18px; background:var(--canvas); scrollbar-width:thin; scrollbar-color:var(--muted) var(--canvas); }
+.dm-plan-canvas { position:relative; margin:0 auto; isolation:isolate; }
+.dm-plan-art { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.dm-plan-floor { fill:var(--paper); }
+.dm-plan-wall { fill:none; stroke:var(--muted); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+.dm-plan-aisle { fill:var(--accent-soft); }
+.dm-plan-block { fill:color-mix(in oklab,var(--muted) 35%,var(--paper)); stroke:var(--muted); stroke-width:2; }
+.dm-plan-entrance { stroke:var(--accent-deep); stroke-width:5; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+.dm-plan-entrance text { stroke:none; fill:var(--accent-deep); font-size:30px; font-weight:800; letter-spacing:.1em; }
+.dm-plan-aisle-label { fill:var(--accent-deep); font-size:22px; font-weight:700; letter-spacing:.08em; }
+.dm-overview-seat rect { fill:var(--canvas); stroke:var(--border); stroke-width:2; }
+.dm-overview-seat.occupied rect { fill:var(--accent-soft); stroke:var(--accent); stroke-width:3; }
+.dm-overview-seat circle { fill:var(--accent); }
+.dm-overview-target { position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:12px; background:transparent; cursor:zoom-in; }
+.dm-plan-canvas > .dm-seat { position:absolute; min-width:44px; min-height:44px; border-radius:9px; border-style:solid; height:auto; color:var(--ink); background:var(--paper); font-size:12px; }
+.dm-plan-canvas > .dm-seat.free { border-color:var(--border); box-shadow:inset 0 -3px 0 color-mix(in oklab,var(--muted) 12%,transparent); }
+.dm-plan-canvas > .dm-seat.picked { background:var(--accent-soft); border-color:var(--accent); }
+.dm-plan-canvas > .dm-seat:focus-visible { z-index:2; }
+.dm-seat.taken[aria-disabled="true"] { opacity:1; cursor:default; }
+.dm-plan-canvas .dm-num { font-size:10px; left:3px; top:2px; }
+.dm-plan-canvas .dm-name { font-size:10px; }
+.dm-plan-canvas .avatar.tiny { width:22px; height:22px; font-size:13px; }
+.dm-map-legend { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-top:12px; color:var(--muted); font-size:10px; line-height:1.6; }
+.dm-map-legend > span { display:flex; align-items:center; gap:6px; }
+.dm-map-legend i { width:8px; height:8px; background:var(--paper); border:1px solid var(--muted); border-radius:3px; }
+.dm-map-legend i.occupied { background:var(--accent); border-color:var(--accent); }
+.dm-search-status { color:var(--accent-deep); font-size:12px; min-height:18px; margin:8px 0 12px; }
+.dm-overview-return { min-height:44px; margin-top:4px; color:var(--accent-deep); font-size:12px; }
+@media (max-width:580px) {
+  .dm-plan-toolbar { flex-wrap:wrap; }
+  .dm-search { flex-basis:100%; }
+  .dm-zoom { margin-left:auto; }
+  .dm-plan-viewport { height:300px; }
+  .dm-plan-heading { align-items:baseline; }
+  .dm-plan-heading > span { letter-spacing:.04em; }
+  .dm-pick { flex-wrap:wrap; }
+}
