@@ -192,6 +192,41 @@
   color: var(--muted);
 }
 
+/* n43: asking Batur for a building the catalogue does not have yet. */
+.catalog-ask {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--border);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+.catalog-ask > span:first-child {
+  font-size: 24px;
+}
+.catalog-ask > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.catalog-ask strong {
+  display: block;
+  font-size: 13.5px;
+}
+.catalog-ask small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.catalog-ask:hover {
+  border-color: var(--accent);
+}
+
 /* The receipt after a session. */
 @keyframes receipt-in {
   from {

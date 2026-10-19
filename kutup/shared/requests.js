@@ -1,7 +1,8 @@
 // "Batur’a ilet" request tracking, shared by the API (labels in push messages,
 // allowed transitions) and the UI (tracker steps, fun status lines).
 
-export const REQUEST_KINDS = ["idea", "bug", "hello"];
+// n43: "build" asks for a new building in the catalogue; Batur decides.
+export const REQUEST_KINDS = ["idea", "bug", "hello", "build"];
 
 // The happy path for each kind: [status, label, emoji].
 export const REQUEST_STEPS = {
@@ -24,12 +25,20 @@ export const REQUEST_STEPS = {
     ["seen", "Okundu", "👀"],
     ["done", "Cevaplandı", "💌"],
   ],
+  build: [
+    ["new", "Gönderildi", "📮"],
+    ["seen", "İncelendi", "👀"],
+    ["accepted", "Kabul edildi", "🎉"],
+    ["building", "Çiziliyor", "📐"],
+    ["done", "Katalogda", "🏗️"],
+  ],
 };
 
 // The side exit. Small talk ("hello") has nothing to reject.
 export const DECLINED = {
   idea: ["Bu sefer olmadı", "🙈"],
   bug: ["Hata bulunamadı", "🔍"],
+  build: ["Bu sefer olmadı", "🙈"],
 };
 
 export function allowedStatuses(kind) {
@@ -58,13 +67,17 @@ export function statusLine(kind, status) {
     building:
       kind === "bug"
         ? "Şu an tamir ediliyor, anahtarlar elde 🔧"
-        : "Şu an üzerinde çalışılıyor, kod yazılıyor 🛠️",
+        : kind === "build"
+          ? "Yapın çiziliyor: şantiyesi, evreleri, her şeyi 📐"
+          : "Şu an üzerinde çalışılıyor, kod yazılıyor 🛠️",
     done:
       kind === "bug"
         ? "Düzeltildi! Bir daha dene bakalım ✅"
         : kind === "hello"
           ? "Batur cevapladı, notuna bak 💌"
-          : "Yayında! Uygulamada görebilirsin 🚀",
+          : kind === "build"
+            ? "Katalogda! Köy → inşaat seç, ilk sen yap 🏗️"
+            : "Yayında! Uygulamada görebilirsin 🚀",
     declined:
       kind === "bug"
         ? "Batur bu hatayı yakalayamadı. Notuna bak 🔍"
@@ -78,14 +91,16 @@ export function statusPush(kind, status) {
   const [label, emoji] = statusLabel(kind, status);
   const titles = {
     seen: "Batur isteğine baktı 👀",
-    accepted: kind === "bug" ? "Bildirdiğin hata onaylandı 🐛" : "İsteğin kabul edildi 🎉",
-    building: kind === "bug" ? "Hata tamir ediliyor 🔧" : "İsteğin yapılıyor 🛠️",
+    accepted: kind === "bug" ? "Bildirdiğin hata onaylandı 🐛" : kind === "build" ? "İstediğin yapı kabul edildi 🎉" : "İsteğin kabul edildi 🎉",
+    building: kind === "bug" ? "Hata tamir ediliyor 🔧" : kind === "build" ? "İstediğin yapı çiziliyor 📐" : "İsteğin yapılıyor 🛠️",
     done:
       kind === "bug"
         ? "Hata düzeltildi ✅"
         : kind === "hello"
           ? "Batur cevap yazdı 💌"
-          : "İsteğin yayında! 🚀",
+          : kind === "build"
+            ? "İstediğin yapı katalogda! 🏗️"
+            : "İsteğin yayında! 🚀",
     declined: `${label} ${emoji}`,
   };
   return titles[status] || `${label} ${emoji}`;

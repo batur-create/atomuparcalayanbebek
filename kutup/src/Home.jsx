@@ -897,7 +897,7 @@ function BoardTile({ members, messages, unread, navigate }) {
   );
 }
 
-export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, unread, setModal, requireMember, mutate, navigate, village, extras }) {
+export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, unread, setModal, requireMember, mutate, navigate, village, extras, shortcuts }) {
   // Each arrival sends a little figure along the path into the library.
   const arrivals = useMemo(
     () => (reducedMotion() ? [] : arrived.map((id) => ({ key: id, color: `var(--${data.members.find((x) => x.id === id)?.color || "lilac"})` }))),
@@ -938,6 +938,7 @@ export function Home({ data, me, now, dark, intro, arrived, filter, setFilter, u
           <VillageTile me={me} members={data.members} village={village} week={data.week} now={now} navigate={navigate} />
           <BoardTile members={data.members} messages={data.messages} unread={unread} navigate={navigate} />
         </Reveal>
+        {shortcuts}
       </m.div>
     </div>
   );

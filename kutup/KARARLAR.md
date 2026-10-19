@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n43 | Komuta merkezi: yapı ve plan hediye, yapı geri alma, ekibe duyuru, yapı istekleri; Yenilikler ve Ben'deki şeyler ana sayfada | Herkes + Batur | 19 Eki 23:50 | PR #(açılınca) |
 | rahat-insaat | Ekran kilitliyken süren ayrı mod, aşama bildirimleri, hızlandırılmış teslim ve dar iPhone PWA sığma düzeltmesi | Odak | 19 Eki | codex/relaxed-construction PR |
 | n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR #37 |
 | n41 | Yenilikler: her sürümde neler değişti, herkes için, Ben'de; 1–16. sürüm geriye dönük | Herkes | 19 Eki 07:30 | PR #36 |
@@ -90,6 +91,34 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n43 · Komuta merkezi yetkileri ve Kütüp'ten haberler
+Herkes + Batur · 19 Eki 2026 · PR (ikinci üs) · göç 27
+
+**Batur'un sözleri:** "İstediğim yapıyı da hediye edebileyim. Çünkü bazı arkadaşlarım yanlışlıkla seansını bitirdi … yöneticinin sahip olması gereken her türlü yetkiyi ver … Gerekli olan özellikleri bir önce bak, düşün, sonra ver." · "ben menüsündeki bazı özellikler çok arka planda kalmış … yenilikleri otomatik her güncellemede herkesin ana sayfasına düşürecek şekilde" · "yeni bina isteme kısmı ekle … bana iletsin … Ben onu karar veririm."
+
+**Ne yapıldı:**
+- **🎁 Yapı hediye et** (`POST /api/owner/members/:id/gift`): katalogdaki her yapı (nadir, ünlü, kurucu dahil) kişinin mahallesine, köy planlayıcısının seçtiği boş bir yere bitmiş halde konur. `buildings.gift` notu tutar (boşsa "Batur'dan hediye"). Bir `build_deliveries` satırı da yazılır, böylece kişi uygulamayı açınca Rahat inşaatın 18 saniyelik teslim ekranı "Batur sana bir yapı gönderdi" diye oynar (ödül 0). Pano'ya sistem satırı, cüzdana 0 tuğlalık "gift" satırı, kişiye bildirim.
+- **📜 Plan hediye et** (`/unlock`): yalnız plan isteyen yapılar (nadir ve süresi geçmiş haftalık); `unlocks.source = 'gift'`, iki kez verilmez.
+- **🗑️ Yapıyı geri al** (`DELETE /api/owner/buildings/:id`, onaylı): beğenileri ve teslim kaydıyla birlikte silinir, mahalle sayacı yeniden sayılır, yer boşalır; tuğla ve odak dakikaları değişmez. Köyü elinde tutan istemciler artık `/village` yanıtındaki `total` ile eksilen binayı fark edip köyü bir kez baştan çeker.
+- **📣 Ekibe duyuru** (`/owner/groups/:id/announce`, iki adımlı onay): ekipteki ✦ profilin ağzından `kind = 'announce'` mesaj; Pano'da vurgulu, herkesin ana sayfasında 3 gün kart, herkese bildirim. ✦ profil yoksa uyarır.
+- **🏗️ Yapı istekleri:** "Batur'a ilet"e dördüncü tür `build` (Gönderildi → İncelendi → Kabul → Çiziliyor → Katalogda / Bu sefer olmadı). Girişler: katalogun dibinde "Aradığın yapı yok mu?", Ben → "Yeni yapı iste", ana sayfa kısayolu. Komuta merkezinde ayrı "Yapı istekleri" sekmesi.
+- **Ana sayfa:** yeni sürümün notları kart olarak (ilk 2 madde; okununca ya da ✕ ile kapanır, Ben'deki nokta da söner), Batur'un duyurusu, altta "Kütüp'te neler var?" kısayolları (Yenilikler, Başarımlar, Haftanın hikâyesi, Yapı iste, Batur'a ilet). Ben'de Komuta merkezi en üste, vurgulu.
+- **Düzeltme:** n40'ın "kurtarılmış (yamalı) bina" bilgisi `/village` satırına hiç konmuyordu; şimdi `patched` ve `gift` satırın 13. ve 14. alanı, yamalı binalar köyde yamalı çiziliyor.
+
+**Kararlar ve nedenleri:**
+- Hediye bitmiş bina olarak konur ve teslim ekranıyla gelir: Batur'un derdi "az kalmıştı" arkadaşlar; inşaatı izlemenin keyfi kaybolmasın.
+- Hediye rozet kazandırmaz (`/achievements` sorgusu `gift IS NULL`): rozetler emekle kazanılır; hediye Kolezyum "Koleksiyoncu" ya da "İlk tuğla" vermesin. Köy sayısında, koleksiyonda ve yapı etkilerinde (fırın vb.) sayılır.
+- Hediye tuğla ödemez, odak dakikası eklemez, haftalık anıta ve ustalığa saymaz.
+- Duyuru Batur'un ✦ profilinden yazılır: mesaj tablosu bir üye ister; Batur'un sesi Pano'da zaten bu profil.
+- Yenilikler 17 (n40 PR #40) 6 madde sınırında olduğu için n43 ayrı **Sürüm 18** oldu; ikisi aynı yayında çıkar.
+- Yetkiler sorulmadan seçildi (Batur: "her türlü gücü vereceksin, önce bak, düşün"): bakılıp gerek görülmeyenler aşağıda.
+
+**Vazgeçilenler:** Pano mesajı silme ve üye adı değiştirme (5-10 arkadaşta ihtiyaç görülmedi), enkazı hediye ile temizleme (iade ekonomisini bozar), sürüm notunu herkese bildirim olarak yollama (ana sayfa kartı ve istenirse duyuru yeter).
+
+**Geri alma:** PR'ı geri al (revert). Göç 27 yalnız boş bir sütun ekler; kod geri alınınca sütun zararsız kalır. Verilen hediyeler komuta merkezi → 🎁 → Köyü'nden tek tek kaldırılır.
+
+**Dosyalar:** `server/app.js`, `server/schema.js` (göç 27), `shared/requests.js`, `shared/catalog.js`, `src/OwnerGift.jsx` (yeni), `src/Owner.jsx`, `src/Haberler.jsx` (yeni), `src/App.jsx`, `src/Home.jsx`, `src/MePage.jsx`, `src/Requests.jsx`, `src/Economy.jsx`, `src/Board.jsx`, `src/BuildDelivery.jsx`, `src/VillageMap.jsx`, `src/villageWorld.js`, `src/villageData.js`, `src/api.js`, CSS, `tests/owner.test.js` (yeni), `src/yenilikler.js` (v18).
 
 ### rahat-insaat · Ekran kapalı inşaat ve hızlandırılmış teslim
 

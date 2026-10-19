@@ -197,7 +197,7 @@ Her yazma okuduğun sürümle `if_version` taşır.
    - 20 saniye `PerformanceObserver("longtask")`, ana iş parçacığının meşgul yüzdesi.
    - Önceki ve sonraki hali karşılaştır, sonucu kayda yaz.
 7. **Göç (migration) gerekiyorsa:**
-   - `server/schema.js`'te sıradaki numarayı kullan (son: 21) ve göç testi ekle.
+   - `server/schema.js`'te sıradaki numarayı kullan (son: 27, n43) ve göç testi ekle.
    - PR başlığına `[göç NN]` ekle; Batur yayından önce yedek alır.
    - Göçler canlıda ilk istekte kendiliğinden çalışır.
 8. **Kayıtları aynı dalda yaz:**

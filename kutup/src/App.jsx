@@ -47,6 +47,7 @@ import { clearLast, readLast, saveLast } from "./lastState.js";
 import { AchievementCheer, AchievementsModal, DeskMap, BuildDelivery, FocusScreen, OwnerPage, VillagePanel, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
 import { useYenilik } from "./yenilikNokta.js";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
+import { AnnounceCard, NewsCard, Shortcuts } from "./Haberler.jsx";
 import { shouting, teaCall } from "../shared/pano.js";
 import { useAchievementWatch } from "./achievementWatch.js";
 import { CoffeeCard, FocusCard, onComputer, pickedModel } from "./Focus.jsx";
@@ -962,6 +963,18 @@ function KutupApp({ initial, restart }) {
     setTab(id);
     if (id !== "board") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  // n43: "Yeni yapı iste" in the catalogue (or anywhere) opens Batur'a ilet
+  // with that kind chosen: dispatch "kutup:ask" with { kind }.
+  const [askKind, setAskKind] = useState({ kind: "idea", at: 0 });
+  useEffect(() => {
+    const ask = (e) => {
+      setAskKind({ kind: e.detail?.kind || "idea", at: Date.now() });
+      setTab("feedback");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("kutup:ask", ask);
+    return () => window.removeEventListener("kutup:ask", ask);
+  }, []);
   // n42, Kara'ya sor: any screen opens help with openHelp({ tab, topic }).
   const [help, setHelp] = useState(null),
     [tour, setTour] = useState(null);
@@ -1405,6 +1418,8 @@ function KutupApp({ initial, restart }) {
               village={village}
               extras={
                 <>
+                  {session && <AnnounceCard messages={data.messages} now={now} openBoard={() => navigate("board")} />}
+                  {session && <NewsCard yenilik={yenilik} open={() => setModal("yenilikler")} />}
                   {session && storyFresh(now) && <StoryNudge open={() => setStory(true)} />}
                   {session && !notificationOn && <SetupCard enable={enableNotifications} busy={notificationWorking} />}
                   {session && !session.username && (
@@ -1418,6 +1433,19 @@ function KutupApp({ initial, restart }) {
                     </button>
                   )}
                 </>
+              }
+              shortcuts={
+                session && (
+                  <Shortcuts
+                    items={[
+                      ["✨", "Yenilikler", () => setModal("yenilikler"), yenilik.yeni],
+                      ["🏅", "Başarımlar", () => setModal("achievements")],
+                      ["📖", "Haftanın hikâyesi", () => setStory(true)],
+                      ["🏗️", "Yapı iste", () => window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind: "build" } }))],
+                      ["💌", "Batur’a ilet", () => navigate("feedback"), requestUpdates.count > 0],
+                    ]}
+                  />
+                )
               }
             />
           )}
@@ -1492,6 +1520,8 @@ function KutupApp({ initial, restart }) {
           )}
           {tab === "feedback" && (
             <FeedbackPage
+              key={askKind.at}
+              startKind={askKind.kind}
               me={me}
               requireMember={requireMember}
               notify={notify}

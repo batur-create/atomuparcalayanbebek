@@ -115,7 +115,7 @@ export function Board({ data, me, requireMember, mutate, compact, openTeam, open
           ) : (
             <M.article
               key={msg.id}
-              className={`message ${m?.color || "lilac"} ${mine ? "mine" : ""} ${msg.kind === "coffee" ? "coffee-message" : ""}`}
+              className={`message ${m?.color || "lilac"} ${mine ? "mine" : ""} ${msg.kind === "coffee" ? "coffee-message" : ""} ${msg.kind === "announce" ? "announce-message" : ""}`}
               initial={{ opacity: 0, y: 16, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 320, damping: 24 }}
@@ -128,6 +128,7 @@ export function Board({ data, me, requireMember, mutate, compact, openTeam, open
                   <strong>{m?.name}</strong>
                   {m?.badge === "dev" && <span className="dev-mark" title="Geliştirici">✦</span>}
                   <time>{shortTime(msg.created)}</time>
+                  {msg.kind === "announce" && <span className="announce-tag">📣 Duyuru</span>}
                   {msg.kind === "coffee" && <span>{msg.toMember ? `kahve çağrısı → ${data.members.find((x) => x.id === msg.toMember)?.name || "?"} ☕` : "mola daveti ☕"}</span>}
                 </div>
                 {msg.replyTo &&

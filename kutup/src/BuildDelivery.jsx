@@ -25,13 +25,17 @@ export function BuildDelivery({ delivery, accept }) {
     try { await accept(showVillage); }
     catch (e) { setError(e.message || "Teslim kaydı güncellenemedi. Binan ve kazanımların güvende; tekrar deneyebilirsin."); setBusy(false); }
   };
-  return <Modal title={playing ? "Bir şantiye böyle yükseldi." : "Emeğin köyde yerini aldı."}
-    subtitle={`${delivery.minutes} dakika rahat inşaat · ${item.name}`} close={() => finish(false)} className="build-delivery">
+  // n43: a building Batur gave as a present plays the same replay, as his gift.
+  const gift = delivery.gift;
+  return <Modal title={gift ? (playing ? "Batur sana bir yapı gönderdi." : "Hediyen köyde yerini aldı.") : playing ? "Bir şantiye böyle yükseldi." : "Emeğin köyde yerini aldı."}
+    subtitle={gift ? `🎁 ${gift} · ${item.name}` : `${delivery.minutes} dakika rahat inşaat · ${item.name}`} close={() => finish(false)} className="build-delivery">
     <div className="delivery-label"><span>{playing ? <FastForward size={15} /> : <Check size={15} />}{playing ? "18 SANİYEDE ŞANTİYEN" : "TESLİME HAZIR"}</span><b>{item.emoji} {item.name}</b></div>
     <div className="delivery-scene">
       <ConstructionScene run={playing ? run.current : null} outcome={playing ? null : built.current} />
     </div>
-    <div className="delivery-reward"><span>Çalışmanın karşılığı</span><strong>+{delivery.reward} 🧱</strong><small>Binan köyüne eklendi; kazanımların kasanda.</small></div>
+    {gift
+      ? <div className="delivery-reward"><span>Batur’dan</span><strong>🎁</strong><small>Bu yapı sana hediye; köyünde hep duracak.</small></div>
+      : <div className="delivery-reward"><span>Çalışmanın karşılığı</span><strong>+{delivery.reward} 🧱</strong><small>Binan köyüne eklendi; kazanımların kasanda.</small></div>}
     {error && <p role="alert" className="delivery-error">{error}</p>}
     <div className="delivery-actions">
       {playing && <button type="button" className="btn" disabled={busy} onClick={() => finish(false)}>Atla ve teslim al</button>}

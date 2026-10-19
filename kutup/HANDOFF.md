@@ -127,6 +127,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 
 ## 6b. Durum (son güncelleme 19 Ekim 2026)
 
+> **n43 komuta merkezi (19 Ekim gece, PR; #40'ın üstünde):** göç 27 `buildings.gift` (hediye notu, NULL = seansla yapılmış). Hediye yapı bir `build_deliveries` satırıyla gelir (ödül 0); `/build-deliveries` artık `gift` da döner. `/village` bina satırı 14 alan: `…, model, patched, gift` ve yanıtta `total` (bbox yoksa); istemci `mergeVillage` eksik sayıda `stale` der, `villageData.js` köyü baştan çeker. Hediyeler rozet hesabına girmez. Duyuru `messages.kind = 'announce'` (sistem değil, kalp alır). İstek türü `build` (`shared/requests.js`). Her yerden "Batur'a ilet"i bir türle açmak: `window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind } }))`. Testler `tests/owner.test.js`; görüntü aracı `/mnt/project-files/kutup/araclar/n43_shots.py`.
+
 > **Rahat inşaat + iPhone PWA, 19 Ekim 2026 (PR; Batur yayınlayacak):**
 > - İnşaat içinde **Sıkı / Rahat** seçimi var; yeni kullanıcıda Sıkı varsayılan. Sıkı'nın 15 saniye, çatlama, tek kurtarma ve çay molası kuralları korunur. Seans içinde mod değişmez. Rahat ekran kilidine, başka uygulamaya ve sekmenin kapanmasına dayanır; Wake Lock, `beat`, `away`, `crack`, pasif `wither`, mola ve kurtarma akışı yoktur. Açık iptal eski malzeme/iade kurallarını kullanır.
 > - **Göç 26:** `members.focus_relaxed` (eski üyelerde 0), `build_deliveries`, `build_push_events` ve indeksleri. 1–25 aynen korunur. `focus_strict=1` hâlâ bina üreten seans anlamına gelir; ekran gözetimi için ayrıca `focus_relaxed=0` aranır. Var olan seans/cüzdanın korunması ve tekrar açılış testi var. **Yayın öncesi mevcut yedek akışını çalıştır.**

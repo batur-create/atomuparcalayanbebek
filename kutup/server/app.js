@@ -1934,7 +1934,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // Acceptance acknowledges an already-credited building, never creates rewards.
   route("GET", "/build-deliveries", async ({ member }) => {
     await snapshot(member.group_id);
-    return json(await db.all("SELECT id, model, kind, seed, minutes, ends, reward FROM build_deliveries WHERE member_id = ? AND accepted_at = 0 ORDER BY ends LIMIT 5", [member.id]));
+    return json(await db.all("SELECT d.id, d.model, d.kind, d.seed, d.minutes, d.ends, d.reward, b.gift FROM build_deliveries d LEFT JOIN buildings b ON b.id = d.id WHERE d.member_id = ? AND d.accepted_at = 0 ORDER BY d.ends LIMIT 5", [member.id]));
   });
   route("POST", "/build-deliveries/:id", async ({ member, params }) => {
     const row = await db.get("SELECT ends FROM build_deliveries WHERE id = ? AND member_id = ?", [params.id, member.id]);
@@ -2124,7 +2124,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const id = target.id;
     const [focus, buildings, ledger, masters, arrivals, messages, stored] = await db.read([
       ["SELECT minutes, created FROM focus_log WHERE member_id = ? ORDER BY created", [id]],
-      ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, likes, created FROM buildings WHERE member_id = ? ORDER BY created", [id]],
+      ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, likes, created FROM buildings WHERE member_id = ? AND gift IS NULL ORDER BY created", [id]],
       ["SELECT reason, created FROM bricks_log WHERE member_id = ? AND reason IN ('imece', 'monument') ORDER BY created", [id]],
       ["SELECT created FROM weekly WHERE member_id = ? AND kind = 'master' AND group_id = ? ORDER BY created", [id, target.group_id]],
       ["SELECT created FROM activity WHERE member_id = ? AND kind = 'arrive' ORDER BY created", [id]],
@@ -2255,7 +2255,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [crypto.randomUUID(), id, now],
       ],
     ]);
-    const what = { idea: "bir fikir yolladı 💡", bug: "bir hata bildirdi 🐛", hello: "sana iki çift laf etti 💬" };
+    const what = { idea: "bir fikir yolladı 💡", bug: "bir hata bildirdi 🐛", hello: "sana iki çift laf etti 💬", build: "yeni bir yapı istedi 🏗️" };
     await notifyOwner(ctx, {
       title: `${member.name} ${what[kind]}`,
       body: value.length > 90 ? `${value.slice(0, 90)}…` : value,
@@ -2281,10 +2281,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const area = box.length === 4 && box.every(Number.isFinite);
     const range = area ? " AND pos_x BETWEEN ? AND ? AND pos_y BETWEEN ? AND ?" : "";
     const rangeArgs = area ? [box[0], box[2], box[1], box[3]] : [];
-    const [districts, buildings, liked, ruins, stages] = await db.read([
+    const [districts, buildings, liked, ruins, stages, total] = await db.read([
       ["SELECT id, member_id AS memberId, dx, dy, seed FROM districts WHERE group_id = ? ORDER BY created, id", [gid]],
       [
-        `SELECT id, member_id AS memberId, kind, model, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched, patched
+        `SELECT id, member_id AS memberId, kind, model, seed, pos_x AS x, pos_y AS y, facing, minutes, created, likes, touched, patched, gift
          FROM buildings WHERE group_id = ? AND touched > ? AND pos_x IS NOT NULL${range} ORDER BY touched`,
         [gid, since, ...rangeArgs],
       ],
@@ -2294,6 +2294,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ],
       ["SELECT id, ruin_kind AS kind, ruin_x AS x, ruin_y AS y, ruin_until AS until FROM members WHERE group_id = ? AND ruin_until > ?", [gid, now]],
       ["SELECT count(*) AS n FROM weekly WHERE group_id = ? AND kind = 'monument'", [gid]],
+      // n43: Batur can take a building back; a client holding the village sees
+      // the count drop and fetches it whole once.
+      ["SELECT count(*) AS n FROM buildings WHERE group_id = ? AND pos_x IS NOT NULL", [gid]],
     ]);
     const mine = new Set(liked.map((l) => l.id));
     return json({
@@ -2301,9 +2304,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       partial: !!after,
       until: buildings.reduce((t, b) => Math.max(t, b.touched), after),
       districts: districts.map((d) => [d.id, d.memberId, d.dx, d.dy, d.seed]),
-      buildings: buildings.map((b) => [b.id, b.memberId, b.kind, b.seed, b.x, b.y, b.facing, b.minutes, b.created, b.likes, mine.has(b.id) ? 1 : 0, b.model]),
+      buildings: buildings.map((b) => [b.id, b.memberId, b.kind, b.seed, b.x, b.y, b.facing, b.minutes, b.created, b.likes, mine.has(b.id) ? 1 : 0, b.model, b.patched ? 1 : 0, b.gift]),
       ruins: ruins.map((r) => [r.id, r.kind, r.x, r.y, r.until]),
       monument: stages[0]?.n || 0,
+      total: area ? undefined : total[0].n,
     });
   });
 
@@ -2559,6 +2563,126 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     ]);
     onChange(member.group_id);
     return json({ ok: true, bricks: member.bricks + delta });
+  }, false);
+
+  // n43 — komuta merkezi. A building as a present: any catalogue building lands
+  // finished in the member's village (a spot chosen like any other), plays the
+  // delivery replay the next time they open the app, and the board and their
+  // phone say who it is from. For friends whose session ended a minute short.
+  route("POST", "/owner/members/:id/gift", async ({ request, ip, params, body, ctx }) => {
+    await requireOwner(request, ip);
+    const item = BY_ID[body.model];
+    if (!item) fail("Katalogda böyle bir yapı yok.");
+    const member = await db.get("SELECT id, group_id FROM members WHERE id = ?", [params.id]);
+    if (!member) fail("Kişi bulunamadı.", 404);
+    const note = text(body.note || "", 60, "Not") || "Batur'dan hediye";
+    const buildingId = randomHex(16),
+      seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000,
+      minutes = minutesOf(item);
+    let now;
+    await retrying(async () => {
+      now = Date.now();
+      const spot = (await loadPlanner(member.group_id)).place(member.id, item.kind, newDistrictId);
+      if (!spot) fail("Köyde bu yapıya yer bulunamadı.", 409);
+      return [
+        ...districtChanges(member.group_id, spot.changes),
+        [
+          `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, gift)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [buildingId, member.id, member.group_id, item.kind, item.id, minutes, seed, now, now, spot.x, spot.y, spot.facing ?? 0, spot.district.id, note],
+        ],
+        [
+          "INSERT INTO build_deliveries (id, member_id, model, kind, seed, minutes, ends, reward, created) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)",
+          [buildingId, member.id, item.id, item.kind, seed, minutes, now, now],
+        ],
+        ["UPDATE districts SET buildings = buildings + 1 WHERE id = ?", [spot.district.id]],
+        systemMessage(member.group_id, member.id, `Batur'dan hediye aldı: ${item.name} ${item.emoji} 🎁`),
+        ledgerRow(member.id, 0, "gift", buildingId, `🎁 ${note}: ${item.name}`, now),
+        bumpVillage(member.group_id),
+        bump(member.group_id),
+      ];
+    }, member.group_id);
+    onChange(member.group_id);
+    await notifyMember(ctx, member.id, {
+      title: `Batur sana ${item.name} hediye etti ${item.emoji}`,
+      body: note === "Batur'dan hediye" ? "Köyünde bitmiş halde seni bekliyor. Aç, şantiyesini izle 🎁" : `“${note}” · Köyünde seni bekliyor 🎁`,
+      url: "/?tab=focus",
+    });
+    return json({ ok: true, id: buildingId }, 201);
+  }, false);
+
+  // A blueprint as a present: a rare building (or a weekly one past its
+  // fortnight) opens in the member's catalogue, and they build it themselves.
+  route("POST", "/owner/members/:id/unlock", async ({ request, ip, params, body, ctx }) => {
+    await requireOwner(request, ip);
+    const item = BY_ID[body.model];
+    if (!item || !(item.rare === true || item.since)) fail("Bu yapının planı yok; katalogda zaten açık.");
+    const member = await db.get("SELECT id, group_id FROM members WHERE id = ?", [params.id]);
+    if (!member) fail("Kişi bulunamadı.", 404);
+    const now = Date.now();
+    const result = await db.run("INSERT OR IGNORE INTO unlocks (member_id, model, source, created) VALUES (?, ?, 'gift', ?)", [member.id, item.id, now]);
+    if (!result.changes) fail("Bu plan onda zaten var.", 409);
+    await db.batch([
+      ledgerRow(member.id, 0, "blueprint", null, `🎁 Batur'dan plan: ${item.name}`, now),
+      systemMessage(member.group_id, member.id, `Batur'dan nadir plan aldı: ${item.name} ${item.emoji} 📜`),
+      bump(member.group_id),
+    ]);
+    onChange(member.group_id);
+    await notifyMember(ctx, member.id, {
+      title: `Batur sana ${item.name} planını verdi 📜`,
+      body: "Katalogda açıldı. Bir seansla kendin inşa edebilirsin.",
+      url: "/?tab=focus",
+    });
+    return json({ ok: true }, 201);
+  }, false);
+
+  // A member's buildings, newest first, and the blueprints they hold, for the
+  // panel (to take a building back, or not to give a plan twice).
+  route("GET", "/owner/members/:id/village", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    const [buildings, unlocks] = await db.read([
+      ["SELECT id, model, kind, minutes, created, likes, patched, gift FROM buildings WHERE member_id = ? ORDER BY created DESC LIMIT 200", [params.id]],
+      ["SELECT model FROM unlocks WHERE member_id = ?", [params.id]],
+    ]);
+    return json({ buildings, unlocks: unlocks.map((u) => u.model) });
+  }, false);
+
+  // Taking a building back (a wrong gift, a bug). Its plot frees up; the
+  // member's tuğla and focus minutes are left as they are.
+  route("DELETE", "/owner/buildings/:id", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    const building = await db.get("SELECT id, group_id, district_id FROM buildings WHERE id = ?", [params.id]);
+    if (!building) fail("Bina bulunamadı.", 404);
+    await db.batch([
+      ["DELETE FROM building_likes WHERE building_id = ?", [building.id]],
+      ["DELETE FROM build_deliveries WHERE id = ?", [building.id]],
+      ["DELETE FROM buildings WHERE id = ?", [building.id]],
+      ["UPDATE districts SET buildings = (SELECT count(*) FROM buildings b WHERE b.district_id = districts.id) WHERE id = ?", [building.district_id]],
+      bumpVillage(building.group_id),
+      bump(building.group_id),
+    ]);
+    onChange(building.group_id);
+    return json({ ok: true });
+  }, false);
+
+  // One line from Batur to a whole team: it stands out on the board, sits on
+  // everyone's home page for three days, and reaches every phone. It is
+  // written by Batur's own profile in that team (the one wearing ✦).
+  route("POST", "/owner/groups/:id/announce", async ({ request, ip, params, body, ctx }) => {
+    await requireOwner(request, ip);
+    const value = text(body.text, 280, "Duyuru", 2);
+    const me = await db.get("SELECT id, group_id FROM members WHERE group_id = ? AND badge = 'dev'", [params.id]);
+    if (!me) fail("Önce bu ekipte kendi profilini ✦ ile işaretle; duyuru onun ağzından çıkar.", 409);
+    const id = crypto.randomUUID(),
+      now = Date.now();
+    await db.batch([
+      ["INSERT INTO messages (id, group_id, member_id, text, kind, created) VALUES (?, ?, ?, ?, 'announce', ?)", [id, me.group_id, me.id, value, now]],
+      ["UPDATE members SET board_seen = ? WHERE id = ? AND board_seen < ?", [now, me.id, now]],
+      bump(me.group_id),
+    ]);
+    onChange(me.group_id);
+    await notify(ctx, me.group_id, me.id, { title: "📣 Batur'dan duyuru", body: value, url: "/" });
+    return json({ ok: true, id }, 201);
   }, false);
 
   // Everything, as JSON: a copy Batur can keep. Secrets that open accounts or

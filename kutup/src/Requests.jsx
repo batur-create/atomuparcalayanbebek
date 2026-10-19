@@ -38,6 +38,16 @@ const SPARKS = {
     ["Rüşvet", "Bir özelliği öne alırsan bir sonraki molada çaylar benden 🍵"],
     ["Merak", "Bu siteyi nasıl yaptın? Bir gün bana da anlatır mısın?"],
   ],
+  // n43: asking for a building that is not in the catalogue yet.
+  build: [
+    ["Ünlü yapı", "Ayasofya 🕌 Dev kubbesi ve pandantifleriyle; şantiyede kubbenin nasıl oturduğunu görmek isterim."],
+    ["Ünlü yapı", "Tac Mahal 🤍 Beyaz mermer, dört minare ve önündeki uzun havuz."],
+    ["Köprü", "Boğaz Köprüsü 🌉 Kuleler, ana kablolar ve asılı tabliye adım adım kurulsun."],
+    ["Mühendislik", "Baraj 💧 Kemer baraj, arkasında göl; beton dökümü katman katman yükselsin."],
+    ["Bizden", "Milli Kütüphane 📚 Kendi kütüphanemiz köyde de olsun, önünde merdivenleriyle."],
+    ["Eğlenceli", "Dönme dolap 🎡 Köyün bir köşesinde yavaşça dönsün."],
+    ["Ünlü yapı", "Kız Kulesi 🗼 Denizin ortasında, küçük adasıyla."],
+  ],
 };
 const pick = (list, n) => [...list].sort(() => Math.random() - 0.5).slice(0, n);
 
@@ -171,14 +181,14 @@ function RequestCard({ item, fresh }) {
   );
 }
 
-export function FeedbackPage({ me, requireMember, notify, onSeen }) {
-  const [kind, setKind] = useState("idea"),
+export function FeedbackPage({ me, requireMember, notify, onSeen, startKind = "idea" }) {
+  const [kind, setKind] = useState(FEEDBACK[startKind] ? startKind : "idea"),
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [phase, setPhase] = useState("form"),
     [mine, setMine] = useState([]),
     [fresh, setFresh] = useState([]),
-    [sparks, setSparks] = useState(() => pick(SPARKS.idea, 3));
+    [sparks, setSparks] = useState(() => pick(SPARKS[FEEDBACK[startKind] ? startKind : "idea"], 3));
   const textarea = useRef(null);
   useEffect(() => {
     if (!me) return;
@@ -285,7 +295,9 @@ export function FeedbackPage({ me, requireMember, notify, onSeen }) {
                       ? "Böyle anlatırsan Batur hemen bulur:"
                       : kind === "hello"
                         ? "Mesela şöyle bir şey:"
-                        : "Aklına gelmedi mi? Şunlardan biriyle başla:"}
+                        : kind === "build"
+                          ? "Köyde görmek istediğin yapıyı yaz. Mesela:"
+                          : "Aklına gelmedi mi? Şunlardan biriyle başla:"}
                   </span>
                   <button
                     type="button"

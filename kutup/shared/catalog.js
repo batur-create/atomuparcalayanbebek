@@ -197,4 +197,5 @@ export const REASONS = {
   refund: "İade",
   "ruin-refund": "Enkaz kaldırıldı",
   grant: "Batur'dan",
+  gift: "Batur'dan hediye yapı",
 };

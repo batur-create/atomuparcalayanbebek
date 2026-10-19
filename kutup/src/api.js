@@ -98,6 +98,7 @@ export const FEEDBACK = {
   idea: ["💡", "Bir fikrim var", "Şöyle bir özellik olsa…"],
   bug: ["🐛", "Bir şey bozuldu", "Neye bastın, ne olmasını bekledin?"],
   hello: ["💬", "İki çift laf", "İçinden ne geçiyorsa. Batur okuyor."],
+  build: ["🏗️", "Yapı iste", "Hangi yapı? Nerede gördün, neyi seviyorsun? Bir fotoğraf linki de olur."],
 };
 export function shortTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString("tr-TR", {

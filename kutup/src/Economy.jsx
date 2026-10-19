@@ -1,7 +1,7 @@
 // Tuğla in the app: the catalogue you pick a building from, the little
 // building portraits, and the receipt that comes after every session.
 import React, { useEffect, useMemo, useState } from "react";
-import { MapPin, X } from "lucide-react";
+import { ArrowRight, MapPin, X } from "lucide-react";
 import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, WEEKLY_DAYS, minutesOf, stateOf, wageFor } from "../shared/catalog.js";
 import { buildingSVG, projector, spec } from "./iso.js";
 import { dayWord, get, shortTime } from "./api.js";
@@ -59,7 +59,7 @@ function WalletView({ wallet, bricks, back }) {
                   {dayWord(r.created)} {shortTime(r.created)}
                 </small>
               </span>
-              <b className={r.delta < 0 ? "minus" : ""}>{r.reason === "blueprint" ? "🎁" : `${r.delta > 0 ? "+" : ""}${r.delta} 🧱`}</b>
+              <b className={r.delta < 0 ? "minus" : ""}>{r.reason === "blueprint" || r.reason === "gift" ? "🎁" : `${r.delta > 0 ? "+" : ""}${r.delta} 🧱`}</b>
             </li>
           ))}
         </ul>
@@ -258,6 +258,23 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
         İşlevsel yapılar köyünde durdukça her seansına yardım eder. Yarıda bırakırsan malzemenin yarısı hemen, %30'u enkazı bir sonraki seansın kaldırınca geri gelir; %20 gider.
         İlk 2 dakikada vazgeçmek bedava.
       </p>
+      {!collection && (
+        <button
+          type="button"
+          className="catalog-ask"
+          onClick={() => {
+            close();
+            window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind: "build" } }));
+          }}
+        >
+          <span aria-hidden="true">🏗️</span>
+          <span>
+            <strong>Aradığın yapı yok mu?</strong>
+            <small>Yaz, Batur’a gitsin. Beğenirse kataloğa ekler.</small>
+          </span>
+          <ArrowRight size={16} />
+        </button>
+      )}
     </Modal>
   );
 }
@@ -302,7 +319,7 @@ export function ReceiptCard({ receipt, close, next = null, onContinue }) {
         {data.receipt.map((r, i) => (
           <li key={i}>
             <span>{r.note || REASONS[r.reason]}</span>
-            <b className={r.delta < 0 ? "minus" : ""}>{r.reason === "blueprint" ? "🎁" : `${r.delta > 0 ? "+" : ""}${r.delta} 🧱`}</b>
+            <b className={r.delta < 0 ? "minus" : ""}>{r.reason === "blueprint" || r.reason === "gift" ? "🎁" : `${r.delta > 0 ? "+" : ""}${r.delta} 🧱`}</b>
           </li>
         ))}
       </ul>
