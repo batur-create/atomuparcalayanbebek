@@ -160,6 +160,9 @@ const trParts = now => Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZ
 const seasonAt = now => {const month=Number(trParts(now).month);return month===12||month<=2?'winter':month<=5?'spring':month<=8?'summer':'autumn';};
 const firstName=x=>x?.name||'Biri';
 const listNames=list=>list.length<=2?list.map(firstName).join(' ve '):`${firstName(list[0])}, ${firstName(list[1])} +${list.length-2}`;
+// n42: one of Kara's lines is always an offer to explain the screen (Kara'ya sor).
+const askKara=tab=>window.dispatchEvent(new CustomEvent('kutup:help',{detail:{tab}}));
+const HELP_LINE={text:'Bir şeye takıldın mı? Sor, bu ekranı anlatayım.',act:['Sor',()=>askKara()]};
 const SLEEPY=['Kütüp şimdilik sessiz. İlk sen git, ben kapıyı tutarım.','Mırr… Biri gelince uyandır beni.','Kimse yokken kitaplar benim. Sessizce nöbetteyim.'];
 function sayings({me,data,now,unread,navigate}){
   const others=data.members.filter(x=>x.id!==me?.id),here=others.filter(x=>x.status==='here'||x.status==='break'),coming=others.filter(x=>x.status==='coming'),next=data.plans.find(p=>p.starts>now),focusing=me?.focusEnd>now,out=[];
@@ -169,6 +172,7 @@ function sayings({me,data,now,unread,navigate}){
   if(here.length){const desk=here.length===1&&here[0].desk?` ${here[0].desk} numaralı masada`:' içeride';out.push({text:me?.status==='here'?`${listNames(here)} da burada. Ders arası bana uğrayın.`:`${listNames(here)}${desk}. Sen de gel, yer var.`});}
   if(next)out.push({text:`${dayWord(next.starts)} ${shortTime(next.starts)}: ${next.note||'kütüp buluşması'}.`,act:['Planlar',()=>document.getElementById('plans')?.scrollIntoView({behavior:reducedMotion()?'auto':'smooth',block:'start'})]});
   if(!out.length)out.push(...SLEEPY.map(text=>({text})));
+  out.push(HELP_LINE);
   return out;
 }
 
@@ -286,7 +290,7 @@ export function KaraHome({me,data,now,unread,navigate,arrived,poke=0,style}){
 export function KaraBuddy({me,now,item,outcome}){
   const running=me?.focusEnd>now,paused=running&&!!me.focusPausedAt,building=running&&!!me.focusStrict,left=running?Math.max(1,Math.ceil((me.focusEnd-(me.focusPausedAt||now))/60000)):0;
   const base=paused?'sleep':building?'build':running?'read':'idle',name=item?.name||'Bina';
-  const lines=paused?[{text:'Çay molası. Ben bir kestireyim, iskele beklesin.'}]:building?[{text:`Kalfa Kara görevde. ${name} yükseliyor, ${left} dk kaldı.`},{text:'Telefonu bırakma, işçiler seni izliyor. Ben de.'}]:running?[{text:`Sen odaktasın, ben de sayfamdayım. ${left} dk kaldı.`},{text:'Bir sayfa daha. Sonra çay konusunu konuşuruz.'}]:[{text:'Ben hazırım. Sen süreni seç, ben kitabımı.'},{text:'Bina seçersen baretimi takarım.'}];
+  const lines=paused?[{text:'Çay molası. Ben bir kestireyim, iskele beklesin.'}]:building?[{text:`Kalfa Kara görevde. ${name} yükseliyor, ${left} dk kaldı.`},{text:'Telefonu bırakma, işçiler seni izliyor. Ben de.'}]:running?[{text:`Sen odaktasın, ben de sayfamdayım. ${left} dk kaldı.`},{text:'Bir sayfa daha. Sonra çay konusunu konuşuruz.'}]:[{text:'Ben hazırım. Sen süreni seç, ben kitabımı.'},{text:'Bina seçersen baretimi takarım.'},{...HELP_LINE,act:['Sor',()=>askKara('focus')]}];
   const cue=useMemo(()=>{if(!outcome||Date.now()-outcome.at>8000)return null;return outcome.type==='built'?{key:`b-${outcome.at}`,pose:'cheer',ms:5600,text:'Bitti! Köyde yerini aldı. Patiler havaya!'}:outcome.type==='collapsed'?{key:`c-${outcome.at}`,pose:'sad',ms:5200,text:'İnşaat çöktü… Kulaklarım düştü. Bir dahakine beraber bitiririz.'}:null;},[outcome?.at]);
   return <KaraSpot className="kara-buddy" base={base} lines={lines} cue={cue} context={{id:'buddy',now,season:seasonAt(now),break:paused||me?.status==='break',surface:'ledge'}}/>;
 }

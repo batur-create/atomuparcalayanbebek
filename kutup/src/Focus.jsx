@@ -11,6 +11,7 @@ import { BuildingThumb, CatalogModal } from "./Economy.jsx";
 import { SoundButton, SoundPanel } from "./Sound.jsx";
 import { enterFullscreen } from "./fullscreen.js";
 import { DeskMates } from "./Together.jsx";
+import { Ask } from "./Help.jsx";
 import { Modal } from "./Modal.jsx";
 import { LockSheet } from "./Watch.jsx";
 import { floatSupported, floatWindow, onFloat, primeFloat } from "./float.js";
@@ -263,6 +264,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
               ? "Bitince köyüne eklenir. Bu sekmeyi kapatma."
               : `Bitince köyüne eklenir. Çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön.`
             : `Yapı yok: ${duration} dk → ${wageFor(duration, false)} 🧱. Uzakta geçen dakika sayılmaz.`}
+          <Ask tab="focus" topic={fidan ? "leave" : "modes"} label={fidan ? "Uygulamadan çıkarsam ne olur?" : "Serbest ne demek?"} />
         </p>
       )}
       {round && !running && !finishing && (
@@ -274,7 +276,10 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       )}
       {!compact && !running && !finishing && (
         <div className="rhythm-chips" role="group" aria-label="Masa ritmi">
-          <span>Masa ritmi</span>
+          <span>
+            Masa ritmi
+            <Ask tab="focus" topic="rhythm" label="Masa ritmi" />
+          </span>
           {[[null, "Kapalı"], ...Object.entries(RHYTHMS).map(([id, r]) => [id, r.label])].map(([id, label]) => (
             <button
               key={label}
@@ -401,15 +406,11 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </button>
         )}
       </div>
-      <p className="focus-bottom">
-        {me?.focusToday > 0 ? (
-          <>
-            Bugün <b>{minutesLabel(me.focusToday)}</b> kendine ayırdın. Küçük adımlar da ilerlemedir.
-          </>
-        ) : (
-          "Küçük bir başlangıç, büyük bir iyi his."
-        )}
-      </p>
+      {me?.focusToday > 0 && (
+        <p className="focus-bottom">
+          Bugün <b>{minutesLabel(me.focusToday)}</b> kendine ayırdın. Küçük adımlar da ilerlemedir.
+        </p>
+      )}
       {lock && (
         <LockSheet
           minutes={length}
