@@ -7,7 +7,7 @@ import { createPushOutbox } from "./outbox.js";
 import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
-import { CAPACITY, cellLayout, createPlanner, freeSpots, kindFor } from "../shared/village.js";
+import { CAPACITY, cellKey, cellLayout, createPlanner, freeSpots, isMonument, kindFor, monumentCells } from "../shared/village.js";
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
@@ -496,7 +496,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [districts, buildings] = await db.read([
       ["SELECT id, member_id AS memberId, dx AS q, dy AS r, buildings AS n FROM districts WHERE group_id = ? ORDER BY created, id", [groupId]],
       [
-        `SELECT b.district_id AS districtId, b.kind, b.pos_x AS x, b.pos_y AS y FROM districts d JOIN buildings b ON b.district_id = d.id
+        `SELECT b.district_id AS districtId, b.kind, b.model, b.pos_x AS x, b.pos_y AS y FROM districts d JOIN buildings b ON b.district_id = d.id
          WHERE d.group_id = ? AND d.buildings < ${CAPACITY} AND b.pos_x IS NOT NULL`,
         [groupId],
       ],
@@ -739,7 +739,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (s.strict) {
           const guard = ["EXISTS (SELECT 1 FROM members WHERE id = ? AND focus_end = ?)", [s.id, s.ends]];
           const buildingId = randomHex(16);
-          const spot = planner.place(s.id, item.kind, newDistrictId);
+          const spot = planner.place(s.id, item.kind, newDistrictId, { model: item.id });
           statements.push(
             ...districtChanges(groupId, spot?.changes, guard),
             [
@@ -823,7 +823,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     for (let attempt = 0; attempt < 3; attempt++) {
       const [members, buildings] = await db.read([
         ["SELECT m.id, m.group_id AS groupId FROM members m WHERE NOT EXISTS (SELECT 1 FROM districts d WHERE d.member_id = m.id) ORDER BY m.joined", []],
-        ["SELECT id, member_id AS memberId, group_id AS groupId, kind FROM buildings WHERE pos_x IS NULL ORDER BY created", []],
+        ["SELECT id, member_id AS memberId, group_id AS groupId, kind, model FROM buildings WHERE pos_x IS NULL ORDER BY created", []],
       ]);
       if (!members.length && !buildings.length) return;
       try {
@@ -833,11 +833,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           for (const m of members.filter((x) => x.groupId === groupId))
             statements.push(...districtChanges(groupId, [planner.ensure(m.id, newDistrictId)]));
           for (const b of buildings.filter((x) => x.groupId === groupId)) {
-            const spot = planner.place(b.memberId, b.kind, newDistrictId);
+            const spot = planner.place(b.memberId, b.kind, newDistrictId, { model: b.model });
             if (!spot) continue;
             statements.push(...districtChanges(groupId, spot.changes), [
-              "UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ? WHERE id = ? AND pos_x IS NULL",
-              [spot.x, spot.y, spot.facing, spot.district.id, b.id],
+              "UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ?, touched = ? WHERE id = ? AND pos_x IS NULL",
+              [spot.x, spot.y, spot.facing, spot.district.id, Date.now(), b.id],
             ]);
           }
           await db.batch([
@@ -2317,15 +2317,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const [districts, inside] = await db.read([
       ["SELECT id, dx AS q, dy AS r, buildings AS n FROM districts WHERE group_id = ? AND member_id = ? ORDER BY created, id", [member.group_id, member.id]],
       [
-        "SELECT b.id, b.kind, b.pos_x AS x, b.pos_y AS y, b.district_id AS districtId FROM buildings b JOIN districts d ON d.id = b.district_id WHERE d.member_id = ? AND b.pos_x IS NOT NULL",
+        "SELECT b.id, b.kind, b.model, b.pos_x AS x, b.pos_y AS y, b.district_id AS districtId FROM buildings b JOIN districts d ON d.id = b.district_id WHERE d.member_id = ? AND b.pos_x IS NOT NULL",
         [member.id],
       ],
     ]);
     const spots = [];
+    // A monument keeps its district of its own (n44), and nothing moves into one.
+    if (isMonument(building.model)) return spots;
+    const monuments = monumentCells(member.group_id, districts.map((d) => [d.q, d.r]), inside);
     for (const d of districts) {
       if (d.id !== building.district_id && d.n >= CAPACITY) continue;
+      if (monuments.has(cellKey(d.q, d.r))) continue;
       const others = inside.filter((b) => b.districtId === d.id && b.id !== building.id);
-      for (const s of freeSpots(cellLayout(member.group_id, d.q, d.r), others, building.kind, 6))
+      for (const s of freeSpots(cellLayout(member.group_id, d.q, d.r), others, building.kind, 6, building.model))
         if (Math.hypot(s.x - building.pos_x, s.y - building.pos_y) > 1) spots.push({ ...s, district: d.id });
     }
     return spots.slice(0, 10);
@@ -2582,7 +2586,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     let now;
     await retrying(async () => {
       now = Date.now();
-      const spot = (await loadPlanner(member.group_id)).place(member.id, item.kind, newDistrictId);
+      const spot = (await loadPlanner(member.group_id)).place(member.id, item.kind, newDistrictId, { model: item.id });
       if (!spot) fail("Köyde bu yapıya yer bulunamadı.", 409);
       return [
         ...districtChanges(member.group_id, spot.changes),

@@ -248,6 +248,42 @@ test("the shared village gives old buildings a stored spot, in the order they we
   assert.equal(JSON.stringify(sqlite.prepare("SELECT id, member_id, kind, pos_x, pos_y, district_id FROM buildings ORDER BY created").all()), before);
 });
 
+test("n44: a monument already in the village moves to the centre of a district of its own", async () => {
+  const { monumentCells } = await import("../shared/village.js");
+  const sqlite = new DatabaseSync(":memory:");
+  const db = sqliteAdapter(sqlite);
+  for (const [i, statements] of migrations.slice(0, 27).entries())
+    await db.batch([
+      ...statements.map((sql) => [sql, []]),
+      ["INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [String(i + 1)]],
+    ]);
+  sqlite.exec(`
+    INSERT INTO groups (id, name, invite) VALUES ('g', 'Tayfa', 'invite-123456789012');
+    INSERT INTO members (id, group_id, token, name, avatar, color, joined, updated) VALUES ('m1', 'g', 't1', 'Elif', '🍒', 'pink', 1, 1);
+  `);
+  const insert = sqlite.prepare("INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created) VALUES (?, 'm1', 'g', ?, ?, 75, ?, ?)");
+  ["ev", "konak", "anitkabir", "kule"].forEach((model, i) => insert.run(`b${i}`, BY_ID[model].kind, model, i, 100 + i));
+  // Placed the way it was before n44: squeezed between the houses.
+  sqlite.prepare("UPDATE settings SET value = '27' WHERE key = 'schema'").run();
+  await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
+  const where = () => sqlite.prepare("SELECT b.id, b.model, b.pos_x AS x, b.pos_y AS y, b.district_id AS districtId, d.dx AS q, d.dy AS r FROM buildings b JOIN districts d ON d.id = b.district_id ORDER BY b.created").all();
+  let rows = where();
+  const anit = rows.find((b) => b.model === "anitkabir");
+  assert.equal(rows.filter((b) => b.districtId === anit.districtId).length, 1, "alone in its district");
+  assert.ok(Math.hypot(anit.x - cellLayout("g", anit.q, anit.r).center[0], anit.y - cellLayout("g", anit.q, anit.r).center[1]) < 0.05, "on its centre");
+  // An old placement (before migration 28) is lifted and placed again.
+  const home = rows.find((b) => b.model === "ev");
+  sqlite.prepare("UPDATE buildings SET pos_x = ?, pos_y = ?, district_id = ? WHERE id = ?").run(home.x + 5, home.y, home.districtId, anit.id);
+  sqlite.prepare("UPDATE settings SET value = '27' WHERE key = 'schema'").run();
+  await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
+  rows = where();
+  const moved = rows.find((b) => b.model === "anitkabir");
+  assert.equal(monumentCells("g", rows.map((b) => [b.q, b.r]), rows).size, 1);
+  assert.equal(rows.filter((b) => b.districtId === moved.districtId).length, 1);
+  const counts = sqlite.prepare("SELECT SUM(buildings) AS n FROM districts").get().n;
+  assert.equal(counts, 4, "districts recounted");
+});
+
 test("district choice: newcomers near the square, full districts grow next door", () => {
   const cells = new Map();
   const first = chooseCell(cells);

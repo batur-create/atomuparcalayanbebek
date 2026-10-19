@@ -266,6 +266,13 @@ export const migrations = [
   // note here (NULL for everything built in a session), so the village, the
   // delivery replay and the panel can say who it is from.
   ["ALTER TABLE buildings ADD COLUMN gift TEXT"],
+  // 28 — n44: the widest landmarks get a district of their own (Batur chose
+  // this). Those already standing are lifted from their plots; layoutVillages()
+  // at start-up puts each on the centre of a new district (shared/village.js)
+  // and recounts the districts.
+  [
+    "UPDATE buildings SET pos_x = NULL, pos_y = NULL WHERE model IN ('anitkabir', 'keops', 'kolezyum', 'sidney', 'suleymaniye') AND pos_x IS NOT NULL AND member_id IN (SELECT member_id FROM districts WHERE member_id IS NOT NULL)",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

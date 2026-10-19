@@ -10,6 +10,18 @@
 
 export const YENILIKLER = [
   {
+    surum: 19,
+    tarih: "2026-10-19",
+    vakit: "gece",
+    baslik: "Gerçek boylar ve yeni Anıtkabir",
+    maddeler: [
+      "Ünlü yapılar artık gerçek boylarına göre çiziliyor: Burj Khalifa evin 4 katından uzun, Eyfel 3 katı, Galata 2 katı. Köyü kaplamasınlar diye yükseklikler biraz sıkıştırıldı.",
+      "Anıtkabir, Keops, Kolezyum, Sidney Opera Binası ve Süleymaniye kendi mahallelerinin ortasında, yolu etraflarından dolaşıyor. Köyünde zaten varsa yeni mahallesine taşındı.",
+      "Anıtkabir baştan çizildi: Şeref Holü'nün sütunları ve Selçuklu testere dişi saçakları, 42 basamaklı merdiven, kilim desenli Tören Meydanı, Aslanlı Yol'daki 24 aslan, 10 kule ve 50 bin ağaçlık Barış Parkı.",
+      "Anıtkabir'deki Türk bayrağı Bayrak Kanunu'ndaki ölçülerle çizildi; ay ile yıldızın yeri ve büyüklüğü tam yerinde, rüzgârda dalgalanıyor.",
+    ],
+  },
+  {
     surum: 18,
     tarih: "2026-10-19",
     vakit: "gece",

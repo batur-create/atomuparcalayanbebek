@@ -2,11 +2,12 @@
 // buildings, signs and lamps, each with a screen-space box and a depth, indexed
 // in a coarse grid so the map only draws what a tile or the viewport needs.
 import {
-  FOOTPRINT, LANE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, nearestOnLine, parentOf, roadNetwork, screenOf,
+  FOOTPRINT, LANE, LANE_SHARE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, monumentCells, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
-  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, ellipse, mirrored, poly, patchSVG, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
+  LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, drawnSize, ellipse, mirrored, poly, patchSVG, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
 } from "./iso.js";
+import { BY_ID } from "../shared/catalog.js";
 
 export const GROUND = "#a4d078";
 const MEADOW = "#b3da88",
@@ -389,8 +390,11 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   const people = new Map(members.map((m) => [m.id, m]));
   // September to November in Ankara: some leaves turn.
   const season = (sky || skyAt()).season;
-  const districts = village.districts.map((d) => ({ ...d, layout: cellLayout(groupKey, d.q, d.r) }));
-  const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]));
+  // A monument's district (n44) has a ring road round its centre.
+  const monuments = monumentCells(groupKey, village.districts.map((d) => [d.q, d.r]), village.buildings);
+  const layoutOf = (q, r) => cellLayout(groupKey, q, r, monuments.has(cellKey(q, r)));
+  const districts = village.districts.map((d) => ({ ...d, layout: layoutOf(d.q, d.r) }));
+  const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]), monuments);
   const linkSet = new Set(network.links);
   const built = new Set(districts.map((d) => cellKey(d.q, d.r)));
   const ground = [],
@@ -423,7 +427,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   for (const d of districts) cellsDrawn.set(cellKey(d.q, d.r), d);
   for (const key of network.cells) if (!cellsDrawn.has(key)) {
     const [q, r] = key.split(",").map(Number);
-    cellsDrawn.set(key, { q, r, layout: cellLayout(groupKey, q, r), passThrough: true });
+    cellsDrawn.set(key, { q, r, layout: layoutOf(q, r), passThrough: true });
   }
   const homes = village.buildings.filter((b) => b.x !== null);
   // Coarse spatial hashes keep the checks below cheap in a village of thousands.
@@ -444,8 +448,12 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       }
     return out;
   };
+  // Space each building takes: its kind's footprint, or what an enlarged
+  // building of its own reaches (filled in below, once the lanes are known).
+  const claim = new Map();
+  const claimOfHome = (b) => claim.get(b.id) ?? (FOOTPRINT[b.kind] || 2.4);
   const blockedByHome = (x, y, pad) =>
-    around(homeGrid, x, y).some((b) => Math.hypot(b.x - x, b.y - y) < (FOOTPRINT[b.kind] || 2.4) + pad);
+    around(homeGrid, x, y).some((b) => Math.hypot(b.x - x, b.y - y) < claimOfHome(b) + pad);
   const lineGrid = new Map();
   for (const line of [...network.lanes, ...network.links]) {
     const keys = new Set();
@@ -470,6 +478,55 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
         for (const l of lineGrid.get(`${Math.floor(x / H) + i},${Math.floor(y / H) + j}`) || []) out.add(l);
     return out;
   };
+  // n44: a building of its own is drawn as big as its real size allows
+  // (shared/olcek.js), but never over a neighbour, a lane, a pond or a sign:
+  // buildings placed before n44 had only a box's footprint. Two enlarged
+  // neighbours share the gap between them in proportion to what each wants.
+  const PAD = 0.25;
+  const grow = (b) => {
+    const look = BY_ID[b.model]?.look;
+    if (!look?.special) return null;
+    const size = drawnSize(b.model);
+    return { r1: size.reach, want: size.reach * size.k };
+  };
+  const wants = new Map();
+  for (const b of homes) {
+    const g = grow(b);
+    if (g) wants.set(b.id, g);
+  }
+  const homeSpec = new Map();
+  for (const b of homes) {
+    const g = wants.get(b.id);
+    if (!g || g.want <= g.r1 + 0.01) {
+      homeSpec.set(b.id, spec(b.kind, b.seed, b.model, { scale: g ? 1 : undefined }));
+      continue;
+    }
+    let room = g.want;
+    for (const n of around(homeGrid, b.x, b.y)) {
+      if (n === b) continue;
+      const d = Math.hypot(n.x - b.x, n.y - b.y),
+        o = wants.get(n.id);
+      if (!o) room = Math.min(room, d - PAD - (FOOTPRINT[n.kind] || 2.4));
+      else {
+        const gap = d - PAD - g.r1 - o.r1,
+          mine = g.want - g.r1,
+          theirs = Math.max(0, o.want - o.r1);
+        room = Math.min(room, gap <= 0 ? g.r1 : g.r1 + (mine + theirs > gap ? (gap * mine) / (mine + theirs) : mine));
+      }
+    }
+    // Off the lanes as the planner keeps a building of its own.
+    for (const l of linesNear(b.x, b.y)) room = Math.min(room, (lineDistance([b.x, b.y], l).d - LANE - 0.1) / LANE_SHARE.own);
+    for (const d of districts) {
+      const L = d.layout;
+      if (Math.abs(L.center[0] - b.x) > 20 || Math.abs(L.center[1] - b.y) > 20) continue;
+      if (L.pond) room = Math.min(room, Math.hypot(b.x - L.pond.x, b.y - L.pond.y) - L.pond.rx - 0.4);
+      if (L.sign) room = Math.min(room, Math.hypot(b.x - L.sign[0], b.y - L.sign[1]) - 0.9);
+    }
+    const sp = spec(b.kind, b.seed, b.model, { room });
+    homeSpec.set(b.id, sp);
+    claim.set(b.id, Math.max(FOOTPRINT[b.kind] || 2.4, sp.reach));
+  }
+  const specOf = (b) => homeSpec.get(b.id) || spec(b.kind, b.seed, b.model);
   const cellList = [...cellsDrawn.values()];
   for (const d of cellsDrawn.values()) {
     const L = d.layout;
@@ -570,12 +627,12 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   for (const link of network.links) roads.push({ line: link, kind: "road" });
   for (const key of network.cells) {
     const [q, r] = key.split(",").map(Number);
-    const L = cellLayout(groupKey, q, r);
+    const L = layoutOf(q, r);
     const childKeys = Object.keys(L.gates);
     L.lanes.forEach((line, i) => {
       // Lanes towards cells nobody has settled yet are only a dirt track.
       const leadsTo = i > 0 ? childKeys[i - 1] : null;
-      const live = i === 0 || (leadsTo && (network.cells.has(leadsTo) || built.has(leadsTo)));
+      const live = L.monument || i === 0 || (leadsTo && (network.cells.has(leadsTo) || built.has(leadsTo)));
       roads.push({ line, kind: live ? "road" : "track" });
     });
   }
@@ -599,7 +656,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
 
   // Buildings, each with a stepping-stone path from its door to the nearest lane.
   for (const b of homes) {
-    const sp = spec(b.kind, b.seed, b.model);
+    const sp = specOf(b);
     const owner = people.get(b.memberId);
     const door = b.facing ? [b.x + sp.hw + 0.7, b.y] : [b.x, b.y + sp.hw + 0.7];
     let best = { d: Infinity, point: door };
@@ -613,10 +670,11 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       add(ground, { pass: 4, bbox: lineBox(line, 1), draw: (v) => strokeLine(v, line, 0.42, "#f1e6cc", 0.95, [0.32, 0.26]) });
     }
     const up = ridgeOf(sp) + (sp.roofType === "pyramid" ? 1.6 : 0.8);
-    const half = (sp.hw + 1.4) * 1.75;
+    // An enlarged building of its own may reach past its box (sp.reach).
+    const half = Math.max((sp.hw + 1.4) * 1.75, (sp.reach || 0) * 1.25 + 1);
     add(standing, {
       type: "building", id: b.id, building: b, owner, sp, depth: b.x + b.y, x: b.x, y: b.y,
-      bbox: boxOf(b.x, b.y, half, half, up + 0.3, sp.hw + 1.9),
+      bbox: boxOf(b.x, b.y, half, half, up + 0.3, Math.max(sp.hw + 1.9, (sp.reach || 0) * 0.75 + 1)),
       hit: boxOf(b.x, b.y, sp.hw * 1.8, sp.hw * 1.8, up - 0.6, sp.hw * 1.05),
       top: ridgeOf(sp),
       draw: (v) => {
@@ -680,7 +738,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   // Live things: who is in the library, on a break, or on the way.
   const anchorOf = (memberId) => {
     const home = newest.get(memberId);
-    if (home && home.x !== null) return { x: home.x, y: home.y, z: ridgeOf(spec(home.kind, home.seed, home.model)) + 1.2, building: home };
+    if (home && home.x !== null) return { x: home.x, y: home.y, z: ridgeOf(specOf(home)) + 1.2, building: home };
     const d = districts.find((dd) => dd.memberId === memberId);
     return d ? { x: d.layout.sign[0], y: d.layout.sign[1], z: 2.4 } : null;
   };
@@ -693,7 +751,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     // A warm, breathing window light at the home of whoever is focusing.
     const home = newest.get(m.id);
     if (focus && home && home.x !== null) {
-      const sp = spec(home.kind, home.seed, home.model);
+      const sp = specOf(home);
       glows.push({ member: m, x: home.x, y: home.y, z: ridgeOf(sp) * 0.42, r: sp.hw + 1.6, seed: home.seed % 97 });
     }
     if (m.status === "here" || m.status === "break" || (focus && m.status !== "coming")) {
@@ -701,7 +759,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       if (!a) continue;
       balloons.push({ member: m, ...a, focus });
       if (m.status === "here" && a.building) {
-        const sp = spec(a.building.kind, a.building.seed, a.building.model);
+        const sp = specOf(a.building);
         if (sp.chimney) {
           const [cx, cy, cz] = chimneyTop(sp);
           const [wx, wy] = a.building.facing ? [cy, cx] : [cx, cy];
@@ -711,7 +769,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     } else if (m.status === "coming") {
       const d = districts.find((dd) => dd.memberId === m.id);
       if (d) {
-        const path = pathToPlaza(groupKey, d);
+        const path = pathToPlaza(groupKey, d, monuments);
         walkers.push({ member: m, path, box: pathBox(path) });
       }
     }
@@ -749,7 +807,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     })
     .sort((a, b) => a.turn - b.turn)
     .slice(0, 6)
-    .map(({ d }) => villagerOf(groupKey, d));
+    .map(({ d }) => villagerOf(groupKey, d, monuments));
   const mine = districts.filter((d) => d.memberId === me);
   // One name per person at distant zoom; repeating it on every district hides
   // the buildings once a friend owns dozens of neighbourhoods.
@@ -809,9 +867,9 @@ function pathBox(path) {
 }
 // A neighbour of a lived-in district: how they look, how fast they stroll and
 // where they stand when nothing moves.
-function villagerOf(groupKey, district) {
+function villagerOf(groupKey, district, monuments) {
   const r = rng(district.layout.seed + 41);
-  const path = pathToPlaza(groupKey, district);
+  const path = pathToPlaza(groupKey, district, monuments);
   const hat = Math.floor(r() * 3);
   return {
     id: district.id,
@@ -828,24 +886,26 @@ function villagerOf(groupKey, district) {
 }
 
 // From a district's hub, along its lanes and the roads, to the plaza.
-function pathToPlaza(groupKey, district) {
+function pathToPlaza(groupKey, district, monuments = new Set()) {
   const path = [];
-  let L = cellLayout(groupKey, district.q, district.r);
+  const layoutOf = (q, r) => cellLayout(groupKey, q, r, monuments.has(cellKey(q, r)));
+  let L = layoutOf(district.q, district.r);
   path.push(...[...L.lanes[0]].reverse());
   let q = district.q,
     r = district.r;
   while (!(q === 0 && r === 0)) {
     const [pq, pr] = parentOf(q, r);
-    const parent = cellLayout(groupKey, pq, pr);
+    const parent = layoutOf(pq, pr);
     const gate = parent.gates[cellKey(q, r)];
     if (pq === 0 && pr === 0) {
       path.push(gate, [gate[0] * 0.35, gate[1] * 0.35]);
       break;
     }
     const keys = Object.keys(parent.gates);
-    const lane = parent.lanes[1 + keys.indexOf(cellKey(q, r))];
+    // A monument's ring lanes run from its entrance straight to each gate.
+    const lane = parent.lanes[(parent.monument ? 0 : 1) + keys.indexOf(cellKey(q, r))];
     if (lane) path.push(...[...lane].reverse());
-    path.push(...[...parent.lanes[0]].reverse());
+    if (!parent.monument) path.push(...[...parent.lanes[0]].reverse());
     q = pq;
     r = pr;
     L = parent;

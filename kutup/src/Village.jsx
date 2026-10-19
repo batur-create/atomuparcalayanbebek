@@ -8,13 +8,13 @@ import { kindFor } from "../shared/village.js";
 import { modelOf } from "../shared/catalog.js";
 import {
   CRANE, DIRT, GRASS, STONE, WOOD, box, chimneySVG, doorSVG, f, flagSVG, foundationSVG, gardenSVG,
-  poly, projector, pts, ridgeOf, roofSVG, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG, openingList, faceX, faceY,
+  poly, projector, pts, ridgeOf, roofSVG, screenBox, seg, shadowSVG, spec, topOf, wallsSVG, windowsSVG, openingList, faceX, faceY, drawnSize,
   porticoSVG, sailsSVG, wallFittingsSVG, yardFittingsSVG,
 } from "./iso.js";
 import { FRAME_END, phaseAt, rendered, sitePlan, siteSVG, systemOf, workHeight } from "./construction.js";
 import { crewSVG, fleeSVG } from "./crew.js";
 import { handoverSVG, plotSVG, trussesSVG } from "./sitedetail.js";
-import { craneSVG, liftRuns, mobileCraneSVG } from "./crane.js";
+import { craneSVG, craneTop, liftRuns, mobileCraneSVG } from "./crane.js";
 import { checkAt } from "./quality.js";
 import { metraj } from "./metraj.js";
 import { specialOf } from "./special.js";
@@ -204,6 +204,29 @@ function sceneParts(P, sp, seed, plan) {
   ];
 }
 
+// n44: the site's camera. A building of its own is drawn as it is (its
+// site, machines and crane all fit its drawing) but the camera comes as close
+// as its real size asks, the kind's camera times k, as far as the frame lets
+// it; whatever the frame cannot give, the crew gives by standing smaller.
+const SITE_CAMERA = { cottage: 31, house: 28, tower: 23.5 };
+const FRAME = { x0: 14, x1: 666, top: 84, bottom: 392, craneTop: 6 };
+export function siteCamera(kind, sp, model) {
+  const base = SITE_CAMERA[kind] || SITE_CAMERA.cottage;
+  if (sp.roofType !== "special") return { s: base, cx: 350, cy: 268, crew: 1 };
+  const want = base * drawnSize(model).k,
+    b = screenBox(sp),
+    crane = kind === "tower" ? craneTop(sp) : 0;
+  const cx = 350;
+  let s = Math.min(want, (cx - FRAME.x0) / Math.max(0.01, -b.x0), (FRAME.x1 - cx) / Math.max(0.01, b.x1), (FRAME.bottom - FRAME.top) / Math.max(0.01, b.y1 - b.y0));
+  let cy = 268;
+  for (let i = 0; i < 4; i++) {
+    // The ground centre sinks a little for a tall building, never past 320.
+    cy = Math.min(320, Math.max(268, FRAME.top - b.y0 * s), FRAME.bottom - b.y1 * s);
+    s = Math.min(s, (cy - FRAME.top) / Math.max(0.01, -b.y0), crane ? (cy - FRAME.craneTop) / crane : Infinity);
+  }
+  return { s, cx, cy, crew: Math.max(0.6, Math.min(1, s / want)) };
+}
+
 const springOut = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2));
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const NS = "http://www.w3.org/2000/svg";
@@ -241,10 +264,11 @@ export function ConstructionScene({ run, outcome, idle = false }) {
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    const sp = spec(kind, seed, model);
+    // The site draws the building as drawn; siteCamera brings it to scale.
+    const sp = spec(kind, seed, model, { scale: 1 });
     const motionReduced = reducedMotion();
-    const s = { cottage: 31, house: 28, tower: 23.5 }[kind];
-    const P = projector({ cx: 350, cy: 268, s });
+    const cam = siteCamera(kind, sp, model);
+    const P = projector(cam);
     root.innerHTML = "";
     setTip(null);
     setOpen(null);
@@ -410,7 +434,7 @@ export function ConstructionScene({ run, outcome, idle = false }) {
           // Pieces fall in full colour and only disappear into the dust once down.
           p.el.setAttribute("opacity", (p.fall.op * clamp(1 - (l - 0.55) * 2.5)).toFixed(2));
         });
-        crewFront.innerHTML = motionReduced ? "" : fleeSVG(P, sp, tau);
+        crewFront.innerHTML = motionReduced ? "" : fleeSVG(P, sp, tau, cam.crew);
         let cracks = "";
         if (fallT < 0.25) {
           const grow = clamp(tau / Math.max(0.01, SHAKE)),
@@ -560,7 +584,7 @@ export function ConstructionScene({ run, outcome, idle = false }) {
       if (mode === "build" && !resting) {
         const key = `${Math.floor(time * MOVING_FPS)}|${shown.toFixed(3)}`;
         if (key !== crewKey) {
-          const c = crewSVG(P, sp, plan, shown, time);
+          const c = crewSVG(P, sp, plan, shown, time, cam.crew);
           patch(crewBack, c.behind);
           patch(crewFront, c.front);
           crewKey = key;

@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, MapPin, X } from "lucide-react";
 import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, WEEKLY_DAYS, minutesOf, stateOf, wageFor } from "../shared/catalog.js";
-import { buildingSVG, projector, spec } from "./iso.js";
+import { buildingSVG, drawnSize, projector, screenBox, spec } from "./iso.js";
+import { PERSON } from "../shared/olcek.js";
 import { dayWord, get, shortTime } from "./api.js";
 import { reducedMotion } from "./ui.jsx";
 import { Loading } from "./Illustrations.jsx";
@@ -11,14 +12,37 @@ import { Modal } from "./Modal.jsx";
 import "./economy.css";
 
 const portraits = new Map();
+const THUMB = { tower: 7.1, house: 7.4, cottage: 8.8 };
+// n44: drawn at the kind's scale, a building of its own as much larger as its
+// real size asks, then fitted into the frame; a person beside it for scale.
+function portrait(item) {
+  const sp = spec(item.kind, 7, item.id, { scale: 1 }),
+    k = sp.roofType === "special" ? drawnSize(item.id).k : 1,
+    b = screenBox(sp),
+    s = Math.min(THUMB[item.kind] * k, 112 / (b.x1 - b.x0), 92 / (b.y1 - b.y0)),
+    cx = Math.min(Math.max(60, 4 - b.x0 * s), 116 - b.x1 * s),
+    cy = Math.min(Math.max(76, 4 - b.y0 * s), 96 - b.y1 * s);
+  const P = projector({ cx, cy, s });
+  // A person (1.75 m) beside the building's right wall, as tall as the scale says.
+  const h = (PERSON / k) * s,
+    reach = Math.max(sp.hw, b.reach * 0.75);
+  let [px, py] = P(reach + 0.7, reach * 0.25, 0);
+  px = Math.min(Math.max(px, 4), 116);
+  py = Math.min(py, 98);
+  const n = (v) => v.toFixed(1),
+    w = Math.max(0.6, h * 0.09);
+  const person = h < 2.5 ? "" :
+    `<g stroke-linecap="round"><line x1="${n(px - h * 0.07)}" y1="${n(py)}" x2="${n(px - h * 0.05)}" y2="${n(py - h * 0.42)}" stroke="#3d3a48" stroke-width="${n(w)}"/>` +
+    `<line x1="${n(px + h * 0.07)}" y1="${n(py)}" x2="${n(px + h * 0.05)}" y2="${n(py - h * 0.42)}" stroke="#3d3a48" stroke-width="${n(w)}"/>` +
+    `<rect x="${n(px - h * 0.15)}" y="${n(py - h * 0.78)}" width="${n(h * 0.3)}" height="${n(h * 0.4)}" rx="${n(h * 0.1)}" fill="#4a6fa5"/>` +
+    `<circle cx="${n(px)}" cy="${n(py - h * 0.88)}" r="${n(h * 0.12)}" fill="#e7b99a"/></g>`;
+  return `<svg viewBox="0 0 120 100" aria-hidden="true">${buildingSVG(P, sp, 7)}${person}</svg>`;
+}
 /** A catalogue building, drawn small, as it will stand in the village. */
 export function BuildingThumb({ id, size = 92 }) {
   const item = BY_ID[id] || BY_ID.kulube;
   const html = useMemo(() => {
-    if (!portraits.has(item.id)) {
-      const P = projector({ cx: 60, cy: 76, s: { tower: 7.1, house: 7.4, cottage: 8.8 }[item.kind] });
-      portraits.set(item.id, `<svg viewBox="0 0 120 100" aria-hidden="true">${buildingSVG(P, spec(item.kind, 7, item.id), 7)}</svg>`);
-    }
+    if (!portraits.has(item.id)) portraits.set(item.id, portrait(item));
     return portraits.get(item.id);
   }, [item.id]);
   return <span className="building-thumb" style={{ width: size }} dangerouslySetInnerHTML={{ __html: html }} />;

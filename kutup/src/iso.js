@@ -5,6 +5,7 @@
 // the same order on both backends.
 
 import { BY_ID } from "../shared/catalog.js";
+import { scaleFor } from "../shared/olcek.js";
 import { specialById, specialOf } from "./special.js";
 
 export const COS = 0.866,
@@ -182,13 +183,22 @@ function baseSpec(kind, seed) {
   return { kind: "cottage", hw: 1.6, h: 2.2, floors: 1, roofType: "gable", roof, wall: pick(["brick", "wood", "cream", "sage"]), chimney: r() < 0.75, lit: r() < 0.35 };
 }
 /** Everything needed to draw a building. `model`: its catalogue entry, which
- *  fixes the wall, roof colour and fittings; the seed varies the rest. */
-export function spec(kind, seed, model) {
+ *  fixes the wall, roof colour and fittings; the seed varies the rest.
+ *  A building of its own is enlarged to its real size (shared/olcek.js):
+ *  `scale` fixes the factor (1: as drawn, the construction site), `room`
+ *  caps it to the radius free around it in the village. */
+export function spec(kind, seed, model, { scale, room } = {}) {
   const base = baseSpec(kind, seed);
   const look = BY_ID[model]?.look;
   if (!look) return base;
   // A building of its own shape (src/special.js) sets its own size and skin.
-  if (look.special) return { ...base, model, look, special: look.special, roofType: "special", chimney: false, flag: null, lit: base.lit, ...specialById(look.special).spec(base) };
+  if (look.special) {
+    const own = { ...base, model, look, special: look.special, roofType: "special", chimney: false, flag: null, lit: base.lit, ...specialById(look.special).spec(base) };
+    const size = drawnSize(model, own);
+    let k = scale ?? size.k;
+    if (scale == null && room != null) k = Math.max(1, Math.min(k, room / size.reach));
+    return enlarged(own, k, size.reach);
+  }
   return {
     ...base,
     model,
@@ -199,6 +209,52 @@ export function spec(kind, seed, model) {
     chimney: look.chimney ?? base.chimney,
     flag: look.flag === false ? null : base.flag,
   };
+}
+// n44: a building of its own drawn k times its drawing's size. Its own
+// methods still see the drawing's spec (`local`); special.js scales their
+// projector and results. `reach`: radius of the drawing on the ground.
+function enlarged(own, k, reach) {
+  if (!(k > 1.0001)) return { ...own, k: 1, reach };
+  return { ...own, k, local: own, hw: own.hw * k, h: k * (0.3 + own.h) - 0.3, reach: reach * k };
+}
+// Calls draw(P) with a recording projector (unit scale, SVG backend) and
+// returns the screen box of everything but the cast shadow, relative to the
+// ground centre: { x0, x1, y0, y1 } (y0 the top, negative).
+function traced(draw) {
+  const box = { x0: 0, x1: 0, y0: 0, y1: 0, ridge: 0, reach: 0 };
+  const flat = (x, y, z) => [(x - y) * COS, (x + y) * SIN - z];
+  const P = (x, y, z) => {
+    const q = flat(x, y, z);
+    box.x0 = Math.min(box.x0, q[0]);
+    box.x1 = Math.max(box.x1, q[0]);
+    box.y0 = Math.min(box.y0, q[1]);
+    box.y1 = Math.max(box.y1, q[1]);
+    box.ridge = Math.max(box.ridge, z);
+    box.reach = Math.max(box.reach, Math.hypot(x, y));
+    return q;
+  };
+  const saved = [CTX, TINT, LINE];
+  CTX = null;
+  try {
+    draw(P, flat);
+  } finally {
+    [CTX, TINT, LINE] = saved;
+  }
+  return box;
+}
+/** Screen box of a finished building at unit scale (see traced). */
+export const screenBox = (sp, seed = 7) => traced((P, flat) => buildingSVG(P, sp, seed, { detail: 2, shadowP: flat }));
+// Height and ground radius of each special drawing, measured once from the
+// drawing itself (so a redrawn building rescales on its own).
+const sizes = new Map();
+export function drawnSize(model, own = null) {
+  if (sizes.has(model)) return sizes.get(model);
+  const item = BY_ID[model];
+  own ||= spec(item.kind, 7, model, { scale: 1 });
+  const { ridge, reach } = traced((P, flat) => specialOf(own).building(P, own, 7, { detail: 2, shadowP: flat }));
+  const size = { ridge, reach, k: scaleFor(model, ridge, reach) };
+  sizes.set(model, size);
+  return size;
 }
 export const topOf = (sp) => 0.3 + sp.h;
 export const ridgeOf = (sp) => topOf(sp) + (sp.roofType === "special" ? specialOf(sp).ridge : sp.roofType === "pyramid" ? 2.4 : sp.roofType === "dome" ? sp.hw + 0.25 : sp.hw * 0.85);
