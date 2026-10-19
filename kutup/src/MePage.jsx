@@ -3,7 +3,7 @@
 // what changed in each version (n41); account.
 import React, { useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { Award, BookOpen, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, Sparkles, UserRound, UserRoundPlus, Users } from "lucide-react";
+import { Award, BookOpen, Hammer, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, Sparkles, UserRound, UserRoundPlus, Users } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
@@ -71,6 +71,11 @@ export function MePage({ me, group, size, requests, yenilik, setModal, navigate,
           </span>
         </m.button>
       </div>
+      {me.badge === "dev" && (
+        <Reveal className="me-rows me-owner">
+          <Row icon={({ size }) => <span style={{ fontSize: size }}>✳</span>} title="Komuta merkezi" sub="İstekler, hediyeler, duyurular, ekipler" href="/batur" />
+        </Reveal>
+      )}
       {several && (
         <>
           <div className="me-label">HESAPLARIM</div>
@@ -111,13 +116,13 @@ export function MePage({ me, group, size, requests, yenilik, setModal, navigate,
           count={yenilik?.yeni ? 1 : 0}
           onClick={() => setModal("yenilikler")}
         />
+        <Row icon={Hammer} title="Yeni yapı iste" sub="Köyde görmek istediğin yapıyı Batur’a yaz" onClick={() => window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind: "build" } }))} />
       </Reveal>
       <div className="me-label">HESAP</div>
       <Reveal className="me-rows" delay={0.1}>
         <Row icon={KeyRound} title="Hesap ve cihazlar" sub="Kullanıcı adı, şifre, başka cihazda aç" onClick={() => setModal("account")} />
         {accounts && !several && <Row icon={Plus} title="Hesap ekle" sub="Başka ekibin mi var? O hesapla da gir" onClick={() => actions.onAdd(false)} />}
         <Row icon={DoorOpen} title="Bu cihazda çıkış yap" sub={several ? "Profilin kalır; diğer hesabın açılır" : "Profilin kalır; şifrenle geri girersin"} onClick={actions.onSignOut} />
-        {me.badge === "dev" && <Row icon={({ size }) => <span style={{ fontSize: size }}>✳</span>} title="Komuta merkezi" sub="Batur’un paneli" href="/batur" />}
         <Row icon={LogOut} title="Ekipten ayrıl" sub="Profilin, binaların ve mesajların silinir" danger onClick={leave} />
       </Reveal>
     </div>

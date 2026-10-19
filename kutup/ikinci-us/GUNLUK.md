@@ -29,6 +29,14 @@ Kurallar `kutup/IKINCI-US.md` §9'da. Yeni kayıt en üste yazılır, saatler İ
 
 ---
 
+## 19 Ekim 2026 23:50 · n43 Komuta merkezi yetkileri
+
+- **İstek:** Batur: komuta merkezinden istediği kişiye istediği yapıyı hediye etmek (seansını yanlışlıkla bitiren arkadaşlar için), yöneticinin gereken her yetkisi, yeni yapı isteme, Ben'de gömülü kalanların (özellikle Yenilikler) herkesin ana sayfasına düşmesi.
+- **Yapılan** (`claude/n43-komuta-merkezi`, PR #41): yapı hediye (bitmiş, teslim ekranıyla), plan hediye, yapıyı geri alma, ekibe duyuru, yapı istekleri (yeni istek türü ve ayrı sekme), ana sayfada yeni sürüm ve duyuru kartları, "Kütüp'te neler var?" kısayolları, Ben'de Komuta merkezi en üstte. Yamalı bina bilgisinin köye hiç gitmemesi düzeltildi. Yenilikler Sürüm 18.
+- **Göç 27** (`buildings.gift`). **Test:** test:all 151/151, test:browser 100/100, n43 ekran kontrolleri 10/10. Görüntüler `/mnt/project-files/kutup/n43/`.
+
+---
+
 ## 18 Ekim 2026 18:40 · n39 Evre bilgi noktası
 
 - **İstek:** Batur: inşaat evresinin adının yanına küçük bir bilgi noktası; basınca evrenin ne olduğunu mühendis olmayanların anlayacağı dilde anlatsın.

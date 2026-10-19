@@ -262,6 +262,10 @@ export const migrations = [
     "CREATE TABLE build_push_events (id TEXT PRIMARY KEY, nonce TEXT NOT NULL, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, ends INTEGER NOT NULL, stage INTEGER NOT NULL CHECK(stage IN (0, 25, 50, 75, 100)))",
     "CREATE UNIQUE INDEX build_push_stage ON build_push_events(member_id, ends, stage)",
   ],
+  // 27 — komuta merkezi (n43): a building Batur gave as a present keeps his
+  // note here (NULL for everything built in a session), so the village, the
+  // delivery replay and the panel can say who it is from.
+  ["ALTER TABLE buildings ADD COLUMN gift TEXT"],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Bell,
+  Gift,
+  Megaphone,
   ChevronDown,
   Copy,
   Download,
@@ -19,6 +21,7 @@ import { Avatar, Busy, Empty, pushKey, pushSupported, reducedMotion, storage } f
 import { BlackHoleArt } from "./BlackHole.jsx";
 import { RequestTracker, ago } from "./Requests.jsx";
 import { Modal } from "./Modal.jsx";
+import { AnnounceModal, GiftModal } from "./OwnerGift.jsx";
 
 const STAGE_FILTERS = [
   ["open", "Bekleyen", "📮"],
@@ -177,6 +180,8 @@ export function OwnerPage() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [recovery, setRecovery] = useState(null),
+    [gift, setGift] = useState(null),
+    [announce, setAnnounce] = useState(null),
     [copied, setCopied] = useState(false),
     [pushOn, setPushOn] = useState(!!storage.get("kutup-owner-push"));
   // One browser has one push subscription; it may already serve the member side,
@@ -337,7 +342,9 @@ export function OwnerPage() {
     }
   };
   // The open request stays on screen even after its stage moves it out of the filter.
-  const shown = (items || []).filter((x) => inFilter(x, filter) || x.id === openId);
+  // n43: "Yapı istekleri" is the same list, only the building requests.
+  const pool = (items || []).filter((x) => view !== "builds" || x.kind === "build");
+  const shown = pool.filter((x) => inFilter(x, filter) || x.id === openId);
   // On a phone the stages slide sideways; the chosen one (often "Hepsi", the
   // last) slides into view. Only the row moves, never the page.
   const stages = useRef();
@@ -429,6 +436,12 @@ export function OwnerPage() {
                 İstekler <span>{items.length}</span>
               </button>
               <button
+                className={`filter-chip ${view === "builds" ? "selected" : ""}`}
+                onClick={() => setView("builds")}
+              >
+                🏗️ Yapı istekleri <span>{items.filter((x) => x.kind === "build").length}</span>
+              </button>
+              <button
                 className={`filter-chip ${view === "groups" ? "selected" : ""}`}
                 onClick={() => setView("groups")}
               >
@@ -451,7 +464,7 @@ export function OwnerPage() {
             </button>
           </div>
           {error && <p className="form-error">{error}</p>}
-          {view === "requests" ? (
+          {view === "requests" || view === "builds" ? (
             <>
               <div className="filter-row owner-filters" ref={stages}>
                 {STAGE_FILTERS.map(([id, name, emoji]) => (
@@ -461,7 +474,7 @@ export function OwnerPage() {
                     onClick={() => setFilter(id)}
                   >
                     {emoji} {name}
-                    <span>{items.filter((x) => inFilter(x, id)).length}</span>
+                    <span>{pool.filter((x) => inFilter(x, id)).length}</span>
                   </button>
                 ))}
               </div>
@@ -483,7 +496,7 @@ export function OwnerPage() {
                   emoji={filter === "open" ? "🧘" : "📭"}
                   title={filter === "open" ? "Bekleyen istek yok." : "Bu aşamada istek yok."}
                 >
-                  Biri “Batur’a uçur” dediğinde burada belirir.
+                  {view === "builds" ? "Biri katalogda “Aradığın yapı yok mu?” dediğinde burada belirir." : "Biri “Batur’a uçur” dediğinde burada belirir."}
                   {pushOn ? " Telefonuna da haber gelir." : " Bildirimi açarsan telefonuna da düşer."}
                 </Empty>
               )}
@@ -520,6 +533,9 @@ export function OwnerPage() {
                         {g.created ? ` · ${dateLabel(g.created)} kuruldu` : ""}
                       </small>
                     </div>
+                    <button className="btn primary" onClick={() => setAnnounce(g)}>
+                      <Megaphone size={15} /> Duyuru yaz
+                    </button>
                     <button
                       className="btn outline"
                       onClick={() => {
@@ -567,6 +583,14 @@ export function OwnerPage() {
                             {m.badge === "dev" && " · ✦ bu ekipteki profilin"}
                           </small>
                         </div>
+                        <button
+                          className="icon-button gift-open"
+                          aria-label={`${m.name}: yapı ya da plan hediye et, köyünü yönet`}
+                          title="Yapı ya da plan hediye et, köyünü yönet"
+                          onClick={() => setGift(m)}
+                        >
+                          <Gift size={17} />
+                        </button>
                         <button
                           className="icon-button"
                           aria-label={`${m.name}: tuğla ver ya da düzelt`}
@@ -644,6 +668,8 @@ export function OwnerPage() {
           )}
         </>
       )}
+      {gift && <GiftModal member={gift} close={() => setGift(null)} changed={load} />}
+      {announce && <AnnounceModal group={announce} close={() => setAnnounce(null)} />}
       {recovery && (
         <Modal title={`${recovery.name} için bir anahtar 🔑`} subtitle="24 saat geçerli, yalnızca bir kez kullanılabilir." close={() => setRecovery(null)}>
           <label className="field-label">Giriş / şifre sıfırlama kodu

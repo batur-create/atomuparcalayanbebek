@@ -413,8 +413,9 @@ export function defineSuite(target) {
     assert.equal((await request(`/buildings/${buildingId}/like`, { cookie: people.bob, body: {} })).status, 400);
     assert.equal((await request(`/buildings/${buildingId}/like`, { cookie: people.charlie, body: {} })).status, 404);
     const seen = (await request("/village", { cookie: people.alice })).data;
-    assert.deepEqual(seen.buildings[0].slice(9), [1, 1, "kulube"]);
-    assert.deepEqual((await request("/village", { cookie: people.bob })).data.buildings[0].slice(9), [1, 0, "kulube"]);
+    assert.deepEqual(seen.buildings[0].slice(9, 12), [1, 1, "kulube"]);
+    assert.deepEqual(seen.buildings[0].slice(12), [0, null], "not patched, not a gift (n43: both travel now)");
+    assert.deepEqual((await request("/village", { cookie: people.bob })).data.buildings[0].slice(9, 12), [1, 0, "kulube"]);
     // A client that already has the village only gets what changed since then.
     assert.equal((await request(`/village?after=${seen.until + 6000}`, { cookie: people.alice })).data.buildings.length, 0);
     // The cottage was free and paid its wage, the day's first-session bonus and

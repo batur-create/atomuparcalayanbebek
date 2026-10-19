@@ -32,8 +32,8 @@ const COATS = ["#7f93b8", "#b98a64", "#c98577", "#9c8bbf", "#6e9e9b", "#d0a54f",
 export const focusing = (m, now = Date.now()) => m.focusEnd > now || (m.focusEnd > 0 && m.focusPausedAt > 0);
 
 // ---------- data ----------
-const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine, model]) => ({
-  id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine: !!mine, model: model || null,
+const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine, model, patched, gift]) => ({
+  id, memberId, kind, seed, x, y, facing, minutes, created, likes, mine: !!mine, model: model || null, patched: !!patched, gift: gift || null,
 });
 /** Merges an /api/village answer into what we already have (it may be partial). */
 export function mergeVillage(prev, raw) {
@@ -47,6 +47,8 @@ export function mergeVillage(prev, raw) {
   return {
     rev: raw.rev,
     until: raw.until,
+    // n43: fewer rows here than the server counts means one was taken back.
+    stale: !!raw.partial && raw.total != null && buildings.size !== raw.total,
     districts,
     buildings: [...buildings.values()].filter((b) => owners.has(b.memberId)).sort((a, b) => a.created - b.created),
     ruins: raw.ruins.map(([memberId, kind, x, y, until]) => ({ memberId, kind, x, y, until })),

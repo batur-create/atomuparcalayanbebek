@@ -10,6 +10,19 @@
 
 export const YENILIKLER = [
   {
+    surum: 18,
+    tarih: "2026-10-19",
+    vakit: "gece",
+    baslik: "Yapı iste, hediye yapılar, ana sayfada haberler",
+    maddeler: [
+      "Yapı iste: katalogda aradığın yapı yoksa en alttaki \"Aradığın yapı yok mu?\" kutusuna bas, Batur'a yaz. Beğenirse kataloğa ekler, her adımda haber gelir.",
+      "Yeni sürüm gelince neyin değiştiği ana sayfanda kart olarak çıkar. Okuyunca ya da kapatınca kaybolur.",
+      "Ana sayfanın altında \"Kütüp'te neler var?\": Yenilikler, Başarımlar, Haftanın hikâyesi, Yapı iste ve Batur'a ilet tek dokunuşta.",
+      "Batur sana bir yapı hediye edebilir: köyüne bitmiş halde konur, uygulamayı açınca şantiyesini izlersin. Batur'un duyuruları Pano'da öne çıkar ve 3 gün ana sayfanda durur.",
+      "Bir kez kurtarılan binalar köyde artık gerçekten yamalı görünüyor.",
+    ],
+  },
+  {
     surum: 17,
     tarih: "2026-10-19",
     vakit: "gece",

@@ -30,7 +30,10 @@ export function useVillage(session, villageRev) {
       try {
         const raw = await get(`/village${have ? `?rev=${have.rev}&after=${have.until || 0}` : ""}`, controller.signal);
         if (gone) return;
-        const next = mergeVillage(known.current.data, raw);
+        let next = mergeVillage(known.current.data, raw);
+        // A building was taken back (n43): fetch the village whole once.
+        if (next?.stale) next = mergeVillage(null, await get("/village", controller.signal));
+        if (gone) return;
         known.current.data = next;
         setVillage(next);
         setError("");
