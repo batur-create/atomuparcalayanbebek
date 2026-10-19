@@ -8,6 +8,8 @@
 // gate facing the square to a small hub, and lanes on to the cells further out.
 // Roads therefore never cut through houses that were placed earlier.
 
+import { claimOf } from "./olcek.js";
+
 export const CAPACITY = 9; // buildings per district
 export const SPACING = 31; // between neighbouring district centres (world units)
 export const RADIUS = 13; // district radius before its edge wobbles
@@ -15,6 +17,15 @@ export const PLAZA = 6.5; // radius of the central square
 export const LANE = 1.05; // half width of a lane
 // Space a finished building claims around its centre (walls, garden, a bit of air).
 export const FOOTPRINT = { cottage: 2.35, house: 2.85, tower: 2.55 };
+/** n44: a building of its own claims the space of its real size (shared/olcek.js). */
+// How much of a footprint must stay off a lane's edge: a box's footprint
+// includes its garden and air (0.72 of it reaches the walls); a building of
+// its own claims about what it covers.
+export const LANE_SHARE = { box: 0.72, own: 0.9 };
+const shareOf = (kind, model) => ((claimOf(model) || 0) > (FOOTPRINT[kind] || FOOTPRINT.cottage) ? LANE_SHARE.own : LANE_SHARE.box);
+// A footprint this big opens a new district rather than squeeze in smaller.
+export const LANDMARK = 5;
+export const footprintOf = (kind, model) => Math.max(FOOTPRINT[kind] || FOOTPRINT.cottage, claimOf(model) || 0);
 
 export const kindFor = (minutes) =>
   minutes >= 70 ? "tower" : minutes >= 40 ? "house" : "cottage";
@@ -275,38 +286,50 @@ function facingFor(layout, p) {
 }
 // Every candidate spot for a footprint, best first, that is free of the edge,
 // the lanes, the pond, the sign and the buildings already standing.
-function* freeIn(layout, existing, kind) {
+function* freeIn(layout, existing, kind, fp = FOOTPRINT[kind] || FOOTPRINT.cottage, share = 0.72) {
   if (layout.plaza) return;
-  const fp = FOOTPRINT[kind] || FOOTPRINT.cottage;
-  const ideal = fp * 0.72 + LANE + 0.5;
+  const ideal = fp * share + LANE + 0.5;
   const ranked = candidates(layout)
     .map((c) => ({ c, score: Math.abs(c.lane - ideal) + 0.05 * c.d + c.jitter * 1.6 }))
     .sort((a, b) => a.score - b.score);
   for (const { c } of ranked) {
     const [x, y] = c.p;
     if (c.d + fp > layout.radiusAt(c.a) - 0.25) continue;
-    if (c.lane < fp * 0.72 + LANE + 0.1) continue;
+    if (c.lane < fp * share + LANE + 0.1) continue;
     if (layout.pond && Math.hypot(x - layout.pond.x, y - layout.pond.y) < fp + layout.pond.rx + 0.4) continue;
     if (Math.hypot(x - layout.sign[0], y - layout.sign[1]) < fp + 0.9) continue;
-    if (existing.some((b) => Math.hypot(x - b.x, y - b.y) < fp + (FOOTPRINT[b.kind] || 2.4) + 0.25)) continue;
+    if (existing.some((b) => Math.hypot(x - b.x, y - b.y) < fp + footprintOf(b.kind, b.model) + 0.25)) continue;
     const round = (v) => Math.round(v * 100) / 100;
     yield { x: round(x), y: round(y), facing: facingFor(layout, c.p) };
   }
 }
-/** First free, natural-looking spot for `kind`, or null when the district is full. */
-export function placeIn(layout, existing, kind) {
-  for (const spot of freeIn(layout, existing, kind)) return spot;
+// The footprints to try for a model, largest first: its own claim, then
+// smaller ones down to its kind's, so a big landmark squeezes in (the app
+// draws it only as big as the room around it) rather than finding no spot.
+function sizesFor(kind, model) {
+  const base = FOOTPRINT[kind] || FOOTPRINT.cottage,
+    full = footprintOf(kind, model),
+    out = [full];
+  for (let fp = full - 0.75; fp > base + 0.2; fp -= 0.75) out.push(fp);
+  if (full > base) out.push(base);
+  return out;
+}
+/** First free, natural-looking spot for `kind` (and catalogue `model`), or null when the district is full. */
+export function placeIn(layout, existing, kind, model = null, { fallback = true } = {}) {
+  for (const fp of fallback ? sizesFor(kind, model) : [footprintOf(kind, model)])
+    for (const spot of freeIn(layout, existing, kind, fp, shareOf(kind, model))) return spot;
   return null;
 }
-/** Up to `limit` free spots for `kind`, spread apart: where a building can be moved. */
-export function freeSpots(layout, existing, kind, limit = 6) {
-  const fp = FOOTPRINT[kind] || FOOTPRINT.cottage,
-    out = [];
-  for (const spot of freeIn(layout, existing, kind)) {
-    if (out.some((o) => Math.hypot(o.x - spot.x, o.y - spot.y) < fp * 1.6)) continue;
-    out.push(spot);
-    if (out.length >= limit) break;
-  }
+/** Up to `limit` free spots for `kind` (and `model`), spread apart: where a building can be moved. */
+export function freeSpots(layout, existing, kind, limit = 6, model = null) {
+  const out = [];
+  // Roomy spots first; a big landmark may also squeeze into a smaller one.
+  for (const fp of sizesFor(kind, model))
+    for (const spot of freeIn(layout, existing, kind, fp, shareOf(kind, model))) {
+      if (out.length >= limit) return out;
+      if (out.some((o) => Math.hypot(o.x - spot.x, o.y - spot.y) < fp * 1.6)) continue;
+      out.push(spot);
+    }
   return out;
 }
 
@@ -388,27 +411,37 @@ export function createPlanner(groupKey, districts, buildings, fullIds = []) {
       if (own.length) return { district: own[own.length - 1], change: null };
       return takeCell(memberId, newId);
     },
-    /** Where the next building of `kind` goes; opens a new district when needed. */
-    place(memberId, kind, newId, { allocate = true } = {}) {
+    /** Where the next building of `kind` (catalogue `model`) goes; opens a new district when needed.
+     *  A landmark that finds no room for its full footprint in its owner's
+     *  districts opens a new one (when allowed); otherwise it squeezes in smaller. */
+    place(memberId, kind, newId, { allocate = true, model = null } = {}) {
       const changes = [];
-      for (const district of mine(memberId)) {
-        const placed = inside.get(district.id);
-        if (placed.length >= CAPACITY) continue;
-        const spot = placeIn(cellLayout(groupKey, district.q, district.r), placed, kind);
-        if (spot) {
-          placed.push({ districtId: district.id, kind, ...spot });
-          return { ...spot, district, changes };
+      const into = (district, spot) => {
+        inside.get(district.id).push({ districtId: district.id, kind, model, ...spot });
+        return { ...spot, district, changes };
+      };
+      const attempt = (fallback) => {
+        for (const district of mine(memberId)) {
+          const placed = inside.get(district.id);
+          if (placed.length >= CAPACITY) continue;
+          const spot = placeIn(cellLayout(groupKey, district.q, district.r), placed, kind, model, { fallback });
+          if (spot) return into(district, spot);
         }
-      }
-      if (!allocate) return null;
-      for (let tries = 0; tries < 4; tries++) {
+        return null;
+      };
+      const fresh = () => {
         const taken = takeCell(memberId, newId);
         changes.push(taken);
-        const spot = placeIn(cellLayout(groupKey, taken.district.q, taken.district.r), inside.get(taken.district.id), kind);
-        if (spot) {
-          inside.get(taken.district.id).push({ districtId: taken.district.id, kind, ...spot });
-          return { ...spot, district: taken.district, changes };
-        }
+        const spot = placeIn(cellLayout(groupKey, taken.district.q, taken.district.r), inside.get(taken.district.id), kind, model);
+        return spot ? into(taken.district, spot) : null;
+      };
+      const full = footprintOf(kind, model),
+        big = full > (FOOTPRINT[kind] || FOOTPRINT.cottage);
+      const found = attempt(false) || (full >= LANDMARK && allocate ? fresh() : null) || (big ? attempt(true) : null);
+      if (found || !allocate) return found;
+      for (let tries = 0; tries < 4; tries++) {
+        const spot = fresh();
+        if (spot) return spot;
       }
       return null;
     },

@@ -202,9 +202,11 @@ function liftState(sp, plan, shown, time, mx, my, JIB, travel, workZ) {
   return { p, k, theta, u, hook, carrying, full, cycle };
 }
 
+// Height of the tower crane's slewing unit; its apex stands 1.25 above it.
+const craneZ = (sp) => Math.max(0.3 + sp.h + (sp.roofType === "pyramid" ? 3.2 : 2.6), 4.8);
+export const craneTop = (sp) => craneZ(sp) + 1.25;
 export function craneSVG(P, sp, plan, time, shown, built, workZ) {
-  const topOf = 0.3 + sp.h;
-  const zc = Math.max(topOf + (sp.roofType === "pyramid" ? 3.2 : 2.6), 4.8),
+  const zc = craneZ(sp),
     [mx, my] = [-3.0, 3.0],
     end = [0.75, -0.75],
     a = 0.17;

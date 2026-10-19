@@ -28,6 +28,10 @@ function wheels(P, x, y, n, gap) {
   }
   return s;
 }
+// n44: how big the crew is drawn (1 = as designed); the site draws them
+// smaller beside a building whose real size the frame cannot give.
+let SIZE = 1;
+const sized = (svg, x, y) => (SIZE === 1 ? svg : `<g transform="translate(${n1(x)} ${n1(y)}) scale(${SIZE.toFixed(3)}) translate(${n1(-x)} ${n1(-y)})">${svg}</g>`);
 // A worker: helmet, hi-vis vest, and the tool of the trade, moving with the work.
 // tool: hammer | shovel | bar (rebar on the shoulder) | tie | hose | trowel |
 // roller | survey | carry (a plank) | none.
@@ -74,7 +78,7 @@ function worker(P, x, y, z, time, phase, helmet, tool = "none") {
     gear = `<rect x="${n1(fx + 4)}" y="${n1(top + 6)}" width="5" height="6" rx="1" fill="#f4f2ea" stroke="#6b7480" stroke-width="0.6"/>`;
   }
   const step = tool === "none" ? 0 : Math.sin(beat) * 1.2;
-  return `<ellipse cx="${n1(fx)}" cy="${n1(fy)}" rx="5" ry="2" fill="#2d3a1f" opacity="0.25"/>` +
+  return sized(`<ellipse cx="${n1(fx)}" cy="${n1(fy)}" rx="5" ry="2" fill="#2d3a1f" opacity="0.25"/>` +
     `<rect x="${n1(fx - 2.6 + step * 0.3)}" y="${n1(top + 12)}" width="2.2" height="${n1(10 - bob)}" fill="#3d4e6b"/>` +
     `<rect x="${n1(fx + 0.4 - step * 0.3)}" y="${n1(top + 12)}" width="2.2" height="${n1(10 - bob)}" fill="#34445e"/>` +
     `<rect x="${n1(fx - 3.4)}" y="${n1(fy - 1.4)}" width="3" height="1.6" rx="0.6" fill="#4a3a2c"/><rect x="${n1(fx + 0.4)}" y="${n1(fy - 1.4)}" width="3" height="1.6" rx="0.6" fill="#4a3a2c"/>` +
@@ -84,7 +88,7 @@ function worker(P, x, y, z, time, phase, helmet, tool = "none") {
     `<line x1="${n1(shoulder[0])}" y1="${n1(shoulder[1])}" x2="${n1(hand[0])}" y2="${n1(hand[1])}" stroke="#e8822a" stroke-width="2" stroke-linecap="round"/>` +
     `<circle cx="${n1(hand[0])}" cy="${n1(hand[1])}" r="1.1" fill="#e7b99a"/>` + gear +
     `<circle cx="${n1(fx)}" cy="${n1(top + 1.5)}" r="3" fill="#e7b99a"/>` +
-    `<path d="M${n1(fx - 3.8)} ${n1(top + 0.8)} a3.8 3.4 0 0 1 7.6 0 h1 v0.8 h-9.6 z" fill="${helmet}"/>`;
+    `<path d="M${n1(fx - 3.8)} ${n1(top + 0.8)} a3.8 3.4 0 0 1 7.6 0 h1 v0.8 h-9.6 z" fill="${helmet}"/>`, fx, fy);
 }
 // A labourer pushing a wheelbarrow between two points, there and back.
 function barrow(P, from, to, z, time, load) {
@@ -99,7 +103,7 @@ function barrow(P, from, to, z, time, load) {
     (go && load ? `<path d="M${n1(bx - 5)} ${n1(by - 9)} q5 -4 10 0 z" fill="${load}"/>` : "") +
     `<circle cx="${n1(bx + 5 * dir)}" cy="${n1(by - 2.5)}" r="2.6" fill="#2f3338"/>` +
     `<line x1="${n1(bx - 6 * dir)}" y1="${n1(by - 6)}" x2="${n1(bx - 11 * dir)}" y2="${n1(by - 9)}" stroke="#6b7480" stroke-width="1.2"/>`;
-  return tub + worker(P, x - (go ? 0.35 : -0.35), y, z, time * 1.4, 0.7, "#f6d24a", "none");
+  return sized(tub, bx, by) + worker(P, x - (go ? 0.35 : -0.35), y, z, time * 1.4, 0.7, "#f6d24a", "none");
 }
 const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 // The excavator digs where it is told and swings the bucket to where it is
@@ -325,7 +329,15 @@ function progressOf(plan, shown) {
 }
 
 /** Live layer: the machines and workers the work under way needs. */
-export function crewSVG(P, sp, plan, shown, time) {
+export function crewSVG(P, sp, plan, shown, time, size = 1) {
+  SIZE = size;
+  try {
+    return crewOf(P, sp, plan, shown, time);
+  } finally {
+    SIZE = 1;
+  }
+}
+function crewOf(P, sp, plan, shown, time) {
   const p = phaseAt(plan, shown);
   const own = specialOf(sp);
   let ownCrew;
@@ -454,12 +466,14 @@ export function crewSVG(P, sp, plan, shown, time) {
 }
 
 // When a build collapses the crew runs clear of it.
-export function fleeSVG(P, sp, tau) {
+export function fleeSVG(P, sp, tau, size = 1) {
   const w = sp.hw,
     run = Math.min(2.4, tau * 2.6);
   let s = "";
+  SIZE = size;
   [[w + 0.4, w * 0.2, 1, 0.35], [-w * 0.3, w + 0.4, -0.25, 1], [w + 0.3, -w + 0.4, 1, -0.7]].forEach(([x, y, dx, dy], i) => {
     s += worker(P, x + dx * run, y + dy * run, 0, tau * 2.5, i * 1.3, i % 2 ? "#f4f2ea" : "#f6d24a");
   });
+  SIZE = 1;
   return s;
 }
