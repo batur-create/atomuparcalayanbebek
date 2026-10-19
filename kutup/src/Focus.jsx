@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Expand, Headphones, PictureInPicture2, Play, SlidersHorizontal, Square } from "lucide-react";
 import { minutesLabel } from "./api.js";
-import { Busy, keepScreenOn, screenAwake, storage } from "./ui.jsx";
+import { Busy, keepScreenOn, releaseScreen, screenAwake, storage } from "./ui.jsx";
 import { KaraBuddy } from "./Kara.jsx";
 import { kindFor } from "../shared/village.js";
 import { BUILD_LEAVE, BY_ID, CHAIN_GAP, CLASSES, GRACE, HONEST_MIN, RHYTHMS, fits, minutesOf, modelOf, refundLater, refundNow, rhythmAt, rhythmEnd, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
@@ -14,6 +14,8 @@ import { DeskMates } from "./Together.jsx";
 import { Ask } from "./Help.jsx";
 import { Modal } from "./Modal.jsx";
 import { LockSheet } from "./Watch.jsx";
+import "./delivery.css";
+import { closeBuildNotice } from "./buildNotices.js";
 import { floatSupported, floatWindow, onFloat, primeFloat } from "./float.js";
 
 // Each digit is its own element keyed by value, so only the digit that changed
@@ -43,6 +45,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
+    [relaxed, setRelaxed] = useState(() => storage.get("kutup-build-mode") === "relaxed"),
     [model, setModel] = useState(pickedModel),
     [picking, setPicking] = useState(false),
     [mixer, setMixer] = useState(false),
@@ -98,10 +101,10 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       if (!confirm(`${warning}\n\nEmin misin?`)) return;
     }
     // A phone build starts behind the lock guide (n40, kilit modu).
-    if (!running && fidan && !onComputer()) return setLock(true);
+    if (!running && fidan && !relaxed && !onComputer()) return setLock(true);
     if (running) {
       setBusy(true);
-      await mutate(
+      const cancelled = await mutate(
         "/focus",
         { action: "cancel" },
         growing
@@ -115,22 +118,24 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
                   : `Seans durdu. ${HONEST_MIN} dk'dan kısa sürdüğü için yazılmadı.`
                 : "Seans durdu. Hazır olunca yeniden başla.",
       );
+      if (cancelled && me.focusRelaxed) closeBuildNotice(me.id, me.focusEnd);
       setBusy(false);
       return;
     }
     return begin();
   };
   const begin = async () => {
-    keepScreenOn(); // needs the tap itself on some phones
+    if (fidan && relaxed) releaseScreen();
+    else keepScreenOn(); // needs the tap itself on some phones
     // A computer gets the floating window, the alarm sound and the idle check,
     // each asked for inside this tap.
-    if (onComputer()) primeFloat();
+    if (onComputer() && !(fidan && relaxed)) primeFloat();
     setBusy(true);
     await mutate(
       "/focus",
-      { action: "start", minutes: length, strict: fidan, honest: !fidan, device: onComputer() ? "desk" : "phone", rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
+      { action: "start", minutes: length, strict: fidan, relaxed: fidan && relaxed, honest: !fidan, device: onComputer() ? "desk" : "phone", rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
       fidan
-        ? `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
+        ? relaxed ? `Rahat inşaat başladı 🌙 ${item.name} yükseliyor. Ekranı kilitleyebilirsin.` : `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
         : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧 Burada geçen her dakika sayılır.",
     );
     setBusy(false);
@@ -193,7 +198,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </b>
           <span>
             {growing
-              ? onComputer()
+              ? me.focusRelaxed ? "🌙 rahat inşaat · ekranı kilitleyebilirsin" : onComputer()
                 ? "🏗️ sekmeler serbest, bu sekmeyi kapatma"
                 : `🏗️ çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön`
               : running
@@ -225,6 +230,19 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
               <small>{hint}</small>
             </button>
           ))}
+        </div>
+      )}
+      {!running && !finishing && fidan && (
+        <div className="build-mode-pick" role="group" aria-label="İnşaat şekli">
+          {[[false, "Sıkı", "Kütüp açık kalsın, odağın bölünmesin."], [true, "Rahat", "Ekranı kilitle, inşaat devam etsin."]].map(([value, label, hint]) => (
+            <button key={label} type="button" aria-pressed={relaxed === value} onClick={() => { setRelaxed(value); storage.set("kutup-build-mode", value ? "relaxed" : "strict"); }}>
+              <b>{value ? "☾" : "✳"} {label}</b><small>{hint}</small>
+            </button>
+          ))}
+          <p>{relaxed ? "Telefonu kilitlemek, başka uygulamaya geçmek veya sekmeyi kapatmak inşaatı durdurmaz. Yalnız Pes et ile iptal edilir. Aşama bildirimleri telefon ve internet koşullarına bağlıdır." : "Mevcut çıkış, çatlama ve kurtarma kuralları geçerlidir."}</p>
+          {relaxed && askNotifications && notificationState() !== "granted" && notificationState() !== "unsupported" && (
+            <button type="button" className="build-notice-enable" onClick={() => requireMember(askNotifications)}>Aşama bildirimlerini aç</button>
+          )}
         </div>
       )}
       {!running && !finishing && fidan && (
@@ -260,7 +278,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       {!compact && !running && !finishing && (
         <p className="mode-hint">
           {fidan
-            ? onComputer()
+            ? relaxed ? "Süreyi biz tutarız. Dönünce şantiyenin hızlandırılmış yapımını izle ve binanı gör." : onComputer()
               ? "Bitince köyüne eklenir. Bu sekmeyi kapatma."
               : `Bitince köyüne eklenir. Çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön.`
             : `Yapı yok: ${duration} dk → ${wageFor(duration, false)} 🧱. Uzakta geçen dakika sayılmaz.`}
@@ -293,7 +311,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           ))}
         </div>
       )}
-      {growing && !pausedAt && !me.focusPauseUsed && teaMax > 0 && (
+      {growing && !me.focusRelaxed && !pausedAt && !me.focusPauseUsed && teaMax > 0 && (
         <button type="button" className="tea-button" onClick={() => tea("pause")}>
           ☕ Çay molası ver ({teaMax / 60000} dk, bir kez)
         </button>
@@ -306,7 +324,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </button>
         </div>
       )}
-      {growing && !onComputer() && (
+      {growing && !me.focusRelaxed && !onComputer() && (
         <p className={`awake-note ${screenAwake() ? "ok" : "warn"}`}>
           {screenAwake()
             ? "🔆 Ekran açık tutuluyor; telefonu önünde açık bırakabilirsin."

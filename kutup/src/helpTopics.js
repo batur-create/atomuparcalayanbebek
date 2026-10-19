@@ -52,12 +52,12 @@ export const HELP = {
       {
         id: "start",
         q: "Nasıl başlarım?",
-        a: "İnşaat’ı seç, bir bina seç (ilk binalar bedava), alttaki büyük düğmeye bas. Süre bitene kadar Kütüp açık kalsın. Bitince bina köye eklenir, cebine tuğla girer.",
+        a: "İnşaat’ı seç, Sıkı ya da Rahat modunu ve binanı seç (ilk binalar bedava), alttaki büyük düğmeye bas. Sıkı’da Kütüp açık kalsın; Rahat’ta ekranı kilitleyebilirsin. Bitince bina köye eklenir, cebine tuğla girer.",
       },
       {
         id: "modes",
         q: "İnşaat ile Serbest farkı ne?",
-        a: `İnşaat: seçtiğin bina sen çalışırken yükselir, bitince köye eklenir, tam maaş alırsın. Serbest: bina yok, süreyi sen seçersin, maaş yarım. İkisinde de uygulamadan uzakta geçen dakika sayılmaz.`,
+        a: `İnşaat: seçtiğin bina yükselir, bitince köye eklenir, tam maaş alırsın. Sıkı’da uygulamada kalırsın; Rahat’ta ekranı kilitleyebilir, başka uygulamaya geçebilir, sekmeyi kapatabilirsin. Serbest: bina yok, süreyi sen seçersin, maaş yarım; uygulamadan uzakta geçen dakika sayılmaz.`,
       },
       {
         id: "bricks",
@@ -67,7 +67,7 @@ export const HELP = {
       {
         id: "leave",
         q: "Telefondan çıkarsam ne olur?",
-        a: `İnşaat sürerken uygulamadan çıkarsan ${sec(BUILD_LEAVE)} saniye içinde dön. Dönmezsen bina çatlar; ${min(RESCUE_WINDOW)} dakika içinde dönersen birkaç dakika ekleyip kurtarırsın (25 dk’lık seansa +${rescueMinutes(25)} dk). Daha uzun kalırsan bina yıkılır. Bilgisayarda sekme değiştirmek serbest, yeter ki Kütüp sekmesi açık kalsın.`,
+        a: `Sıkı inşaatta uygulamadan çıkarsan ${sec(BUILD_LEAVE)} saniye içinde dön. Dönmezsen bina çatlar; ${min(RESCUE_WINDOW)} dakika içinde dönersen birkaç dakika ekleyip kurtarırsın (25 dk’lık seansa +${rescueMinutes(25)} dk). Daha uzun kalırsan bina yıkılır. Bilgisayarda sekme değiştirmek serbest, yeter ki Kütüp sekmesi açık kalsın. Rahat inşaatta ekranı kilitlemek, başka uygulamaya geçmek veya sekmeyi kapatmak inşaatı bozmaz. Dönünce hızlandırılmış yapımı izlersin.`,
       },
       {
         id: "quit",
@@ -77,7 +77,7 @@ export const HELP = {
       {
         id: "tea",
         q: "Çay molası ne?",
-        a: `50 dakika ve üstü inşaatta bir kez mola verebilirsin (50 dk’ya ${min(teaBreakFor(50))}, 75 dk’ya ${min(teaBreakFor(75))} dakika). Molada bina bekler, uygulamadan çıkabilirsin.`,
+        a: `50 dakika ve üstü Sıkı inşaatta bir kez mola verebilirsin (50 dk’ya ${min(teaBreakFor(50))}, 75 dk’ya ${min(teaBreakFor(75))} dakika). Molada bina bekler, uygulamadan çıkabilirsin. Rahat inşaatta zaten uygulamadan çıkabilirsin; ayrı çay molası yoktur.`,
       },
       {
         id: "rhythm",

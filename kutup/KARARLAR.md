@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| rahat-insaat | Ekran kilitliyken süren ayrı mod, aşama bildirimleri, hızlandırılmış teslim ve dar iPhone PWA sığma düzeltmesi | Odak | 19 Eki | codex/relaxed-construction PR |
 | n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR #37 |
 | n41 | Yenilikler: her sürümde neler değişti, herkes için, Ben'de; 1–16. sürüm geriye dönük | Herkes | 19 Eki 07:30 | PR #36 |
 | n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | 825c5561 (PR #22 via #24, Worker b690b171) |
@@ -89,6 +90,16 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### rahat-insaat · Ekran kapalı inşaat ve hızlandırılmış teslim
+
+**Batur'un isteği:** "Şu anki halini çöpe atmayacağız, sadece ayrı bir mod"; "inşaat animasyonları boşuna gitmesin, hızlandırılmış halini izleyebilsinler". iPhone PWA için görünen alana sığma, güvenli kenarlar ve yön değişince sahnenin ortalanması ayrıca onaylandı. Yayın Batur'da; teslim PR.
+
+**Karar ve uygulama:** Sıkı varsayılan ve kuralları korunur. Rahat'ta sunucu bitiş saati esas alınır; ekran kilidi, başka uygulama ve sekme kapanması inşaatı bozmaz, ekran açık tutulmaz. Başlangıç ve %25/%50/%75/bitme bildirimleri mevcut kuyrukla, tek etiket ve kalıcı tekrar korumasıyla gönderilir. Ara aşamalar sessiz; kaçırılanları peş peşe yollamak yerine güncel aşama bildirilir. Web PWA'da sürekli/kapatanın silemediği işletim sistemi sayacı vaat edilmedi.
+
+**Teslim:** mevcut çiziciyle aynı bina ve seed'in 18 saniyelik yapımı; atlanabilir, hareket azaltmada statik sonuç. Bina/ödül önce sunucuda tek sefer yazılır; teslim almak ödeme yapmaz. Göç 26, mevcut 1–25'e dokunmadan eklenir; eski seans ve cüzdanlar korunur. Yedek/geri yüklemede yeni tablolar da tutulur. iPhone değişikliği odak ekranıyla sınırlı; genel yakınlaştırma ayarı değişmez.
+
+**Doğrulama:** test:all 146/146, genel tarayıcı 100/100, Rahat ve iPhone boyut/yön tarayıcı 18/18. Gerçek Safari PWA cihaz testi hâlâ gerekli. Korunan şantiye/köy çizim dosyalarına, canlı sisteme ve diğer açık işlere dokunulmadı.
 
 ### n42 · Kara’ya sor: istenince açılan yardım
 Herkes · 19 Eki 2026 · PR #37 · göç yok, sunucu değişmedi

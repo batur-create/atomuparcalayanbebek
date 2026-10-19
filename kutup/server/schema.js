@@ -252,6 +252,16 @@ export const migrations = [
   // kept on the server, so every device shows the same crack and it cannot be
   // beaten away.
   ["ALTER TABLE members ADD COLUMN focus_cracked_at INTEGER NOT NULL DEFAULT 0"],
+  // 26 — relaxed builds keep server time without a foreground heartbeat.
+  // Delivery is an acknowledgement of an already-credited building, never a reward action.
+  [
+    "ALTER TABLE members ADD COLUMN focus_relaxed INTEGER NOT NULL DEFAULT 0 CHECK(focus_relaxed IN (0, 1))",
+    "CREATE INDEX members_relaxed_due ON members(focus_end) WHERE focus_relaxed = 1 AND focus_end > 0",
+    "CREATE TABLE build_deliveries (id TEXT PRIMARY KEY REFERENCES buildings(id) ON DELETE CASCADE, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, model TEXT NOT NULL, kind TEXT NOT NULL, seed INTEGER NOT NULL, minutes INTEGER NOT NULL, ends INTEGER NOT NULL, reward INTEGER NOT NULL, created INTEGER NOT NULL, accepted_at INTEGER NOT NULL DEFAULT 0)",
+    "CREATE INDEX build_deliveries_member ON build_deliveries(member_id, accepted_at, created)",
+    "CREATE TABLE build_push_events (id TEXT PRIMARY KEY, nonce TEXT NOT NULL, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, ends INTEGER NOT NULL, stage INTEGER NOT NULL CHECK(stage IN (0, 25, 50, 75, 100)))",
+    "CREATE UNIQUE INDEX build_push_stage ON build_push_events(member_id, ends, stage)",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

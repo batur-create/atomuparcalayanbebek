@@ -22,6 +22,7 @@ function later(load, name, fallback = null, { prefetch = true } = {}) {
 
 // Only the owner opens /batur, so friends' phones never fetch it.
 export const OwnerPage = later(() => import("./Owner.jsx"), "OwnerPage", <Loading big />, { prefetch: false });
+export const BuildDelivery = later(() => import("./BuildDelivery.jsx"), "BuildDelivery", null, { prefetch: false });
 export const FocusScreen = later(() => import("./FocusScreen.jsx"), "FocusScreen");
 export const VillagePanel = later(() => import("./VillageMap.jsx"), "VillagePanel", <Loading text="Köy kuruluyor…" />);
 export const MemberStats = later(() => import("./Stats.jsx"), "MemberStats");

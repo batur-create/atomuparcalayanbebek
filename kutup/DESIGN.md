@@ -125,6 +125,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.
 
+- ✔ **Rahat inşaat (19 Eki):** mevcut koyu odak kartında Sıkı/Rahat seçimi; dönüşte aynı şantiye çiziminin 18 saniyelik yapımı, atla/teslim al/köyde gör. Hareket azaltmada doğrudan bitmiş bina. Ayrı bir mod; mevcut şantiye çizimi ve animasyonları korunur. iPhone odak ekranında yalnız sığma ve yön düzeltmesi onaylandı.
+
 - ✔ **n36 inşaat tam şov:** Batur "Tam şov" kademesini seçti: gerçek iş sırası, kirişler, yalıtım katmanları, kulübe/evde mobil vinç (kırmızı taşıyıcı, sarı teleskopik bom), mantolama levhaları ve dübeller. Kule vinç yalnız kulede.
 - ✔ **n36b yapım sistemleri:** duvar sistemi belirler: krem/adaçayı betonarme + mantolama, tuğla/taş yığma kagir (düşey ve yatay hatıllar, lentolar), ahşap karkas (dikmeler, OSB, rüzgâr bariyeri), cam çelik karkas (I-kolonlar, çaprazlar, cam çatı).
 - ✔ **n36c şantiye denetimi ve metraj:** yapı denetim onayı, slump ve küp numunesi, ruhsat tabelası, canlı metraj ve maliyet ağırlıklı hakediş, TBDY sarılma bölgeleri ve perdeler, Köy panelinde şantiye yakınlaştırma.

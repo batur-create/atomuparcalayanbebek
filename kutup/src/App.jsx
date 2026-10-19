@@ -34,6 +34,7 @@ import {
 } from "./ui.jsx";
 import { FeedbackPage, useRequestUpdates } from "./Requests.jsx";
 import { openBlackHole } from "./BlackHole.jsx";
+import { closeBuildNotice } from "./buildNotices.js";
 import { kindFor } from "../shared/village.js";
 import { BEAT_EVERY, BUILD_LEAVE, BY_ID, COUNTDOWN, FREE_LEAVE, GRACE, HONEST_MIN, LEAVE_GRACE, RESCUE_HOLD, RESCUE_WINDOW, fits, modelOf, rescueMinutes, streakBonus, teaBreakFor } from "../shared/catalog.js";
 import { alarmSound, closeFloat, idleSupported, primeFloat } from "./float.js";
@@ -43,7 +44,7 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { AchievementCheer, AchievementsModal, DeskMap, FocusScreen, OwnerPage, VillagePanel, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
+import { AchievementCheer, AchievementsModal, DeskMap, BuildDelivery, FocusScreen, OwnerPage, VillagePanel, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
 import { useYenilik } from "./yenilikNokta.js";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
 import { shouting, teaCall } from "../shared/pano.js";
@@ -214,6 +215,7 @@ function KutupApp({ initial, restart }) {
   // The last build-mode session's ending, replayed on the construction site.
   const [buildOutcome, setBuildOutcome] = useState(null);
   const [receipt, setReceipt] = useState(null);
+  const [deliveries, setDeliveries] = useState([]);
   const [focusScreen, setFocusScreen] = useState(false);
   // n28: the week's story, opened from the home card, the Ben tab or Sunday's notification.
   const [story, setStory] = useState(false);
@@ -540,6 +542,7 @@ function KutupApp({ initial, restart }) {
         end: me.focusEnd,
         minutes: me.focusMinutes,
         strict: !!me.focusStrict,
+        relaxed: !!me.focusRelaxed,
         kind: item.kind,
         model: item.id,
         seed: me.focusSeed,
@@ -551,7 +554,7 @@ function KutupApp({ initial, restart }) {
     }
     const done = lastFocus.current;
     lastFocus.current = null;
-    if (!done) return;
+    if (!done || done.relaxed) return; // a durable relaxed delivery has its own handover
     const item = BY_ID[done.model];
     const outcome = (type) =>
       setBuildOutcome({ type, kind: done.kind, model: done.model, seed: done.seed, at: Date.now() });
@@ -589,6 +592,33 @@ function KutupApp({ initial, restart }) {
         : null,
     [me?.focusStrict, me?.focusEnd, me?.focusMinutes, me?.focusSeed, me?.focusModel, me?.focusPausedAt],
   );
+  useEffect(() => {
+    setDeliveries([]);
+    if (!session?.memberId || me?.focusEnd > Date.now()) return;
+    let stopped = false;
+    const epoch = sessionEpoch.current;
+    const load = () => {
+      if (document.hidden) return;
+      get("/build-deliveries").then((rows) => {
+        if (!stopped && epoch === sessionEpoch.current) {
+          setDeliveries(rows.map((row) => ({ ...row, memberId: session.memberId })));
+          if (rows.length) setFocusScreen(false);
+        }
+      }).catch(() => {});
+    };
+    load();
+    document.addEventListener("visibilitychange", load);
+    window.addEventListener("online", load);
+    return () => { stopped = true; document.removeEventListener("visibilitychange", load); window.removeEventListener("online", load); };
+  }, [session?.memberId, me?.focusEnd]);
+  const acceptDelivery = async (delivery, showVillage) => {
+    const epoch = sessionEpoch.current;
+    await api(`/build-deliveries/${delivery.id}`, {});
+    if (epoch !== sessionEpoch.current) return;
+    closeBuildNotice(session.memberId, delivery.ends);
+    setDeliveries((rows) => rows.filter((row) => row.id !== delivery.id));
+    if (showVillage) { setFocusScreen(false); navigate("focus"); }
+  };
   // Presence (n40, dürüst dakika). Build mode and a watched free session keep
   // the screen on and report that the app is on screen. On a phone, leaving the
   // app is noticed at once: a push now, another at ten seconds, and after 20
@@ -599,7 +629,7 @@ function KutupApp({ initial, restart }) {
   // without mouse or keyboard (or every 25 minutes where the browser cannot
   // tell) the floating window turns red, beeps and asks "orada mısın?", and an
   // unanswered question for two minutes counts as leaving.
-  const watchEnd = me?.focusEnd > Date.now() && (me.focusStrict || me.focusHonest) ? me.focusEnd : 0;
+  const watchEnd = !me?.focusRelaxed && me?.focusEnd > Date.now() && (me.focusStrict || me.focusHonest) ? me.focusEnd : 0;
   const watchStrict = !!me?.focusStrict;
   // Where the session started (n40): a phone start makes the phone the timer
   // and the computer its helper; a computer start leaves the phone free to glance at.
@@ -992,12 +1022,12 @@ function KutupApp({ initial, restart }) {
     m &&
     requireMember(async () => {
       const strict = storage.get("kutup-fidan-on") !== "0",
-        picked = BY_ID[pickedModel()];
-      keepScreenOn();
-      if (onComputer()) primeFloat();
+        picked = BY_ID[pickedModel()], relaxed = strict && storage.get("kutup-build-mode") === "relaxed";
+      if (!relaxed) keepScreenOn();
+      if (onComputer() && !relaxed) primeFloat();
       await mutate(
         "/focus",
-        { action: "start", joinMember: m.id, strict, honest: !strict, device: onComputer() ? "desk" : "phone", model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
+        { action: "start", joinMember: m.id, strict, relaxed, honest: !strict, device: onComputer() ? "desk" : "phone", model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
         "Aynı ritimdesiniz. İyi çalışmalar! 🤝",
       );
       setJoinAsk(null);
@@ -1631,6 +1661,7 @@ function KutupApp({ initial, restart }) {
           }}
         />
       )}
+      {deliveries.length > 0 && deliveries[0].memberId === session?.memberId && <BuildDelivery key={`${session?.memberId}-${deliveries[0].id}`} delivery={deliveries[0]} accept={(showVillage) => acceptDelivery(deliveries[0], showVillage)} />}
       {receipt && (
         <ReceiptCard
           key={receipt.at}
@@ -1642,12 +1673,13 @@ function KutupApp({ initial, restart }) {
             // building if it is affordable, a cottage otherwise.
             const strict = storage.get("kutup-fidan-on") !== "0",
               picked = BY_ID[pickedModel()],
+              relaxed = strict && storage.get("kutup-build-mode") === "relaxed",
               model = picked.class === "small" && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube";
-            if (strict) keepScreenOn();
+            if (strict && !relaxed) keepScreenOn();
             setReceipt(null);
             await mutate(
               "/focus",
-              { action: "start", minutes: 25, strict, ...(strict ? { model } : {}), ...(receipt.together ? { invite: true } : {}) },
+              { action: "start", minutes: 25, strict, relaxed, ...(strict ? { model } : {}), ...(receipt.together ? { invite: true } : {}) },
               strict ? `Seri sürüyor 🔥 ${BY_ID[model].name} için temel atıldı.` : "Seri sürüyor 🔥 25 dakika daha.",
             );
           }}

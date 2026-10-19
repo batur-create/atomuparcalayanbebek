@@ -6,10 +6,26 @@ const RETRY_MS = [30000, 120000, 600000];
 const TABLES = new Set(["subscriptions", "owner_subscriptions"]);
 
 export function createPushOutbox({ db, send, allowed, ownerHash, sessionAge, ownerAge, now = Date.now }) {
-  async function enqueue(subs, message, table, { subject, ttl = 1800, urgency = "normal" }) {
+  async function enqueue(subs, message, table, { subject, ttl = 1800, urgency = "normal", dedupe }) {
     if (!TABLES.has(table)) throw new Error("Unknown push subscription table");
     const created = now(), ids = [], statements = [];
     const owner = table === "owner_subscriptions" ? await ownerHash() : null;
+    // A milestone and every recipient's queue row are persisted in one transaction.
+    // The nonce prevents concurrent cron/request calls from enqueueing it twice,
+    // even after successful queue rows have been removed. Existing pushes omit dedupe.
+    const nonce = dedupe ? crypto.randomUUID() : null;
+    if (dedupe) {
+      if (table !== "subscriptions") throw new Error("Build milestones require member subscriptions");
+      statements.push([
+        `INSERT OR IGNORE INTO build_push_events (id, nonce, member_id, ends, stage)
+         SELECT ?, ?, ?, ?, ? WHERE EXISTS (
+           SELECT 1 FROM members WHERE id = ? AND focus_relaxed = 1 AND focus_end = ?
+           AND ((? < 100 AND focus_end > ?) OR (? = 100 AND focus_end <= ?))
+         ) OR (? = 100 AND EXISTS (SELECT 1 FROM build_deliveries WHERE member_id = ? AND ends = ? AND accepted_at = 0))`,
+        [dedupe.id, nonce, dedupe.memberId, dedupe.ends, dedupe.stage, dedupe.memberId, dedupe.ends,
+          dedupe.stage, created, dedupe.stage, created, dedupe.stage, dedupe.memberId, dedupe.ends],
+      ]);
+    }
     for (const sub of subs) {
       if (!allowed(sub.endpoint)) continue;
       const id = crypto.randomUUID();
@@ -25,9 +41,9 @@ export function createPushOutbox({ db, send, allowed, ownerHash, sessionAge, own
       statements.push([
         `INSERT INTO push_outbox (id, endpoint, subscription_table, payload, urgency, ttl, next_at, created, member_id, session_token, key_hash, subject)
          SELECT ?, s.endpoint, ?, ?, ?, ?, ?, ?, ${isMember ? "s.member_id" : "NULL"}, s.session_token, ${isMember ? "NULL" : "s.key_hash"}, ?
-         FROM ${table} s WHERE s.endpoint = ? AND s.subscription = ? AND ${identity}`,
+         FROM ${table} s WHERE s.endpoint = ? AND s.subscription = ? AND ${identity}${dedupe ? " AND EXISTS (SELECT 1 FROM build_push_events WHERE id = ? AND nonce = ?)" : ""}`,
         [id, table, JSON.stringify({ ...message, ...sub.extra, id }), urgency, ttl, created, created, subject,
-          sub.endpoint, sub.subscription, ...binding],
+          sub.endpoint, sub.subscription, ...binding, ...(dedupe ? [dedupe.id, nonce] : [])],
       ]);
     }
     if (statements.length) await db.batch(statements);
