@@ -1,0 +1,214 @@
+// Yenilikler (n41): what changed in each published version, in plain words for
+// everyone in the team. Ben → Yenilikler shows this list, newest first, and the
+// Ben tab gets a dot until the newest one is opened.
+//
+// Every job that changes something people can see adds its lines here in the
+// same PR: either a new entry at the top (next `surum`, the day of the PR), or
+// more lines on the top entry when that one has not been published yet.
+// Write for a friend, not an engineer: what they will notice, one short line each.
+// `vakit` is sabah / öğle / akşam / gece (Istanbul time).
+
+export const YENILIKLER = [
+  {
+    surum: 16,
+    tarih: "2026-10-19",
+    vakit: "sabah",
+    baslik: "Telefonda inşaat düzgün sayıyor",
+    maddeler: [
+      "İnşaat seansında telefondan çıkınca önce 5 saniye sessiz pay var, sonra tek bir 10 … 1 geri sayımı başlar. Sayaç artık başa dönmüyor, bildirim yağmuru yok.",
+      "Geri sayım biterse bina çatlar ve bu her cihazda aynı görünür. 5 dakika içinde dönersen kurtarırsın, dönmezsen çöker.",
+      "Seansı telefondan başlattıysan bilgisayara tek bir \"📱 Telefonuna bak!\" bildirimi gelir, açık sekme geri sayım boyunca öter.",
+      "iPhone'da iki bildirim gelir: \"10 sn içinde dön!\" ve \"Binan çatladı!\". Kilit ekranında görmek için kurulum adımları kilit modu ekranında.",
+      "Bu sayfa geldi: Ben → Yenilikler. Her güncellemede neyin değiştiğini buradan okursun.",
+    ],
+  },
+  {
+    surum: 15,
+    tarih: "2026-10-18",
+    vakit: "akşam",
+    baslik: "19 yeni yapı ve dürüst dakika",
+    maddeler: [
+      "Katalogda 19 yeni yapı: Jeodezik Kubbe, Taş Kemer Köprü, Serender, Kerpiç Kubbe Evleri, Kabuk Çatılı Pazar, Gergi Çadır Amfi, Konsol Ev, Kapsül Kule, Burgulu Kule ve Su Kulesi.",
+      "Ünlü yapılar da var: Keops Piramidi, Kolezyum, Pisa Kulesi, Süleymaniye, Galata Kulesi, Anıtkabir, Eyfel Kulesi, Sidney Opera Binası ve Burj Khalifa.",
+      "Şantiyede her inşaat evresinin yanında küçük bir bilgi noktası var. Dokununca o evrede ne yapıldığını sade bir dille anlatır.",
+      "Dürüst dakika: serbest seansta uygulamadan uzak kaldığın süre sayılmaz. Yıkılan binayı 5 dakika içinde dönerek bir kez kurtarabilirsin, kurtarılan bina yamalı görünür.",
+      "Bilgisayarda (Chrome ve Edge) süre yüzen küçük bir pencerede durur. Telefonda kilit modu ekranı, dikkat dağıtmayı kapatmanın yolunu adım adım gösterir.",
+    ],
+  },
+  {
+    surum: 14,
+    tarih: "2026-10-17",
+    vakit: "gece",
+    baslik: "İnşaat tam şov",
+    maddeler: [
+      "Şantiyede iş makineleri ve detaylar arttı: mobil vinç, kirişler, temel su yalıtımı, çatı katmanları ve mantolama.",
+      "Her yapı kendi sistemiyle yükseliyor: taş duvarlı yapılar sıra sıra örülüyor, ahşap evler karkasla, sera çelik ve camla kuruluyor.",
+      "Gerçek şantiye gibi: yapı denetim, beton deneyi, ruhsat tabelası, canlı malzeme listesi ve hakediş yüzdesi.",
+      "Şantiyeye yakınlaşıp ayrıntılara bakabilirsin.",
+    ],
+  },
+  {
+    surum: 13,
+    tarih: "2026-10-17",
+    vakit: "akşam",
+    baslik: "Plan paylaşma ve anketten gelenler",
+    maddeler: [
+      "Planını bir linkle WhatsApp grubuna atabilirsin. Linke basan \"Varım\" ya da \"Gelemem\" diyebilir.",
+      "Biri yeni bir rozet açınca Pano'ya tek satır düşer.",
+      "Batur'a ilettiğin bir şeye cevap gelince zarf simgesi bir kez sallanır.",
+      "Hesap ve cihazlar'da açık cihazlar adıyla görünür, tek tek kapatılabilir. Şifreni değiştirince diğer cihazlardan da çıkmak isteyip istemediğin sorulur.",
+      "Bir arkadaşın seansına katılmak için seansın bitmesine en az 5 dakika kalmış olmalı.",
+    ],
+  },
+  {
+    surum: 12,
+    tarih: "2026-10-17",
+    vakit: "öğle",
+    baslik: "Başarımlar, masa haritası ve haftanın hikâyesi",
+    maddeler: [
+      "Başarımlar: 16 rozet (3'ü gizli). Geçmişte yaptıkların da sayıldı, rozetlerin kişi kartında görünür.",
+      "Masa haritası: Adnan ve Müjgan salonlarında kim nerede oturuyor, kuşbakışı görürsün. Boş sandalyeye dokunup \"Geldim\" dersin.",
+      "Haftanın hikâyesi: ekibin haftası kart kart, paylaşmalık bir kartla. Pazar günleri bildirim gelir. Çalışma eşi de orada: en verimli kiminle çalışıyorsun.",
+      "Her şey anında güncelleniyor ve uygulama daha hızlı açılıyor. Kara daha canlı, nadir sürprizleri var. Odak sesleri daha doğal.",
+      "Hesabın daha güvende: şifre değiştirirken şu anki şifre soruluyor, diğer cihazlardan çıkış yapabiliyorsun. Ana ekran simgesi de düzeldi.",
+    ],
+  },
+  {
+    surum: 11,
+    tarih: "2026-10-17",
+    vakit: "gece",
+    baslik: "Altı tema ve hesaplar arası geçiş",
+    maddeler: [
+      "Görünüm'de altı tema paketi var. Her biri rengiyle, gecesiyle birlikte baştan düşünüldü.",
+      "Bir cihazda 5 hesaba kadar açık tutup tek dokunuşla geçebilirsin.",
+      "Ana sayfadaki altı küçük hata düzeldi, Pano'daki yan kaydırma çubuğu gitti.",
+    ],
+  },
+  {
+    surum: 10,
+    tarih: "2026-10-16",
+    vakit: "akşam",
+    baslik: "Yeni Kara ve Köy 2.0",
+    maddeler: [
+      "Kara baştan çizildi: kütüphanenin çatısında yaşayan sevimli bir kara kedi. Haberleri o getiriyor, odaklanırken yanında duruyor.",
+      "Köy 2.0: odak stüdyosu ve yaşayan, daha büyük bir köy haritası.",
+      "Yeni karşılama ekranı (Gökyüzü), davet linkleri gizli. iPhone'da ana ekrana ekleme rehberi var.",
+      "Basılabilir gibi görünüp hiçbir şey yapmayan yerler temizlendi.",
+    ],
+  },
+  {
+    surum: 9,
+    tarih: "2026-10-16",
+    vakit: "öğle",
+    baslik: "Dört sekme ve yaşayan ana sayfa",
+    maddeler: [
+      "Menü dört sekmeye indi: Kütüp, Köy, Pano, Ben. Seninle ilgili her şey Ben'de.",
+      "Ana sayfada saate göre değişen katmanlı bir gökyüzü var.",
+      "Hareket ayarı geldi: animasyon istemeyen \"Kıpırtısız\" seçebilir.",
+      "Pano mesajlarına doğrudan cevap verebilirsin. Yeni temalar ve renkler eklendi.",
+    ],
+  },
+  {
+    surum: 8,
+    tarih: "2026-10-16",
+    vakit: "sabah",
+    baslik: "Kütüp'ün kendi avatarları",
+    maddeler: [
+      "Kara'nın çizim tarzında 23 yeni karakter: 8 kedi, kütüphaneci, çaycı, astronom ve daha fazlası. Gözlük, kulaklık, bere gibi aksesuarlar takılabiliyor.",
+      "Gündüz / gece düğmesi ana ekranın sağ üstünde.",
+    ],
+  },
+  {
+    surum: 7,
+    tarih: "2026-10-15",
+    vakit: "gece",
+    baslik: "Karanlık tema",
+    maddeler: [
+      "Gece görünümü geldi: Otomatik, Açık ya da Koyu.",
+      "Otomatikte Ankara'da güneş batınca koyulaşır, doğunca açılır.",
+    ],
+  },
+  {
+    surum: 6,
+    tarih: "2026-10-15",
+    vakit: "akşam",
+    baslik: "Birlikte çalışma, ses mikseri ve mevsimler",
+    maddeler: [
+      "Birlikte çalışma: ortak ritim (50+10 ya da 25+5), ortak mola ve çay molası. \"Ekibi çağır\" ile herkesi çağırır, tek dokunuşla arkadaşının seansına katılırsın. Mesajlarda \"görüldü\" var.",
+      "Ses mikseri: yağmur, kafe, şömine gibi sesleri karıştır. Tam ekran Odak ekranında büyük saat var, telefonu yan çevirince flip saat olur.",
+      "Şantiye günün saatine uyuyor: gün batımı, gece yıldızlar, yanan pencereler. Köyde kış karı ve bahar çiçekleri.",
+      "Haftanın Ustası tacı ve ekibin ortak anıtı: herkes çalıştıkça meydandaki Milli Kütüphane kat kat yükselir.",
+      "Her pazartesi kataloğa yeni bir yapı gelir. Haftada bir kaçırılan gün seriyi bozmaz. Bilgisayarda sekme değiştirmek binayı yıkmaz.",
+    ],
+  },
+  {
+    surum: 5,
+    tarih: "2026-10-15",
+    vakit: "öğle",
+    baslik: "Tuğla, katalog ve istatistikler",
+    maddeler: [
+      "Odaklandıkça tuğla kazanırsın, yapı kataloğundan ne yapacağını seçersin. Uzun seans daha çok kazandırır.",
+      "Seri bonusu ve \"+25 dk devam\" düğmesi. Arkadaşlarınla aynı anda çalışınca imece bonusu.",
+      "Nadir planlar ve nadir yapılar (Deniz Feneri, Cam Sera). Koleksiyonda yapmadıkların siluet olarak görünür. Binanı kendi mahallende taşıyabilirsin.",
+      "Herkesin istatistikleri: toplam odak, seri, 14 günlük grafik, en verimli saat, favori salon.",
+      "12 yeni avatar.",
+    ],
+  },
+  {
+    surum: 4,
+    tarih: "2026-10-15",
+    vakit: "sabah",
+    baslik: "Kara geldi, şantiyeye makineler",
+    maddeler: [
+      "Maskotumuz Kara geldi: kara bir kedi. Dokununca tepki verir, sen odaklanırken kitap okur, boş kalınca uyur.",
+      "Şantiyede kule vinç, ekskavatör, damperli kamyon, beton mikseri ve pompa birlikte çalışıyor. İşçiler aletleriyle geliyor.",
+      "Malzeme yığınları azalıp çoğalıyor, çatı makası kuruluyor, bina bitince kurdele kesilip \"İskân alındı\" mührü basılıyor.",
+      "Bildirimler kaçmasın diye sıraya alınıyor, gitmezse yeniden deneniyor.",
+    ],
+  },
+  {
+    surum: 3,
+    tarih: "2026-10-14",
+    vakit: "akşam",
+    baslik: "Gerçek şantiye ve daha güvenilir bildirimler",
+    maddeler: [
+      "Binalar gerçek bir betonarme şantiyesi gibi yükseliyor: hafriyat, temel, kat kat kolon ve döşeme, duvar, çatı, cephe.",
+      "Planların başkalarında görünmemesi düzeldi. Plan formu artık gün ve saat düğmeleriyle.",
+      "Salon seçimi tek dokunuş: Adnan ya da Müjgan. Bildirimler daha güvenilir, zil düğmesi deneme bildirimi atıyor.",
+      "Köyde ağaç türleri, çiçekler, çalılar ve yeni isim tabelaları.",
+      "Güvenlik ve sağlamlık için büyük bir kontrol turu yapıldı. Bir de gizli bir kara delik kapısı var, bulan rozet alır.",
+    ],
+  },
+  {
+    surum: 2,
+    tarih: "2026-10-14",
+    vakit: "sabah",
+    baslik: "Ortak köy ve hesaplar",
+    maddeler: [
+      "Ekibin ortak köyü: herkesin kendi mahallesi var, binalar orada kalıcı yerini alıyor.",
+      "Kullanıcı adı ve şifreyle giriş. Şifreni unutursan Batur'dan kod alırsın.",
+      "Ekipten ayrılırken adını yazıp onaylaman isteniyor, yanlışlıkla basılmasın diye.",
+      "Küçük sürprizler: panoya \"çay\" yaz, gece 3'te uygulamayı aç, alttaki imzaya uzun bas.",
+    ],
+  },
+  {
+    surum: 1,
+    tarih: "2026-10-13",
+    vakit: "akşam",
+    baslik: "Kütüp açıldı",
+    maddeler: [
+      "Kütüpte kim var, kim yolda, kim molada: tek bakışta.",
+      "Plan yap, Pano'da yaz, davet linkiyle arkadaşını ekibe ekle.",
+      "\"Batur'a ilet\" ile fikir ya da hata yaz, ne olduğunu takip et.",
+      "Odak seansı: uygulamadan çıkarsan fidan solar. İnşaat modunda odaklandıkça binan yükselir ve köyüne katılır.",
+    ],
+  },
+];
+
+const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+/** "2026-10-18" + "akşam" → "18 Ekim 2026 · akşam" */
+export function tarihYazisi({ tarih, vakit }) {
+  const [y, a, g] = tarih.split("-").map(Number);
+  return `${g} ${AYLAR[a - 1]} ${y}${vakit ? ` · ${vakit}` : ""}`;
+}

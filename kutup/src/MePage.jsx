@@ -1,8 +1,9 @@
 // The "Ben" tab (n17): everything about me in one place, so nothing hides behind
-// a menu. Profile, look and stats; inviting a friend and writing to Batur; account.
+// a menu. Profile, look and stats; inviting a friend and writing to Batur;
+// what changed in each version (n41); account.
 import React, { useState } from "react";
 import { m, AnimatePresence } from "motion/react";
-import { Award, BookOpen, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, UserRound, UserRoundPlus, Users } from "lucide-react";
+import { Award, BookOpen, ChartColumn, ChevronRight, DoorOpen, KeyRound, LogOut, Palette, Plus, Send, Sparkles, UserRound, UserRoundPlus, Users } from "lucide-react";
 import { Avatar } from "./ui.jsx";
 import { MemberStats } from "./later.jsx";
 import { Modal } from "./Modal.jsx";
@@ -29,7 +30,7 @@ function Row({ icon: Icon, title, sub, onClick, href, danger, count, open }) {
   );
 }
 
-export function MePage({ me, group, size, requests, setModal, navigate, leave, openStory, accounts: actions }) {
+export function MePage({ me, group, size, requests, yenilik, setModal, navigate, leave, openStory, accounts: actions }) {
   const [stats, setStats] = useState(false);
   // n25: with more than one account on this device, they come first.
   const accounts = useAccounts(me?.id);
@@ -100,6 +101,16 @@ export function MePage({ me, group, size, requests, setModal, navigate, leave, o
         <Row icon={BookOpen} title="Haftanın hikâyesi" sub="Ekibin haftası kart kart; paylaşmalık kartın" onClick={openStory} />
         <Row icon={UserRoundPlus} title="Arkadaşını ekibe ekle" sub="Davet bağlantısını paylaş" onClick={() => setModal("invite")} />
         <Row icon={Send} title="Batur’a ilet" sub={requests ? `${requests} yeni gelişme var` : "Fikir, hata ya da iki çift laf"} count={requests} onClick={() => navigate("feedback")} />
+      </Reveal>
+      <div className="me-label">KÜTÜP</div>
+      <Reveal className="me-rows" delay={0.08}>
+        <Row
+          icon={Sparkles}
+          title="Yenilikler"
+          sub={yenilik?.yeni ? `Yeni: ${yenilik.son.baslik}` : "Her güncellemede neler değişti"}
+          count={yenilik?.yeni ? 1 : 0}
+          onClick={() => setModal("yenilikler")}
+        />
       </Reveal>
       <div className="me-label">HESAP</div>
       <Reveal className="me-rows" delay={0.1}>

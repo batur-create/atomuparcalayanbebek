@@ -137,3 +137,20 @@ test('every drawn avatar, with any accessories, renders clean markup and round-t
   assert.equal(A.avatarArt('🦊'), null);
   assert.equal(A.avatarText('🦊'), '🦊');
 });
+
+test('yenilikler (n41): one entry per version, newest first, plain short lines', async () => {
+  const { YENILIKLER, tarihYazisi } = await import('../src/yenilikler.js');
+  assert.ok(YENILIKLER.length > 0);
+  YENILIKLER.forEach((s, i) => {
+    assert.equal(s.surum, YENILIKLER.length - i, `sürüm ${s.surum}: numbers count down by one`);
+    assert.match(s.tarih, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(!Number.isNaN(Date.parse(s.tarih)), s.tarih);
+    assert.ok(['sabah', 'öğle', 'akşam', 'gece'].includes(s.vakit), `sürüm ${s.surum}: vakit`);
+    if (i) assert.ok(s.tarih <= YENILIKLER[i - 1].tarih, `sürüm ${s.surum}: dates never go forward down the list`);
+    assert.ok(s.baslik.trim() && s.baslik.length <= 60, `sürüm ${s.surum}: short title`);
+    assert.ok(s.maddeler.length >= 1 && s.maddeler.length <= 6, `sürüm ${s.surum}: 1 to 6 lines`);
+    for (const line of s.maddeler) assert.ok(line.trim() && line.length <= 260, `sürüm ${s.surum}: "${line.slice(0, 40)}…"`);
+    assert.equal(new Set(s.maddeler).size, s.maddeler.length, `sürüm ${s.surum}: no repeated line`);
+  });
+  assert.equal(tarihYazisi({ tarih: '2026-10-18', vakit: 'akşam' }), '18 Ekim 2026 · akşam');
+});
