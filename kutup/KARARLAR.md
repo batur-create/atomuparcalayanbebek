@@ -23,7 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| n43 | Komuta merkezi: yapı ve plan hediye, yapı geri alma, ekibe duyuru, yapı istekleri; Yenilikler ve Ben'deki şeyler ana sayfada | Herkes + Batur | 19 Eki 23:50 | PR #(açılınca) |
+| n43 | Komuta merkezi: yapı ve plan hediye, yapı geri alma, ekibe duyuru, yapı istekleri; Yenilikler ve Ben'deki şeyler ana sayfada | Herkes + Batur | 19 Eki 23:50 | PR #41 |
 | rahat-insaat | Ekran kilitliyken süren ayrı mod, aşama bildirimleri, hızlandırılmış teslim ve dar iPhone PWA sığma düzeltmesi | Odak | 19 Eki | codex/relaxed-construction PR |
 | n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR #37 |
 | n41 | Yenilikler: her sürümde neler değişti, herkes için, Ben'de; 1–16. sürüm geriye dönük | Herkes | 19 Eki 07:30 | PR #36 |
@@ -93,7 +93,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 ## Kayıtlar (yeniden eskiye)
 
 ### n43 · Komuta merkezi yetkileri ve Kütüp'ten haberler
-Herkes + Batur · 19 Eki 2026 · PR (ikinci üs) · göç 27
+Herkes + Batur · 19 Eki 2026 · PR #41 (ikinci üs) · göç 27
 
 **Batur'un sözleri:** "İstediğim yapıyı da hediye edebileyim. Çünkü bazı arkadaşlarım yanlışlıkla seansını bitirdi … yöneticinin sahip olması gereken her türlü yetkiyi ver … Gerekli olan özellikleri bir önce bak, düşün, sonra ver." · "ben menüsündeki bazı özellikler çok arka planda kalmış … yenilikleri otomatik her güncellemede herkesin ana sayfasına düşürecek şekilde" · "yeni bina isteme kısmı ekle … bana iletsin … Ben onu karar veririm."
 
