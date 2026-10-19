@@ -863,14 +863,15 @@ test("the desk map: numbered chairs, typed desks placed, the rest listed (n30)",
   const [adnan, mujgan] = ROOMS;
   assert.equal(roomOf("Adnan Ötüken Okuma Salonu"), adnan);
   assert.equal(roomOf("Kafeterya"), null);
-  assert.equal(seatsOf(adnan), 60);
+  assert.equal(seatsOf(adnan), 425);
   assert.equal(seatsOf(mujgan), 36);
-  const tables = tablesOf(adnan);
+  const tables = tablesOf(mujgan);
+  assert.deepEqual(tablesOf(adnan), []);
   assert.deepEqual(tables[0][0], { number: 1, top: [1, 2, 3], bottom: [4, 5, 6] });
   assert.deepEqual(tables[0][1], { number: 2, top: [7, 8, 9], bottom: [10, 11, 12] });
-  assert.equal(tables.at(-1).at(-1).bottom.at(-1), 60);
-  assert.deepEqual(tables.flat().flatMap((t) => [...t.top, ...t.bottom]), Array.from({ length: 60 }, (_, i) => i + 1));
-  for (const [typed, n] of [["24", 24], [" masa 7", 7], ["Masa12", 12], ["no. 3", 3], ["#9", 9], ["24 pencere yanı", 24], ["pencere yanı", null], ["2. kat 14", null], ["0", null], ["61", null], ["1234", null], ["", null], [null, null]])
+  assert.equal(tables.at(-1).at(-1).bottom.at(-1), 36);
+  assert.deepEqual(tables.flat().flatMap((t) => [...t.top, ...t.bottom]), Array.from({ length: 36 }, (_, i) => i + 1));
+  for (const [typed, n] of [["24", 24], [" masa 7", 7], ["Masa12", 12], ["no. 3", 3], ["#9", 9], ["24 pencere yanı", 24], ["pencere yanı", null], ["2. kat 14", null], ["0", null], ["61", 61], ["425", 425], ["426", null], ["1234", null], ["", null], [null, null]])
     assert.equal(deskNumber(typed, adnan), n, String(typed));
   assert.equal(deskNumber("40", mujgan), null);
   const members = [
@@ -890,6 +891,23 @@ test("the desk map: numbered chairs, typed desks placed, the rest listed (n30)",
   assert.deepEqual(elsewhere(members).map((x) => x.id), ["g", "h"]);
   assert.equal(headcount(members, adnan), 3);
   assert.equal(headcount(members, mujgan), 1);
+});
+
+test("Adnan's supplied plan retains 425 unique individual seats and source landmarks", () => {
+  const plan = ROOMS[0].plan;
+  assert.deepEqual(plan.seats.map((seat) => seat.number), Array.from({ length: 425 }, (_, i) => i + 1));
+  for (const seat of plan.seats) {
+    assert.ok(seat.width * 1.8 >= 44 && seat.height * 1.8 >= 44, `touch size: ${seat.number}`);
+    assert.ok(seat.x >= 0 && seat.y >= 0 && seat.x + seat.width <= plan.width && seat.y + seat.height <= plan.height);
+  }
+  // These anchors cover opposite ends and the vertical bank in the supplied JSON.
+  assert.deepEqual(plan.seats[0], { number: 1, x: 108, y: 1182, width: 52.2, height: 25 });
+  assert.deepEqual(plan.seats[80], { number: 81, x: 468, y: 117, width: 36, height: 46.4 });
+  assert.deepEqual(plan.seats[424], { number: 425, x: 1750.333, y: 1218.333, width: 76.667, height: 26 });
+  assert.deepEqual(plan.entrance, { x: 1442, y: 1210 });
+  assert.equal(plan.corridors.length, 3);
+  const occupant = { id: "last", status: "here", location: ROOMS[0].name, desk: "425 pencere yanı" };
+  assert.deepEqual(seating([occupant], ROOMS[0]).desks.get(425), [occupant]);
 });
 
 // ---------- n14: achievements ----------

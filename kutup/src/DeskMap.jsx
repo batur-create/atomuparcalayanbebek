@@ -7,18 +7,20 @@ import { ROOMS, elsewhere, headcount, roomOf, seating, tablesOf } from "../share
 import { Avatar, Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 import "./deskmap.css";
+import { SeatPlan } from "./SeatPlan.jsx";
 
 const firstName = (member) => String(member.name || "").split(" ")[0];
 
-function Seat({ n, people, me, picked, pick, openMember }) {
+function Seat({ n, people, me, picked, pick, openMember, ...props }) {
   const mine = people.some((x) => x.id === me?.id);
   if (!people.length)
     return (
       <button
         type="button"
+        {...props}
         className={`dm-seat free ${picked ? "picked" : ""}`}
         aria-pressed={picked}
-        aria-label={`Masa ${n}, boş`}
+        aria-label={`Koltuk ${n}, ekibinden kimse işaretlememiş`}
         onClick={() => pick(picked ? null : n)}
       >
         <span>{n}</span>
@@ -26,15 +28,16 @@ function Seat({ n, people, me, picked, pick, openMember }) {
     );
   const [first, ...more] = people;
   const resting = people.every((x) => x.status === "break");
-  const label = `Masa ${n}: ${people.map((x) => (x.id === me?.id ? "sen" : firstName(x)) + (x.status === "break" ? ", molada" : "")).join(", ")}`;
+  const label = `Koltuk ${n}: ${people.map((x) => (x.id === me?.id ? "sen" : firstName(x)) + (x.status === "break" ? ", molada" : "")).join(", ")}`;
   return (
     <button
       type="button"
+      {...props}
       className={`dm-seat taken ${mine ? "mine" : ""} ${resting ? "resting" : ""}`}
       aria-label={label}
       title={label}
-      onClick={() => (mine ? pick(null) : openMember(first))}
-      disabled={mine && !more.length}
+      onClick={() => { if (!mine) openMember(first); }}
+      aria-disabled={mine && !more.length ? true : undefined}
     >
       <Avatar member={first} size="tiny" />
       <span className="dm-name">{mine ? "Sen" : firstName(first)}</span>
@@ -89,7 +92,7 @@ export function DeskMap({ data, me, start, close, mutate, requireMember, openMem
       if (ok) setPicked(null);
     });
   return (
-    <Modal title="Masa haritası" subtitle="Kim hangi masada? Boş bir sandalyeye dokun, oraya oturduğunu ekibin görsün." close={close} className="desk-map">
+    <Modal title="Masa haritası" subtitle="Kim hangi koltukta? Yerini seç, ekibin seni bulsun." close={close} className={`desk-map ${room.plan ? "has-plan" : ""}`}>
       <div className="dm-rooms" role="group" aria-label="Salon">
         {ROOMS.map((x) => {
           const count = headcount(members, x);
@@ -101,7 +104,17 @@ export function DeskMap({ data, me, start, close, mutate, requireMember, openMem
           );
         })}
       </div>
-      <div className="dm-room" role="group" aria-label={`${room.name} krokisi`}>
+      {room.plan ? (
+        <SeatPlan
+          key={room.name}
+          room={room}
+          desks={desks}
+          renderSeat={(seat, props) => (
+            <Seat key={seat.number} n={seat.number} people={desks.get(seat.number) || []}
+              me={me} picked={picked === seat.number} pick={setPicked} openMember={openMember} {...props} />
+          )}
+        />
+      ) : <div className="dm-room" role="group" aria-label={`${room.name} krokisi`}>
         <span className="dm-shelves" aria-hidden="true">
           <small>raflar</small>
         </span>
@@ -133,10 +146,11 @@ export function DeskMap({ data, me, start, close, mutate, requireMember, openMem
           <small>giriş</small>
         </span>
       </div>
+      }
       {picked && (
         <div className="dm-pick" role="status">
           <span>
-            <b>Masa {picked}</b>
+            <b>Koltuk {picked}</b>
             <small>{room.short} salonu</small>
           </span>
           <button type="button" className="btn ghost" onClick={() => setPicked(null)}>
@@ -167,7 +181,7 @@ export function DeskMap({ data, me, start, close, mutate, requireMember, openMem
           </div>
         </div>
       )}
-      <p className="form-footnote dm-note">Kroki temsilî: masa numaraları salondakiyle birebir olmayabilir. Masanı yazıyla da söyleyebilirsin, “Geldim”deki masa alanından.</p>
+      <p className="form-footnote dm-note">{room.plan ? "Adnan yerleşimi, paylaşılan salon planına göre hazırlanmıştır; ölçekli mimari çizim değildir." : "Müjgan krokisi temsilî; numaralar salondakiyle birebir olmayabilir."} İşaretlenmemiş koltuklar gerçekte boş demek değildir; burada yalnız ekibinin bildirdiği yerler görünür.</p>
     </Modal>
   );
 }

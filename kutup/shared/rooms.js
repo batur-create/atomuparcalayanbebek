@@ -1,19 +1,18 @@
-// The reading rooms on the desk map (n30). Each room is a bird's-eye sketch:
-// rows of reading tables, two to a row, with chairs on both long sides. Desks
-// are numbered table by table, row by row: the top chairs left to right, then
-// the bottom ones. The plans are representative until Batur sends the real
-// layout; changing a room here moves every desk on the map, nothing is stored.
+// Room names remain the existing presence keys; no saved records are migrated.
+import { ADNAN_PLAN } from "./adnanPlan.js";
+
 export const ROOMS = [
-  { name: "Adnan Ötüken Okuma Salonu", short: "Adnan", emoji: "📚", rows: 5, perSide: 3 },
+  { name: "Adnan Ötüken Okuma Salonu", short: "Adnan", emoji: "📚", plan: ADNAN_PLAN },
   { name: "Dr. Müjgan Cunbur Okuma Salonu", short: "Müjgan", emoji: "📖", rows: 3, perSide: 3 },
 ];
 const COLUMNS = 2;
 
 export const roomOf = (location) => ROOMS.find((room) => room.name === location) || null;
-export const seatsOf = (room) => room.rows * COLUMNS * room.perSide * 2;
+export const seatsOf = (room) => room.plan ? room.plan.seats.length : room.rows * COLUMNS * room.perSide * 2;
 
 /** The tables of a room, row by row: [[{top: [1, 2, 3], bottom: [4, 5, 6]}, …], …]. */
 export function tablesOf(room) {
+  if (room.plan) return []; // surveyed seats are individual, not synthetic shared tables
   const perTable = room.perSide * 2;
   return Array.from({ length: room.rows }, (_, row) =>
     Array.from({ length: COLUMNS }, (_, column) => {
@@ -28,7 +27,9 @@ export function tablesOf(room) {
 export function deskNumber(desk, room) {
   const match = /^\s*(?:masa\s*|no\.?\s*|#\s*)?(\d{1,3})(?!\d|\s*\.\s*kat)/i.exec(String(desk || ""));
   const n = match ? Number(match[1]) : 0;
-  return n >= 1 && n <= seatsOf(room) ? n : null;
+  return room.plan
+    ? (room.plan.seats.some((seat) => seat.number === n) ? n : null)
+    : (n >= 1 && n <= seatsOf(room) ? n : null);
 }
 
 const inside = (member) => member.status === "here" || member.status === "break";
