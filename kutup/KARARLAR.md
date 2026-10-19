@@ -23,7 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR (n42) |
+| n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR #37 |
 | n41 | Yenilikler: her sürümde neler değişti, herkes için, Ben'de; 1–16. sürüm geriye dönük | Herkes | 19 Eki 07:30 | PR #36 |
 | n36 | İnşaat tam şov, 1. tur: pil, mobil vinç, kirişler, temel su yalıtımı, çatı OSB + örtü, mantolama | Şantiye | 17 Eki 20:15 | 825c5561 (PR #22 via #24, Worker b690b171) |
 | n36b | İnşaat tam şov, 2. tur: duvara göre yapım sistemi (yığma kagir, ahşap karkas, çelik + cam) | Şantiye | 17 Eki | 825c5561 (PR #23 via #24, Worker b690b171) |
@@ -91,7 +91,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 ## Kayıtlar (yeniden eskiye)
 
 ### n42 · Kara’ya sor: istenince açılan yardım
-Herkes · 19 Eki 2026 · #36'nın üstünde · göç yok, sunucu değişmedi
+Herkes · 19 Eki 2026 · PR #37 · göç yok, sunucu değişmedi
 
 **Batur'un sözleri:** "onlar istediğinde açılan açıklamalar, yerinde fazla fazla gereksiz her yerde çıkan yazılardansa … hiçbir şey bilmeyen birisi bile sistemi güzelce kullanabilsin … maskotumuzu bile kullanabiliriz."
 
