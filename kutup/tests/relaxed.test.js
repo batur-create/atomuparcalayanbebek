@@ -39,8 +39,9 @@ test('migration 26 preserves an existing strict session and wallet across repeat
   const before = sql.prepare("SELECT * FROM members WHERE id='m'").get();
   const db = sqliteAdapter(sql);
   await migrate(db); await migrate(db);
-  const { focus_relaxed, focus_imece, focus_imece_phase, focus_imece_personal, focus_imece_ref, ...after } = sql.prepare("SELECT * FROM members WHERE id='m'").get();
+  const { focus_relaxed, focus_imece, focus_imece_phase, focus_imece_personal, focus_imece_ref, focus_imece_project,...after } = sql.prepare("SELECT * FROM members WHERE id='m'").get();
   assert.equal(focus_relaxed, 0);
+  assert.equal(focus_imece_project,null);
   assert.deepEqual([focus_imece,focus_imece_phase,focus_imece_personal,focus_imece_ref],[0,0,0,null]);
   assert.deepEqual(after, { ...before });
   assert.equal(sql.prepare('SELECT count(*) AS n FROM build_deliveries').get().n, 0);

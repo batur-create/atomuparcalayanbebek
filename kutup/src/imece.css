@@ -163,3 +163,5 @@
 }
 @media(prefers-reduced-motion:reduce) { .imece-meter>span { transition:none; } }
 html[data-motion=still] .imece-meter>span { transition:none; }
+
+.imece-team-picker { width: 100%; min-width: 0; margin: 8px 0 16px; }

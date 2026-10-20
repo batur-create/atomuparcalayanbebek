@@ -1,4 +1,4 @@
-// One project across every village. These are game-work budgets, not a claim
+// One project per team. These are game-work budgets, not a claim
 // about the real monument's construction hours. All budgets are in 25 min units.
 export const IMECE_ID = "bir-tas-da-senden";
 export const IMECE_TOTAL = 2000;

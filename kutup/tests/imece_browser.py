@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-imece-browser-') as directory:
                     return r.json()
                 people=[]
                 for i,ctx in enumerate(contexts):
-                    people.append(call(ctx,'/groups',{'name':['Batur','Bensu','Ece','Ada'][i],'username':f'imece_browser_{i}','password':'browser-test-123'}))
+                    people.append(call(ctx,'/join' if i else '/groups',{**({'invite':people[0]['group']['invite']} if i else {}),'name':['Batur','Bensu','Ece','Ada'][i],'username':f'imece_browser_{i}','password':'browser-test-123'}))
                 call(owner,'/owner/login',{'key':key})
                 admin=owner.new_page(); admin.goto(base+'/batur')
                 admin.get_by_role('button',name='Ortak Anıtkabir',exact=False).click()
@@ -58,9 +58,9 @@ with tempfile.TemporaryDirectory(prefix='kutup-imece-browser-') as directory:
                 admin.on('dialog',lambda d:d.accept())
                 admin.get_by_role('button',name='Dört ustayı göreve çağır',exact=False).click()
                 expect(admin.get_by_text('Proje sürüyor:',exact=False)).to_be_visible()
-                check(call(contexts[2],'/imece')['slot']>=0,'The same project is visible across separate villages')
+                check(call(contexts[2],'/imece')['slot']>=0,'The same project is visible to its team')
                 replacement_context=browser.new_context()
-                replacement_person=call(replacement_context,'/groups',{'name':'Doğru hesap','username':'imece_correct','password':'browser-test-123'})
+                replacement_person=call(replacement_context,'/join',{'invite':people[0]['group']['invite'],'name':'Doğru hesap','username':'imece_correct','password':'browser-test-123'})
                 admin.reload();admin.get_by_role('button',name='Ortak Anıtkabir',exact=False).click()
                 admin.get_by_role('button',name='Batur hesabını değiştir',exact=True).click()
                 picker=admin.get_by_label('Yeni katılımcı hesabı',exact=True)
@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-imece-browser-') as directory:
                 expect(modal.locator('canvas.imece-static')).to_be_visible()
                 check('Batur' in modal.locator('.imece-kara').inner_text(),'Kara introduces a personal mission by name')
                 page.screenshot(path=str(artifacts/'telefon-baslangic.png'))
-                modal.get_by_role('button',name='Ben de bir taş koyayım',exact=False).click()
+                modal.get_by_role('button',name='Çalışmaya başla · 25 dk',exact=False).click()
                 expect(modal.get_by_text('Görevin sürüyor',exact=False)).to_be_visible()
                 me=call(contexts[0],'/state')['members'][0]
                 check(me['focusImece']==1 and me['focusRelaxed']==1 and me['focusStrict']==0,'Real mission begins in screen-off relaxed mode without a private building')

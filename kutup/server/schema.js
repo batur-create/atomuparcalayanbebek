@@ -3,6 +3,7 @@
 // through prepared statements), applied together with the version bump in one batch.
 import {WEEKLY_BACKFILL} from "../shared/blueprints.js";
 import {PLAN_LEGACY_IMPORT} from "../shared/plans.js";
+import {IMECE_TEAM_IMPORT} from "../shared/imeceMigration.js";
 export const migrations = [
   // 1 — the original Kütüp schema (idempotent, so pre-versioning databases pass through).
   [
@@ -312,6 +313,16 @@ export const migrations = [
   [
     "CREATE TABLE blueprint_progress(member_id TEXT PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE, carry INTEGER NOT NULL DEFAULT 0 CHECK(carry>=0 AND carry<25), dry INTEGER NOT NULL DEFAULT 0 CHECK(dry>=0 AND dry<500), draws INTEGER NOT NULL DEFAULT 0 CHECK(draws>=0), seed TEXT NOT NULL)",
     ...WEEKLY_BACKFILL,
+  ],
+  // 32 — one independent monument per team; keep the original global archive.
+  [
+    "CREATE TABLE imece_projects(id TEXT PRIMARY KEY,group_id TEXT UNIQUE REFERENCES groups(id) ON DELETE SET NULL,rev INTEGER NOT NULL DEFAULT 1,started INTEGER NOT NULL,completed INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE imece_slots(project_id TEXT NOT NULL REFERENCES imece_projects(id),slot INTEGER NOT NULL CHECK(slot BETWEEN 0 AND 3),member_id TEXT REFERENCES members(id) ON DELETE SET NULL,name TEXT NOT NULL,avatar TEXT NOT NULL,color TEXT NOT NULL,seen_minutes INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(project_id,slot),UNIQUE(project_id,member_id))",
+    "CREATE TABLE imece_work(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,slot INTEGER NOT NULL,phase INTEGER NOT NULL CHECK(phase BETWEEN 0 AND 2),minutes INTEGER NOT NULL CHECK(minutes IN (25,50,75)),personal INTEGER NOT NULL CHECK(personal>=0 AND personal<=minutes),session_end INTEGER NOT NULL,created INTEGER NOT NULL,FOREIGN KEY(project_id,slot) REFERENCES imece_slots(project_id,slot))",
+    "CREATE INDEX imece_work_project ON imece_work(project_id,created,id)",
+    "CREATE INDEX imece_slots_member ON imece_slots(member_id)",
+    "ALTER TABLE members ADD COLUMN focus_imece_project TEXT",
+    ...IMECE_TEAM_IMPORT,
   ],
 ];
 

@@ -1121,11 +1121,12 @@ export function defineSuite(target) {
     assert.equal((await request('/leave',{cookie,body:{}})).status,200);
   });
 
-  test(`[${target}] one Anıtkabir across villages: full 2000 minute project, reservations and all personal signatures`, async () => {
-    const crew=[];
+  test(`[${target}] one Anıtkabir per team: full 2000 minute project, reservations and all personal signatures`, async () => {
+    const crew=[];let crewInvite;
     for(let i=0;i<4;i++) {
       const name=`İmeceUsta${i}`;
-      const r=await request("/groups",{body:{name,username:`imece_usta_${i}`,password:"imece-test-123"}});
+      const r=await request(i?"/join":"/groups",{body:{...(i?{invite:crewInvite}:{}),name,username:`imece_usta_${i}`,password:"imece-test-123"}});
+      if(!i)crewInvite=r.data.group.invite;
       assert.equal(r.status,201);crew.push({id:r.data.memberId,cookie:r.cookie,name});
     }
     assert.equal((await request("/imece")).status,401);
@@ -1134,8 +1135,8 @@ export function defineSuite(target) {
     assert.equal((await request("/owner/imece",{cookie:owner,body:{members:crew.map(p=>p.id)}})).status,201);
     const read=async(i=0)=>(await request("/imece",{cookie:crew[i].cookie})).data;
     assert.equal((await read(2)).crew.length,4);
-    assert.equal((await state("alice")).group.id,group.id,"global project never replaces the private team state");
-    assert.equal((await request("/focus",{cookie:people.alice,body:{action:"start",imece:true,relaxed:true,minutes:25}})).status,403);
+    assert.equal((await state("alice")).group.id,group.id,"another team project never replaces private team state");
+    assert.equal((await request("/focus",{cookie:people.alice,body:{action:"start",imece:true,relaxed:true,minutes:25}})).status,409);
     const work=async(i,minutes)=>{
       const r=await request("/focus",{cookie:crew[i].cookie,body:{action:"start",imece:true,relaxed:true,minutes}});
       assert.equal(r.status,200,JSON.stringify(r.data));
@@ -1149,7 +1150,7 @@ export function defineSuite(target) {
     assert.equal((await request("/focus",{cookie:crew[0].cookie,body:{action:"start",imece:true,relaxed:true,minutes:25}})).status,409);
     assert.equal((await read()).phase,0);
     const parallel=await Promise.all(crew.slice(1).map(p=>request("/focus",{cookie:p.cookie,body:{action:"start",imece:true,relaxed:true,minutes:50}})));
-    assert.ok(parallel.every(r=>r.status===200),"different villages can reserve distinct personal jobs together");
+    assert.ok(parallel.every(r=>r.status===200),"teammates can reserve distinct personal jobs together");
     for(let i=1;i<4;i++)await request("/__test/expire",{body:{name:crew[i].name,away:true}});
     await Promise.all([read(0),read(1),read(2)]);
     assert.equal((await read()).phase,1);
