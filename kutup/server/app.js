@@ -5,6 +5,8 @@ import { SCHEMA_VERSION, migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
+import { createImece } from "./imece.js";
+import { BACKUP_TABLES } from "../shared/backup.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
 import { CAPACITY, cellKey, cellLayout, createPlanner, freeSpots, isMonument, kindFor, monumentCells } from "../shared/village.js";
@@ -196,6 +198,7 @@ export const SECURITY_HEADERS = {
  * @param {(groupId: string) => void} [options.onChange]
  */
 export function createApp({ db, config = {}, live = "poll", onChange = () => {} }) {
+  const imece = createImece({ db, fail });
   let ready, vapid, lastCleanup = 0;
   // The address the app is really served from, for pushes sent by the timer,
   // which has no request of its own (d23). PUBLIC_ORIGIN wins when it is set.
@@ -399,7 +402,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, board_seen AS boardSeen, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_imece AS focusImece, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, board_seen AS boardSeen, updated, badge";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly] =
       await db.read([
@@ -681,6 +684,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       `SELECT id, focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_model AS model,
               focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd,
               focus_honest AS honest, focus_away AS away, focus_rescued AS rescued, focus_cracked_at AS cracked, focus_relaxed AS relaxed,
+              focus_imece AS imece, focus_imece_phase AS imecePhase, focus_imece_personal AS imecePersonal, focus_imece_ref AS imeceRef,
               EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
        FROM members WHERE ${due}`,
       args,
@@ -694,7 +698,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const start = s.ends - s.minutes * 60000;
       // Dürüst dakika (n40): a watched free session counts the minutes it was seen.
       s.credit = !s.strict && s.honest ? seenMinutes({ start, ends: s.ends, beat: s.beat, away: s.away }) : s.minutes;
-      const finished = (s.done = s.minutes > 0 && (s.strict ? s.relaxed || s.beat >= s.ends - BEAT_GRACE && !s.cracked : !s.honest || s.credit >= HONEST_MIN));
+      const finished = (s.done = s.minutes > 0 && (s.imece ? s.credit === s.minutes : s.strict ? s.relaxed || s.beat >= s.ends - BEAT_GRACE && !s.cracked : !s.honest || s.credit >= HONEST_MIN));
       const pay = [];
       if (finished) {
         // A session started within ten minutes of the last one's end continues its streak.
@@ -706,7 +710,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         const owned = new Set((await db.all("SELECT DISTINCT model FROM buildings WHERE member_id = ?", [s.id])).map((b) => b.model));
         const pct = (v) => `+%${Math.round(v * 100)}`;
         const lost = s.minutes - s.credit;
-        pay.push([wage, "wage", s.strict ? `${item.name}: ${s.minutes} dk inşaat${s.rescued ? " (kurtarıldı)" : ""}` : `${s.credit} dk serbest çalışma (yarım maaş${lost > 0 ? `, uzakta geçen ${lost} dk sayılmadı` : ""})`]);
+        pay.push([wage, "wage", s.imece ? `Bir Taş da Senden: ${s.credit} dk ortak emek (yarım maaş)` : s.strict ? `${item.name}: ${s.minutes} dk inşaat${s.rescued ? " (kurtarıldı)" : ""}` : `${s.credit} dk serbest çalışma (yarım maaş${lost > 0 ? `, uzakta geçen ${lost} dk sayılmadı` : ""})`]);
         const streak = streakBonus(chain) + (chain >= 2 && owned.has("kutuphane") ? 0.05 : 0);
         if (streak) pay.push([Math.round(wage * streak), "streak", `Seri: art arda ${chain}. seans (${pct(streak)}${owned.has("kutuphane") ? ", kütüphanen sayesinde" : ""})`]);
         const friends = await imeceOf(groupId, s.id, start, s.ends);
@@ -780,6 +784,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       }
       for (const [delta, reason, note] of pay) statements.push(ledgerRow(s.id, delta, reason, ref, note, now, s.ends));
     }
+    statements.push(...await imece.settle(sessions, now));
     if (planner) statements.push(bumpVillage(groupId));
     const finishing = sessions.filter((s) => s.done);
     // Sessions that ended at the same moment were done together: one board line,
@@ -802,7 +807,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (finishing.length)
       statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.credit, 0), finishing.at(-1).id)));
     statements.push(
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
@@ -1016,6 +1021,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   function deleteMember(member) {
     const id = member.id;
     return [
+      ...imece.release(),
       ["DELETE FROM reactions WHERE member_id = ? OR message_id IN (SELECT id FROM messages WHERE member_id = ?)", [id, id]],
       ["DELETE FROM attendees WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
       ["DELETE FROM plan_skips WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
@@ -1641,6 +1647,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // A watched free session ends at `at` (now, or where its owner left): it is
   // cut to the whole minutes up to then and settled like any finished session.
   async function endFree(m, current, at) {
+    // Project work is a whole 25/50/75 min commitment. An interrupted watched
+    // session releases its reservation, never pretends the selected work is done.
+    if (m.focus_imece) {
+      await retrying(async () => [
+        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
+        ...imece.release(), bump(m.group_id),
+      ], m.group_id);
+      return { credited: 0, seen: 0 };
+    }
     const start = current.focus_end - current.focus_minutes * 60000,
       minutes = Math.max(0, Math.floor((at - start) / 60000));
     const cut = await db.run("UPDATE members SET focus_end = ?, focus_minutes = ? WHERE id = ? AND focus_end = ?", [start + minutes * 60000, minutes, m.id, current.focus_end]);
@@ -1667,7 +1682,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       now = Date.now();
     if (action === "finish") {
       const before = await db.get(
-        "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_honest AS honest, focus_away AS away, focus_rescued AS rescued, focus_cracked_at AS cracked, focus_relaxed AS relaxed FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
+        "SELECT focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_honest AS honest, focus_away AS away, focus_rescued AS rescued, focus_cracked_at AS cracked, focus_relaxed AS relaxed, focus_imece AS imece FROM members WHERE id = ? AND focus_end > 0 AND focus_end <= ?",
         [m.id, now],
       );
       // A cracked site that can still be saved waits for its owner (n40).
@@ -1676,7 +1691,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (before) await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
       const withered = !!before?.strict && !before?.relaxed && (before.beat < before.ends - BEAT_GRACE || before.cracked > 0);
       const seen = before && !before.strict && before.honest ? seenMinutes({ start: before.ends - before.minutes * 60000, ends: before.ends, beat: before.beat, away: before.away }) : before?.minutes || 0;
-      return changed(m, { credited: withered || seen < (before?.honest ? HONEST_MIN : 0) ? 0 : seen, withered });
+      return changed(m, { credited: withered || (before?.imece && seen!==before.minutes) || seen < (before?.honest ? HONEST_MIN : 0) ? 0 : seen, withered });
     }
     // Kurtarma (n40): a build-mode site that cracked while you were away is saved
     // once. The time away does not count, and a fifth of the session is added.
@@ -1807,6 +1822,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // half of the materials come back now and 30% when the rubble is cleared.
     if (action === "cancel" || action === "wither") {
       if (action === "wither" && m.focus_relaxed) return json({ ok: true });
+      if(m.focus_imece && m.focus_end>0 && m.focus_end<=now){
+        await retrying(()=>settleFocus(m.group_id,now,m.id),m.group_id);
+        const done=await db.get("SELECT minutes FROM imece_contributions WHERE id=?",[m.focus_imece_ref]);
+        return changed(m,{stopped:true,credited:done?.minutes||0,withered:false});
+      }
       // A watched free session that is stopped keeps the minutes it was seen (n40).
       if (action === "cancel") {
         const current = await db.get("SELECT focus_end, focus_beat, focus_strict, focus_honest, focus_minutes FROM members WHERE id = ?", [m.id]);
@@ -1842,20 +1862,25 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
               ]
             : []),
           ...(current.focus_relaxed ? [["DELETE FROM push_outbox WHERE member_id = ? AND json_extract(payload, '$.tag') = ?", [m.id, relaxedTag(m.id, current.focus_end)]]] : []),
-          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE id = ?", [m.id]],
+          ...(current.focus_imece ? imece.release() : []),
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE id = ?", [m.id]],
           bump(m.group_id),
         ];
       }, m.group_id);
       return changed(m, outcome);
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
+    if (body.imece != null && typeof body.imece !== "boolean") fail("Ortak görev seçimi geçerli değil.");
+    const project = body.imece === true;
+    if (project && (body.strict === true || body.model != null || body.joinMember || body.rhythm)) fail("Ortak görev, kişisel bina veya masa ritmiyle aynı seans olamaz.");
+    if (project) await snapshot(m.group_id);
     if (m.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
     // Build mode builds something from the catalogue; its materials are paid now.
     // Older apps send only minutes: they get the plain building of that size.
     const strict = body.strict === true;
     if (body.relaxed != null && typeof body.relaxed !== "boolean") fail("İnşaat şekli geçerli değil.");
     const relaxed = body.relaxed === true;
-    if (relaxed && !strict) fail("Rahat mod yalnız inşaatta kullanılabilir.");
+    if (relaxed && !strict && !project) fail("Rahat mod yalnız inşaatta veya ortak görevde kullanılabilir.");
     let item = null;
     if (strict && body.model != null) {
       item = BY_ID[body.model];
@@ -1890,6 +1915,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (strict && !item) item = BY_ID[DEFAULT_MODEL[kindFor(minutes)]];
       end = now + minutes * 60000;
     }
+    if (item?.id === "anitkabir" && await db.get("SELECT id FROM imece_project LIMIT 1"))
+      fail("Anıtkabir artık bütün köylerin ortak görevi. Köy sekmesindeki Bir Taş da Senden kartını aç.", 409);
     const cost = item?.cost || 0;
     if (item && (item.rare || item.since)) {
       const plans = (await db.all("SELECT model FROM unlocks WHERE member_id = ?", [m.id])).map((u) => u.model);
@@ -1903,12 +1930,15 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);
       if (!current || current.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
       if (cost > current.bricks) fail(`${item.name} için ${cost - current.bricks} tuğla eksik.`);
+      const reservation = project ? await imece.reserve(m.id, minutes) : null;
       return [
       // An expired, uncredited session is settled before the new one starts.
       ...(await settleFocus(m.group_id, now, m.id)),
+      ...(reservation?.statements || []),
+      ["UPDATE members SET focus_imece=?, focus_imece_phase=?, focus_imece_personal=?, focus_imece_ref=? WHERE id=?", [project ? 1 : 0, reservation?.phase || 0, reservation?.personal || 0, project ? crypto.randomUUID() : null, m.id]],
       [
         "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_relaxed = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ?, focus_honest = ?, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = ?, focus_cracked_at = 0 WHERE id = ?",
-        [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, !strict && body.honest === true ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
+        [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && body.honest === true ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
       bump(m.group_id),
@@ -1927,7 +1957,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         );
       } catch {}
     }
-    if (relaxed) await relaxedNotices(ctx, m.id).catch(() => {});
+    if (relaxed && !project) await relaxedNotices(ctx, m.id).catch(() => {});
     return changed(m);
   });
 
@@ -2264,6 +2294,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ id, item: (await requests("f.id = ?", [id], { limit: 1 }))[0] }, 201);
   });
 
+  // Only the four due project workers are checked, even across villages. The
+  // returned data contains shared project profiles, never another team's state.
+  route("GET", "/imece", async ({ member }) => {
+    if (!await db.get("SELECT id FROM imece_project LIMIT 1")) return json(null);
+    const due = await db.all("SELECT DISTINCT group_id AS id FROM members WHERE focus_imece=1 AND focus_end>0 AND focus_end<=?", [Date.now()]);
+    for (const group of due) { await snapshot(group.id); onChange(group.id); }
+    return json(await imece.view(member.id));
+  });
+  route("POST", "/imece/seen", async ({ member, body }) => {
+    await imece.seen(member.id,body.through);
+    return json({ok:true});
+  });
+
   // The shared village in compact rows. Unchanged since `rev` → only the number
   // travels. `bbox=x0,y0,x1,y1` limits buildings to an area for very big villages.
   route("GET", "/village", async ({ member, url }) => {
@@ -2470,6 +2513,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true });
   }, false);
 
+  route("GET", "/owner/imece", async ({ request, ip }) => {
+    await requireOwner(request, ip);
+    return json(await imece.view(null));
+  }, false);
+  route("POST", "/owner/imece", async ({ request, ip, body, ctx }) => {
+    await requireOwner(request, ip);
+    await imece.launch(body.members, Date.now());
+    for (const id of body.members) await notifyMember(ctx, id, {
+      title: "Kara: Bir Taş da Senden", body: "Ortak Anıtkabir şantiyesi açıldı. Kişisel görevin seni bekliyor; dördümüzün de emeği olmadan açılış yok.", url: "/?tab=focus&imece=1", tag: "imece-launch",
+    }).catch(() => {});
+    return json(await imece.view(null), 201);
+  }, false);
+
   route("GET", "/owner/groups", async ({ request, ip }) => {
     await requireOwner(request, ip);
     const [groups, members] = await db.read([
@@ -2642,10 +2698,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // A member's buildings, newest first, and the blueprints they hold, for the
   // panel (to take a building back, or not to give a plan twice).
-  route("GET", "/owner/members/:id/village", async ({ request, ip, params }) => {
+  route("GET", "/owner/members/:id/village", async ({ request, ip, params, url }) => {
     await requireOwner(request, ip);
     const [buildings, unlocks] = await db.read([
-      ["SELECT id, model, kind, minutes, created, likes, patched, gift FROM buildings WHERE member_id = ? ORDER BY created DESC LIMIT 200", [params.id]],
+      [`SELECT id, model, kind, minutes, created, likes, patched, gift FROM buildings WHERE member_id = ?${url.searchParams.get("model")==="anitkabir"?" AND model='anitkabir'":""} ORDER BY created DESC LIMIT 200`, [params.id]],
       ["SELECT model FROM unlocks WHERE member_id = ?", [params.id]],
     ]);
     return json({ buildings, unlocks: unlocks.map((u) => u.model) });
@@ -2693,7 +2749,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
   route("GET", "/owner/backup", async ({ request, ip }) => {
     await requireOwner(request, ip);
-    const tables = ["groups", "members", "districts", "buildings", "building_likes", "build_deliveries", "build_push_events", "focus_log", "messages", "reactions", "plans", "attendees", "plan_skips", "feedback", "feedback_events", "achievements", "bricks_log", "activity", "unlocks", "weekly"];
+    const tables = BACKUP_TABLES;
     const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
     tables.forEach((t, i) => {

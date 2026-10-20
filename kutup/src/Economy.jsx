@@ -101,12 +101,14 @@ function WalletView({ wallet, bricks, back }) {
  *  Every card answers a tap: pick it, or hear what is missing (n27). */
 export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, start = "shop", founder = false, show }) {
   const [wallet, setWallet] = useState(null),
+    [imece,setImece] = useState(null),
     [view, setView] = useState(start),
     [hint, setHint] = useState(null);
   const collection = view === "collection",
     walletView = view === "wallet";
   useEffect(() => {
     get("/wallet").then(setWallet).catch(() => {});
+    get("/imece").then(setImece).catch(() => {});
   }, []);
   const built = wallet?.built || {},
     unlocks = wallet?.unlocks || [];
@@ -126,6 +128,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
     return `${short} 🧱 eksik: ${runs === 1 ? "25 dakikalık bir seans" : `25 dakikalık ${runs} seans`} daha.`;
   };
   const card = (item) => {
+    if(item.id === "anitkabir" && imece && !collection && !walletView) return <button key={item.id} type="button" className="catalog-item" onClick={()=>{close();window.dispatchEvent(new CustomEvent("kutup:imece"));}}><span className="catalog-owned">Ortak eser</span><BuildingThumb id={item.id}/><b>🇹🇷 Bir Taş da Senden</b><small>Anıtkabir bütün köylerin ortak şantiyesinde yükseliyor. Dört kişilik kadro, 2.000 dakika emek.</small><span className="catalog-effect">Ortak şantiyeye git →</span></button>;
     const cls = CLASSES[item.class],
       open = ["open", "new"].includes(state(item)),
       soon = state(item) === "soon",

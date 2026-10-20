@@ -273,6 +273,19 @@ export const migrations = [
   [
     "UPDATE buildings SET pos_x = NULL, pos_y = NULL WHERE model IN ('anitkabir', 'keops', 'kolezyum', 'sidney', 'suleymaniye') AND pos_x IS NOT NULL AND member_id IN (SELECT member_id FROM districts WHERE member_id IS NOT NULL)",
   ],
+  // 29 — Bir Taş da Senden: one opt-in project shared by all villages.
+  // No campaign or participant is created by migration. Batur launches it.
+  [
+    "ALTER TABLE members ADD COLUMN focus_imece INTEGER NOT NULL DEFAULT 0 CHECK(focus_imece IN (0,1))",
+    "ALTER TABLE members ADD COLUMN focus_imece_phase INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_imece_personal INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE members ADD COLUMN focus_imece_ref TEXT",
+    "CREATE INDEX members_imece ON members(focus_imece) WHERE focus_imece = 1",
+    "CREATE TABLE imece_project (id TEXT PRIMARY KEY CHECK(id = 'bir-tas-da-senden'), rev INTEGER NOT NULL DEFAULT 1, started INTEGER NOT NULL, completed INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE imece_crew (slot INTEGER PRIMARY KEY CHECK(slot BETWEEN 0 AND 3), member_id TEXT UNIQUE REFERENCES members(id) ON DELETE SET NULL, name TEXT NOT NULL, avatar TEXT NOT NULL, color TEXT NOT NULL, seen_minutes INTEGER NOT NULL DEFAULT 0)",
+    "CREATE TABLE imece_contributions (id TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES imece_crew(slot), phase INTEGER NOT NULL CHECK(phase BETWEEN 0 AND 2), minutes INTEGER NOT NULL CHECK(minutes IN (25,50,75)), personal INTEGER NOT NULL CHECK(personal >= 0 AND personal <= minutes), session_end INTEGER NOT NULL, created INTEGER NOT NULL)",
+    "CREATE INDEX imece_contributions_phase ON imece_contributions(phase, slot)",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

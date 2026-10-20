@@ -57,7 +57,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
   const running = !!me?.focusEnd && !finishing;
   // Build mode: the building sets the length. Free focus: you pick it. Under
   // the team rhythm the round does: the session ends at the shared break.
-  const item = running ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : BY_ID[model];
+  const item = running && me.focusImece ? {...modelOf(null,kindFor(me.focusMinutes)),name:"Anıtkabir imecesi",cost:0,id:"anitkabir",emoji:"🇹🇷"} : running ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : BY_ID[model];
   const round = rhythm && RHYTHMS[rhythm] ? rhythmAt(rhythm, now) : null,
     roundMinutes = round ? Math.floor((rhythmEnd(rhythm, now) - now) / 60000) : 0;
   const length = round ? roundMinutes : fidan ? minutesOf(item) : duration;
@@ -197,7 +197,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
             <Roll value={seconds % 60} />
           </b>
           <span>
-            {growing
+            {running && me.focusImece ? me.focusRelaxed ? "ortak görev · ekranı kilitleyebilirsin" : "ortak görev · seansı Kütüp açıkken tamamla" : growing
               ? me.focusRelaxed ? "🌙 rahat inşaat · ekranı kilitleyebilirsin" : onComputer()
                 ? "🏗️ sekmeler serbest, bu sekmeyi kapatma"
                 : `🏗️ çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön`

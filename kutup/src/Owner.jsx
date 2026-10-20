@@ -22,6 +22,7 @@ import { BlackHoleArt } from "./BlackHole.jsx";
 import { RequestTracker, ago } from "./Requests.jsx";
 import { Modal } from "./Modal.jsx";
 import { AnnounceModal, GiftModal } from "./OwnerGift.jsx";
+import { OwnerImece } from "./OwnerImece.jsx";
 
 const STAGE_FILTERS = [
   ["open", "Bekleyen", "📮"],
@@ -447,6 +448,7 @@ export function OwnerPage() {
               >
                 Ekipler <span>{groups.length}</span>
               </button>
+              <button className={`filter-chip ${view === "imece" ? "selected" : ""}`} onClick={()=>setView("imece")}>🇹🇷 Ortak Anıtkabir</button>
             </div>
             <button className="btn outline" onClick={load}>
               <RefreshCw size={15} /> Yenile
@@ -522,7 +524,7 @@ export function OwnerPage() {
               </div>
             </>
           ) : (
-            <div className="owner-groups">
+            view === "imece" ? <OwnerImece groups={groups}/> : <div className="owner-groups">
               {groups.map((g) => (
                 <article className="panel owner-group" key={g.id}>
                   <div className="owner-group-head">

@@ -274,7 +274,8 @@ test("n44: a monument already in the village moves to the centre of a district o
   // An old placement (before migration 28) is lifted and placed again.
   const home = rows.find((b) => b.model === "ev");
   sqlite.prepare("UPDATE buildings SET pos_x = ?, pos_y = ?, district_id = ? WHERE id = ?").run(home.x + 5, home.y, home.districtId, anit.id);
-  sqlite.prepare("UPDATE settings SET value = '27' WHERE key = 'schema'").run();
+  // Replay migration 28 alone; later additive migrations are already installed.
+  for (const sql of migrations[27]) await db.run(sql);
   await createApp({ db, config: { adminKey: "k".repeat(20) } }).ready();
   rows = where();
   const moved = rows.find((b) => b.model === "anitkabir");

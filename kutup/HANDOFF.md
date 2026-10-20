@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, ortak Anıtkabir teslimi:** Batur "Bir Taş da Senden" konseptini ve doğrudan kodlamayı onayladı; ilk turda işin büyük kısmını istedi. Dal `codex/anitkabir-imece`, hedef `kutup-platform`, teslim PR. **Birleştirme/yayın ve dört kişilik kadroyu seçip etkinliği başlatma Batur'da.** Gerçek veri ve eski yapılar değiştirilmedi. Tam rapor: `ASTRA_RAPOR_IMECE.md`. Önceki otomatik yayın talimatları bu teslim için geçerli değildir.
+
 > **19 Ekim, bu teslimin sınırı:** Batur Rahat inşaat modunu ve dar iPhone PWA odak ekranı düzeltmesini onayladı. Teslim `codex/relaxed-construction` dalından `kutup-platform` hedefine PR; birleştirme ve yayın Batur'da. Aşağıdaki eski otomatik yayın talimatı bu teslim için uygulanmaz. Başka açık işe geçilmedi.
 
 > **İkinci üs (17–22 Ekim 2026):** Batur'un Claude sınırı dolu; işler arkadaşının bilgisayarında, onun Claude hesabıyla, fork + PR ile yapılıyor. Kurulum, sınırlar, devir promptu ve sıradaki işlerin tanımı: `IKINCI-US.md`.
@@ -88,10 +90,11 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (bu PR: 146 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (bu PR: 170 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
 npm run test:browser # gerçek tarayıcı, 100 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 npm run test:browser:relaxed -- --artifacts /tmp/kutup-relaxed # Rahat/teslim ve iPhone boyut-yön kontrolleri (Chromium)
+npm run test:browser:imece -- --artifacts /tmp/kutup-imece # 35 ortak proje/film/mobil kontrolü, geçici veritabanı
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
@@ -125,7 +128,21 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 4. **Mini oyunlar** sadece molada açılır (durum "Molada" ya da seans yeni bitmiş). İnşaat sırasında kapalıdır.
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. KARARLAR.md arşivi, Paket 5 ve 6).
 
-## 6b. Durum (son güncelleme 19 Ekim 2026)
+## 6b. Durum (son güncelleme 20 Ekim 2026)
+
+> **Bir Taş da Senden / Anıtkabir İmecesi (20 Ekim, PR):** Bütün köylerin ortak tek projesi; Batur komuta merkezinde dört gerçek profili seçerek başlatır. Göç 29 yalnız sütun/tablo ekler; eski anıtlar otomatik silinmez. Hedef 2.000 dk = 400 temel + 1.200 ana yapı + 400 ayrıntı. Herkesin bölüm başına zorunlu payı 50/150/50 dk; kalan 1.000 dk paylaşılır. Takvim kilidi yok. Kadro başlangıçta sabittir; eksik görevli hesabın ayrılması açılışı bekletir, otomatik muafiyet yoktur.
+>
+> `shared/imece.js`: 22 işin süre/açıklama/inşaat gerekçesi, aşamalar ve kişisel pay. `server/imece.js`: küresel revizyonla kapasite rezervasyonu, tek seferlik katkı, kalıcı teslim. `/focus` `imece:true` ile ayrı hedef alır; kişisel bina ve malzeme ücreti yok. Varsayılan Rahat ekran kapalıyken sürer; Takipli seçeneği bütün seansı uygulamada ister. İkisi de yarım maaş; normal bonuslar korunur. Mevcut Sıkı/Rahat kişisel yapım değişmedi.
+>
+> `Imece.jsx`: ana sayfa/Köy kartı, yaşayan Kara'nın kişisel mektubu, çalışma, katkı defteri, hızlandırılmış/atlanabilir teslim. `/imece` ortak görünümü yalnız giriş yapmış kişiye verir; özel ekip verisi açılmaz. Owner `/owner/imece` kadroyu başlatır. `ImeceScene.jsx` + `imeceArt.js`: büyük ortak şantiye alanı; plan/fotoğrafa göre tek ölçek, Canvas katman sırası, 42 basamak, on kule, uzun yol/24 aslan, taş/desen/çevre/bayrak ayrıntıları; dört kamera. Eski kişisel çizim dosyaları korunur. Normal kişisel haritada yeni bina satırı üretilmez.
+>
+> Komuta merkezindeki mevcut kaldırma yetkisine sunucu destekli **Yalnız Anıtkabir** filtresi eklendi. Yeni kişisel Anıtkabir, proje başlayınca katalogdan ortak şantiyeye yönlenir. Eski seanslar/yapılar korunur; kaldırma Batur'un açık seçimiyle mevcut onay akışındadır. Yedek tablosu listesi `shared/backup.js`; owner yedek ve `server/restore.js` aynı listeyi kullanır. Test ve sınırlar: `ASTRA_RAPOR_IMECE.md`.
+>
+> **İmecenin hareket/açılış paketi (20 Ekim, aynı PR #43):** Batur ayrı planı **“onay”** ile kabul etti. `imeceMotion.js` 22 işe ait şantiye konumunu, alet/hareket türünü, sadece kaydedilmiş katkı aralığını gösteren 6–22 sn teslim zaman çizelgesini ve beş duraklı 15 sn açılışı tanımlar. `imeceLive.js` ayrı şeffaf Canvas'ta insan ölçeğinde işçileri, ölçüm/kazı/donatı/beton/taş/ince iş ekiplerini, destekli iskeleyi, yük alıp yerine indiren kule vinci ve kazı-yükleme hareketini çizer. Eski köy/kişisel inşaat motoruna dokunulmadı.
+>
+> `ImeceScene.jsx`: mozole/iş başı/meydan/Aslanlı Yol/tüm yerleşim/bayrak olmak üzere altı kamera. Masaüstündeki modal genişliği genel `.modal.wide` kuralına takılmadan 1.080 px'e kadar açılır. Anıt Canvas'ı yalnız ilerleme/kamera/boyut değişince çizilir; bayrak kumaşı aynı hilal-yıldız geometrisiyle canlı katmanda hafif dalgalanır. Canlı ekip yalnız etkin seans varken görünür; teslimdeki ekip geçmiş yapımın canlandırmasıdır. Bu hareketler seans süresini veya katkıyı ilerletmez.
+>
+> `useImecePlayback.js`: ekran dışı/gizli sekme/duraklat durumunda hem film saati hem canlı döngü durur; görünürken kaldığı yerden sürer. Şölen'de canlı döngü, Sakin'de yalnız kullanıcının başlattığı film; Kıpırtısız/etkili sistem hareket azaltmada film anında son görüntüyü/katkı defterini gösterir. Açılış yalnız sunucunun `complete` sonucu ile, düğmeyle başlar; Aslanlı Yol → meydan → mozole → bayrak → dört kişinin emek defteri. Atla/duraklat/tekrar izle ve klavye odağını geri verme var. Yeni göç, sunucu/ücret/kadro/hedef değişikliği yok. Teslim kabulü izlenen kaydın `through` değerini kullanır; başka cihazdan sonra biten emek bekleyen teslimde kalır. Testler: **170/170** genel, **35/35** imece tarayıcı. PR birleştirme/yayın yine Batur'da; canlıya dokunulmadı.
 
 > **n43 komuta merkezi (19 Ekim gece, PR #41):** göç 27 `buildings.gift` (hediye notu, NULL = seansla yapılmış). Hediye yapı bir `build_deliveries` satırıyla gelir (ödül 0); `/build-deliveries` artık `gift` da döner. `/village` bina satırı 14 alan: `…, model, patched, gift` ve yanıtta `total` (bbox yoksa); istemci `mergeVillage` eksik sayıda `stale` der, `villageData.js` köyü baştan çeker. Hediyeler rozet hesabına girmez. Duyuru `messages.kind = 'announce'` (sistem değil, kalp alır). İstek türü `build` (`shared/requests.js`). Her yerden "Batur'a ilet"i bir türle açmak: `window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind } }))`. Testler `tests/owner.test.js`; görüntü aracı `/mnt/project-files/kutup/araclar/n43_shots.py`.
 

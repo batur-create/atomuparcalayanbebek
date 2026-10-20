@@ -6,12 +6,8 @@ import { randomBytes } from "node:crypto";
 import { SCHEMA_VERSION, migrate, migrations } from "./schema.js";
 import { sqliteAdapter } from "./sqlite.js";
 
-// Parents before children, so foreign keys hold row by row.
-export const BACKUP_TABLES = [
-  "groups", "members", "districts", "buildings", "building_likes", "build_deliveries", "build_push_events", "focus_log",
-  "messages", "reactions", "plans", "attendees", "plan_skips", "feedback", "feedback_events",
-  "achievements", "bricks_log", "activity", "unlocks", "weekly",
-];
+import { BACKUP_TABLES } from "../shared/backup.js";
+export { BACKUP_TABLES };
 
 export async function restoreBackup(backup, sqlite) {
   if (backup?.app !== "kutup" || typeof backup.tables !== "object")

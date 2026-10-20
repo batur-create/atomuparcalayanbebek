@@ -22,14 +22,15 @@ export function GiftModal({ member, close, changed }) {
     [busy, setBusy] = useState(""),
     [done, setDone] = useState(""),
     [error, setError] = useState(""),
-    [village, setVillage] = useState(null);
+    [village, setVillage] = useState(null),
+    [onlyAnit,setOnlyAnit] = useState(false);
   const load = () =>
-    get(`/owner/members/${member.id}/village`)
+    get(`/owner/members/${member.id}/village${onlyAnit?"?model=anitkabir":""}`)
       .then(setVillage)
       .catch((e) => setError(e.message));
   useEffect(() => {
     load();
-  }, [member.id]);
+  }, [member.id,onlyAnit]);
   const run = async (key, fn, message) => {
     setBusy(key);
     setError("");
@@ -152,13 +153,15 @@ export function GiftModal({ member, close, changed }) {
       {tab === "village" && (
         <>
           <p className="gift-lead">Yanlış bir hediyeyi ya da hatalı bir yapıyı geri alırsın. Yeri boşalır; tuğlası ve odak dakikaları olduğu gibi kalır.</p>
+          <label className="field-label"><span><input type="checkbox" checked={onlyAnit} onChange={e=>setOnlyAnit(e.target.checked)}/> Yalnız Anıtkabir</span></label>
+          {onlyAnit&&village&&!village.buildings.some(b=>b.model==="anitkabir")&&<p className="gift-lead">Bu kişinin köyünde kaldırılacak Anıtkabir yok.</p>}
           {!village ? (
             <Loading text="Köy okunuyor…" />
           ) : !village.buildings.length ? (
             <p className="gift-lead">Köyünde henüz yapı yok.</p>
           ) : (
             <ul className="gift-plans">
-              {village.buildings.map((b) => {
+              {village.buildings.filter(b=>!onlyAnit||b.model==="anitkabir").map((b) => {
                 const x = BY_ID[b.model] || BY_ID.kulube;
                 return (
                   <li key={b.id}>

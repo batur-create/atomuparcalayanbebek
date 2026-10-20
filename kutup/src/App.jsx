@@ -44,7 +44,7 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { AchievementCheer, AchievementsModal, DeskMap, BuildDelivery, FocusScreen, OwnerPage, VillagePanel, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
+import { AchievementCheer, AchievementsModal, DeskMap, BuildDelivery, FocusScreen, OwnerPage, VillagePanel, ImeceEntry, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
 import { useYenilik } from "./yenilikNokta.js";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
 import { AnnounceCard, NewsCard, Shortcuts } from "./Haberler.jsx";
@@ -131,6 +131,7 @@ function KutupApp({ initial, restart }) {
       initial ? initial.tab || "home" : TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
     ),
     [modal, setModal] = useState(null),
+    [imeceSignal,setImeceSignal] = useState(0),
     [toast, setToast] = useState(""),
     [connected, setConnected] = useState(true);
   const [filter, setFilter] = useState("all"),
@@ -544,6 +545,7 @@ function KutupApp({ initial, restart }) {
         minutes: me.focusMinutes,
         strict: !!me.focusStrict,
         relaxed: !!me.focusRelaxed,
+        imece: !!me.focusImece,
         kind: item.kind,
         model: item.id,
         seed: me.focusSeed,
@@ -555,7 +557,7 @@ function KutupApp({ initial, restart }) {
     }
     const done = lastFocus.current;
     lastFocus.current = null;
-    if (!done || done.relaxed) return; // a durable relaxed delivery has its own handover
+    if (!done || done.imece || done.relaxed) return; // project and relaxed delivery have their own handovers
     const item = BY_ID[done.model];
     const outcome = (type) =>
       setBuildOutcome({ type, kind: done.kind, model: done.model, seed: done.seed, at: Date.now() });
@@ -963,6 +965,11 @@ function KutupApp({ initial, restart }) {
     setTab(id);
     if (id !== "board") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  useEffect(()=>{
+    const open=()=>{setModal(null);setTab("focus");setImeceSignal(n=>n+1);};
+    window.addEventListener("kutup:imece",open);
+    return()=>window.removeEventListener("kutup:imece",open);
+  },[]);
   // n43: "Yeni yapı iste" in the catalogue (or anywhere) opens Batur'a ilet
   // with that kind chosen: dispatch "kutup:ask" with { kind }.
   const [askKind, setAskKind] = useState({ kind: "idea", at: 0 });
@@ -1418,6 +1425,7 @@ function KutupApp({ initial, restart }) {
               village={village}
               extras={
                 <>
+                  {session && <ImeceEntry key={me?.id} me={me} now={now} mutate={mutate}/>}
                   {session && <AnnounceCard messages={data.messages} now={now} openBoard={() => navigate("board")} />}
                   {session && <NewsCard yenilik={yenilik} open={() => setModal("yenilikler")} />}
                   {session && storyFresh(now) && <StoryNudge open={() => setStory(true)} />}
@@ -1439,6 +1447,7 @@ function KutupApp({ initial, restart }) {
                   <Shortcuts
                     items={[
                       ["✨", "Yenilikler", () => setModal("yenilikler"), yenilik.yeni],
+                      ["🇹🇷", "Anıtkabir imecesi", () => { navigate("focus");setImeceSignal(n=>n+1); }],
                       ["🏅", "Başarımlar", () => setModal("achievements")],
                       ["📖", "Haftanın hikâyesi", () => setStory(true)],
                       ["🏗️", "Yapı iste", () => window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind: "build" } }))],
@@ -1451,6 +1460,7 @@ function KutupApp({ initial, restart }) {
           )}
           {tab === "focus" && (
             <div className="focus-page">
+              {session && <ImeceEntry key={me?.id} me={me} now={now} mutate={mutate} signal={imeceSignal} consumeSignal={()=>setImeceSignal(0)}/>}
               <FocusCard
                 me={me}
                 members={focusMembers}
