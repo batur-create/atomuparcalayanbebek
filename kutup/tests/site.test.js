@@ -543,3 +543,26 @@ test('a monument gets a district of its own: on its centre, ring road round it, 
     }
   }
 });
+
+
+test('natural village keeps saved homes, hides dormant reservations and makes safe neighbour paths',async()=>{
+  const {createPlanner,footprintOf}=await import('../shared/village.js');
+  const {buildWorld,skyAt}=await import('../src/villageWorld.js');
+  const groupKey='natural-regression',planner=createPlanner(groupKey,[],[]),members=[],buildings=[];let seq=0;
+  for(let i=0;i<10;i++){
+    const memberId=`m${i}`;members.push({id:memberId,name:`Kişi ${i}`,status:'away',focusEnd:0});planner.ensure(memberId,()=>`d${seq++}`);
+    if(i<4)for(let j=0;j<4;j++){const p=planner.place(memberId,'cottage',()=>`d${seq++}`,{model:'kulube'});buildings.push({id:`b${i}-${j}`,memberId,districtId:p.district.id,kind:'cottage',model:'kulube',x:p.x,y:p.y,facing:p.facing,seed:i*10+j});}
+  }
+  const village={districts:planner.districts,buildings,ruins:[]},before=JSON.stringify(village);
+  const world=buildWorld({groupKey,village,members,me:'m0',sky:skyAt(Date.UTC(2026,9,20,9))});
+  assert.equal(world.count,16);assert.equal(world.districts.length,4);assert.equal(world.focusOf('m9'),null);
+  assert.ok(world.items.every(i=>i.bbox.every(Number.isFinite)));
+  assert.ok(world.walkingLinks.length>0);
+  for(const line of world.walkingLinks)for(const [x,y] of line)for(const b of buildings)assert.ok(Math.hypot(x-b.x,y-b.y)>footprintOf(b.kind,b.model)+.5,'walking paths never cut through saved homes');
+  assert.equal(JSON.stringify(village),before);
+  const visiting=buildWorld({groupKey,village,members,me:'m9',sky:skyAt()});
+  assert.ok(visiting.focusOf('m9'),'my empty plot remains available');
+  members[8].focusEnd=Date.now()+60000;
+  const working=buildWorld({groupKey,village,members,me:'m0',sky:skyAt()});
+  assert.ok(working.focusOf('m8'),'a currently studying neighbour is discoverable before their first building');
+});

@@ -123,6 +123,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 ## 9. Onaylananlar ve reddedilenler
 
+- ✔ **Doğal köy (20 Eki, sonraki paketler):** Batur yapay bölgeleri ve yayılmayı düzeltmeyi istedi, uygulamayı onayladı. Kayıtlı evler aynı yerde; boş rezervler kamerayı büyütmez. Sahiplik sınırları yerine ortak çayır, ağaç kümeleri, ince toprak yollar ve ev/gölet kesmeyen komşu patikaları. Yeni evler yalnız güvenli adaylar arasından komşulara yakın yerleşir. Aynı 30 bina ile önce/sonra, telefon ve gece kontrol edildi. Rapor `RAPOR_DOGAL_KOY.md`.
+
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.
 
 - ✔ **Anıtkabir katkı açıklığı (20 Eki):** Batur 150 dk emeğin 50/250 gibi görünmesini anlaşılır hale getirmeyi onayladı. Büyük toplam dakika, tüm emeğin ortak hedefe yazıldığı açıklaması; altta üç bölümün ayrı payı ve tamamlandı/bölüm açılınca durumu. 150/50/100 örneği açılır açıklamada, Kara ve seans metniyle tutarlı. Tema jetonları, 360/375/390/844 px kontrolleri; hesaplama ve mimari çizim aynı.

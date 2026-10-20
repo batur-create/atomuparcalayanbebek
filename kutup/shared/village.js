@@ -354,7 +354,12 @@ function* freeIn(layout, existing, kind, fp = FOOTPRINT[kind] || FOOTPRINT.cotta
   if (layout.plaza) return;
   const ideal = fp * share + LANE + 0.5;
   const ranked = candidates(layout)
-    .map((c) => ({ c, score: Math.abs(c.lane - ideal) + 0.05 * c.d + c.jitter * 1.6 }))
+    .map((c) => {
+      // New houses gather near the lane entrance and existing neighbours.
+      // This only ranks already-safe candidates; saved buildings never move.
+      const neighbours=existing.length?Math.min(...existing.map(b=>Math.abs(Math.hypot(c.p[0]-b.x,c.p[1]-b.y)-(fp+footprintOf(b.kind,b.model)+1.2)))):Math.hypot(c.p[0]-layout.entrance[0],c.p[1]-layout.entrance[1]);
+      return {c,score:Math.abs(c.lane-ideal)+.08*c.d+.18*neighbours+c.jitter*.9};
+    })
     .sort((a, b) => a.score - b.score);
   for (const { c } of ranked) {
     const [x, y] = c.p;
