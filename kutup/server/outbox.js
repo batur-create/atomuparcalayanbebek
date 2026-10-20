@@ -14,9 +14,16 @@ export function createPushOutbox({ db, send, allowed, ownerHash, sessionAge, own
     // The nonce prevents concurrent cron/request calls from enqueueing it twice,
     // even after successful queue rows have been removed. Existing pushes omit dedupe.
     const nonce = dedupe ? crypto.randomUUID() : null;
+    const eventTable=dedupe?.kind==="plan"?"plan_push_events":"build_push_events";
     if (dedupe) {
       if (table !== "subscriptions") throw new Error("Build milestones require member subscriptions");
-      statements.push([
+      if(dedupe.kind==="plan")statements.push([
+        `INSERT OR IGNORE INTO plan_push_events(id,nonce,plan_id,member_id) SELECT ?,?,?,? WHERE EXISTS(
+         SELECT 1 FROM plans p JOIN attendees a ON a.plan_id=p.id WHERE p.id=? AND p.cancelled=0 AND p.schedule=? AND a.member_id=?
+         AND a.schedule=p.schedule AND a.answer='yes' AND a.remind=1 AND a.arrival=? AND a.arrival>? AND a.arrival<=?)`,
+        [dedupe.id,nonce,dedupe.planId,dedupe.memberId,dedupe.planId,dedupe.schedule,dedupe.memberId,dedupe.arrival,created,created+1800000],
+      ]);
+      else statements.push([
         `INSERT OR IGNORE INTO build_push_events (id, nonce, member_id, ends, stage)
          SELECT ?, ?, ?, ?, ? WHERE EXISTS (
            SELECT 1 FROM members WHERE id = ? AND focus_relaxed = 1 AND focus_end = ?
@@ -41,7 +48,7 @@ export function createPushOutbox({ db, send, allowed, ownerHash, sessionAge, own
       statements.push([
         `INSERT INTO push_outbox (id, endpoint, subscription_table, payload, urgency, ttl, next_at, created, member_id, session_token, key_hash, subject)
          SELECT ?, s.endpoint, ?, ?, ?, ?, ?, ?, ${isMember ? "s.member_id" : "NULL"}, s.session_token, ${isMember ? "NULL" : "s.key_hash"}, ?
-         FROM ${table} s WHERE s.endpoint = ? AND s.subscription = ? AND ${identity}${dedupe ? " AND EXISTS (SELECT 1 FROM build_push_events WHERE id = ? AND nonce = ?)" : ""}`,
+         FROM ${table} s WHERE s.endpoint = ? AND s.subscription = ? AND ${identity}${dedupe ? ` AND EXISTS (SELECT 1 FROM ${eventTable} WHERE id = ? AND nonce = ?)` : ""}`,
         [id, table, JSON.stringify({ ...message, ...sub.extra, id }), urgency, ttl, created, created, subject,
           sub.endpoint, sub.subscription, ...binding, ...(dedupe ? [dedupe.id, nonce] : [])],
       ]);
@@ -64,6 +71,12 @@ export function createPushOutbox({ db, send, allowed, ownerHash, sessionAge, own
       return;
     }
     const remove = () => db.run("DELETE FROM push_outbox WHERE id = ? AND lease_token = ?", [id, lease]);
+    const reminder=JSON.parse(row.payload).planReminder;
+    if(reminder){
+      const active=await db.get(`SELECT 1 FROM plans p JOIN attendees a ON a.plan_id=p.id WHERE p.id=? AND p.cancelled=0 AND p.schedule=?
+        AND a.member_id=? AND a.schedule=p.schedule AND a.answer='yes' AND a.remind=1 AND a.arrival=? AND a.arrival>?`,[reminder.id,reminder.schedule,row.member_id,reminder.arrival,now()]);
+      if(!active){await remove();return;}
+    }
     let sub;
     if (row.subscription_table === "subscriptions") {
       sub = await db.get(

@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| bulusma | Tek buluşma, kişisel geliş saati, kopya önleme, düzenleme/iptal ve tek hatırlatma | Kütüp | 20 Eki | codex/holistic-meetups PR |
 | imece-hareket | İşçi/vinç koreografisi, teslim filmi ve ortak açılış yürüyüşü | Ortak Anıtkabir | 20 Eki | PR #43 |
 | imece | Bir Taş da Senden: dört kişinin 2.000 dk ortak Anıtkabir projesi, Kara ve ayrıntılı şantiye | Bütün köyler | 20 Eki | codex/anitkabir-imece PR |
 | n43 | Komuta merkezi: yapı ve plan hediye, yapı geri alma, ekibe duyuru, yapı istekleri; Yenilikler ve Ben'deki şeyler ana sayfada | Herkes + Batur | 19 Eki 23:50 | PR #41 |
@@ -93,6 +94,17 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### bulusma · Ortak buluşma, kişiye özel geliş
+Kütüp · 20 Ekim 2026 · codex/holistic-meetups / göç 30
+
+**Batur'un sözleri:** “Birisi saat 14’e plan yaptı ama ben 16’da gelebileceğim… Varım mı diyeceğim, yokum mu?” Sonra “duplicate olmayan bütünsel bir sistem kur”. Buluşma paketi uygulandı; yapı planlarının şans/ödül sistemi ayrı sonraki adımda kaldı.
+
+**Ne yapıldı:** Tek katılım kartı ve tek canlı cevap tablosu; kişisel saat/not, Varım/Gelemem/Kararsızım/geri alma. Aynı güne yeni plan açarken mevcut buluşmaya kendi saatiyle katılma; bilinçli ayrı grup seçimi. Tekrarlanan/eşzamanlı oluşturmanın birleşmesi, sayfa dışındaki karta doğrudan bağlantı, takvim dosyası, mevcut durum formuna Yoldayım/Geldim geçişi. Ortak saat değişince yeniden onay; açıklama değişince cevaplar korunur. İptal bağlantıyı korur ve ilgilenenlere haber verir. Hatırlatma kendi gelişine göre, tercihli ve tekilleştirilmiş mevcut kuyruktadır.
+
+**Kararlar ve nedenleri:** 16.00 geliş başka bir buluşma değildir. Eski ana sayfa toggle ve detaydaki set cevabı tek akışa indirildi. Saat değişikliği ile kişisel geliş değişikliği ayrı işlemlerdir. Başlamış buluşma iki saatte kaybolmaz; varsayılan aynı Türkiye gününün sonuna kadar katılıma açıktır. Gerçekten ayrı çalışma grubu açık seçimle oluşturulabilir; aynı dakika kopyası yine birleşir. Eski kayıtlar otomatik birleştirilmez/silinmez. Eski Varım/Gelemem verisi ve eski yedekler yeni cevap modeline dönüştürülür. Yayın Batur'da; canlıya dokunulmadı.
+
+**Dosyalar:** `shared/plans.js`, `server/plans.js`, `src/Plans.jsx`, `src/plans.css`, `src/planShare.js`; API/snapshot, göç 30, mevcut outbox, geri yükleme ve ana sayfa bağları. Tam doğrulama/sınırlar `ASTRA_RAPOR_BULUSMA.md`.
 
 ### imece-hareket · Şantiye yaşıyor, açılış hepimizin
 Ortak Anıtkabir · 20 Ekim 2026 · PR #43 / codex/anitkabir-imece

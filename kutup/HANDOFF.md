@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, bütünsel buluşma sistemi:** Batur, 14.00 buluşmasına 16.00 geliş örneğinden sonra “duplicate olmayan bütünsel bir sistem kur” diyerek uygulamayı onayladı. Dal `codex/holistic-meetups`, hedef `kutup-platform`, teslim ayrı PR; **yayın Batur'da**. Bu adım yalnız kütüphaneye gelme planlarıdır. Yapı planlarının ödül dengesi ayrı sonraki adım; bu PR'da değiştirilmedi. Yeni göç 30 öncesi mevcut yedek akışı kullanılmalı. Teknik rapor `ASTRA_RAPOR_BULUSMA.md`.
+
 > **20 Ekim, ortak Anıtkabir teslimi:** Batur "Bir Taş da Senden" konseptini ve doğrudan kodlamayı onayladı; ilk turda işin büyük kısmını istedi. Dal `codex/anitkabir-imece`, hedef `kutup-platform`, teslim PR. **Birleştirme/yayın ve dört kişilik kadroyu seçip etkinliği başlatma Batur'da.** Gerçek veri ve eski yapılar değiştirilmedi. Tam rapor: `ASTRA_RAPOR_IMECE.md`. Önceki otomatik yayın talimatları bu teslim için geçerli değildir.
 
 > **19 Ekim, bu teslimin sınırı:** Batur Rahat inşaat modunu ve dar iPhone PWA odak ekranı düzeltmesini onayladı. Teslim `codex/relaxed-construction` dalından `kutup-platform` hedefine PR; birleştirme ve yayın Batur'da. Aşağıdaki eski otomatik yayın talimatı bu teslim için uygulanmaz. Başka açık işe geçilmedi.
@@ -41,7 +43,7 @@ Sen bu projeye kaldığı yerden devam eden geliştiricisin. Önceki sohbete eri
 - Başka cihaz: Profil → "Başka cihazda aç" 15 dakikalık tek kullanımlık kod verir; giriş ekranında "Zaten ekipteyim" ile kullanılır. iPhone'da ana ekran uygulaması Safari'den ayrı çerez tuttuğu için şart.
 - Durum (Kütüpte / Yolda / Molada / Dışarıda), salon ve masa, "burada · 1 sa 35 dk"; durum 8 saat sonra kapanır.
 - Web Push (kendi yazdığımız Web Crypto RFC 8291 + VAPID), 45 dakikalık geliş bildirimi soğuması, bildirime dokununca ilgili sekme (`/?tab=…`).
-- Planlar (iki hafta ileri, "Ben de gelirim"), pano (mesaj, kalp, kahve daveti), haftalık odak tablosu.
+- Buluşmalar: iki hafta ileri ortak gün/saat, kişisel geliş saati/not/tek hatırlatma, Varım/Gelemem/Kararsızım/geri alma; düzenleme/iptal, aynı bağlantı, kişisel takvim dosyası. Aynı gün için mevcut buluşma önerilir; bilinçli ayrı grup seçimi dışında kopya açılmaz. Pano (mesaj, kalp, kahve daveti), haftalık odak tablosu.
 - **İnşaat modu ve köy (Forest tarzı):** Odak seansları 25/50/75 dk; katalogdaki bina süreyi ve maliyeti belirler. Seans boyunca canlı izometrik şantiye çizilir. Varsayılan **Sıkı** modda telefondan çıkınca 15 saniye içinde dönmek gerekir; çatlama/kurtarma kuralları ve Wake Lock korunur. Bu PR'daki ayrı **Rahat** mod ekran kilitliyken de sürer, ekranı açık tutmaz; dönüşte hızlandırılmış yapım ve teslim gösterir (§6b). Tamamlanan bina ortak köydeki kendi mahallene kalıcı eklenir.
 - **"Batur'a ilet":** fikir, hata ya da sohbet. Kargo takibi gibi aşamaları var: new → seen → accepted → building → done, ya da declined. Kendine ait ilham örnekleri, gönderme animasyonu, "yeni gelişme" rozeti ve her aşamada gönderene push.
 - **`/batur` yönetici paneli:** istekler (açınca "İncelendi" olur, tek tuşla aşama, not, geçmiş, arkadaşın gördüğü takip çizgisinin önizlemesi, silme), yeni istek push'u, ekipler, davet yenileme, üye çıkarma. Giriş: `ADMIN_KEY` ya da ilk ziyarette belirlenen anahtar; sonra 30 günlük `kutup_owner` çerezi (yolu `/api/owner`, SameSite=Strict). Yönetici şu an hiçbir üyeye bağlı değil. Sağ üstteki "Uygulamaya dön" düğmesi ana uygulamaya götürür.
@@ -90,11 +92,12 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (bu PR: 170 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (buluşma PR: 181 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
 npm run test:browser # gerçek tarayıcı, 100 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 npm run test:browser:relaxed -- --artifacts /tmp/kutup-relaxed # Rahat/teslim ve iPhone boyut-yön kontrolleri (Chromium)
 npm run test:browser:imece -- --artifacts /tmp/kutup-imece # 35 ortak proje/film/mobil kontrolü, geçici veritabanı
+npm run test:browser:plans -- --artifacts /tmp/kutup-plans # 22 buluşma/kişisel geliş/düzenleme/bağlantı kontrolü
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
@@ -129,6 +132,14 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. KARARLAR.md arşivi, Paket 5 ve 6).
 
 ## 6b. Durum (son güncelleme 20 Ekim 2026)
+
+> **Bütünsel buluşma (20 Ekim, PR):** Tek kart/tek cevap kaynağı: `shared/plans.js` kuralları ve DTO, `server/plans.js` servis, `src/Plans.jsx` oluşturma/katılım/yönetim ekranları. `Modals.jsx` yalnız yeniden dışa aktarır; ana sayfanın eski toggle cevabı kaldırıldı. `attendees` artık `answer=yes/no/maybe`, kişisel `arrival`, kısa not, hatırlatma tercihi ve onaylanan saat sürümünü tutar. Göç 30 eski Varım/Gelemem kayıtlarını birleştirir; eski `plan_skips` tablosu kurtarma için korunur, canlı cevaplarda kullanılmaz. Eski yedeklerin geri yüklenmesi de aynı dönüşümü yapar.
+>
+> Başlangıç ve kişisel geliş ayrıdır; 14.00 buluşması içinde 16.00 katılım başka plan oluşturmaz. Varsayılan aynı günkü buluşmaya yönlenir; ayrı çalışma grubu açık seçim ve ad ister. Aynı dakika kopyaları ve aynı anda gönderilen oluşturma işlemleri ekip revizyonuyla birleşir; oluşturma istek anahtarı tekrar kayıt üretmez. İlk liste 30'luk sayfadır; devamı yüklenir. `GET /plans/:id` ekip doğrulamasıyla doğrudan okur; liste dışında/iptal/geçmiş kart da bağlantıdan açılır. Bitiş belirtilmediyse buluşma Türkiye günü boyunca geçerlidir; iki saat sonunda kaybolmaz.
+>
+> Organizatör düzenleme/iptal yapar; herkes, organizatör dahil, kişisel gelişini ve cevabını bağımsız değiştirir. Saat/bitiş değişimi `schedule` sürümünü artırır; eski katılımlar yeniden onay bekler. Yalnız not değişirse cevaplar korunur. `rev` eski cihazın yönetim isteğini reddeder. İptal silme değildir: aynı bağlantı iptali açıklar; ilgilenenlere haber gider. Bildirim doğrudan `?plan=<id>` açar; paylaşımlar göreli “yarın” yerine tarih/yıl/saat içerir. Kişisel takvim `.ics` kendi geliş saatini kullanır. Yoldayım/Geldim mevcut durum formunu açar; plan kendiliğinden fiziksel giriş yapmaz.
+>
+> Hatırlatma açık tercih ile kendi gelişinden 30 dk önce bir kez, mevcut cron/outbox üzerinden çalışır. `plan_push_events` ve kuyruk aynı işlemde yazılır; eşzamanlı tetik çift kayıt üretmez. Gönderim/yeniden denemede hâlâ Varım, doğru saat sürümü, aynı geliş, açık tercih ve iptal edilmemiş plan aranır. İzin/abonelik ve işletim sistemi teslimi için kesin zaman garantisi yok. Yeni ücretli servis/bağımlılık yok. **181 test + 100 genel / 22 buluşma / 35 imece tarayıcı kontrolü**, tema 252 çift. Gerçek veri/canlı yayın/fiziksel iPhone testi yapılmadı.
 
 > **Bir Taş da Senden / Anıtkabir İmecesi (20 Ekim, PR):** Bütün köylerin ortak tek projesi; Batur komuta merkezinde dört gerçek profili seçerek başlatır. Göç 29 yalnız sütun/tablo ekler; eski anıtlar otomatik silinmez. Hedef 2.000 dk = 400 temel + 1.200 ana yapı + 400 ayrıntı. Herkesin bölüm başına zorunlu payı 50/150/50 dk; kalan 1.000 dk paylaşılır. Takvim kilidi yok. Kadro başlangıçta sabittir; eksik görevli hesabın ayrılması açılışı bekletir, otomatik muafiyet yoktur.
 >
