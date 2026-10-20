@@ -10,6 +10,7 @@ import { createView } from "./villageView.js";
 import { ConstructionScene } from "./Village.jsx";
 import { useZoom } from "./zoom.js";
 import { modelOf } from "../shared/catalog.js";
+import { SiteRoster } from "./Together.jsx";
 import { Modal } from "./Modal.jsx";
 import { Loading } from "./Illustrations.jsx";
 import "./koy.css";
@@ -273,12 +274,13 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
     <section className="panel village-panel">
       {error && <p className="form-error" role="status">Köy güncellenemedi. <button className="text-button" onClick={retry}>Tekrar dene</button></p>}
       <div className="section-heading">
-        <h2>{showScene ? "Şantiye" : "Kütüp köyü"}</h2>
+        <h2>Kütüp köyü</h2>
         <span className="count-tag">
           {showScene ? `${modelOf(subject.model, subject.kind).emoji} ${modelOf(subject.model, subject.kind).name}` : `${count} bina`}
         </span>
       </div>
-      {showScene ? (
+      <SiteRoster me={me} members={members} now={Date.now()} onlySites/>
+      {showScene && (
         <>
           <div className="scene-zoom-wrap">
             <div className="scene-zoom" ref={zoom.box} {...zoom.handlers} style={{ touchAction: zoom.view.s > 1 ? "none" : "pan-y" }}>
@@ -306,7 +308,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
           </p>
 
         </>
-      ) : (
+      )}
         <>
           <div className={`village-map-wrap ${full ? "village-full" : ""}`}>
             {!world && <Loading text={error ? "Köy gelmedi; yukarıdan tekrar dene." : "Köy çiziliyor…"} />}
@@ -439,7 +441,6 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
             </details>
           )}
         </>
-      )}
     </section>
   );
 }

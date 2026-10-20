@@ -87,7 +87,7 @@ export const HELP = {
       {
         id: "together",
         q: "Ekibi çağır ve Katıl ne?",
-        a: "Ekibi çağır açıkken başlarsan arkadaşlarına “Katıl” bildirimi gider. Biri odaktayken sen de Katıl’a basıp onun sayacına oturabilirsin. Beraber çalışınca İmece primiyle biraz fazla tuğla gelir.",
+        a: "Ekibi çağır açıkken başlarsan arkadaşlarına bildirim gider. Katılımı seç penceresi kalan süreyi, sana ait binayı, ücretini ve ortak bitiş saatini önce gösterir. Bina için katalogdaki sürenin tamamı kalmalı; yalnız odak için en az 20 dakika gerekir. Arkadaşının binası kopyalanmaz. Çay molasındayken katılamazsın. Anıtkabir görevi kendi şantiye ekranından ayrı başlatılır. Köye bakmak seansı durdurmaz; beraber çalışınca mevcut imece primi geçerlidir.",
       },
       {
         id: "imece-contribution",

@@ -100,7 +100,7 @@ export const modelOf = (id, kind = "cottage") => BY_ID[id] || BY_ID[DEFAULT_MODE
 export const minutesOf = (item) => CLASSES[item.class].minutes;
 /** The largest class a session of `minutes` can build (joining a friend's timer). */
 export const classFor = (minutes) => (minutes >= 70 ? "large" : minutes >= 40 ? "medium" : "small");
-export const fits = (item, minutes) => minutesOf(item) <= minutesOf({ class: classFor(minutes) });
+export const fits = (item, minutes) => Number.isFinite(minutes) && minutesOf(item) <= minutes;
 
 // ---------- the economy ----------
 export const DAILY_BONUS = 10; // first finished session of the day
@@ -108,7 +108,7 @@ export const FREE_SHARE = 0.5; // focus without a building pays half
 export const REFUND_NOW = 0.5; // an abandoned build: half the materials back at once…
 export const REFUND_LATER = 0.3; // …30% more once the rubble is cleared; 20% is lost
 export const GRACE = 2 * 60000; // changing your mind in the first two minutes costs nothing
-export const JOIN_LEAD = 5 * 60000; // joining a friend's session needs this much of it left (d28)
+export const JOIN_LEAD = 20 * 60000; // enough time to earn a watched free session; buildings need their full catalogue duration
 export const RUIN_DAYS = 3; // rubble left uncleared this long takes its 30% with it
 export const CHAIN_GAP = 10.5 * 60000; // a break of up to ten minutes keeps a streak going
 

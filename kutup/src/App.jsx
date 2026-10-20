@@ -1037,21 +1037,16 @@ function KutupApp({ initial, restart }) {
     lastTab.current = tab;
   }
   const leave = () => me && leaveTeam(me, notify, () => ended("Ekipten ayrıldın. Kapımız hep açık. 🫶", "Ekipten ayrıldın. Cihazdaki diğer hesabın açıldı. 🫶"));
-  // Joining a friend's timer builds the picked building if it fits, a cottage otherwise.
-  const joinFriend = (m) =>
-    m &&
-    requireMember(async () => {
-      const strict = storage.get("kutup-fidan-on") !== "0",
-        picked = BY_ID[pickedModel()], relaxed = strict && storage.get("kutup-build-mode") === "relaxed";
-      if (!relaxed) keepScreenOn();
-      if (onComputer() && !relaxed) primeFloat();
-      await mutate(
-        "/focus",
-        { action: "start", joinMember: m.id, strict, relaxed, honest: !strict, device: onComputer() ? "desk" : "phone", model: fits(picked, Math.floor((m.focusEnd - Date.now()) / 60000)) && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube" },
-        "Aynı ritimdesiniz. İyi çalışmalar! 🤝",
-      );
-      setJoinAsk(null);
-    });
+  // Every entry point opens the same explicit, server-quoted join choice.
+  const joinFriend=(m,choice)=>m&&requireMember(async()=>{
+    if(!choice){setJoinAsk(m.id);return;}
+    const strict=choice.strict,relaxed=strict&&choice.relaxed;
+    if(!relaxed)keepScreenOn();
+    if(onComputer()&&!relaxed)primeFloat();
+    const result=await mutate("/focus",{action:"start",joinMember:m.id,joinEnd:choice.end,strict,relaxed,honest:!strict,device:onComputer()?"desk":"phone",...(strict?{model:choice.model}:{})},"Aynı anda bitecek iki ayrı çalışma. İyi çalışmalar! 🤝");
+    if(result)setJoinAsk(null);
+    return !!result;
+  });
   // Unread board messages, and telling friends how far I have read.
   const unread = me ? data.messages.filter((m) => m.kind !== "system" && m.memberId !== me.id && m.created > (me.boardSeen || 0)).length : 0;
   useEffect(() => {
@@ -1677,7 +1672,7 @@ function KutupApp({ initial, restart }) {
         />
       )}
       {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}
-      {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} />}
+      {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} onVillage={()=>{setFocusScreen(false);navigate("focus");setTimeout(()=>document.querySelector(".village-map-wrap")?.scrollIntoView({behavior:"smooth",block:"center"}),150);}} />}
       {crack && <RescueCard crack={crack} rescue={rescue} letGo={letGo} />}
       {!crack && asking !== 0 && <HereCard asking={asking} now={now} strict={watchStrict} here={() => hereRef.current()} />}
       {watchEnd > 0 && <FloatPanel me={me} now={now} asking={asking} crack={crack} phoneGone={phoneGone} here={() => hereRef.current()} />}
@@ -1685,7 +1680,8 @@ function KutupApp({ initial, restart }) {
         friend={data.members.find((x) => x.id === joinAsk)}
         me={me}
         now={now}
-        join={() => joinFriend(data.members.find((x) => x.id === joinAsk))}
+        join={choice => joinFriend(data.members.find((x) => x.id === joinAsk),choice)}
+        onImece={()=>{setJoinAsk(null);navigate("focus");setImeceSignal(n=>n+1);}}
         close={() => {
           setJoinAsk(null);
           history.replaceState(null, "", location.pathname);

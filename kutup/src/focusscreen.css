@@ -406,3 +406,5 @@
   .focus-screen .fs-bar { gap:5px; }
   .focus-screen .fs-seg button { padding:6px; font-size:10px; }
 }
+
+.fs-village { color: var(--studio-ink); border-color: var(--studio-faint); background: var(--studio); min-height: 44px; }

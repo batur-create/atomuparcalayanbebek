@@ -16,7 +16,7 @@ import { CAPACITY, cellKey, cellLayout, createPlanner, freeSpots, isMonument, ki
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
-import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_STREAKS, WEEKLY_DAYS, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_STREAKS, WEEKLY_DAYS, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN,CATALOG, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -1580,7 +1580,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     const start = current.focus_end - current.focus_minutes * 60000,
       minutes = Math.max(0, Math.floor((at - start) / 60000));
-    const cut = await db.run("UPDATE members SET focus_end = ?, focus_minutes = ? WHERE id = ? AND focus_end = ?", [start + minutes * 60000, minutes, m.id, current.focus_end]);
+    // A joined timer has whole-minute duration; its inferred start can be a few
+    // seconds in the future. Cancelling immediately must still clear it now.
+    const cut = await db.run("UPDATE members SET focus_end = ?, focus_minutes = ? WHERE id = ? AND focus_end = ?", [Math.min(at,start + minutes * 60000), minutes, m.id, current.focus_end]);
     if (!cut.changes) fail("Odak oturumu değişti. Sayfayı yenile.", 409);
     const row = await db.get("SELECT focus_beat AS beat, focus_away AS away FROM members WHERE id = ?", [m.id]);
     const seen = seenMinutes({ start, ends: start + minutes * 60000, beat: row.beat, away: row.away });
@@ -1599,6 +1601,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     return done.changes > 0;
   }
+  route("GET", "/focus/join/:id", async ({member,params})=>{
+    const friend=await db.get("SELECT id,name,focus_end,focus_paused_at,focus_imece FROM members WHERE id=? AND group_id=?",[params.id,member.group_id]);
+    if(!friend||friend.id===member.id||friend.focus_end<=Date.now())fail("Bu arkadaşının devam eden bir seansı yok.",409);
+    const minutes=Math.max(0,Math.floor((friend.focus_end-Date.now())/60000));
+    const plans=(await db.all("SELECT model FROM unlocks WHERE member_id=?",[member.id])).map(p=>p.model);
+    const models=CATALOG.filter(item=>item.id!=="anitkabir"&&fits(item,minutes)&&item.cost<=member.bricks&&["open","new"].includes(stateOf(item,Date.now(),plans,member.badge==="dev"))).map(({id,name,emoji,cost,class:kind})=>({id,name,emoji,cost,minutes:minutesOf({class:kind})}));
+    return json({friend:{id:friend.id,name:friend.name,end:friend.focus_end},minutes,paused:!!friend.focus_paused_at,imece:!!friend.focus_imece,canFree:minutes>=HONEST_MIN,models});
+  });
   route("POST", "/focus", async ({ member: m, body, ctx }) => {
     const action = body.action,
       now = Date.now();
@@ -1818,25 +1828,28 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (strict && item && !fits(item, minutes)) fail(`Bu tura ${minutes} dk kaldı; ${item.name} sığmaz. Daha küçük bir yapı seç.`);
       if (strict && !item) item = BY_ID.kulube;
     } else if (body.joinMember) {
-      const other = await db.get("SELECT focus_end FROM members WHERE id = ? AND group_id = ?", [
+      const other = await db.get("SELECT focus_end,focus_paused_at,focus_imece FROM members WHERE id = ? AND group_id = ?", [
         String(body.joinMember),
         m.group_id,
       ]);
-      // Joining in the last minutes would count as a finished session (and the
-      // day's first-session bonus) for almost no focus (d28; the invite itself
-      // still needs ten minutes).
-      if (!other || other.focus_end < now + JOIN_LEAD)
-        fail("Bu oturumun bitmesine 5 dakikadan az kaldı. Yeni bir oturum başlat.");
+      // Joining must leave enough watched time; a building also needs its
+      // exact catalogue duration, never a rounded duration class.
+      if (!other || other.focus_end < now + JOIN_LEAD)fail("Birlikte odak için en az 20 dakika kalmalı. Yeni bir 25 dakikalık seans başlat.");
+      if(other.focus_paused_at)fail("Arkadaşın çay molasında. Döndüğünde katılabilirsin.",409);
+      if(other.focus_imece)fail("Bu bir Anıtkabir görevi. Kendi görevini Bir Taş da Senden kartından başlat.",409);
+      if(body.joinEnd!=null&&body.joinEnd!==other.focus_end)fail("Arkadaşının seansı değişti. Katılım penceresini yeniden aç.",409);
       end = other.focus_end;
       minutes = Math.floor((end - now) / 60000);
       if (strict && item && !fits(item, minutes)) fail("Kalan süre bu yapıya yetmez. Daha küçük bir yapı seç.");
       if (strict && !item) item = BY_ID.kulube;
+      if(strict&&!fits(item,minutes))fail("İnşaat için en az 25 dakika kalmalı. Yalnız odak seçebilirsin.");
     } else {
       if (![25, 50, 75].includes(minutes)) fail("25, 50 veya 75 dakika seç.");
       if (item && minutesOf(item) !== minutes) fail(`${item.name} ${minutesOf(item)} dakikalık bir yapı.`);
       if (strict && !item) item = BY_ID[DEFAULT_MODEL[kindFor(minutes)]];
       end = now + minutes * 60000;
     }
+    if(strict&&item&&!fits(item,minutes))fail(`Kalan süre ${item.name} için yeterli değil. Daha küçük yapı veya yalnız odak seç.`);
     if (item?.id === "anitkabir" && await db.get("SELECT id FROM imece_project LIMIT 1"))
       fail("Anıtkabir artık bütün köylerin ortak görevi. Köy sekmesindeki Bir Taş da Senden kartını aç.", 409);
     const cost = item?.cost || 0;
@@ -1852,6 +1865,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);
       if (!current || current.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
       if (cost > current.bricks) fail(`${item.name} için ${cost - current.bricks} tuğla eksik.`);
+      if(body.joinMember){
+        const friend=await db.get("SELECT focus_end,focus_paused_at,focus_imece FROM members WHERE id=? AND group_id=?",[String(body.joinMember),m.group_id]);
+        if(!friend||friend.focus_end!==end||friend.focus_paused_at||friend.focus_imece)fail("Arkadaşının seansı değişti. Yeniden katılmayı dene.",409);
+      }
       const reservation = project ? await imece.reserve(m.id, minutes) : null;
       return [
       // An expired, uncredited session is settled before the new one starts.
@@ -1860,14 +1877,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["UPDATE members SET focus_imece=?, focus_imece_phase=?, focus_imece_personal=?, focus_imece_ref=? WHERE id=?", [project ? 1 : 0, reservation?.phase || 0, reservation?.personal || 0, project ? crypto.randomUUID() : null, m.id]],
       [
         "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_relaxed = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ?, focus_honest = ?, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = ?, focus_cracked_at = 0 WHERE id = ?",
-        [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && body.honest === true ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
+        [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && (body.joinMember || body.honest === true) ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
       bump(m.group_id),
       ];
     }, m.group_id);
     // "Ekibi çağır": everyone gets a tap-to-join for the same end time.
-    if (body.invite === true && minutes >= 10) {
+    if (body.invite === true && minutes*60000 >= JOIN_LEAD) {
       try {
         limit(`${m.id}:invite`, 3);
         await notify(
