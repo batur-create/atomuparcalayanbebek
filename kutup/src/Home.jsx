@@ -1,3 +1,4 @@
+import { planAnswer,planArrivalGroups } from "../shared/plans.js";
 // The home tab (n17 + n18): a living sky, my own status, who is where, who is
 // coming when, and two tiles into the village and the board. The layout stays
 // still; what moves tells something real: the time of day, a friend arriving, a
@@ -11,7 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { m, AnimatePresence } from "motion/react";
 import { ArrowUpRight, Check, Headphones, Map as MapIcon, MapPin, Moon, Plus, Send, Trash2 } from "lucide-react";
 import { Avatar, Empty, reducedMotion } from "./ui.jsx";
-import { STATUS, dayWord, shortTime, minutesLabel } from "./api.js";
+import { STATUS, dayWord, shortTime, minutesLabel, get } from "./api.js";
 import { skyAt, sunTimes } from "./villageWorld.js";
 import { modelOf } from "../shared/catalog.js";
 import { BuildingThumb } from "./Economy.jsx";
@@ -723,94 +724,25 @@ function People({ members, me, now, arrived, filter, setFilter, openMember, intr
 }
 
 // ---------- who is coming when ----------
-function PlanRow({ plan, data, me, requireMember, mutate, openMember, openCard }) {
-  const owner = data.members.find((x) => x.id === plan.memberId),
-    joined = plan.attendees.includes(me?.id),
-    date = new Date(plan.starts);
-  return (
-    <m.article layout className="home-plan" initial={{ opacity: 0, x: -14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} exit={{ opacity: 0, scale: 0.97 }} transition={SPRING}>
-      <div className="plan-tile">
-        <span>{date.toLocaleDateString("tr-TR", { month: "short", timeZone: "Europe/Istanbul" })}</span>
-        <b>{date.toLocaleDateString("tr-TR", { day: "numeric", timeZone: "Europe/Istanbul" })}</b>
-        <small>{shortTime(plan.starts)}</small>
-      </div>
-      <div className="home-plan-text">
-        {/* n34: the plan's own card, where it is answered and sent to a group chat */}
-        <button type="button" className="home-plan-open" onClick={() => requireMember(() => openCard(plan.id))}>
-          <strong>{plan.note || "Kütüpte buluşalım"}</strong>
-        </button>
-        <small>
-          {dayWord(plan.starts)} · {owner?.name || "Biri"} planladı
-        </small>
-        <span className="home-plan-who">
-          <span className="avatar-stack">
-            {plan.attendees.slice(0, 4).map((id) => (
-              <FaceButton key={id} member={data.members.find((x) => x.id === id)} onOpen={openMember} />
-            ))}
-          </span>
-          {plan.skips?.length ? `${plan.attendees.length}\u00a0geliyor · ${plan.skips.length}\u00a0gelemiyor` : `${plan.attendees.length} kişi geliyor`}
-        </span>
-      </div>
-      {plan.memberId === me?.id ? (
-        <>
-          <button className="icon-button" aria-label="Planı gruba gönder" onClick={() => openCard(plan.id)}>
-            <Send size={16} />
-          </button>
-          <button
-            className="icon-button"
-            aria-label="Planı sil"
-            onClick={() => {
-              if (confirm("Bu planı kaldırmak istiyor musun?")) mutate(`/plans/${plan.id}`, {}, "Plan kaldırıldı.", "DELETE");
-            }}
-          >
-            <Trash2 size={16} />
-          </button>
-        </>
-      ) : (
-        <m.button
-          whileTap={{ scale: 0.92 }}
-          className={`btn small-btn ${joined ? "joined" : "primary"}`}
-          aria-pressed={joined}
-          onClick={() => requireMember(() => mutate(`/plans/${plan.id}/join`, {}, joined ? "Plandan ayrıldın." : "Sen de varsın. Harika!"))}
-        >
-          {joined ? <Check size={15} /> : <Plus size={15} />}
-          {joined ? "Varım" : "Ben de"}
-        </m.button>
-      )}
-    </m.article>
-  );
+function PlanRow({plan,data,me,requireMember,openMember,openCard}){
+  const owner=data.members.find(x=>x.id===plan.memberId),mine=planAnswer(plan,me?.id),date=new Date(plan.starts);
+  return <m.article layout className="home-plan" initial={{opacity:0,x:-14}} whileInView={{opacity:1,x:0}} viewport={{once:true}} exit={{opacity:0,scale:.97}} transition={SPRING}>
+    <div className="plan-tile"><span>{date.toLocaleDateString("tr-TR",{month:"short",timeZone:"Europe/Istanbul"})}</span><b>{date.toLocaleDateString("tr-TR",{day:"numeric",timeZone:"Europe/Istanbul"})}</b><small>{shortTime(plan.starts)}</small></div>
+    <div className="home-plan-text"><button type="button" className="home-plan-open" onClick={()=>requireMember(()=>openCard(plan.id))}><strong>{plan.note||"Kütüpte buluşalım"}</strong></button><small>{dayWord(plan.starts)} · {owner?.name||"Arkadaşın"} planladı{plan.ends?` · ${shortTime(plan.ends)}’a kadar`:""}</small><span className="home-plan-who"><span className="avatar-stack">{plan.attendees.slice(0,4).map(id=><FaceButton key={id} member={data.members.find(x=>x.id===id)} onOpen={openMember}/>)}</span>{plan.attendees.length} katılıyor{plan.maybes?.length?` · ${plan.maybes.length} kararsız`:""}</span><div className="meetup-arrival-groups">{planArrivalGroups(plan).slice(0,3).map(([at,ids])=><span key={at}>{shortTime(at)} · {ids.length} kişi</span>)}</div>{mine&&<small className="meetup-my-answer">{mine.answer==="yes"?`Sen ${shortTime(mine.arrival)}’da katılıyorsun`:mine.answer==="pending"?"Saat değişti · yeniden onayla":mine.answer==="maybe"?"Sen henüz kararsızsın":"Sen gelemiyorsun"}</small>}</div>
+    <m.button whileTap={{scale:.94}} className={`btn small-btn ${mine?.answer==="yes"?"joined":"primary"}`} onClick={()=>requireMember(()=>openCard(plan.id))}>{mine?.answer==="yes"?<Check size={15}/>:<Plus size={15}/>} {mine?"Katılımım":"Katıl"}</m.button>
+  </m.article>;
 }
 
-function Plans({ data, me, requireMember, mutate, openPlan, openMember, openCard }) {
-  const [all, setAll] = useState(false);
-  const shown = all ? data.plans : data.plans.slice(0, 3);
-  return (
-    <section className="panel home-plans" id="plans">
-      <div className="section-heading">
-        <Kinetic text="Kim ne zaman geliyor?" />
-        <m.button whileTap={{ scale: 0.94 }} className="text-button accent" onClick={() => requireMember(openPlan)}>
-          <Plus size={15} /> Plan yap
-        </m.button>
-      </div>
-      <div className="plan-line">
-        <AnimatePresence initial={false}>
-          {shown.map((plan) => (
-            <PlanRow key={plan.id} plan={plan} data={data} me={me} requireMember={requireMember} mutate={mutate} openMember={openMember} openCard={openCard} />
-          ))}
-        </AnimatePresence>
-      </div>
-      {!data.plans.length && (
-        <EmptyState art="calendar" title="Takvim boş.">
-          İlk “yarın buluşuruz” senden gelsin; ekip “Ben de” der.
-        </EmptyState>
-      )}
-      {data.plans.length > 3 && (
-        <button className="text-button" onClick={() => setAll(!all)}>
-          {all ? "Daha az göster" : `Tüm planlar (${data.plans.length})`}
-        </button>
-      )}
-    </section>
-  );
+function Plans({data,me,requireMember,openPlan,openMember,openCard}){
+  const [all,setAll]=useState(false),[pages,setPages]=useState(1),[extra,setExtra]=useState(null),[error,setError]=useState("");
+  useEffect(()=>{
+    if(!all||pages===1){setExtra(null);return;}
+    const ac=new AbortController();let valid=true;
+    Promise.all(Array.from({length:pages},(_,i)=>get(`/plans?offset=${i*30}`,ac.signal))).then(results=>{if(valid){setExtra([...new Map(results.flatMap(r=>r.plans).map(p=>[p.id,p])).values()]);setError("");}}).catch(e=>{if(valid&&!ac.signal.aborted)setError(e.message);});
+    return()=>{valid=false;ac.abort();};
+  },[all,pages,data.group.rev,data.group.id]);
+  const list=extra||data.plans,total=data.plansTotal??data.plans.length,shown=all?list:list.slice(0,3);
+  return <section className="panel home-plans" id="plans"><div className="section-heading"><Kinetic text="Kim ne zaman geliyor?"/><m.button whileTap={{scale:.94}} className="text-button accent" onClick={()=>requireMember(openPlan)}><Plus size={15}/> Buluşma planla</m.button></div><div className="plan-line"><AnimatePresence initial={false}>{shown.map(plan=><PlanRow key={plan.id} plan={plan} data={data} me={me} requireMember={requireMember} openMember={openMember} openCard={openCard}/>)}</AnimatePresence></div>{!data.plans.length&&<EmptyState art="calendar" title="Takvim boş.">Bir buluşma öner; herkes kendi geliş saatini seçsin.</EmptyState>}{total>3&&<button className="text-button" onClick={()=>setAll(!all)}>{all?"Daha az göster":`Tüm buluşmalar (${total})`}</button>}{all&&list.length<total&&<button className="text-button" onClick={()=>setPages(n=>n+1)}>Daha fazla buluşma göster</button>}{error&&<p role="alert">{error}</p>}</section>;
 }
 
 // ---------- tiles into the village and the board ----------

@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { sqliteAdapter } from "../server/sqlite.js";
 import { migrate } from "../server/schema.js";
 import { createPushOutbox, PUSH_BATCH_SIZE, PUSH_LEASE_MS } from "../server/outbox.js";
+import {createPlans} from "../server/plans.js";
 
 const AGE = 365 * 86400000, OWNER_AGE = 30 * 86400000;
 async function fixture(t) {
@@ -177,4 +178,33 @@ test("outbox drains bounded batches using the due index and leaves future jobs u
   await f.queue.drain(); assert.equal(f.sends.length, PUSH_BATCH_SIZE);
   const plan = await f.db.all("EXPLAIN QUERY PLAN SELECT id FROM push_outbox WHERE next_at <= ? ORDER BY next_at, id LIMIT ?", [f.time, PUSH_BATCH_SIZE]);
   assert.ok(plan.some((r) => /SEARCH .*push_outbox_due/.test(r.detail)), "idle cron uses the index instead of scanning the queue");
+});
+
+async function meetingQueue(t){
+  const f=await fixture(t),arrival=f.time+20*60000;
+  await f.db.run("INSERT INTO plans(id,group_id,member_id,starts) VALUES('meeting','g','m',?)",[arrival]);
+  await f.db.run("INSERT INTO attendees(plan_id,member_id,answer,arrival,remind) VALUES('meeting','m','yes',?,1)",[arrival]);
+  f.meetings=createPlans({db:f.db,sessionAge:AGE,now:()=>f.time,notifyMember:async(_ctx,_member,payload,options)=>{
+    await f.queue.enqueue([await f.sub()],payload,'subscriptions',{...f.options,...options});
+  }});
+  return f;
+}
+test('meeting reminders: own arrival, opt-in and parallel ticks enqueue one durable reminder',async t=>{
+  const f=await meetingQueue(t);
+  await f.db.run("UPDATE attendees SET arrival=?",[f.time+60*60000]);
+  await f.meetings.tick({});assert.equal((await f.rows()).length,0,'the shared start does not override personal arrival');
+  await f.db.run("UPDATE attendees SET arrival=?,remind=0",[f.time+20*60000]);
+  await f.meetings.tick({});assert.equal((await f.rows()).length,0,'no reminder without opt-in');
+  await f.db.run('UPDATE attendees SET remind=1');
+  await Promise.all([f.meetings.tick({}),f.meetings.tick({})]);
+  assert.equal((await f.rows()).length,1);await f.queue.drain();
+  await f.meetings.tick({});await f.queue.drain();assert.equal(f.sends.length,1);
+  assert.equal(f.sends[0].payload.url,'/?plan=meeting');
+});
+test('meeting reminders: withdrawal, changed arrival, retiming, cancellation and expired arrival invalidate queued retries',async t=>{
+  for(const change of ["UPDATE attendees SET answer='no'","UPDATE attendees SET arrival=arrival+60000","UPDATE plans SET schedule=schedule+1","UPDATE plans SET cancelled=1","UPDATE attendees SET remind=0"]){
+    const f=await meetingQueue(t);await f.meetings.tick({});assert.equal((await f.rows()).length,1);
+    await f.db.run(change);await f.queue.drain();assert.equal(f.sends.length,0,change);assert.equal((await f.rows()).length,0);
+  }
+  const f=await meetingQueue(t);await f.meetings.tick({});f.time+=21*60000;await f.queue.drain();assert.equal(f.sends.length,0);
 });

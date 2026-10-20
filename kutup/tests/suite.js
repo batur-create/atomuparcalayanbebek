@@ -250,6 +250,25 @@ export function defineSuite(target) {
     assert.equal((await request("/plans", { cookie: people.bob, body: { starts: Date.now() + 40 * 86400000 } })).status, 400);
   });
 
+  test(`[${target}] one meeting supports personal arrival, stable links and schedule reconfirmation`,async()=>{
+    const day=86400000,start=Math.floor((Date.now()+10800000)/day)*day-10800000+day+14*3600000;
+    const created=await request("/plans",{cookie:people.alice,body:{starts:start,ends:start+6*3600000,note:"Ayrı sınav grubu",separate:true,requestKey:"meeting-e2e-request"}});
+    assert.equal(created.status,201);const id=created.data.id;
+    const later=await request("/plans",{cookie:people.bob,body:{starts:start+2*3600000}});
+    assert.equal(later.data.id,id,"a later arrival joins the existing meeting");
+    let p=(await request(`/plans/${id}`,{cookie:people.bob})).data;
+    assert.equal(p.starts,start);assert.ok(p.responses.some(r=>r.arrival===start+2*3600000));
+    assert.equal((await request(`/plans/${id}/answer`,{cookie:people.bob,body:{}})).status,400);
+    assert.equal((await request(`/plans/${id}`,{cookie:people.charlie})).status,404);
+    const edited=await request(`/plans/${id}`,{cookie:people.alice,method:"PATCH",body:{rev:p.rev,starts:start+3600000}});
+    assert.equal(edited.status,200);p=(await request(`/plans/${id}`,{cookie:people.bob})).data;
+    assert.equal(p.schedule,2);assert.ok(p.responses.some(r=>r.answer==="pending"));
+    assert.equal((await request(`/plans/${id}/answer`,{cookie:people.bob,body:{answer:"yes",schedule:1,arrival:start+2*3600000}})).status,409);
+    assert.equal((await request(`/plans/${id}/answer`,{cookie:people.bob,body:{answer:"yes",schedule:2,arrival:start+2*3600000}})).status,200);
+    assert.equal((await request(`/plans/${id}`,{cookie:people.alice,method:"DELETE",body:{rev:p.rev}})).status,200);
+    assert.ok((await request(`/plans/${id}`,{cookie:people.bob})).data.cancelled);
+  });
+
   test(`[${target}] messages and hearts are group-scoped; bad and cross-origin writes fail`, async () => {
     messageId = (await request("/messages", { cookie: people.alice, body: { text: "Pencere kenarında yer var!" } })).data.id;
     assert.equal((await request(`/messages/${messageId}/react`, { cookie: people.bob, body: {} })).status, 200);
@@ -613,11 +632,11 @@ export function defineSuite(target) {
     const titles = pushes().map((p) => JSON.parse(receiver.decrypt(p.body)).title);
     assert.deepEqual(titles, ["Ece kütüpte! 📚", "Ece molada ☕", "Ece: mola? ☕"]);
     // Plans notify too and deep-link to the plans tab.
-    await request("/plans", { cookie: people.ece, body: { starts: Date.now() + 86400000, note: "Sabah kulübü" } });
+    const pushedMeeting=await request("/plans", { cookie: people.ece, body: { starts: Date.now() + 86400000, note: "Sabah kulübü" } });
     await waitFor(() => pushes().length >= 4, 8000, "plan push");
     const planPush = JSON.parse(receiver.decrypt(pushes()[3].body));
     assert.match(planPush.body, /Sabah kulübü/);
-    assert.equal(planPush.url, "/?tab=plans");
+    assert.equal(planPush.url, `/?plan=${pushedMeeting.data.id}`);
   });
 
   test(`[${target}] a transfer code opens the same profile on a second device`, async () => {

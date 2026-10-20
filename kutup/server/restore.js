@@ -5,6 +5,7 @@
 import { randomBytes } from "node:crypto";
 import { SCHEMA_VERSION, migrate, migrations } from "./schema.js";
 import { sqliteAdapter } from "./sqlite.js";
+import {PLAN_LEGACY_IMPORT} from "../shared/plans.js";
 
 import { BACKUP_TABLES } from "../shared/backup.js";
 export { BACKUP_TABLES };
@@ -36,6 +37,12 @@ export async function restoreBackup(backup, sqlite) {
           .run(...keys.map((k) => row[k] ?? null));
       }
     }
+    // A pre-30 backup is imported into today's schema after migrations ran on
+    // an empty DB. Normalize legacy yes/no rows just as migration 30 does.
+    if(backup.schema<30){
+      sqlite.exec("UPDATE attendees SET arrival=(SELECT starts FROM plans WHERE id=attendees.plan_id) WHERE arrival IS NULL");
+      sqlite.exec(PLAN_LEGACY_IMPORT);
+    }
     const broken = sqlite.prepare("PRAGMA foreign_key_check").all();
     if (broken.length) throw new Error(`Yabancı anahtar hatası: ${broken.length} satır (${broken[0].table}).`);
     sqlite.exec("COMMIT");
@@ -46,7 +53,9 @@ export async function restoreBackup(backup, sqlite) {
 
   const counts = {};
   for (const table of BACKUP_TABLES) {
-    const expected = (backup.tables[table] || []).length;
+    const expected = table==="attendees"&&backup.schema<30
+      ?new Set([...(backup.tables.attendees||[]),...(backup.tables.plan_skips||[])].map(r=>JSON.stringify([r.plan_id,r.member_id]))).size
+      :(backup.tables[table] || []).length;
     const actual = sqlite.prepare(`SELECT count(*) AS n FROM ${table}`).get().n;
     if (actual !== expected) throw new Error(`${table}: yedekte ${expected}, kopyada ${actual} satır.`);
     counts[table] = actual;

@@ -1082,7 +1082,7 @@ test("one person cannot flood the team with board messages or plans (d23)", asyn
   const post = (text) => call(app, "/messages", { method: "POST", headers: { Cookie: me.cookie }, body: { text } });
   for (let i = 0; i < 20; i++) assert.equal((await post(`not ${i}`)).status, 201);
   assert.equal((await post("bir tane daha")).status, 429);
-  const plan = (n) => call(app, "/plans", { method: "POST", headers: { Cookie: me.cookie }, body: { starts: Date.now() + (n + 1) * 3600000 } });
+  const plan = (n) => call(app, "/plans", { method: "POST", headers: { Cookie: me.cookie }, body: { starts: Date.now() + (n + 1) * 3600000, separate:true, note:`Ayrı çalışma grubu ${n}` } });
   for (let i = 0; i < 6; i++) assert.equal((await plan(i)).status, 201);
   assert.equal((await plan(7)).status, 429);
 });
