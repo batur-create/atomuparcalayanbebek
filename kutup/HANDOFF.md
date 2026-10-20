@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, Anıtkabir katkı açıklığı:** Batur, Bensu’nun 150 dk toplam emeğine karşı 50/250 çubuğunu görünce anlaşılır sunum ve ayrı PR istedi. Dal `codex/imece-contribution-clarity`, taban `c7069501` (Batur yayını Worker `1feedd91`), hedef `kutup-platform`; **yayın Batur’da**. Toplam katkı büyük dakika sayısı olarak; üç bölüm payı 50/50 tamamlandı, 0/150 bölüm açılınca, 0/50 bölüm açılınca şeklinde ayrı gösterilir. Fazladan ortak emek de yazılır. Kara, seans öncesi açıklama, katkı geçmişi, yardım ve Yenilikler aynı ayrımı anlatır. Sunucu, şema, çalışma/ödül/katkı hesapları ve model değişmedi; göç yok.
+
 > **20 Ekim, plan keşfi ve altı nadir yapı:** Batur 25 dk başına %5 şans / 500 dk garanti / haftalık yapıyı açık dönemde bitirince kalıcı plan önerisini onayladı; ayrıca yeni plan ve nadir yapılar istedi. Dal `codex/blueprint-discovery`, başlangıç `1729a94e`, hedef `kutup-platform`, ayrı PR; **yayın Batur'da**. Batur bu tabanın yayınını Worker `e2b7b449` ile doğruladı. Anıtkabir modeline/görevlerine dokunulmadı. Rapor `ASTRA_RAPOR_PLAN_KESFI.md`; yeni göç 31 için yayın öncesi yedek.
 
 > **20 Ekim, odak yüzdesi etiketi:** Batur'un ekran görüntüsündeki iki “hakediş” farklı ölçülerdi: şantiye başlığı maliyet ağırlıklı hakedişi, sayaç ise geçen süreyi gösteriyordu. Onaylı dar düzeltme `codex/focus-progress-label` dalında: sayaç altı “Seans %… tamamlandı” oldu. Hakediş hesabı, süre ve çizim değişmedi. Ayrı PR; yayın Batur'da.
@@ -100,7 +102,7 @@ npm run test:all     # hepsi (plan keşfi PR: 189 test) — her teslimden önce 
 npm run deploy       # vite build + wrangler deploy (canlı)
 npm run test:browser # gerçek tarayıcı, 100 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 npm run test:browser:relaxed -- --artifacts /tmp/kutup-relaxed # Rahat/teslim ve iPhone boyut-yön kontrolleri (Chromium)
-npm run test:browser:imece -- --artifacts /tmp/kutup-imece # 35 ortak proje/film/mobil kontrolü, geçici veritabanı
+npm run test:browser:imece -- --artifacts /tmp/kutup-imece # 43 ortak proje/film/katkı açıklığı/mobil kontrolü, geçici veritabanı
 npm run test:browser:plans -- --artifacts /tmp/kutup-plans # 22 buluşma/kişisel geliş/düzenleme/bağlantı kontrolü
 npm run test:browser:blueprints -- --artifacts /tmp/kutup-blueprints # plan keşfi, garanti, 6 yeni yapı ve mobil katalog
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
@@ -137,6 +139,8 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. KARARLAR.md arşivi, Paket 5 ve 6).
 
 ## 6b. Durum (son güncelleme 20 Ekim 2026)
+
+> **Katkı açıklığı:** `Imece.jsx` içindeki `ContributionCard` toplam dakikayı öne çıkarır; `PhaseShares` üç zorunlu katılım payını ayrı gösterir. Tek 50/250 çubuğu kaldırıldı; üst özet gerçek toplam katkıdır. Mevcut dakika değerleri değişmeden sunulur; ek ortak emek toplamdan bölüm paylarının toplamı çıkarılarak açıklanır. Kara mevcut bölüme göre konuşur; tamamlanmış 50 dakikalık pay yerine “200 dk kaldı” diyerek gelecek bölümleri aynı iş gibi sunmaz. Başlangıçta seçilen seansın tamamının ortak hedefe sayıldığı, bir kısmının zorunlu bölüm payını da karşıladığı anlatılır. Açılır örnek Bensu’nun 150/50/100 durumunu açıklar. Yardım sorusu ve sürüm21 eklendi. **189/189 Node–Worker**, **43/43 İmece tarayıcı**, tema **252/252**, diff temiz. Yeni tarayıcı kontrolleri gerçek 150 dakikalık emek, 50/50 pay, gelecekteki kilitli paylar, 100 dk ek ortak emek, okuma işlemlerinin kayıt değiştirmemesi ve 360/375/390/844 px ölçülerini kapsar; eski 2.000 dk tamamlama ve film kontrolleri de geçer. Fiziksel iPhone ve canlı veri kullanılmadı. Görseller `/workspace/artifacts/imece-katki-aciklama/`.
 
 > **Plan keşfi (20 Ekim, PR):** `shared/blueprints.js` tek dakika/olasılık/garanti kaynağı. Başarıyla sonuçlanan seansın `s.credit` değeri 25 dakikalık çekilişlere dönüşür; artan dakika taşınır. Her çekiliş %5, en geç 500 dakikada elde olmayan rastgele bir plan; 75 dk ile 3×25 dk aynı çekiliş dizisi. Uzun seansta birden fazla farklı plan mümkün. `blueprint_progress` taşıma, plansız dakika, sıra ve yalnız sunucunun bildiği seed tutar. Çekilişler seed+sıra SHA-256 ile sabittir; ödül/ilerleme aynı mevcut seans işlemi ve ekip revizyonuyla yazılır. Sıkı/Rahat/serbest/İmece aynı hak edilmiş dakika kuralındadır; yarım kalan inşaat sayılmaz. Seri/hediye/usta/haftalık plan çalışma garantisini sıfırlamaz. Havuz biterse keşif bekler; o arada yeni keşif dakikası bankalanmaz.
 >
