@@ -394,7 +394,7 @@ function gallerySVG(P,x0,y0,x1,y1,t,trav,inside){
   }
   return s;
 }
-function monumentSVG(P0,k,lit=false,detail=2,time=0){
+function monumentSVG(P0,k,lit=false,detail=2,time=0,flagCloth=true){
   const P=squeezed(P0),trav=lit?mixAll(TRAVERTINE,FLOODLIT,.22):TRAVERTINE;
   let s='';
   s+=poly([P(-2.55,-2.83,-.006),P(5.68,-2.83,-.006),P(5.68,1.46,-.006),P(-2.55,1.46,-.006)],'#b6bf95');
@@ -463,7 +463,7 @@ function monumentSVG(P0,k,lit=false,detail=2,time=0){
       for(let i=0;i<3;i++)f+=box(P,px-.065+i*.015,py-.065+i*.015,px+.065-i*.015,py+.065-i*.015,i*.012,(i+1)*.012,WHITE_TRAV);
       f+=seg(P(px,py,.036),P(px,py,top),'#a6a9a5',1.35)+seg(P(px-.003,py,.036),P(px-.003,py,top),'#f4eee1',.45);
       f+=circle(...P(px,py,top+.006),ballR(P,px,py,top,.006),GOLD);
-      return f+(k.flag>=1 ? flagSVG(P,px,py,top-.02,.20,time*1.3) : '');
+      return f+(k.flag>=1&&flagCloth ? flagSVG(P,px,py,top-.02,.20,time*1.3) : '');
     });
   }
   return s+paintAK(list);
@@ -480,7 +480,10 @@ export function imeceBuildState(minutes) {
     road:work['lion-road'],lions:work.lions,cladding:work.travertine,reliefs:work.reliefs,
     lahit:work.reliefs>=1?1:0,flag:work.flag,landscape:work.landscape,done:work.handover>=1};
 }
-export function drawImece(P, minutes, {lit=false,detail=2}={}) {
+export function drawImece(P, minutes, {lit=false,detail=2,flagCloth=true}={}) {
   const k=imeceBuildState(minutes);
-  return monumentSVG(P,k,lit,detail);
+  return monumentSVG(P,k,lit,detail,0,flagCloth);
 }
+// Only the small cloth is redrawn in the live layer. The pole, base and all
+// architectural detail remain in the static layer; emblem geometry is shared.
+export const drawImeceFlag=(P,seconds)=>flagSVG(P,...AK.pole,AK.poleTop-.02,.20,seconds*1.3);

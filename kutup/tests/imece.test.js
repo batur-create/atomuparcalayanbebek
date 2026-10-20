@@ -7,8 +7,73 @@ import { restoreBackup } from "../server/restore.js";
 import { IMECE_TASKS, IMECE_PHASES, imeceCapacity, imeceProgress } from "../shared/imece.js";
 import { drawImece } from "../src/imeceArt.js";
 import { useSVG } from "../src/iso.js";
+import { imeceJobAt, imeceLiftAt, imeceReplay, imeceReplayAt, imeceTourAt, IMECE_TOUR_MS } from "../src/imeceMotion.js";
+import { drawImeceLive } from "../src/imeceLive.js";
 
 const key = "imece-test-owner-key";
+
+test("imece film: replay covers every crossed job, stays within credited work and lands exactly",()=>{
+  for(const [from,to] of [[0,25],[49,126],[400,1600],[0,2000],[1975,2000],[500,500]]){
+    const plan=imeceReplay(from,to);
+    assert.ok(plan.duration<=22000);
+    let previous=from;
+    for(let ms=0;ms<=plan.duration;ms+=137){
+      const state=imeceReplayAt(plan,ms);
+      assert.ok(state.minutes>=previous&&state.minutes<=to);
+      previous=state.minutes;
+    }
+    assert.equal(imeceReplayAt(plan,plan.duration).minutes,to);
+    assert.equal(imeceReplayAt(plan,plan.duration).done,true);
+    if(from!==to){
+      assert.equal(plan.segments[0].from,from);
+      assert.equal(plan.segments.at(-1).to,to);
+      for(let i=1;i<plan.segments.length;i++)assert.equal(plan.segments[i-1].to,plan.segments[i].from);
+    }
+  }
+  assert.equal(imeceReplay(0,2000).segments.length,IMECE_TASKS.length);
+  assert.deepEqual([0,3000,6000,9000,12000,IMECE_TOUR_MS].map(t=>imeceTourAt(t).zone),["road","court","hall","flag","all","all"]);
+});
+
+test("imece film: the crane rigs at stock, lifts clear, sets down and returns empty at every structural job",()=>{
+  let minutes=0;
+  for(const task of IMECE_TASKS){
+    const job=imeceJobAt(minutes+.01);minutes+=task.minutes;
+    if(job.kind!=="lift")continue;
+    const pickup=imeceLiftAt(2.2,job.site),raised=imeceLiftAt(3.8,job.site),setdown=imeceLiftAt(7.6,job.site),empty=imeceLiftAt(8.5,job.site);
+    assert.ok(pickup.loaded&&raised.loaded&&setdown.loaded&&!empty.loaded);
+    assert.ok(raised.hook[2]>pickup.hook[2]);
+    assert.ok(Math.abs(setdown.hook[2]-(job.site[2]+.18))<.0001);
+    assert.deepEqual(setdown.hook.slice(0,2),job.site.slice(0,2));
+    for(let t=0;t<20;t+=.05){
+      const pose=imeceLiftAt(t,job.site);
+      assert.ok(pose.hook.every(Number.isFinite));
+      assert.ok(pose.hook[2]>=.19&&pose.hook[2]<=1.081,"load clears grade and the jib");
+      assert.ok(pose.reach<1.50,"trolley stays on the jib");
+    }
+    assert.deepEqual(imeceLiftAt(0,job.site),imeceLiftAt(10,job.site),"the cycle closes without a jump");
+  }
+});
+
+test("imece film: all 22 work crews paint finite, nonempty Canvas geometry, including motion extrema",()=>{
+  const crew=Array.from({length:4},(_,slot)=>({slot}));
+  let ops=0;
+  const ctx=new Proxy({}, {get:()=> (...values)=>{
+    assert.ok(values.every(v=>typeof v!=="number"||Number.isFinite(v)),"finite canvas arguments");ops++;
+  }});
+  const P=(x,y,z=0)=>{assert.ok([x,y,z].every(Number.isFinite));return[(x-y)*260,(x+y)*130-z*260];};
+  let at=0;
+  for(const task of IMECE_TASKS){
+    const job=imeceJobAt(at+.1);at+=task.minutes;
+    assert.ok(job.kind&&job.cue&&job.site.length===3);
+    const before=ops;
+    for(const t of [0,1.2,2.2,3.8,6.5,7.6,8.5,9.9])drawImeceLive(ctx,P,job,crew,t);
+    assert.ok(ops>before+100,`${task.id} paints its tools and crew`);
+  }
+  const before=ops;
+  drawImeceLive(ctx,P,imeceJobAt(400),[],0);
+  assert.equal(ops,before,"an empty site invents no active workers");
+});
+
 async function fixture(t) {
   const sql = new DatabaseSync(":memory:"); sql.exec("PRAGMA foreign_keys=ON"); t.after(() => sql.close());
   const db = sqliteAdapter(sql), app = createApp({ db, config: { adminKey: key, testHooks: true } });

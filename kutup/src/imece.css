@@ -5,7 +5,7 @@
 .imece-entry-copy strong { font: 750 25px "Bricolage Grotesque Variable",sans-serif; letter-spacing: -.7px; }
 .imece-entry-copy>span { color: var(--muted); font-size: 12px; }
 .imece-entry-action { display: flex; gap: 8px; align-items: center; margin-left: auto; font-size: 12px; font-weight: 750; color: var(--accent-deep); }
-.imece-modal { width: min(1080px, calc(100vw - 24px)); }
+.modal.wide.imece-modal { width: min(1080px, calc(100vw - 24px)); }
 .imece-modal h3 { display: flex; gap: 8px; align-items: center; font-size: 20px; margin: 0 0 10px; }
 .imece-kara { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 20px; align-items: center; padding: 18px; margin: 20px 0; background: var(--accent-soft); border-radius: 19px; }
 .imece-kara .kara-spot { position: relative; width: 110px; height: 140px; }
@@ -26,6 +26,35 @@
 .imece-views button[aria-pressed=true],.imece-start-options button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .imece-canvas-wrap { position: relative; height: min(56svh,640px); min-height: 340px; overflow: hidden; touch-action: none; }
 .imece-canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+.imece-canvas-plane { position: absolute; inset: 0; transform-origin: center; }
+.imece-live { position: absolute; inset: 0; pointer-events: none; }
+.imece-opening { display: flex; gap: 16px; align-items: center; justify-content: space-between; background: var(--hero); padding: 20px; }
+.imece-opening>div { min-width: 0; }
+.imece-opening strong { display: block; font: 750 24px "Bricolage Grotesque Variable",sans-serif; margin-top: 6px; letter-spacing: -.5px; }
+.imece-opening p { font-size: 12px; line-height: 1.7; color: var(--muted); margin: 6px 0 0; }
+.imece-opening .btn { flex-shrink: 0; min-height: 44px; }
+.imece-site-work { padding: 15px 18px; background: var(--canvas); border-top: 1px solid var(--border); }
+.imece-site-work strong { display: block; font-size: 15px; margin-top: 5px; }
+.imece-site-work p { font-size: 12px; color: var(--muted); line-height: 1.7; margin: 6px 0; }
+.imece-site-work small { display: block; font-size: 11px; line-height: 1.7; color: var(--accent-deep); overflow-wrap: anywhere; }
+.imece-playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 15px 18px; background: var(--paper); border-top: 1px solid var(--border); }
+.imece-playbar>div { flex: 1 1 220px; min-width: 0; }
+.imece-playbar strong { display: block; font-size: 13px; margin-top: 4px; }
+.imece-playbar .btn { min-height: 44px; }
+.imece-film-meter { height: 4px; background: var(--border); overflow: hidden; margin: 10px 12px 0 0; border-radius: 8px; }
+.imece-film-meter>span { display: block; height: 100%; background: var(--accent); }
+.imece-tour-caption { position: absolute; left: 12px; right: 12px; bottom: 12px; max-width: 470px; padding: 14px 16px; background: var(--studio); color: var(--studio-ink); border: 1px solid var(--studio-soft); border-radius: 13px; pointer-events: none; }
+.imece-tour-caption>span { font-size: 10px; font-weight: 750; letter-spacing: 1px; }
+.imece-tour-caption strong { display: block; margin-top: 6px; font: 700 22px "Bricolage Grotesque Variable",sans-serif; }
+.imece-tour-caption p { font-size: 12px; line-height: 1.65; margin: 6px 0 0; }
+.imece-opening-credits { background: var(--hero); padding: 24px; text-align: center; }
+.imece-opening-credits h3 { justify-content: center; margin-top: 10px; }
+.imece-opening-credits>p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.imece-opening-credits>div { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.imece-opening-credits article { display: flex; align-items: center; flex-direction: column; gap: 7px; padding: 14px 10px; border: 1px solid var(--border); border-radius: 15px; background: var(--paper); min-width: 0; }
+.imece-opening-credits strong { font-size: 14px; overflow-wrap: anywhere; }
+.imece-opening-credits span { font-size: 12px; color: var(--accent-deep); }
+.imece-opening-credits small { font-size: 10px; line-height: 1.5; color: var(--muted); }
 .imece-site-label { position: absolute; top: 12px; left: 12px; background: var(--studio); color: var(--studio-ink); border-radius: 10px; padding: 8px 11px; font-size: 10px; font-weight: 800; letter-spacing: .7px; pointer-events: none; }
 .imece-map-tools { position: absolute; top: 12px; right: 12px; display: grid; gap: 8px; }
 .imece-map-tools button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--studio-soft); background: var(--studio); color: var(--studio-ink); cursor: pointer; }
@@ -101,6 +130,12 @@
   .imece-plan summary { padding: 12px; }
   .imece-plan summary b { font-size: 12px; }
   .imece-views button { padding: 8px; font-size: 11px; }
+  .imece-opening { padding: 16px; flex-direction: column; align-items: stretch; }
+  .imece-opening strong { font-size: 22px; }
+  .imece-opening-credits { padding: 18px 12px; }
+  .imece-opening-credits>div { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .imece-tour-caption { padding: 12px; }
+  .imece-tour-caption strong { font-size: 19px; }
 }
 @media(prefers-reduced-motion:reduce) { .imece-meter>span { transition:none; } }
 html[data-motion=still] .imece-meter>span { transition:none; }

@@ -19,6 +19,7 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
   const [result,setResult]=useState(null),[error,setError]=useState(""),[open,setOpen]=useState(()=>signal>0||new URLSearchParams(location.search).has("imece"));
   const [busy,setBusy]=useState(false),[duration,setDuration]=useState(25),[relaxed,setRelaxed]=useState(true),[intro,setIntro]=useState(true);
   const [replay,setReplay]=useState(null);
+  const replayDone=useCallback(()=>setReplay(r=>r?{...r,done:true}:r),[]);
   const controller=useRef(null),epoch=useRef(0),shown=useRef(false);
   const memberId=me?.id;
   const load=useCallback(async()=>{
@@ -35,23 +36,13 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
     }catch(e){if(!ac.signal.aborted&&turn===epoch.current)setError(e.message||"Şantiye okunamadı.");}
   },[memberId]);
   useEffect(()=>{
-    epoch.current++;shown.current=false;setResult(null);setError("");
+    epoch.current++;shown.current=false;setResult(null);setError("");setReplay(null);
     load();const timer=setInterval(load,15000);
     document.addEventListener("visibilitychange",load);window.addEventListener("online",load);
     return()=>{epoch.current++;controller.current?.abort();clearInterval(timer);document.removeEventListener("visibilitychange",load);window.removeEventListener("online",load);};
   },[load]);
   useEffect(()=>{load();},[me?.focusEnd]);
   useEffect(()=>{if(signal>0){setOpen(true);consumeSignal?.();}},[signal]);
-  useEffect(()=>{
-    if(!replay||replay.done||!open)return;
-    if(reducedMotion()||document.documentElement.dataset.motion==="still"){setReplay(r=>({...r,at:r.to,done:true}));return;}
-    const timer=setInterval(()=>{if(document.hidden)return;setReplay(r=>{
-      if(!r)return r;
-      const t=Math.min(1,(performance.now()-r.start)/6500);
-      return {...r,at:r.from+(r.to-r.from)*t,done:t>=1};
-    });},125);
-    return()=>clearInterval(timer);
-  },[!!replay,replay?.done,open]);
   const data=result?.memberId===memberId?result.data:null;
   if(!memberId)return null;
   if(!data)return error?<section className="imece-entry"><p>{error}</p><button className="btn outline" onClick={load}>Şantiyeyi yeniden oku</button></section>:null;
@@ -61,8 +52,8 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
   const running=me.focusEnd>now,working=running&&!!me.focusImece;
   const choices=[25,50,75].filter(n=>n<=data.capacity.available);
   const length=choices.includes(duration)?duration:choices[0]||25;
-  const close=()=>{setOpen(false);storage.set(`kutup-imece-intro:${memberId}:${data.started}`,"1");};
-  const accept=async()=>{setBusy(true);setError("");try{await api("/imece/seen",{through:data.delivery?.through});setReplay(null);await load();}catch(e){setError(e.message);}finally{setBusy(false);}};
+  const close=()=>{setOpen(false);setReplay(null);storage.set(`kutup-imece-intro:${memberId}:${data.started}`,"1");};
+  const accept=async()=>{setBusy(true);setError("");try{await api("/imece/seen",{through:replay?.through??data.delivery?.through});setReplay(null);await load();}catch(e){setError(e.message);}finally{setBusy(false);}};
   const begin=async()=>{
     setBusy(true);
     if(relaxed)releaseScreen();else keepScreenOn();
@@ -89,8 +80,8 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
       <div className="imece-kara"><div onClick={()=>setIntro(v=>!v)}><KaraSpot base="build" lines={[{text:karaLine}]} context={{id:`imece-${memberId}`,surface:"ledge"}}/></div><div><span className="imece-eyebrow">KARA’DAN {intro?"GÖREV MEKTUBU":"ŞANTİYE NOTU"}</span><p>{karaLine}</p><button className="text-button" onClick={()=>{setIntro(v=>!v);document.querySelector(intro?"#imece-mission":".imece-kara")?.scrollIntoView({behavior:reducedMotion()?"auto":"smooth",block:"start"});}}>{intro?"Anladım, görevime bakalım":"Kara, görevi tekrar anlat"}</button></div></div>
       <div className="imece-totals"><div><small>Ortak emek</small><strong>{time(data.minutes)} <span>/ 33 sa 20 dk</span></strong><Meter value={data.minutes} max={2000} label="Anıtkabir ortak çalışma hedefi"/></div><div><small>Senin kişisel görevin</small><strong>{mine?`${personal} / ${IMECE_PERSONAL} dk`:"Şantiye ziyaretçisi"}</strong><Meter value={personal} max={250} label="Kişisel zorunlu görev"/></div></div>
       {error&&<p className="form-error" role="alert">{error} <button className="text-button" onClick={load}>Yeniden dene</button></p>}
-      {data.delivery&&<div className="imece-delivery" role="status"><strong>Kara: {data.delivery.minutes} dakikalık yeni emeğin şantiyede!</strong><p>Senin katkını ve ardından yapılan ortak işleri hızlandırılmış olarak izleyebilirsin. Süre zaten kaydedildi; izlemek ya da atlamak ikinci kez ödül vermez.</p>{!replay?<button type="button" className="btn primary" onClick={()=>setReplay({...data.delivery,at:data.delivery.from,start:performance.now(),done:false})}>Emeğimizin yükselişini izle</button>:<p>{replay.done?"İşte ortak emeğimizin geldiği yer.":"Katkından bugüne şantiye · hızlandırılmış yapım"}</p>}<Busy className="btn outline" loading={busy} onClick={accept}>{replay?.done?"Emeğimi teslim aldım":"Atla ve teslim al"}</Busy></div>}
-      <Suspense fallback={<Loading text="Ortak şantiye kuruluyor…"/>}><ImeceScene minutes={replay?.at??data.minutes} complete={replay?!replay.done?false:data.complete:data.complete}/></Suspense>
+      {data.delivery&&<div className="imece-delivery" role="status"><strong>Kara: {data.delivery.minutes} dakikalık yeni emeğin şantiyede!</strong><p>Senin katkını ve ardından yapılan ortak işleri hızlandırılmış olarak izleyebilirsin. Süre zaten kaydedildi; izlemek ya da atlamak ikinci kez ödül vermez.</p>{!replay||replay.done?<button type="button" className="btn primary" onClick={()=>setReplay({...data.delivery,key:performance.now(),done:false})}>{replay?.done?"Yapımı tekrar izle":"Emeğimizin yükselişini izle"}</button>:<p>Katkından bugüne şantiye · hızlandırılmış yapım</p>}<Busy className="btn outline" loading={busy} onClick={accept}>{replay?.done?"Emeğimi teslim aldım":"Atla ve teslim al"}</Busy></div>}
+      <Suspense fallback={<Loading text="Ortak şantiye kuruluyor…"/>}><ImeceScene minutes={data.minutes} complete={data.complete} crew={data.crew} replay={replay} onReplayDone={replayDone}/></Suspense>
       {data.complete?<div className="imece-complete"><Flag size={28}/><h3>Son taşında hepimiz varız.</h3><p>Dört kişisel görev de tamamlandı. Aşağıdaki emek defteri ve Anıtkabir artık ortak hatıramız.</p></div>:<section className="imece-mission" id="imece-mission">
         <span className="imece-eyebrow">{mine?mine.role.name:"ORTAK ŞANTİYE"}</span><h3>{current?.name}</h3><p>{current?.action}</p><p className="imece-why">{current?.why}</p>
         {working?<div className="imece-working" role="status"><Hammer size={20}/><div><strong>Görevin sürüyor · {Math.max(0,Math.ceil((me.focusEnd-now)/60000))} dk kaldı</strong><p>{me.focusRelaxed?"Ekranı kapatabilirsin. Sunucudaki süre devam eder; geri geldiğinde katkın yazılır.":"Kütüp açık kalsın. Seansın tamamı uygulamada görülürse seçilen görev yazılır."}</p><button className="text-button" disabled={busy} onClick={async()=>{if(!confirm("Bu görev seansını durduralım mı? Önceki katkılarınız korunur; bu seans projeye yazılmaz."))return;setBusy(true);try{await mutate("/focus",{action:"cancel"},"Görev durdu. Önceki ortak emeğiniz korunuyor.");await load();}finally{setBusy(false);}}}>Bu seansı durdur</button></div></div>

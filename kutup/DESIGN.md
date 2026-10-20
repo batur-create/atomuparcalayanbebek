@@ -125,6 +125,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.
 
+- ✔ **İmece şantiye hareketi ve açılış (20 Eki):** Ayrı plan Batur'un “onay” yanıtıyla uygulandı. İşe bağlı çalışanlar/makineler, doğru yük döngülü vinç, iş başına yakın kamera, duraklatılabilir/atlanabilir teslim, ortak tamamlanma sonrası beş duraklı 15 sn açılış ve dört kişilik emek defteri. Detaylı anıt sabit Canvas'ta, hareket ayrı katmanda; telefon için kare sınırı ve ekran dışı duraklama. Sakin'de ortam döngüsü yok; Kıpırtısız'da doğrudan son görüntü. Tasarım görselleri yerelde kontrol edildi; fiziksel iPhone/üretim doğrulaması yapılmadı.
+
 - ✔ **Bir Taş da Senden (20 Eki):** Batur doğrudan kodlamayı onayladı; bütün köylerin tek büyük Anıtkabir'i, Kara'nın kişisel görev mektubu, 2.000 dakikalık dayanışma projesi ve herkesin zorunlu payı. Kâğıt/tema jetonlu görev defteri, büyük yakın anıt, ayrı bütün yerleşim/bayrak kameraları. Görsel önizleme onayı istenmedi; gerçek cihaz/üretim görünümü Batur incelemesinde.
 
 - ✔ **Rahat inşaat (19 Eki):** mevcut koyu odak kartında Sıkı/Rahat seçimi; dönüşte aynı şantiye çiziminin 18 saniyelik yapımı, atla/teslim al/köyde gör. Hareket azaltmada doğrudan bitmiş bina. Ayrı bir mod; mevcut şantiye çizimi ve animasyonları korunur. iPhone odak ekranında yalnız sığma ve yön düzeltmesi onaylandı.

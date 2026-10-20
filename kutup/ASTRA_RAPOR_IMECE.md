@@ -1,4 +1,4 @@
-# Bir Taş da Senden — ilk büyük teslim
+# Bir Taş da Senden — ortak proje ve hareket paketi
 
 20 Ekim 2026 · Dal: `codex/anitkabir-imece` · Hedef: `kutup-platform`
 
@@ -59,4 +59,27 @@ Proje başladıktan sonra katalogdaki Anıtkabir ortak şantiyeye götürür. Ü
 
 **Yayına alma:** mevcut yedek akışıyla yedek al → PR'ı `kutup-platform`'a birleştir → mevcut yayın komutunu kullan → gerçek cihazda kontrol et → Komuta merkezi / Ortak Anıtkabir'den dört gerçek profili seç ve başlat. Eski yapıları kaldırmak ayrıca Batur'un seçimidir.
 
-**Sonraki tur, ayrıca onayla:** görev bazında daha ayrıntılı çalışan/vinç koreografisi, özel açılış kamera turu veya katılımcı devretme. Bunların hazır olduğu iddia edilmez; mevcut teslimde anıt yapımı katkı ilerlemesi ve hızlandırılmış teslimle çizilir.
+## İkinci paket — çalışanlar, vinç, teslim filmi ve açılış
+
+20 Ekim 2026: Batur ayrıntılı hareket/açılış planına **“onay”** verdi. Bu paket aynı PR #43'e ayrı commit olarak eklendi. Aşağıdaki sonuçlar ilk teslimin üzerine geçer; ilk teslimin test sayıları yukarıda tarihsel kayıt olarak korunur.
+
+- **22 işe bağlı canlı çalışma:** aplikasyon/ölçüm, katmanlı kazı ve yükleme, donatı taşıma/bağlama, beton hortumu/mastar, taşıyıcı montaj, duvar/taş/merdiven, mozaik, kabartma, fidan, bayrak halatı ve son kontrol. İnsan yüksekliği yaklaşık 1,8 m; anıtla aynı 30 m birimi kullanılır. Baret renkleri dört kadro konumunu ayırır. Ana cephede yüksekteki ekip ayaklı, çaprazlı, merdivenli ve korkuluklu iş platformunda durur.
+- **Kule vinci:** ayak/denge ağırlığı, kafes gövde, kabin, bom/gergiler, hareketli araba, halat/kanca ve dört noktalı sapan. Kapalı 10 sn çevrimde stoktan yük alır, kaldırır, bom/arabayla hedefe taşır, indirir, bırakır ve boş döner. Kazı makinesinde iki parçalı bomun eklem çözümü, kamyona dönüş ve dökme hareketi var. Bunlar görev akışının temsili canlandırmalarıdır; gerçek makine simülasyonu veya her taşın ayrı envanteri değildir.
+- **Pil bütçesi:** detaylı anıt sabit Canvas'ta; işçiler/makineler ve yalnız bayrak kumaşı şeffaf canlı Canvas'ta. Kumaş eski geometrinin aynısını kullanır; ikinci bayrak veya değişmiş hilal/yıldız çizilmez. Masaüstünde en fazla 24, kaba işaretçili telefonda 18 kare/sn. Ekran dışı ve gizli sekmede sürekli döngü yok. Etkin seans yoksa ekip görünmez; tamamlanmış anıtta yalnız Şölen ayarında bayrak dalgalanır. Sakin'de ortam hareketi durur, açıkça başlatılan gösteri oynar.
+- **Teslim filmi:** geçtiği her işe gösterim süresi ayırır; bir kısa katkı yaklaşık 6 sn, uzun aralık en fazla 22 sn. Sadece teslimin gerçek `from`–`to` aralığını gösterir. Anıtın ilerlemesi film örneklerinde yeniden çizilir; normal canlı seyirde yeniden çizilmez. Duraklat/devam/atla/tekrar izle var. Ekran dışında hem canlı resim hem film saati durur; dönünce kaldığı yerden sürer. Gösteriden bağımsız gerçek görev süresi sunucuda işlemeye devam eder.
+- **Teslim bütünlüğü:** film başladıktan sonra başka cihazdan yeni seans tamamlansa bile kabul işlemi izlenen kaydın `through` sınırını yollar; sonraki katkı yeni teslim olarak bekler. Kapatmak yalnız filmi kapatır, teslim kaydını silmez. Hesap değişiminde eski replay temizlenir.
+- **Açılış:** sunucu `complete` vermeden düğme yok. Kullanıcının başlattığı 15 sn tur Aslanlı Yol → meydan → mozole → bayrak → bütün yerleşim rotasını izler; son durakta dört gerçek isim, dakika ve sorumluluklarıyla emek defteri açılır. Duraklar arasında kamera seçilir; her durakta sabit çizim üzerinde hafif yaklaşma vardır. Tam yerleşimde sürekli kamera uçuşu yoktur. Tur atlanabilir ve tekrar açılabilir; katkı/ödül/teslim durumuna yazmaz.
+- **Erişilebilirlik/mobil:** altı açık isimli kamera, büyük dokunma alanları, film ilerleme bilgisi, klavye odağını film kontrollerine ve tekrar haritaya verme. Etkili Kıpırtısız/sistem hareket azaltmada film doğrudan son görüntüye, açılış katkı defterine geçer; kullanıcı kameraları elle gezebilir. Hareket ayarı açıkken değiştirilirse de işler. Daha özgül CSS seçiciyle ortak anıt penceresi masaüstünde 1.080 px'e kadar açılır. Telefon/yön değişiminde ölçülüp yeniden ortalanır.
+
+**Dosyalar:** `imeceMotion.js` (iş konumu, görev türü, yük çevrimi, teslim zaman çizelgesi, tur), `imeceLive.js` (hafif makine/ekip çizimi), `useImecePlayback.js` (görünürlük/hareket/saat kapısı); `ImeceScene.jsx`, `Imece.jsx`, `imeceArt.js`, `imece.css`. Eski `construction.js`, `crew.js`, `crane.js`, `Village.jsx`, `villageView.js`, `villageWorld.js`, `iso.js` değiştirilmedi. Sunucu, göç, ücret, kadro ve çalışma hedefleri de değişmedi.
+
+**Güncel doğrulama:**
+
+- `npm run test:all`: **170/170**, Node ve gerçek yerel Worker/D1 dahil. Üç yeni test, kaydedilmiş süreyi aşmayan eksiksiz teslim aralığını, vinçte yük/boş dönüş/halat sınırlarını ve 22 işin hareket uçlarında sonlu Canvas geometrisini denetler.
+- `npm run test:browser:imece`: **35/35**, geçici gerçek veritabanı/API ve Chromium. Canlı ekip hareket ederken sabit Canvas çizim sayısının değişmemesi; gizli/ekran dışı durma; çalışma bitmeden kredi olmaması; duraklatma ve hareket azaltma; ikinci cihazda biten yeni teslimin korunması; gerçek 2.000 dakika akışı; beş açılış durağı ve dört isim; klavye odağı; 360/375/390/844 px taşma ve 44 px harita kontrolleri.
+- `npm run test:browser`: **100/100**; `npm run test:browser:relaxed`: **18/18**. Eski köy/kişisel inşaat, Rahat teslim ve iPhone boyut-yön kontrolleri de yeniden geçti.
+- Tema kontrolü **252/252**; `git diff --check` temiz. Masaüstü sabit mozole çizimi son görsel koşuda **11,2 ms** ölçüldü; cihazlar için garanti değildir.
+- Görseller: `/workspace/artifacts/anitkabir-imece-motion/` (iş başı, yakın/genel vinç, bitmiş yapı/kameralar, telefon açık/koyu tema, dört usta açılış defteri). Depoya ikili görsel eklenmedi.
+- Fiziksel iPhone, üretim yayını ve canlı duman testi yapılmadı. PR açık; birleştirme, yedek ve yayın Batur'da. Yeni ücretli servis veya bağımlılık yok.
+
+**Sonraki iş yalnız ayrıca istenirse:** başladıktan sonra katılımcı devretme. Bu paketin kapsamı değildir; eksik kişisel görev kuralı korunur.

@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| imece-hareket | İşçi/vinç koreografisi, teslim filmi ve ortak açılış yürüyüşü | Ortak Anıtkabir | 20 Eki | PR #43 |
 | imece | Bir Taş da Senden: dört kişinin 2.000 dk ortak Anıtkabir projesi, Kara ve ayrıntılı şantiye | Bütün köyler | 20 Eki | codex/anitkabir-imece PR |
 | n43 | Komuta merkezi: yapı ve plan hediye, yapı geri alma, ekibe duyuru, yapı istekleri; Yenilikler ve Ben'deki şeyler ana sayfada | Herkes + Batur | 19 Eki 23:50 | PR #41 |
 | rahat-insaat | Ekran kilitliyken süren ayrı mod, aşama bildirimleri, hızlandırılmış teslim ve dar iPhone PWA sığma düzeltmesi | Odak | 19 Eki | codex/relaxed-construction PR |
@@ -92,6 +93,17 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### imece-hareket · Şantiye yaşıyor, açılış hepimizin
+Ortak Anıtkabir · 20 Ekim 2026 · PR #43 / codex/anitkabir-imece
+
+**Ne yapıldı:** 22 işin türüne uygun çalışanlar ve aletler, kazı makinesi/yükleme, yük alma–kaldırma–döndürme–indirme–boş dönüş çevrimli vinç ve destekli çalışma iskelesi; iş başı ve Aslanlı Yol kameraları. Teslim 6–22 saniyede yalnız sunucuda kaydedilmiş aralığı canlandırır. Proje tamamlanınca düğmeyle başlayan 15 saniyelik beş duraklı açılış turu ve dört kişinin katkıları görünür. Duraklatma, atlama, tekrar izleme ve hareket azaltma destekli.
+
+**Kararlar ve nedenleri:** Canlı ekip ayrı Canvas'ta; büyük anıt ve bayrak direği her kare yeniden çizilmez. Ekran dışında film saati de durur; telefona dönünce film atlanmış olmaz. Canlı hareket yeni emek üretmez. Açılış ve teslim ödül yazmaz. İzlenen teslimin sınırı saklanır; başka cihazda daha sonra biten çalışma yanlışlıkla teslim alınmaz. 2.000 dakika/250 kişisel dakika/kadro/ücret kuralları değişmez; yeni göç yok. Aynı PR'a ayrı commit; yayın Batur'da.
+
+**Batur'un sözleri:** İşe uygun işçi/vinç hareketleri, hızlandırılmış inşaat ve özel açılış planına “onay”.
+
+**Dosyalar:** `Imece.jsx`, `ImeceScene.jsx`, `imeceArt.js`, yeni `imeceMotion.js` / `imeceLive.js` / `useImecePlayback.js`, `imece.css`; `tests/imece.test.js`, `tests/imece_browser.py`. Teknik sınırlar ve doğrulama `ASTRA_RAPOR_IMECE.md`.
 
 ### imece · Bir Taş da Senden
 Bütün köyler · 20 Ekim 2026 · `codex/anitkabir-imece` PR
