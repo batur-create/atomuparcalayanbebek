@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 21,
+    tarih: "2026-10-20",
+    vakit: "akşam",
+    baslik: "Anıtkabir’de emeğin daha net",
+    maddeler: [
+      "Katkı kartlarında artık toplam çalışman büyükçe görünüyor: 150 dk çalıştıysan 150 dk yazar; tamamı ortak hedefe eklenir.",
+      "Her bölümdeki katılımın ayrı: ilk bölüm 50, ikinci 150, son bölüm 50 dakika. Tamamlanan ve sıradaki paylar açıkça gösterilir; fazladan emeğin de görünür.",
+      "Kara, seansa başlarken ve görev defterinde toplam katkı ile bölüm payının farkını anlatır. Görev süreleri ve kazanımlar aynı.",
+    ],
+  },
+  {
     surum: 20,
     tarih: "2026-10-20",
     vakit: "öğle",

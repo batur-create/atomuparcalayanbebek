@@ -82,7 +82,24 @@
 .imece-crew article>div { flex: 1; min-width: 0; }
 .imece-crew strong { font-size: 14px; overflow-wrap: anywhere; }
 .imece-crew small { display: block; font-size: 10px; color: var(--muted); margin-top: 4px; }
-.imece-crew article>div>span { display: flex; align-items: center; gap: 4px; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+
+.imece-my-contribution p { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+.imece-contribution-total { margin: 12px 0; padding: 11px 12px; background: var(--accent-soft); border-radius: 10px; }
+.imece-contribution-total small { margin: 0; color: var(--ink); font-size: 11px; }
+.imece-contribution-total b { display: block; color: var(--ink); font-size: 24px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.imece-contribution-total>span { display: block; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.imece-share-heading { font-size: 11px; font-weight: 650; margin: 10px 0 6px; }
+.imece-phase-shares { list-style: none; padding: 0; margin: 0; }
+.imece-phase-shares li { display: grid; grid-template-columns: minmax(0,1fr) auto; column-gap: 7px; border-top: 1px solid var(--border); padding: 8px 0; font-size: 11px; line-height: 1.5; }
+.imece-phase-shares li>span { overflow-wrap: anywhere; }
+.imece-phase-shares b { font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.imece-phase-shares small { grid-column: 1/-1; display: flex; align-items: center; gap: 4px; font-size: 10px; margin-top: 2px; }
+.imece-phase-shares .done small { color: var(--ink); font-weight: 650; }
+.imece-extra-work,.imece-crew-status { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 8px 0 0; }
+.imece-crew-status { display: flex; gap: 4px; align-items: center; }
+.imece-count-help { border: 1px solid var(--border); border-radius: 12px; padding: 0 12px; margin: 12px 0; background: var(--canvas); }
+.imece-count-help summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size: 12px; font-weight: 650; }
+.imece-count-help p { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0 0 12px; }
 .imece-plan details { border: 1px solid var(--border); border-radius: 14px; margin-top: 10px; overflow: hidden; }
 .imece-plan summary { padding: 15px; display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer; min-height: 50px; }
 .imece-plan summary>span:first-child { display: flex; gap: 9px; align-items: center; }

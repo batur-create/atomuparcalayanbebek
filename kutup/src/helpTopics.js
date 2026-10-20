@@ -90,6 +90,11 @@ export const HELP = {
         a: "Ekibi çağır açıkken başlarsan arkadaşlarına “Katıl” bildirimi gider. Biri odaktayken sen de Katıl’a basıp onun sayacına oturabilirsin. Beraber çalışınca İmece primiyle biraz fazla tuğla gelir.",
       },
       {
+        id: "imece-contribution",
+        q: "Anıtkabir’de 150 dk çalıştım; bölüm payım neden 50 dk?",
+        a: "150 dakikanın tamamı ortak Anıtkabir hedefine eklenir. İlk bölümde herkesin zorunlu katılımı 50 dakika olduğu için o payın 50/50 tamamlanır. Fazladan 100 dakika da ortak inşaatı ilerletir. İkinci bölümdeki 150 dakika payın, o bölüm açılınca başlar; son bölümde de herkes 50 dakika çalışır. Kartında toplam katkın ve üç bölümdeki katılımın ayrı görünür.",
+      },
+      {
         id: "week",
         q: "Ortak anıt ve Haftanın Ustası ne?",
         a: `Ortak anıt ekibin haftalık hedefi: herkesin dakikası toplanır, hedef dolunca herkese +${MONUMENT_PRIZE} 🧱. Haftanın Ustası geçen hafta en çok çalışan; o da +${MASTER_PRIZE} 🧱 alır.`,

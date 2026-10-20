@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
 | plan-kesfi | Dakikaya göre şans, görünür garanti, haftalık kalıcı hak ve altı özgün nadir yapı | Katalog/Köy | 20 Eki | codex/blueprint-discovery PR |
 | bulusma | Tek buluşma, kişisel geliş saati, kopya önleme, düzenleme/iptal ve tek hatırlatma | Kütüp | 20 Eki | codex/holistic-meetups PR |
 | imece-hareket | İşçi/vinç koreografisi, teslim filmi ve ortak açılış yürüyüşü | Ortak Anıtkabir | 20 Eki | PR #43 |
@@ -95,6 +96,19 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### imece-katki · 150 dakika emek görünür
+Ortak Anıtkabir · 20 Ekim 2026 · codex/imece-contribution-clarity
+
+**Batur’un sözleri:** “Bensu arkadaşım Anıtkabir görevi için 150 dakika çalışmış ama 50 dk gözüküyormuş.” Açıklamadan sonra: “nasıl düzelteceksen anlaşılırlılığı düzelt. ve pr at”.
+
+**Ne yapıldı:** 150 dk toplam çalışma büyük ve açık gösterilir; 50/250 tek çubuğu yerine üç bölümde 50/50 tamamlandı, 0/150 ve 0/50 bölüm açılınca. Ek ortak emek 100 dk olarak görünür. Üst özet, Kara, başlamadan seans açıklaması, katkı geçmişi, yardım ve Yenilikler aynı dili kullanır. Açılır örnek bütün 150 dakikanın ortak hedefte, 50 dakikanın ayrıca ilk bölüm payında olduğunu açıklar.
+
+**Kararlar ve nedenleri:** Süre kaybı yoktu; iki farklı ölçünün sunumu karışıyordu. Herkesin üç bölümde de katılımı şartı ve 2.000 dk hedefi aynen korundu. Veri/şema/sunucu/ödül/model değişikliği yok. Toplam katkıya ikinci bir sayaç veya kayıt sistemi eklenmedi.
+
+**Doğrulama:** 189 Node/Worker, 43 İmece tarayıcı, 252 tema kontrolü. Gerçek geçici API’de Bensu 150 dk ve 50 dk ilk payı üretildi; telefon/masaüstü/açık-koyu görseller kontrol edildi. 2.000 dk akış tamamlandı, açıklamaları okumanın katkıyı değiştirmediği doğrulandı. Yayın Batur’da.
+
+**Dosyalar:** `src/Imece.jsx`, `src/imece.css`, `src/helpTopics.js`, `src/yenilikler.js`, `tests/imece_browser.py`; devir/tasarım/karar notları.
 
 ### plan-kesfi · Emeğe göre keşif ve altı yeni nadir yapı
 Katalog/Köy · 20 Ekim 2026 · codex/blueprint-discovery / göç 31
