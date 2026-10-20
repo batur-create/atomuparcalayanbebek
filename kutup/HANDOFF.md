@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, odak yüzdesi etiketi:** Batur'un ekran görüntüsündeki iki “hakediş” farklı ölçülerdi: şantiye başlığı maliyet ağırlıklı hakedişi, sayaç ise geçen süreyi gösteriyordu. Onaylı dar düzeltme `codex/focus-progress-label` dalında: sayaç altı “Seans %… tamamlandı” oldu. Hakediş hesabı, süre ve çizim değişmedi. Ayrı PR; yayın Batur'da.
+
 > **20 Ekim, ortak Anıtkabir teslimi:** Batur "Bir Taş da Senden" konseptini ve doğrudan kodlamayı onayladı; ilk turda işin büyük kısmını istedi. Dal `codex/anitkabir-imece`, hedef `kutup-platform`, teslim PR. **Birleştirme/yayın ve dört kişilik kadroyu seçip etkinliği başlatma Batur'da.** Gerçek veri ve eski yapılar değiştirilmedi. Tam rapor: `ASTRA_RAPOR_IMECE.md`. Önceki otomatik yayın talimatları bu teslim için geçerli değildir.
 
 > **19 Ekim, bu teslimin sınırı:** Batur Rahat inşaat modunu ve dar iPhone PWA odak ekranı düzeltmesini onayladı. Teslim `codex/relaxed-construction` dalından `kutup-platform` hedefine PR; birleştirme ve yayın Batur'da. Aşağıdaki eski otomatik yayın talimatı bu teslim için uygulanmaz. Başka açık işe geçilmedi.

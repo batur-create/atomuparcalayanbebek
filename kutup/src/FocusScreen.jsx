@@ -236,7 +236,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
           )}
           <div className="fs-caption">
             {done ? "Bitti! Köyüne eklendi 🎉" : caption}
-            {item && mode !== "clock" ? ` · ${item.emoji} ${item.name} · hakediş %${Math.round(progress * 100)}` : ""}
+            {item && mode !== "clock" ? ` · ${item.emoji} ${item.name} · Seans %${Math.round(progress * 100)} tamamlandı` : ""}
           </div>
           <DeskMates me={me} members={members} now={now} dark />
           {session && !landscape && (
