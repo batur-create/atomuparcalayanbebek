@@ -1,3 +1,5 @@
+import { createPlans } from "./plans.js";
+import { PLAN_COLUMNS, PLAN_ANSWERS, PLAN_VISIBLE_SQL, assemblePlans } from "../shared/plans.js";
 // Kütüp API as a Fetch handler. It only uses Web-standard APIs (Request, Response,
 // crypto.subtle) and an async database adapter, so the exact same code serves the
 // Node build (node:sqlite + SSE) and the Cloudflare Worker / ChatGPT Sites build (D1).
@@ -404,7 +406,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   const memberColumns =
     "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_imece AS focusImece, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, board_seen AS boardSeen, updated, badge";
   async function readSnapshot(groupId, now) {
-    const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly] =
+    const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly, planTotals] =
       await db.read([
         ["SELECT id, name, invite, rev, village_rev AS villageRev, rhythm FROM groups WHERE id = ?", [groupId]],
         [`SELECT ${memberColumns} FROM members WHERE group_id = ? ORDER BY joined`, [groupId]],
@@ -425,22 +427,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
            WHERE m.group_id = ? AND m.kind <> 'system' AND m.created >= COALESCE((SELECT MIN(created) FROM (SELECT created FROM messages WHERE group_id = ? AND kind <> 'system' ORDER BY created DESC LIMIT ${MESSAGE_LIMIT})), 0)`,
           [groupId, groupId],
         ],
-        [
-          "SELECT id, member_id AS memberId, starts, note FROM plans WHERE group_id = ? AND starts > ? ORDER BY starts LIMIT 30",
-          [groupId, now - 2 * HOUR],
-        ],
-        [
-          // n34: who said "Varım" and who said "Gelemem" (going = 0).
-          `SELECT a.plan_id AS planId, a.member_id AS memberId, 1 AS going FROM attendees a JOIN plans p ON p.id = a.plan_id WHERE p.group_id = ? AND p.starts > ?
-           UNION ALL
-           SELECT s.plan_id AS planId, s.member_id AS memberId, 0 AS going FROM plan_skips s JOIN plans p ON p.id = s.plan_id WHERE p.group_id = ? AND p.starts > ?`,
-          [groupId, now - 2 * HOUR, groupId, now - 2 * HOUR],
-        ],
+        [`SELECT ${PLAN_COLUMNS} FROM plans p WHERE p.group_id=? AND p.cancelled=0 AND ${PLAN_VISIBLE_SQL}>? ORDER BY p.starts,p.id LIMIT 30`,[groupId,now]],
+        [`SELECT ${PLAN_ANSWERS} FROM attendees a JOIN plans p ON p.id=a.plan_id WHERE p.id IN(SELECT p.id FROM plans p WHERE p.group_id=? AND p.cancelled=0 AND ${PLAN_VISIBLE_SQL}>? ORDER BY p.starts,p.id LIMIT 30)`,[groupId,now]],
         [
           "SELECT member_id AS id, SUM(buildings) AS n FROM districts WHERE group_id = ? AND member_id IS NOT NULL GROUP BY member_id",
           [groupId],
         ],
         ["SELECT kind, week, member_id AS memberId, minutes FROM weekly WHERE group_id = ? AND week >= ?", [groupId, weekStart(now) - 7 * DAY]],
+        [`SELECT count(*) AS n FROM plans p WHERE p.group_id=? AND p.cancelled=0 AND ${PLAN_VISIBLE_SQL}>?`,[groupId,now]],
       ]);
     const group = groups[0];
     if (!group) return null;
@@ -450,13 +444,6 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     for (const r of reactions) {
       if (!hearts.has(r.messageId)) hearts.set(r.messageId, []);
       hearts.get(r.messageId).push(r.memberId);
-    }
-    const going = new Map(),
-      skips = new Map();
-    for (const a of attendees) {
-      const into = a.going ? going : skips;
-      if (!into.has(a.planId)) into.set(a.planId, []);
-      into.get(a.planId).push(a.memberId);
     }
     const lastWeek = weekStart(now) - 7 * DAY;
     const master = weekly.find((w) => w.kind === "master" && w.week === lastWeek);
@@ -489,7 +476,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       messages: messages
         .sort((a, b) => a.created - b.created)
         .map((m) => ({ ...m, reactions: hearts.get(m.id) || [] })),
-      plans: plans.map((p) => ({ ...p, attendees: going.get(p.id) || [], skips: skips.get(p.id) || [] })),
+      plans: assemblePlans(plans,attendees),
+      plansTotal: planTotals[0].n,
     };
   }
   // ---------- village ----------
@@ -980,6 +968,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }
 
   const relaxedNotices = createRelaxedNotices({ db, notifyMember });
+  const meetups=createPlans({db,retrying,bump,fail,text,notify,notifyMember,systemMessage,authLimit,sessionAge:SESSION_AGE});
 
   // ---------- owner ----------
   // Batur signs in once with the key; the device then keeps an HttpOnly owner
@@ -1556,93 +1545,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return changed(m);
   });
 
-  route("POST", "/plans", async ({ member: m, body, ctx }) => {
-    const starts = Number(body.starts),
-      note = text(body.note || "", 80, "Plan notu"),
-      now = Date.now();
-    if (!Number.isFinite(starts) || starts < now - 60000)
-      fail("Geçmişe plan yapamıyoruz. İleri bir saat seç. 🙂");
-    if (starts > now + 15 * DAY) fail("En fazla iki hafta sonrasına plan yapabilirsin.");
-    const upcoming = await db.get(
-      "SELECT count(*) AS n FROM plans WHERE member_id = ? AND starts > ?",
-      [m.id, now],
-    );
-    if (upcoming.n >= 10) fail("En fazla 10 gelecek planın olabilir.");
-    await authLimit(`plan:${m.id}`, 6); // each plan notifies the team (d23)
-    const id = crypto.randomUUID();
-    await db.batch([
-      [
-        "INSERT INTO plans (id, group_id, member_id, starts, note) VALUES (?, ?, ?, ?, ?)",
-        [id, m.group_id, m.id, starts, note],
-      ],
-      ["INSERT INTO attendees (plan_id, member_id) VALUES (?, ?)", [id, m.id]],
-      systemMessage(m.group_id, m.id, "yeni bir kütüp planı yaptı. Takvime göz at! 🗓️"),
-      bump(m.group_id),
-    ]);
-    const when = new Date(starts).toLocaleString("tr-TR", {
-      weekday: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Europe/Istanbul",
-    });
-    await notify(ctx, m.group_id, m.id, {
-      title: `${m.name} kütüp planı yaptı 🗓️`,
-      body: `${note || "Kütüpte buluşalım"} · ${when}. Sen de gelir misin?`,
-      url: "/?tab=plans",
-    });
-    await cleanup(now).catch(() => {});
-    return changed(m, { id }, 201);
-  });
-
-  async function answerablePlan(m, id) {
-    const plan = await db.get("SELECT * FROM plans WHERE id = ? AND group_id = ?", [id, m.group_id]);
-    if (!plan) fail("Plan bulunamadı.", 404);
-    if (plan.member_id === m.id) fail("Bu planı sen oluşturdun; istersen silebilirsin.");
-    if (plan.starts < Date.now() - 2 * HOUR) fail("Bu planın zamanı geçti.");
-    return plan;
-  }
-
-  route("POST", "/plans/:id/join", async ({ member: m, params }) => {
-    const plan = await answerablePlan(m, params.id);
-    const old = await db.get("SELECT 1 AS hit FROM attendees WHERE plan_id = ? AND member_id = ?", [
-      plan.id,
-      m.id,
-    ]);
-    await db.batch([
-      old
-        ? ["DELETE FROM attendees WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]]
-        : ["INSERT OR IGNORE INTO attendees (plan_id, member_id) VALUES (?, ?)", [plan.id, m.id]],
-      ["DELETE FROM plan_skips WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
-      bump(m.group_id),
-    ]);
-    return changed(m);
-  });
-
-  // n34: a shared plan link asks "Varım" or "Gelemem"; the answer is set, not
-  // toggled, so tapping the same button twice changes nothing.
-  route("POST", "/plans/:id/answer", async ({ member: m, params, body }) => {
-    const plan = await answerablePlan(m, params.id);
-    const going = body.going === true;
-    await db.batch([
-      ["DELETE FROM attendees WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
-      ["DELETE FROM plan_skips WHERE plan_id = ? AND member_id = ?", [plan.id, m.id]],
-      [`INSERT INTO ${going ? "attendees" : "plan_skips"} (plan_id, member_id) VALUES (?, ?)`, [plan.id, m.id]],
-      bump(m.group_id),
-    ]);
-    return changed(m);
-  });
-
-  route("DELETE", "/plans/:id", async ({ member: m, params }) => {
-    const plan = await db.get("SELECT id FROM plans WHERE id = ? AND member_id = ?", [params.id, m.id]);
-    if (!plan) fail("Plan bulunamadı.", 404);
-    await db.batch([
-      ["DELETE FROM attendees WHERE plan_id = ?", [plan.id]],
-      ["DELETE FROM plan_skips WHERE plan_id = ?", [plan.id]],
-      ["DELETE FROM plans WHERE id = ?", [plan.id]],
-      bump(m.group_id),
-    ]);
-    return changed(m);
-  });
+  route("GET","/plans",async({member,url})=>json(await meetups.list(member,Number(url.searchParams.get("offset")||0),url.searchParams.get("day"))));
+  route("GET","/plans/:id",async({member,params})=>json(await meetups.detail(member,params.id)));
+  route("POST","/plans",async({member,body,ctx})=>{const result=await meetups.create(member,body,ctx);return changed(member,result,result.created?201:200);});
+  route("POST","/plans/:id/answer",async({member,params,body})=>{await meetups.answer(member,params.id,body);return changed(member);});
+  // Compatibility URL; every surface now sets an answer rather than toggling it.
+  route("POST","/plans/:id/join",async({member,params})=>{await meetups.answer(member,params.id,{},true);return changed(member);});
+  route("PATCH","/plans/:id",async({member,params,body,ctx})=>{await meetups.update(member,params.id,body,ctx);return changed(member);});
+  route("DELETE","/plans/:id",async({member,params,body,ctx})=>{await meetups.update(member,params.id,body,ctx,true);return changed(member);});
 
   // A watched free session ends at `at` (now, or where its owner left): it is
   // cut to the whole minutes up to then and settled like any finished session.
@@ -2020,7 +1930,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, count(*) AS n, SUM(likes) AS likes FROM buildings WHERE member_id = ? GROUP BY 1", [id]],
       ["SELECT reason, SUM(delta) AS total FROM bricks_log WHERE member_id = ? GROUP BY reason", [id]],
       [
-        "SELECT (SELECT count(*) FROM messages WHERE member_id = ? AND kind <> 'system') AS messages, (SELECT count(*) FROM plans WHERE member_id = ?) AS plans, (SELECT count(*) FROM attendees WHERE member_id = ?) AS joined",
+        "SELECT (SELECT count(*) FROM messages WHERE member_id = ? AND kind <> 'system') AS messages, (SELECT count(*) FROM plans WHERE member_id = ?) AS plans, (SELECT count(*) FROM attendees WHERE member_id = ? AND answer='yes') AS joined",
         [id, id, id],
       ],
     ]);
@@ -2886,6 +2796,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   async function tick(waitUntil = (p) => p) {
     await ensureReady();
     const now = Date.now();
+    await meetups.tick({origin:config.publicOrigin||knownOrigin||"https://kutup.app",waitUntil}).catch(()=>console.error("Kütüp plan reminders: retry deferred."));
     await relaxedNotices({ origin: config.publicOrigin || knownOrigin || "https://kutup.app", waitUntil }).catch(() => console.error("Kütüp relaxed build notifications: retry deferred."));
     const groups = await db.all("SELECT id, rhythm, rhythm_at AS at FROM groups WHERE rhythm IS NOT NULL AND rhythm <> ''");
     for (const g of groups) {

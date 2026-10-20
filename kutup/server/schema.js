@@ -1,6 +1,7 @@
 // Versioned schema shared by node:sqlite and Cloudflare D1.
 // Every migration is a list of single statements (D1 cannot run multi-statement strings
 // through prepared statements), applied together with the version bump in one batch.
+import {PLAN_LEGACY_IMPORT} from "../shared/plans.js";
 export const migrations = [
   // 1 — the original Kütüp schema (idempotent, so pre-versioning databases pass through).
   [
@@ -285,6 +286,26 @@ export const migrations = [
     "CREATE TABLE imece_crew (slot INTEGER PRIMARY KEY CHECK(slot BETWEEN 0 AND 3), member_id TEXT UNIQUE REFERENCES members(id) ON DELETE SET NULL, name TEXT NOT NULL, avatar TEXT NOT NULL, color TEXT NOT NULL, seen_minutes INTEGER NOT NULL DEFAULT 0)",
     "CREATE TABLE imece_contributions (id TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES imece_crew(slot), phase INTEGER NOT NULL CHECK(phase BETWEEN 0 AND 2), minutes INTEGER NOT NULL CHECK(minutes IN (25,50,75)), personal INTEGER NOT NULL CHECK(personal >= 0 AND personal <= minutes), session_end INTEGER NOT NULL, created INTEGER NOT NULL)",
     "CREATE INDEX imece_contributions_phase ON imece_contributions(phase, slot)",
+  ],
+  // 30 — one meeting response, personal arrival, edits/cancellation and opt-in reminders.
+  // The old skips table is retained for recovery; attendees is the sole live answer table.
+  [
+    "ALTER TABLE plans ADD COLUMN ends INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE plans ADD COLUMN rev INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE plans ADD COLUMN schedule INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE plans ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE plans ADD COLUMN updated INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE plans ADD COLUMN request_key TEXT",
+    "CREATE UNIQUE INDEX plans_request ON plans(member_id,request_key) WHERE request_key IS NOT NULL",
+    "ALTER TABLE attendees ADD COLUMN answer TEXT NOT NULL DEFAULT 'yes' CHECK(answer IN ('yes','no','maybe'))",
+    "ALTER TABLE attendees ADD COLUMN arrival INTEGER",
+    "ALTER TABLE attendees ADD COLUMN schedule INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE attendees ADD COLUMN remind INTEGER NOT NULL DEFAULT 0 CHECK(remind IN (0,1))",
+    "ALTER TABLE attendees ADD COLUMN response_note TEXT NOT NULL DEFAULT ''",
+    "UPDATE attendees SET arrival=(SELECT starts FROM plans WHERE id=attendees.plan_id)",
+    PLAN_LEGACY_IMPORT,
+    "CREATE TABLE plan_push_events(id TEXT PRIMARY KEY,nonce TEXT NOT NULL,plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE)",
+    "CREATE INDEX plan_remind ON attendees(remind,arrival) WHERE answer='yes' AND remind=1",
   ],
 ];
 

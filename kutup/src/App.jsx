@@ -1107,6 +1107,10 @@ function KutupApp({ initial, restart }) {
     setModal({ plan: sharedPlan });
     sharedPlan = null;
   }
+  useEffect(()=>{
+    const show=e=>setModal(e.detail?.coming?"coming":"presence");
+    window.addEventListener("kutup:presence",show);return()=>window.removeEventListener("kutup:presence",show);
+  },[]);
   // The bell: one tap, one answer. Every step has a deadline and its own message,
   // and turning on ends with a real test notification on this device.
   async function enableNotifications() {
@@ -1631,7 +1635,7 @@ function KutupApp({ initial, restart }) {
         />
       )}
       {modal === "plan" && (
-        <PlanModal close={() => setModal(null)} mutate={mutate} onSaved={(id) => setModal({ plan: id, fresh: true })} />
+        <PlanModal data={data} close={() => setModal(null)} mutate={mutate} onSaved={(id,created) => setModal({ plan: id, fresh: created })} />
       )}
       {modal?.plan && (
         <PlanCardModal planId={modal.plan} fresh={modal.fresh} data={data} me={me} close={() => setModal(null)} mutate={mutate} notify={notify} />

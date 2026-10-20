@@ -125,6 +125,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.
 
+- ✔ **Bütünsel buluşma (20 Eki):** Batur “14.00 planına ben 16.00’da gelebilirim” örneğini verip tek sistem istedi. Ortak buluşma içinde kişisel saat, ana sayfada saat grupları, tek katılım kartında Varım/Gelemem/Kararsızım ve geri alma; mevcut buluşmaya yönlendirme. Düzenle/iptal, yeniden onay, kişisel takvim ve tercihli hatırlatma aynı karttadır. Kâğıt/tema jetonları, en az 44 px seçimler, telefonda 16 px girişler; 360/375/390/844 px taşma kontrolü. Ayrı hızlı toggle veya ikinci plan arayüzü yok. Fiziksel iPhone/üretim kontrolü Batur'da.
+
 - ✔ **İmece şantiye hareketi ve açılış (20 Eki):** Ayrı plan Batur'un “onay” yanıtıyla uygulandı. İşe bağlı çalışanlar/makineler, doğru yük döngülü vinç, iş başına yakın kamera, duraklatılabilir/atlanabilir teslim, ortak tamamlanma sonrası beş duraklı 15 sn açılış ve dört kişilik emek defteri. Detaylı anıt sabit Canvas'ta, hareket ayrı katmanda; telefon için kare sınırı ve ekran dışı duraklama. Sakin'de ortam döngüsü yok; Kıpırtısız'da doğrudan son görüntü. Tasarım görselleri yerelde kontrol edildi; fiziksel iPhone/üretim doğrulaması yapılmadı.
 
 - ✔ **Bir Taş da Senden (20 Eki):** Batur doğrudan kodlamayı onayladı; bütün köylerin tek büyük Anıtkabir'i, Kara'nın kişisel görev mektubu, 2.000 dakikalık dayanışma projesi ve herkesin zorunlu payı. Kâğıt/tema jetonlu görev defteri, büyük yakın anıt, ayrı bütün yerleşim/bayrak kameraları. Görsel önizleme onayı istenmedi; gerçek cihaz/üretim görünümü Batur incelemesinde.

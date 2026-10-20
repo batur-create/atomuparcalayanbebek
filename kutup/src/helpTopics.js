@@ -26,7 +26,7 @@ export const HELP = {
       {
         id: "plan",
         q: "Buluşma planı nasıl yapılır?",
-        a: "“Kim ne zaman geliyor?” kartında Plan yap’a bas, günü ve saati seç. Ekip “Ben de” ya da “Gelemem” der. Planı WhatsApp grubuna atmak için gönder düğmesini kullan.",
+        a: "“Kim ne zaman geliyor?” kartında Buluşma planla’ya bas. O gün bir buluşma varsa kendi geliş saatinle ona katılabilirsin. Buluşma kartında Varım, Gelemem veya Kararsızım seç; geliş saatini ve istersen kısa notunu kaydet. Planı gruba gönderebilir, kendi saatinle takvime ekleyebilir ve 30 dakika önce tek hatırlatma isteyebilirsin. Ortak saat değişirse katılanlar yeniden onaylar.",
       },
       {
         id: "kara",
@@ -171,7 +171,7 @@ export const HELP_TABS = ["home", "focus", "board", "me"];
 // `at` lists selectors in order; the first one visible on this screen is used.
 export const TOUR = [
   { at: [".home-status"], text: "Kütüphaneye varınca Geldim’e bas, ekip seni anında görür. Yoldaysan Yoldayım de." },
-  { at: ["#plans"], text: "Ne zaman geleceğini buradan planla. Ekip “Ben de” der, kimse yalnız gelmez." },
+  { at: ["#plans"], text: "Ortak buluşmaya kendi geliş saatinle katıl. Kim, kaçta geliyor; aynı kartta görün." },
   { at: ['.mobile-bottom [data-tab="focus"]', '.sidebar [data-tab="focus"]'], text: "Köy’de süre başlatırsın. Telefonu bırak; bitince köye bir bina eklenir." },
   { at: ['.mobile-bottom [data-tab="board"]', '.sidebar [data-tab="board"]'], text: "Pano ekibin sohbet köşesi: not bırak, kahveye çağır." },
   { at: [".help-button"], text: "Takıldığın her yerde bana dokun, o ekranı kısaca anlatırım. Hepsi bu, iyi çalışmalar!" },
