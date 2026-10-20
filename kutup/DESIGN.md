@@ -125,6 +125,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.
 
+- ✔ **Plan keşfi / altı nadir (20 Eki):** Batur onaylı 25 dk %5 / 500 dk garantiyi ve havuzun büyümesini istedi. Katalogda tema jetonlu, yerinden oynamayan ilerleme kartı ve açılır kısa açıklama. Ağaç Evi, Japon Çay Evi, Su Değirmeni, Tren İstasyonu, Planetaryum, Kristal Kütüphane; farklı siluetler, sakin renkler, kendi yapım sıraları. Aynı koddan SVG portre ve Canvas köy; statik resim yok. Anıtkabir etkilenmedi. Sonuç görselleri `/workspace/artifacts/plan-kesfi/`.
+
 - ✔ **Bütünsel buluşma (20 Eki):** Batur “14.00 planına ben 16.00’da gelebilirim” örneğini verip tek sistem istedi. Ortak buluşma içinde kişisel saat, ana sayfada saat grupları, tek katılım kartında Varım/Gelemem/Kararsızım ve geri alma; mevcut buluşmaya yönlendirme. Düzenle/iptal, yeniden onay, kişisel takvim ve tercihli hatırlatma aynı karttadır. Kâğıt/tema jetonları, en az 44 px seçimler, telefonda 16 px girişler; 360/375/390/844 px taşma kontrolü. Ayrı hızlı toggle veya ikinci plan arayüzü yok. Fiziksel iPhone/üretim kontrolü Batur'da.
 
 - ✔ **İmece şantiye hareketi ve açılış (20 Eki):** Ayrı plan Batur'un “onay” yanıtıyla uygulandı. İşe bağlı çalışanlar/makineler, doğru yük döngülü vinç, iş başına yakın kamera, duraklatılabilir/atlanabilir teslim, ortak tamamlanma sonrası beş duraklı 15 sn açılış ve dört kişilik emek defteri. Detaylı anıt sabit Canvas'ta, hareket ayrı katmanda; telefon için kare sınırı ve ekran dışı duraklama. Sakin'de ortam döngüsü yok; Kıpırtısız'da doğrudan son görüntü. Tasarım görselleri yerelde kontrol edildi; fiziksel iPhone/üretim doğrulaması yapılmadı.

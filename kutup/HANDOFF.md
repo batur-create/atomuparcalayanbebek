@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, plan keşfi ve altı nadir yapı:** Batur 25 dk başına %5 şans / 500 dk garanti / haftalık yapıyı açık dönemde bitirince kalıcı plan önerisini onayladı; ayrıca yeni plan ve nadir yapılar istedi. Dal `codex/blueprint-discovery`, başlangıç `1729a94e`, hedef `kutup-platform`, ayrı PR; **yayın Batur'da**. Batur bu tabanın yayınını Worker `e2b7b449` ile doğruladı. Anıtkabir modeline/görevlerine dokunulmadı. Rapor `ASTRA_RAPOR_PLAN_KESFI.md`; yeni göç 31 için yayın öncesi yedek.
+
 > **20 Ekim, odak yüzdesi etiketi:** Batur'un ekran görüntüsündeki iki “hakediş” farklı ölçülerdi: şantiye başlığı maliyet ağırlıklı hakedişi, sayaç ise geçen süreyi gösteriyordu. Onaylı dar düzeltme `codex/focus-progress-label` dalında: sayaç altı “Seans %… tamamlandı” oldu. Hakediş hesabı, süre ve çizim değişmedi. Ayrı PR; yayın Batur'da.
 
 > **20 Ekim, bütünsel buluşma sistemi:** Batur, 14.00 buluşmasına 16.00 geliş örneğinden sonra “duplicate olmayan bütünsel bir sistem kur” diyerek uygulamayı onayladı. Dal `codex/holistic-meetups`, hedef `kutup-platform`, teslim ayrı PR; **yayın Batur'da**. Bu adım yalnız kütüphaneye gelme planlarıdır. Yapı planlarının ödül dengesi ayrı sonraki adım; bu PR'da değiştirilmedi. Yeni göç 30 öncesi mevcut yedek akışı kullanılmalı. Teknik rapor `ASTRA_RAPOR_BULUSMA.md`.
@@ -94,12 +96,13 @@ npm ci
 npm run dev          # http://localhost:3001 (Node + SSE + Vite); veri: kutup/data (yerel test verisi var)
 npm test             # çekirdek + istemci + push + Node uçtan uca
 npm run test:worker  # aynı senaryolar yerel workerd + D1
-npm run test:all     # hepsi (buluşma PR: 181 test) — her teslimden önce yeşil olmalı
+npm run test:all     # hepsi (plan keşfi PR: 189 test) — her teslimden önce yeşil olmalı
 npm run deploy       # vite build + wrangler deploy (canlı)
 npm run test:browser # gerçek tarayıcı, 100 kontrol (pip install playwright; Chrome/Edge kendiliğinden bulunur)
 npm run test:browser:relaxed -- --artifacts /tmp/kutup-relaxed # Rahat/teslim ve iPhone boyut-yön kontrolleri (Chromium)
 npm run test:browser:imece -- --artifacts /tmp/kutup-imece # 35 ortak proje/film/mobil kontrolü, geçici veritabanı
 npm run test:browser:plans -- --artifacts /tmp/kutup-plans # 22 buluşma/kişisel geliş/düzenleme/bağlantı kontrolü
+npm run test:browser:blueprints -- --artifacts /tmp/kutup-blueprints # plan keşfi, garanti, 6 yeni yapı ve mobil katalog
 node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # JSON yedeği boş kopyaya kurar ve doğrular (RECOVERY.md)
 ```
 
@@ -134,6 +137,14 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. KARARLAR.md arşivi, Paket 5 ve 6).
 
 ## 6b. Durum (son güncelleme 20 Ekim 2026)
+
+> **Plan keşfi (20 Ekim, PR):** `shared/blueprints.js` tek dakika/olasılık/garanti kaynağı. Başarıyla sonuçlanan seansın `s.credit` değeri 25 dakikalık çekilişlere dönüşür; artan dakika taşınır. Her çekiliş %5, en geç 500 dakikada elde olmayan rastgele bir plan; 75 dk ile 3×25 dk aynı çekiliş dizisi. Uzun seansta birden fazla farklı plan mümkün. `blueprint_progress` taşıma, plansız dakika, sıra ve yalnız sunucunun bildiği seed tutar. Çekilişler seed+sıra SHA-256 ile sabittir; ödül/ilerleme aynı mevcut seans işlemi ve ekip revizyonuyla yazılır. Sıkı/Rahat/serbest/İmece aynı hak edilmiş dakika kuralındadır; yarım kalan inşaat sayılmaz. Seri/hediye/usta/haftalık plan çalışma garantisini sıfırlamaz. Havuz biterse keşif bekler; o arada yeni keşif dakikası bankalanmaz.
+>
+> **Göç 31:** yeni ilerleme tablosu ve daha önce açık döneminde tamamlanan, halen kaydı bulunan Postane/Çay Ocağı için kalıcı hak dönüşümü. Hediye ve dönem dışı yapılar dahil değil. Sonraki haftalık tamamlamalar `unlocks.source='weekly'` yazar; makbuz kalıcı planı söyler. Yeni sayaç eski çalışma geçmişinden geriye dönük rastgele ödül üretmez; yeni hak edilen seanslarla başlar. Mevcut planlar, binalar ve ücretler korunur. Yedek/geri yükleme yeni tabloyu ve 31 öncesi haftalık hak dönüşümünü kapsar; seed üye API'sine verilmez.
+>
+> Katalogda “Plan keşfi” barı, kalan süre, açıklama ve “mevcut koleksiyon tamamlandı” durumu. Kilit ipuçları, Kara yardımı, haftalık kartlar ve Yenilikler güncellendi. Nadir havuz 2→8: Ağaç Evi/Japon Çay Evi (25 dk), Su Değirmeni/Tren İstasyonu (50 dk), Planetaryum/Kristal Kütüphane (75 dk). `rareBuildings.js` altı özgün SVG/Canvas çizimini, parça parça yapımı, malzeme/hakediş, işçi/vinç bağlantısını ve aşama açıklamalarını sağlar; katalog/hediye/köy aynı geometriyi kullanır. `olcek.js` özgün tasarımların tipik boylarını ve yer sınırlarını tanımlar; yeni anıt mahallesi yok.
+>
+> Doğrulama: 189 Node/Worker testi; mevcut genel tarayıcı 100 ve İmece 35; yeni plan keşfi tarayıcı 19 kontrol ve yerel görseller `/workspace/artifacts/plan-kesfi/`; tema 252 çift. Fiziksel iPhone, üretim verisi veya canlı yayın kullanılmadı.
 
 > **Bütünsel buluşma (20 Ekim, PR):** Tek kart/tek cevap kaynağı: `shared/plans.js` kuralları ve DTO, `server/plans.js` servis, `src/Plans.jsx` oluşturma/katılım/yönetim ekranları. `Modals.jsx` yalnız yeniden dışa aktarır; ana sayfanın eski toggle cevabı kaldırıldı. `attendees` artık `answer=yes/no/maybe`, kişisel `arrival`, kısa not, hatırlatma tercihi ve onaylanan saat sürümünü tutar. Göç 30 eski Varım/Gelemem kayıtlarını birleştirir; eski `plan_skips` tablosu kurtarma için korunur, canlı cevaplarda kullanılmaz. Eski yedeklerin geri yüklenmesi de aynı dönüşümü yapar.
 >
@@ -226,7 +237,7 @@ Geçmiş devirler (Astra denetimi, bildirim sağlamlaştırma, önceki paketler,
   - Katalogdan bina seçilir; malzeme başta, ücret bitişte ödenir. Sınıflar: küçük 25, orta 50, büyük 75 dk (en az 25). Serbest mod yarım ücret.
   - Yarım kalan iş: %50 hemen, %30 enkaz toplanınca (3 gün), %20 zarar. İlk 2 dk vazgeçmek bedava (çay molası kullanılmadıysa).
   - Bonuslar: günlük bonus; seri (2. seans +%10, 3. ve sonrası +%20, ara en fazla 10.5 dk); imece (arkadaş başına +%5, kahvehane ile +%8, en fazla +%20); atölye etkileri (fırın, sahaf, değirmen, kütüphane).
-  - Nadir yapılar ve planlar (blueprint: %10 şans ve 7/14/30 seri), haftalık yapılar (`since`), kurucu gözlemevi.
+  - Nadir yapılar ve planlar (her 25 dk %5; 500 dk plansız emekte garanti; 7/14/30 günlük seri ayrıca), haftalık yapılar (`since`, açık dönemde bitirince kalıcı plan), kurucu gözlemevi.
   - Defter `bricks_log` (`sessionRef = memberId:focusEnd`); makbuz kartı ve katalog `src/Economy.jsx`.
 - **Haftalık:** Haftanın Ustası (👑, 50 🧱) ve ortak anıt (hedef max(600, 250 × üye) dk, 50 🧱). `weekly` tablosu; `crownMaster` snapshot'ta tembel tetiklenir.
 - **İstatistikler:** `server/stats.js` + `src/Stats.jsx`. Gün serisinde haftada bir gün dondurma var.

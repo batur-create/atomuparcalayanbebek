@@ -20,6 +20,12 @@ test('the site plan covers the whole session in order, with beams, waterproofing
     const keys = plan.map((p) => p.key);
     const count = (key) => keys.filter((k) => k === key).length;
     const sys = systemOf(sp);
+    if (sys === 'discovery') {
+      assert.deepEqual(keys,['mobilize','layout','base','frame','skin','roof','fit','handover']);
+      assert.ok(plan.find(p=>p.key==='frame').inspect && plan.find(p=>p.key==='fit').inspect, model);
+      assert.ok(keys.indexOf('skin')>keys.indexOf('frame') && keys.indexOf('roof')>keys.indexOf('skin'));
+      continue;
+    }
     // The old ways start on bare ground: no raft, no waterproofing.
     if (sys === 'arch') {
       assert.deepEqual(keys, ['mobilize', 'layout', 'divert', 'abutDig', 'abutFoot', 'abutWall', 'centering', 'voussoir', 'keystone', 'spandrel', 'fill', 'strike', 'paving', 'parapet', 'water', 'handover']);

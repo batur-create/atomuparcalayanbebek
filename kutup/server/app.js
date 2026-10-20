@@ -1,3 +1,4 @@
+import { advanceDiscovery, discoveryStatus, DISCOVERY_STEP, DISCOVERY_GUARANTEE } from "../shared/blueprints.js";
 import { createPlans } from "./plans.js";
 import { PLAN_COLUMNS, PLAN_ANSWERS, PLAN_VISIBLE_SQL, assemblePlans } from "../shared/plans.js";
 // Kütüp API as a Fetch handler. It only uses Web-standard APIs (Request, Response,
@@ -15,7 +16,7 @@ import { CAPACITY, cellKey, cellLayout, createPlanner, freeSpots, isMonument, ki
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
-import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_CHANCE, BLUEPRINT_STREAKS, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_STREAKS, WEEKLY_DAYS, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -638,22 +639,30 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     ];
   }
 
-  // Which rare building's blueprint, if any, a finished session turns up.
-  async function blueprintFor(s, now) {
-    const [have, days] = await db.read([
+  // Stable private draw stream: retries and session splitting use the same draws.
+  async function blueprintsFor(s, now) {
+    const [have, days, progress] = await db.read([
       ["SELECT model FROM unlocks WHERE member_id = ?", [s.id]],
       [`SELECT DISTINCT (created + ${TR_OFFSET}) / ${DAY} AS d FROM focus_log WHERE member_id = ? ORDER BY d DESC LIMIT 40`, [s.id]],
+      ["SELECT carry,dry,draws,seed FROM blueprint_progress WHERE member_id=?",[s.id]],
     ]);
-    const left = blueprintPool(now).filter((item) => !have.some((h) => h.model === item.id));
-    if (!left.length) return null;
-    const random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
-    const pick = () => left[Math.floor(random() * left.length)];
-    // The day streak this session makes, counted back from its own day.
-    const today = Math.floor((s.ends + TR_OFFSET) / DAY);
-    const streak = dayStreak(new Set(days.map((r) => r.d).concat(today)), today).count;
-    if (!s.earlier && BLUEPRINT_STREAKS.includes(streak)) return { item: pick(), source: "streak", days: streak };
-    if (random() < (config.testHooks ? 0 : BLUEPRINT_CHANCE)) return { item: pick(), source: "luck" };
-    return null;
+    const previous=progress[0]||{carry:0,dry:0,draws:0,seed:randomHex(24)};
+    const left=blueprintPool(now).filter(item=>!have.some(h=>h.model===item.id));
+    const awards=[];
+    const today=Math.floor((s.ends+TR_OFFSET)/DAY);
+    const streak=dayStreak(new Set(days.map(r=>r.d).concat(today)),today).count;
+    if(left.length&&!s.earlier&&BLUEPRINT_STREAKS.includes(streak)) {
+      const pick=crypto.getRandomValues(new Uint32Array(1))[0]/2**32;
+      awards.push({item:left.splice(Math.floor(pick*left.length),1)[0],source:"streak",days:streak});
+    }
+    const count=left.length?Math.floor((previous.carry+s.credit)/DISCOVERY_STEP):0;
+    const rolls=await Promise.all(Array.from({length:count},async(_,i)=>{
+      const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(`${previous.seed}:${previous.draws+i}`));
+      const v=new DataView(hash);
+      return [config.testHooks?1:v.getUint32(0)/2**32,v.getUint32(4)/2**32];
+    }));
+    const result=advanceDiscovery(previous,s.credit,left,index=>rolls[index-previous.draws]);
+    return {state:result.state,awards:[...awards,...result.awards],owned:have.map(h=>h.model)};
   }
 
   // Completed focus sessions are credited by whoever reads the state next, so
@@ -708,14 +717,17 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (owned.has("sahaf")) pay.push([3, "effect", "Sahafın: +3 🧱"]);
         s.chainNext = chain;
         if (!s.earlier) pay.push([DAILY_BONUS * (owned.has("degirmen") ? 2 : 1), "bonus", owned.has("degirmen") ? "Günün ilk seansı (değirmenin: iki katı)" : "Günün ilk seansı"]);
-        // A blueprint for a rare building: by luck, or for a day streak of 7, 14 or 30.
-        const plan = await blueprintFor(s, now);
-        if (plan) {
-          pay.push([0, "blueprint", `🎁 Nadir plan: ${plan.item.name}${plan.source === "streak" ? ` (${plan.days} günlük seri ödülü)` : ""}`]);
-          statements.push([
-            "INSERT OR IGNORE INTO unlocks (member_id, model, source, created) SELECT id, ?, ?, ? FROM members WHERE id = ? AND focus_end = ?",
-            [plan.item.id, plan.source, now, s.id, s.ends],
-          ]);
+        const discovery=await blueprintsFor(s,now);
+        for(const plan of discovery.awards) {
+          pay.push([0,"blueprint",`🎁 Nadir plan: ${plan.item.name}${plan.source==="streak"?` (${plan.days} günlük seri ödülü)`:plan.source==="guarantee"?` (${DISCOVERY_GUARANTEE} dk emek garantisi)`:""}`]);
+          statements.push(["INSERT OR IGNORE INTO unlocks(member_id,model,source,created) SELECT id,?,?,? FROM members WHERE id=? AND focus_end=?",[plan.item.id,plan.source,now,s.id,s.ends]]);
+        }
+        const d=discovery.state;
+        statements.push([`INSERT INTO blueprint_progress(member_id,carry,dry,draws,seed) SELECT id,?,?,?,? FROM members WHERE id=? AND focus_end=?
+          ON CONFLICT(member_id) DO UPDATE SET carry=excluded.carry,dry=excluded.dry,draws=excluded.draws,seed=excluded.seed`,[d.carry,d.dry,d.draws,d.seed,s.id,s.ends]]);
+        if(s.strict&&item.since&&!discovery.owned.includes(item.id)&&s.ends>=item.since&&s.ends<item.since+WEEKLY_DAYS*DAY) {
+          pay.push([0,"blueprint",`📜 ${item.name}: açık dönemde bitirdin, planı kalıcı senin.`]);
+          statements.push(["INSERT OR IGNORE INTO unlocks(member_id,model,source,created) SELECT id,?,'weekly',? FROM members WHERE id=? AND focus_end=?",[item.id,now,s.id,s.ends]]);
         }
         if (s.ruinUntil > now && s.ruinRefund > 0) pay.push([s.ruinRefund, "ruin-refund", "Enkaz kaldırıldı: kalan %30"]);
         statements.push(
@@ -1890,12 +1902,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   // collection) and, with ?session=<end>, the receipt of that session.
   route("GET", "/wallet", async ({ member, url }) => {
     const session = Number(url.searchParams.get("session")) || 0;
-    const [me, log, built, receipt, unlocks] = await db.read([
+    const [me, log, built, receipt, unlocks, discovery] = await db.read([
       ["SELECT bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund FROM members WHERE id = ?", [member.id]],
       ["SELECT delta, reason, ref, note, created FROM bricks_log WHERE member_id = ? ORDER BY created DESC, rowid DESC LIMIT 40", [member.id]],
       ["SELECT COALESCE(model, CASE kind WHEN 'tower' THEN 'kule' WHEN 'house' THEN 'ev' ELSE 'kulube' END) AS model, count(*) AS n FROM buildings WHERE member_id = ? GROUP BY 1", [member.id]],
       ["SELECT delta, reason, note, created FROM bricks_log WHERE member_id = ? AND ref = ? ORDER BY rowid", [member.id, sessionRef(member.id, session)]],
       ["SELECT model FROM unlocks WHERE member_id = ?", [member.id]],
+      ["SELECT carry,dry FROM blueprint_progress WHERE member_id=?",[member.id]],
     ]);
     return json({
       bricks: me[0]?.bricks || 0,
@@ -1904,6 +1917,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       built: Object.fromEntries(built.map((b) => [b.model, b.n])),
       receipt: session ? receipt : [],
       unlocks: unlocks.map((u) => u.model),
+      discovery: discoveryStatus(discovery[0],blueprintPool(Date.now()),unlocks.map(u=>u.model)),
     });
   });
 

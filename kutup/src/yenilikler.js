@@ -10,6 +10,18 @@
 
 export const YENILIKLER = [
   {
+    surum: 20,
+    tarih: "2026-10-20",
+    vakit: "öğle",
+    baslik: "Yeni planlar, emeğe göre keşif",
+    maddeler: [
+      "Altı yeni nadir yapı: Ağaç Evi, Japon Çay Evi, Su Değirmeni, Tren İstasyonu, Planetaryum ve Kristal Kütüphane. Her birinin kendine özgü çizimi ve inşaat aşamaları var.",
+      "Plan şansı artık seans sayısına değil emeğine bağlı: tamamlanan her 25 dakikada %5 şans. Tek 75 dakika ile 3 × 25 dakika eşit.",
+      "Plan çıkmadan 500 dakika emek verirsen sahip olmadığın rastgele bir plan garanti. Katalogda ne kadar kaldığını görebilirsin; gün kaçırmak ilerlemeni silmez.",
+      "Haftalık yapıyı açık olduğu dönemde bitir, planı kalıcı senin olsun. Eski hak edilen yapılar da açılır; hediye bina ile plan sahipliği ayrı kalır.",
+    ],
+  },
+  {
     surum: 19,
     tarih: "2026-10-19",
     vakit: "gece",

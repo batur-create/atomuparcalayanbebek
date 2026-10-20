@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| plan-kesfi | Dakikaya göre şans, görünür garanti, haftalık kalıcı hak ve altı özgün nadir yapı | Katalog/Köy | 20 Eki | codex/blueprint-discovery PR |
 | bulusma | Tek buluşma, kişisel geliş saati, kopya önleme, düzenleme/iptal ve tek hatırlatma | Kütüp | 20 Eki | codex/holistic-meetups PR |
 | imece-hareket | İşçi/vinç koreografisi, teslim filmi ve ortak açılış yürüyüşü | Ortak Anıtkabir | 20 Eki | PR #43 |
 | imece | Bir Taş da Senden: dört kişinin 2.000 dk ortak Anıtkabir projesi, Kara ve ayrıntılı şantiye | Bütün köyler | 20 Eki | codex/anitkabir-imece PR |
@@ -94,6 +95,19 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### plan-kesfi · Emeğe göre keşif ve altı yeni nadir yapı
+Katalog/Köy · 20 Ekim 2026 · codex/blueprint-discovery / göç 31
+
+**Batur'un sözleri:** “ok. yeni planlar da ekle yeni yapılar ve nadirleri arttır.” Önceki onay: 25 dk %5, 500 dk garanti, haftalık yapıyı açık dönemde bitirince kalıcı açma. Yayın Batur'da; taban `1729a94e` canlı yayınını kendisi doğruladı.
+
+**Ne yapıldı:** Hak edilen dakika başına aynı çekilişler, artık dakika, gün kaçırınca silinmeyen garanti, kişiye ait özel çekiliş dizisi ve tek seans işleminde ödül. 7/14/30 seri ve mevcut hediyeler korundu. Katalog/Kara yardımı/Yenilikler aynı kuralı anlatır; belirli bina değil rastgele eksik plan kazanıldığı açık. Tamamlanan haftalık yapının planı kalıcıdır; eski uygun kayıtlar da dönüşür. Ağaç Evi, Japon Çay Evi, Su Değirmeni, Tren İstasyonu, Planetaryum, Kristal Kütüphane ile 8 nadir yapı.
+
+**Kararlar ve nedenleri:** Tek 75 dk ile 3×25 dk aynı şansı vermeli. Garanti yalnız doğal keşif ödülünde sıfırlanır; hediye/seri çalışmayı silmez. Koleksiyon bitince olmayan ödül vaat edilmez ve yeni sürüm için sınırsız emek bankası kurulmaz. Eski zamanlara rastgele ödül uygulanmaz. Eski yapıların yerleri, ücretler ve Anıtkabir aynı kaldı. Yeni altı model aynı çizim motorunu kullanır; fotoğraf veya yalnız renk varyasyonu değildir.
+
+**Denenip vazgeçilenler:** Her seans için bağımsız %10 şans kaldırıldı. Yeni servis, görsel üretimi veya otomatik yayın yok. Gerçek cihaz görünümü ve yayın Batur'da.
+
+**Dosyalar:** `shared/blueprints.js`, `src/rareBuildings.js`; katalog/ölçek/special, ödül işlemi/göç31/yedek, Economy ve açıklamalar. Tam kapsam ve doğrulama `ASTRA_RAPOR_PLAN_KESFI.md`.
 
 ### bulusma · Ortak buluşma, kişiye özel geliş
 Kütüp · 20 Ekim 2026 · codex/holistic-meetups / göç 30

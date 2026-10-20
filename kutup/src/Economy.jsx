@@ -2,6 +2,7 @@
 // building portraits, and the receipt that comes after every session.
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, MapPin, X } from "lucide-react";
+import { DISCOVERY_STEP, DISCOVERY_CHANCE, DISCOVERY_GUARANTEE } from "../shared/blueprints.js";
 import { BY_ID, CATALOG, CATEGORIES, CLASSES, REASONS, WEEKLY_DAYS, minutesOf, stateOf, wageFor } from "../shared/catalog.js";
 import { buildingSVG, drawnSize, projector, screenBox, spec } from "./iso.js";
 import { PERSON } from "../shared/olcek.js";
@@ -104,6 +105,8 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
     [imece,setImece] = useState(null),
     [view, setView] = useState(start),
     [hint, setHint] = useState(null);
+  const discovery = wallet?.discovery;
+  const planHow = `Tamamlanan her ${DISCOVERY_STEP} dk için %${DISCOVERY_CHANCE*100} şans. Plan çıkmadan ${DISCOVERY_GUARANTEE} dk emekte bir rastgele eksik plan garanti; belirli bir yapı değil. 7/14/30 günlük seri ödülleri ayrıca var. Gün kaçırmak ilerlemeni silmez.`;
   const collection = view === "collection",
     walletView = view === "wallet";
   useEffect(() => {
@@ -187,7 +190,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
         aria-disabled={blocked || undefined}
         aria-pressed={selected === item.id}
         onClick={(e) => {
-          if (!open) return say(e, `${item.name} için planı bulman gerek: bitirdiğin her seansta %10 şans, 7/14/30 günlük seride garanti.`);
+          if (!open) return say(e, `${item.name} için plan gerekiyor. ${planHow}`);
           if (short > 0) return say(e, shortWords(short));
           if (tooLong) return say(e, "Ritimde kalan süre bu yapıya yetmez. Daha küçük bir yapı seç ya da bir sonraki tura bırak.");
           pick(item.id);
@@ -211,8 +214,9 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
             {net}
           </em>
         </span>
-        {!open && <span className="catalog-short">Planı gerekiyor: her bitirdiğin seansta %10 şans, 7/14/30 günlük seride garanti</span>}
-        {state(item) === "new" && <span className="catalog-new">Yeni! {daysLeft(item)} gün daha katalogda, sonra yalnız planla</span>}
+        {!open && <span className="catalog-short">Plan gerekiyor · 25 dk başına %5 şans · 500 dk emekte garanti</span>}
+        {state(item) === "new" && <span className="catalog-new">{unlocks.includes(item.id)?"Planı sende · kalıcı açık":`${daysLeft(item)} gün herkese açık · bitir, kalıcı aç`}</span>}
+        {item.since && state(item)==="open" && <span className="catalog-new">Planı sende · kalıcı açık</span>}
         {open && short > 0 && <span className="catalog-short">{short} 🧱 eksik</span>}
         {open && tooLong && short <= 0 && <span className="catalog-short">Kalan süre yetmez</span>}
       </button>
@@ -247,10 +251,15 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
         </button>
         {unlocks.length > 0 && (
           <button type="button" className="brick-pill" onClick={() => document.querySelector(".catalog-class.rare")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-            🎁 {unlocks.length} nadir plan
+            📜 {unlocks.length} kalıcı plan
           </button>
         )}
       </div>
+      {discovery && <section className="blueprint-discovery" aria-label="Plan keşfi">
+        <div className="blueprint-heading"><span aria-hidden="true">📜</span><div><strong>{discovery.left ? "Çalıştıkça yeni planlara yaklaş" : "Mevcut plan koleksiyonu tamamlandı"}</strong><p>{discovery.left ? `Garantiye ${discovery.remaining} dk kaldı · Keşfedilecek ${discovery.left} plan` : "Havuzdaki bütün planlar sende. Yeni plan gelince keşfe devam."}</p></div></div>
+        {discovery.left>0 && <><progress max={discovery.guarantee} value={discovery.worked} aria-label={`Plan garantisi: ${discovery.worked} / ${discovery.guarantee} dakika`}/><small>Seans bitince güncellenir. Gün kaçırmak ilerlemeni silmez.</small></>}
+        <details><summary>Planlar nasıl kazanılıyor?</summary><p>{planHow} 75 dk tek seans ile 3 × 25 dk aynı şansı verir. Artan dakikalar birikir; uzun seansta birden fazla farklı plan çıkabilir. Yarım kalan inşaat sayılmaz; kısmi serbest çalışmada yalnız onaylanan dakika sayılır. Sıkı, Rahat, serbest ve ortak görevler aynı kurala uyar.</p><p>Plan kalıcıdır, kullanılınca tükenmez. Malzemeyi yine öder ve yapıyı çalışarak inşa edersin. Hediye ve seri planı emek sayacını sıfırlamaz. Tüm havuz tamamlanınca keşif bekler.</p><p>Haftalık yapıyı herkese açık olduğu dönemde tamamlamak onun planını kalıcı açar. İki hafta sonra, planı olmayanların onu keşfetmesi gerekir.</p></details>
+      </section>}
       {hint && (
         <p className="catalog-hint" role="status">
           {hint}
