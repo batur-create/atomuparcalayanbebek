@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, odak yüzdesi etiketi:** Batur'un ekran görüntüsündeki iki “hakediş” farklı ölçülerdi: şantiye başlığı maliyet ağırlıklı hakedişi, sayaç ise geçen süreyi gösteriyordu. Onaylı dar düzeltme `codex/focus-progress-label` dalında: sayaç altı “Seans %… tamamlandı” oldu. Hakediş hesabı, süre ve çizim değişmedi. Ayrı PR; yayın Batur'da.
+
 > **20 Ekim, bütünsel buluşma sistemi:** Batur, 14.00 buluşmasına 16.00 geliş örneğinden sonra “duplicate olmayan bütünsel bir sistem kur” diyerek uygulamayı onayladı. Dal `codex/holistic-meetups`, hedef `kutup-platform`, teslim ayrı PR; **yayın Batur'da**. Bu adım yalnız kütüphaneye gelme planlarıdır. Yapı planlarının ödül dengesi ayrı sonraki adım; bu PR'da değiştirilmedi. Yeni göç 30 öncesi mevcut yedek akışı kullanılmalı. Teknik rapor `ASTRA_RAPOR_BULUSMA.md`.
 
 > **20 Ekim, ortak Anıtkabir teslimi:** Batur "Bir Taş da Senden" konseptini ve doğrudan kodlamayı onayladı; ilk turda işin büyük kısmını istedi. Dal `codex/anitkabir-imece`, hedef `kutup-platform`, teslim PR. **Birleştirme/yayın ve dört kişilik kadroyu seçip etkinliği başlatma Batur'da.** Gerçek veri ve eski yapılar değiştirilmedi. Tam rapor: `ASTRA_RAPOR_IMECE.md`. Önceki otomatik yayın talimatları bu teslim için geçerli değildir.
