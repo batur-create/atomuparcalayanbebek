@@ -61,6 +61,12 @@ CATALOG.push(
 CATALOG.push(
   { id: "fener", name: "Deniz Feneri", emoji: "🗼", class: "large", kind: "tower", category: "fancy", cost: 160, rare: true, done: "deniz fenerini", blurb: "Kırmızı-beyaz bantlar, tepesinde ışık odası.", look: { wall: "cream", roof: 1, bands: "#c94a3c", lamp: true, flag: false } },
   { id: "sera", name: "Cam Sera", emoji: "🪴", class: "small", kind: "cottage", category: "fancy", cost: 45, rare: true, done: "cam serasını", blurb: "Cam duvarların ardında yemyeşil bitkiler.", look: { wall: "glass", roofColors: ["#cdebe7", "#b1dcd6", "#e4f6f3"], plants: true, chimney: false } },
+  { id: "agacevi", name: "Ağaç Evi", emoji: "🌳", class: "small", kind: "cottage", category: "home", cost: 65, rare: true, done: "ağaç evini", blurb: "Canlı ağaca zarar vermeyen bağımsız ayaklar, ahşap balkon, ip korkuluk ve okuma köşesi.", look: { special: "treehouse" } },
+  { id: "japoncay", name: "Japon Çay Evi", emoji: "🍵", class: "small", kind: "cottage", category: "fancy", cost: 55, rare: true, done: "Japon çay evini", blurb: "Kıvrık saçaklı kiremit çatı, shoji paneller, taş patika ve küçük bir zen bahçesi.", look: { special: "teahouse" } },
+  { id: "sudegirmeni", name: "Su Değirmeni", emoji: "🛞", class: "medium", kind: "house", category: "work", cost: 110, rare: true, done: "su değirmenini", blurb: "Taş temel, ahşap karkas, dere kanalı ve tek tek takılan kanatlı büyük su çarkı.", look: { special: "watermill" } },
+  { id: "istasyon", name: "Tren İstasyonu", emoji: "🚉", class: "medium", kind: "house", category: "fancy", cost: 115, rare: true, done: "tren istasyonunu", blurb: "Kiremitli istasyon, saatli çatı, peron saçağı, banklar ve traversli kısa bir ray hattı.", look: { special: "station" } },
+  { id: "planetaryum", name: "Planetaryum", emoji: "🪐", class: "large", kind: "house", category: "fancy", cost: 190, rare: true, done: "planetaryumunu", blurb: "Bakır kuşaklı yıldız kubbesi, takımyıldız cephesi, taş giriş ve Satürn heykeli.", look: { special: "planetarium" } },
+  { id: "kristalkutuphane", name: "Kristal Kütüphane", emoji: "💎", class: "large", kind: "house", category: "work", cost: 180, rare: true, done: "kristal kütüphanesini", blurb: "Çapraz çelik iskelet, ışıklı kitap rafları ve kristal gibi katlanan cam okuma salonu.", look: { special: "crystallibrary" } },
   { id: "gozlemevi", name: "Olay Ufku Gözlemevi", emoji: "🔭", class: "large", kind: "tower", category: "fancy", cost: 100, rare: "founder", done: "olay ufku gözlemevini", blurb: "Kubbesinin üstünde minik bir kara delik döner. Yalnız kurucunun.", look: { wall: "stone", dome: true, flag: false } },
 );
 export const BY_ID = Object.fromEntries(CATALOG.map((item) => [item.id, item]));
@@ -86,7 +92,6 @@ export function stateOf(item, now, unlocks = [], founder = false) {
 export const unlocked = (item, unlocks = [], founder = false, now = Date.now()) => ["open", "new"].includes(stateOf(item, now, unlocks, founder));
 /** Blueprints can turn up for rare buildings and for weekly ones whose fortnight is over. */
 export const blueprintPool = (now) => CATALOG.filter((item) => item.rare === true || (item.since && now >= item.since + WEEKLY_DAYS * DAY_MS));
-export const BLUEPRINT_CHANCE = 0.1; // a finished session turns up a blueprint
 export const BLUEPRINT_STREAKS = [7, 14, 30]; // day streaks that always do
 export const DEFAULT_MODEL = { cottage: "kulube", house: "ev", tower: "kule" };
 

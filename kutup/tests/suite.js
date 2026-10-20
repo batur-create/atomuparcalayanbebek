@@ -1080,6 +1080,7 @@ export function defineSuite(target) {
     const created = await request("/groups", { body: { name: "RahatDeneme", groupName: "Rahat test" } });
     assert.equal(created.status, 201);
     const cookie = created.cookie;
+    people.discovery=cookie;
     const started = await request("/focus", { cookie, body: { action: "start", model: "kulube", strict: true, relaxed: true } });
     assert.equal(started.status, 200);
     const person = started.data.state.members.find((m) => m.id === created.data.memberId);
@@ -1098,7 +1099,26 @@ export function defineSuite(target) {
     for (let i = 0; i < 2; i++) assert.equal((await request(path, { cookie, body: {} })).status, 200);
     assert.deepEqual((await request("/build-deliveries", { cookie })).data, []);
     assert.deepEqual((await request("/wallet", { cookie })).data, before);
-    assert.equal((await request("/leave", { cookie, body: {} })).status, 200);
+  });
+
+  test(`[${target}] blueprint discovery counts minutes, persists a 500-minute guarantee and settles once`, async()=>{
+    const name="RahatDeneme",cookie=people.discovery;
+    assert.equal((await request("/wallet",{cookie})).data.discovery.remaining,475);
+    for(let i=0;i<7;i++){
+      assert.equal((await request("/focus",{cookie,body:{action:"start",minutes:i===6?50:75}})).status,200);
+      await request("/__test/expire",{body:{name}});
+      await Promise.all([request("/state",{cookie}),request("/focus",{cookie,body:{action:"finish"}})]);
+      const wallet=(await request("/wallet",{cookie})).data;
+      if(i===0)assert.equal(wallet.discovery.remaining,400);
+    }
+    const wallet=(await request("/wallet",{cookie})).data;
+    assert.equal(wallet.unlocks.length,1);assert.equal(wallet.discovery.remaining,475);
+    assert.equal(wallet.log.filter(r=>r.reason==="blueprint").length,1);
+    assert.match(wallet.log.find(r=>r.reason==="blueprint").note,/500 dk/);
+    await request("/focus",{cookie,body:{action:"finish"}});
+    assert.deepEqual((await request("/wallet",{cookie})).data.discovery,wallet.discovery);
+    assert.equal(JSON.stringify(wallet).includes('seed'),false);
+    assert.equal((await request('/leave',{cookie,body:{}})).status,200);
   });
 
   test(`[${target}] one Anıtkabir across villages: full 2000 minute project, reservations and all personal signatures`, async () => {

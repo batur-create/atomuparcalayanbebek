@@ -97,7 +97,7 @@ export const HELP = {
       {
         id: "rare",
         q: "Kilitli binalar nasıl açılır?",
-        a: "Bitirdiğin seanslar bazen nadir bir bina planı çıkarır; 7, 14 ve 30 günlük seride kesin çıkar. Her hafta yeni bir bina da gelir: iki hafta herkese açık kalır, sonra yalnız planla açılır.",
+        a: "Tamamladığın her 25 dakika için %5 plan şansı var; 75 dakika tek seans ile 3 × 25 dakika eşittir. Plan çıkmadan 500 dakika emekte, sahip olmadığın rastgele bir plan garanti. Katalogdaki Plan keşfi kalan süreyi gösterir; gün kaçırmak ilerlemeyi silmez. 7, 14 ve 30 günlük seride ayrıca rastgele eksik plan kazanırsın. Havuz bittiyse yeni plan beklenir. Haftalık yapıyı iki haftalık açık dönemde tamamlarsan planı kalıcı senin olur.",
       },
       {
         id: "village",

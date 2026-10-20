@@ -27,6 +27,12 @@ const H0 = 10,
 // plan: the largest span of what is drawn, in metres. Where the catalogue
 // names no real building, a typical one of its kind.
 export const REAL = {
+  agacevi: { boy: 11, plan: 12, not: "Kütüp özgün tasarımı: bağımsız ahşap ayaklar ve yaşayan ağacın çevresinde balkon" },
+  japoncay: { boy: 5, plan: 10, not: "Kütüp özgün tasarımı: ahşap çay pavyonu ve zen bahçesi" },
+  sudegirmeni: { boy: 8, plan: 14, not: "Kütüp özgün tasarımı: taş temelli ahşap su değirmeni" },
+  istasyon: { boy: 8, plan: 20, not: "Kütüp özgün tasarımı: tek peronlu kırsal istasyon" },
+  planetaryum: { boy: 12, plan: 18, not: "Kütüp özgün tasarımı: bakır yıldız kubbesi ve giriş pavyonu" },
+  kristalkutuphane: { boy: 12, plan: 16, not: "Kütüp özgün tasarımı: çelik ve cam okuma salonu" },
   serender: { boy: 5, plan: 5, not: "Karadeniz serenderi: 1,5 m ayaklar üstünde ambar" },
   kerpic: { boy: 5, plan: 14, not: "Harran kümbet evleri: kubbe tepesi 4-5 m" },
   kubbe: { boy: 8, plan: 15, not: "15 m çaplı jeodezik kubbe ve fener" },

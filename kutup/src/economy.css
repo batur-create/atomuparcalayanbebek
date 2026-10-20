@@ -585,3 +585,16 @@ button.brick-pill {
   text-align: left;
   line-height: 1.5;
 }
+
+/* The guarantee belongs beside the catalogue, where every locked plan is explained. */
+.blueprint-discovery { background: var(--accent-soft); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin: 14px 0 20px; color: var(--ink); min-width: 0; }
+.blueprint-heading { display: flex; gap: 10px; align-items: flex-start; }
+.blueprint-heading > span { font-size: 25px; }
+.blueprint-heading p { margin: 4px 0 10px; color: var(--muted); font-size: 13px; }
+.blueprint-discovery progress { display: block; width: 100%; height: 10px; accent-color: var(--accent); border: 0; border-radius: 10px; overflow: hidden; }
+.blueprint-discovery progress::-webkit-progress-bar { background: var(--paper); border-radius: 10px; }
+.blueprint-discovery progress::-webkit-progress-value { background: var(--accent); border-radius: 10px; }
+.blueprint-discovery progress::-moz-progress-bar { background: var(--accent); border-radius: 10px; }
+.blueprint-discovery > small { display: block; margin-top: 8px; color: var(--muted); }
+.blueprint-discovery summary { min-height: 44px; display: list-item; padding-top: 13px; cursor: pointer; font-weight: 700; }
+.blueprint-discovery details p { color: var(--muted); line-height: 1.65; font-size: 13px; overflow-wrap: anywhere; }

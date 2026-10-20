@@ -1,6 +1,7 @@
 // Versioned schema shared by node:sqlite and Cloudflare D1.
 // Every migration is a list of single statements (D1 cannot run multi-statement strings
 // through prepared statements), applied together with the version bump in one batch.
+import {WEEKLY_BACKFILL} from "../shared/blueprints.js";
 import {PLAN_LEGACY_IMPORT} from "../shared/plans.js";
 export const migrations = [
   // 1 — the original Kütüp schema (idempotent, so pre-versioning databases pass through).
@@ -306,6 +307,11 @@ export const migrations = [
     PLAN_LEGACY_IMPORT,
     "CREATE TABLE plan_push_events(id TEXT PRIMARY KEY,nonce TEXT NOT NULL,plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE)",
     "CREATE INDEX plan_remind ON attendees(remind,arrival) WHERE answer='yes' AND remind=1",
+  ],
+  // 31 — persistent, per-member discovery and earned weekly-building rights.
+  [
+    "CREATE TABLE blueprint_progress(member_id TEXT PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE, carry INTEGER NOT NULL DEFAULT 0 CHECK(carry>=0 AND carry<25), dry INTEGER NOT NULL DEFAULT 0 CHECK(dry>=0 AND dry<500), draws INTEGER NOT NULL DEFAULT 0 CHECK(draws>=0), seed TEXT NOT NULL)",
+    ...WEEKLY_BACKFILL,
   ],
 ];
 

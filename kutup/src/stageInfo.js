@@ -7,6 +7,8 @@
 // of their own (src/special.js) have their own texts by id, and fall back to
 // the generic ones only for the shared ground steps and the handover.
 
+import {specialById} from "./special.js";
+
 const byLabel = (pairs, other) => (label) => (pairs.find(([re]) => re.test(label)) || [null, other])[1];
 
 const GENERIC = {
@@ -376,7 +378,7 @@ const textOf = (v, label) => (typeof v === "function" ? v(label) : v);
 
 /** The explanation for phase `p` of the building `sp`, or null. */
 export function phaseInfo(sp, p) {
-  const own = sp?.special ? OWN[sp.special] : null;
+  const own = sp?.special ? OWN[sp.special] || specialById(sp.special)?.info : null;
   const v = own ? own[p.key] ?? (SHARED.has(p.key) ? GENERIC[p.key] : null) : GENERIC[p.key];
   return v ? textOf(v, p.label) : null;
 }
