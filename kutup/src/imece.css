@@ -129,6 +129,13 @@
 .imece-owner-roster small { font-size: 11px; color: var(--muted); }
 .imece-owner-roster input { width: 20px; height: 20px; accent-color: var(--accent); }
 .imece-owner .field-label { margin-top: 14px; }
+.imece-owner-person { display: flex; align-items: center; flex-wrap: wrap; gap: 11px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+.imece-owner-person-info { display: grid; gap: 4px; flex: 1; min-width: 150px; overflow-wrap: anywhere; }
+.imece-owner-replace { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; }
+.imece-owner-replace p { font-size: 13px; line-height: 1.7; color: var(--muted); }
+.imece-owner-replace label { display: grid; gap: 8px; min-width: 0; }
+.imece-owner-replace select { width: 100%; min-width: 0; }
+.imece-owner-replace-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 @media(max-width:600px) {
   .imece-entry { padding: 16px; gap: 11px; flex-wrap: wrap; }
   .imece-entry-icon { width: 45px; height: 45px; }
