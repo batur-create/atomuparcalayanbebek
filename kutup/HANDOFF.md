@@ -2,6 +2,8 @@
 
 ## 0. Çalışma sistemi (16 Ekim 2026)
 
+> **20 Ekim, ortak Anıtkabir teslimi:** Batur "Bir Taş da Senden" konseptini ve doğrudan kodlamayı onayladı; ilk turda işin büyük kısmını istedi. Dal `codex/anitkabir-imece`, hedef `kutup-platform`, teslim PR. **Birleştirme/yayın ve dört kişilik kadroyu seçip etkinliği başlatma Batur'da.** Gerçek veri ve eski yapılar değiştirilmedi. Tam rapor: `ASTRA_RAPOR_IMECE.md`. Önceki otomatik yayın talimatları bu teslim için geçerli değildir.
+
 > **19 Ekim, bu teslimin sınırı:** Batur Rahat inşaat modunu ve dar iPhone PWA odak ekranı düzeltmesini onayladı. Teslim `codex/relaxed-construction` dalından `kutup-platform` hedefine PR; birleştirme ve yayın Batur'da. Aşağıdaki eski otomatik yayın talimatı bu teslim için uygulanmaz. Başka açık işe geçilmedi.
 
 > **İkinci üs (17–22 Ekim 2026):** Batur'un Claude sınırı dolu; işler arkadaşının bilgisayarında, onun Claude hesabıyla, fork + PR ile yapılıyor. Kurulum, sınırlar, devir promptu ve sıradaki işlerin tanımı: `IKINCI-US.md`.
@@ -125,7 +127,15 @@ node scripts/restore-backup.mjs <yedek.json> <yeni.sqlite> [--sql <d1.sql>]  # J
 4. **Mini oyunlar** sadece molada açılır (durum "Molada" ya da seans yeni bitmiş). İnşaat sırasında kapalıdır.
 5. **İnşaat ve köy görselleri** inşaat mühendisi gözüyle ayrıntılandırılacak (bkz. KARARLAR.md arşivi, Paket 5 ve 6).
 
-## 6b. Durum (son güncelleme 19 Ekim 2026)
+## 6b. Durum (son güncelleme 20 Ekim 2026)
+
+> **Bir Taş da Senden / Anıtkabir İmecesi (20 Ekim, PR):** Bütün köylerin ortak tek projesi; Batur komuta merkezinde dört gerçek profili seçerek başlatır. Göç 29 yalnız sütun/tablo ekler; eski anıtlar otomatik silinmez. Hedef 2.000 dk = 400 temel + 1.200 ana yapı + 400 ayrıntı. Herkesin bölüm başına zorunlu payı 50/150/50 dk; kalan 1.000 dk paylaşılır. Takvim kilidi yok. Kadro başlangıçta sabittir; eksik görevli hesabın ayrılması açılışı bekletir, otomatik muafiyet yoktur.
+>
+> `shared/imece.js`: 22 işin süre/açıklama/inşaat gerekçesi, aşamalar ve kişisel pay. `server/imece.js`: küresel revizyonla kapasite rezervasyonu, tek seferlik katkı, kalıcı teslim. `/focus` `imece:true` ile ayrı hedef alır; kişisel bina ve malzeme ücreti yok. Varsayılan Rahat ekran kapalıyken sürer; Takipli seçeneği bütün seansı uygulamada ister. İkisi de yarım maaş; normal bonuslar korunur. Mevcut Sıkı/Rahat kişisel yapım değişmedi.
+>
+> `Imece.jsx`: ana sayfa/Köy kartı, yaşayan Kara'nın kişisel mektubu, çalışma, katkı defteri, hızlandırılmış/atlanabilir teslim. `/imece` ortak görünümü yalnız giriş yapmış kişiye verir; özel ekip verisi açılmaz. Owner `/owner/imece` kadroyu başlatır. `ImeceScene.jsx` + `imeceArt.js`: büyük ortak şantiye alanı; plan/fotoğrafa göre tek ölçek, Canvas katman sırası, 42 basamak, on kule, uzun yol/24 aslan, taş/desen/çevre/bayrak ayrıntıları; dört kamera. Eski kişisel çizim dosyaları korunur. Normal kişisel haritada yeni bina satırı üretilmez.
+>
+> Komuta merkezindeki mevcut kaldırma yetkisine sunucu destekli **Yalnız Anıtkabir** filtresi eklendi. Yeni kişisel Anıtkabir, proje başlayınca katalogdan ortak şantiyeye yönlenir. Eski seanslar/yapılar korunur; kaldırma Batur'un açık seçimiyle mevcut onay akışındadır. Yedek tablosu listesi `shared/backup.js`; owner yedek ve `server/restore.js` aynı listeyi kullanır. Test ve sınırlar: `ASTRA_RAPOR_IMECE.md`. Özel çalışan/vinç koreografisi ve açılış kamera filmi sonraki onaylı tura bırakıldı.
 
 > **n43 komuta merkezi (19 Ekim gece, PR #41):** göç 27 `buildings.gift` (hediye notu, NULL = seansla yapılmış). Hediye yapı bir `build_deliveries` satırıyla gelir (ödül 0); `/build-deliveries` artık `gift` da döner. `/village` bina satırı 14 alan: `…, model, patched, gift` ve yanıtta `total` (bbox yoksa); istemci `mergeVillage` eksik sayıda `stale` der, `villageData.js` köyü baştan çeker. Hediyeler rozet hesabına girmez. Duyuru `messages.kind = 'announce'` (sistem değil, kalp alır). İstek türü `build` (`shared/requests.js`). Her yerden "Batur'a ilet"i bir türle açmak: `window.dispatchEvent(new CustomEvent("kutup:ask", { detail: { kind } }))`. Testler `tests/owner.test.js`; görüntü aracı `/mnt/project-files/kutup/araclar/n43_shots.py`.
 

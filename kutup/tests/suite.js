@@ -1082,6 +1082,54 @@ export function defineSuite(target) {
     assert.equal((await request("/leave", { cookie, body: {} })).status, 200);
   });
 
+  test(`[${target}] one Anıtkabir across villages: full 2000 minute project, reservations and all personal signatures`, async () => {
+    const crew=[];
+    for(let i=0;i<4;i++) {
+      const name=`İmeceUsta${i}`;
+      const r=await request("/groups",{body:{name,username:`imece_usta_${i}`,password:"imece-test-123"}});
+      assert.equal(r.status,201);crew.push({id:r.data.memberId,cookie:r.cookie,name});
+    }
+    assert.equal((await request("/imece")).status,401);
+    assert.equal((await request("/owner/imece",{cookie:crew[0].cookie,body:{members:crew.map(p=>p.id)}})).status,401);
+    const owner=await ownerSession();
+    assert.equal((await request("/owner/imece",{cookie:owner,body:{members:crew.map(p=>p.id)}})).status,201);
+    const read=async(i=0)=>(await request("/imece",{cookie:crew[i].cookie})).data;
+    assert.equal((await read(2)).crew.length,4);
+    assert.equal((await state("alice")).group.id,group.id,"global project never replaces the private team state");
+    assert.equal((await request("/focus",{cookie:people.alice,body:{action:"start",imece:true,relaxed:true,minutes:25}})).status,403);
+    const work=async(i,minutes)=>{
+      const r=await request("/focus",{cookie:crew[i].cookie,body:{action:"start",imece:true,relaxed:true,minutes}});
+      assert.equal(r.status,200,JSON.stringify(r.data));
+      await request("/__test/expire",{body:{name:crew[i].name,away:true}});
+      const done=await request("/focus",{cookie:crew[i].cookie,body:{action:"finish"}});
+      assert.equal(done.status,200);
+    };
+    // The remaining three workers' compulsory minutes are protected.
+    for(let i=0;i<3;i++)await work(0,75);
+    await work(0,25);
+    assert.equal((await request("/focus",{cookie:crew[0].cookie,body:{action:"start",imece:true,relaxed:true,minutes:25}})).status,409);
+    assert.equal((await read()).phase,0);
+    const parallel=await Promise.all(crew.slice(1).map(p=>request("/focus",{cookie:p.cookie,body:{action:"start",imece:true,relaxed:true,minutes:50}})));
+    assert.ok(parallel.every(r=>r.status===200),"different villages can reserve distinct personal jobs together");
+    for(let i=1;i<4;i++)await request("/__test/expire",{body:{name:crew[i].name,away:true}});
+    await Promise.all([read(0),read(1),read(2)]);
+    assert.equal((await read()).phase,1);
+    for(let round=0;round<6;round++)for(let i=0;i<4;i++)await work(i,50);
+    assert.equal((await read()).minutes,1600);
+    for(let round=0;round<2;round++)for(let i=0;i<4;i++)await work(i,50);
+    const done=await read(3);
+    assert.equal(done.minutes,2000);assert.equal(done.complete,true);assert.ok(done.completed>0);
+    for(const person of done.crew)assert.deepEqual(person.personal,[50,150,50]);
+    assert.ok(done.delivery.minutes>0);
+    await request("/imece/seen",{cookie:crew[3].cookie,body:{minutes:999999}});
+    assert.equal((await read(3)).delivery,null);
+    assert.equal((await read()).minutes,2000);
+    for(const person of crew){
+      const village=(await request("/village",{cookie:person.cookie})).data;
+      assert.equal(village.total,0,"shared work must not create private copies of a building");
+    }
+  });
+
   test(`[${target}] data survives a restart`, async () => {
     await stop();
     await start();

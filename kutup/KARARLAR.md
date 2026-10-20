@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| imece | Bir Taş da Senden: dört kişinin 2.000 dk ortak Anıtkabir projesi, Kara ve ayrıntılı şantiye | Bütün köyler | 20 Eki | codex/anitkabir-imece PR |
 | n43 | Komuta merkezi: yapı ve plan hediye, yapı geri alma, ekibe duyuru, yapı istekleri; Yenilikler ve Ben'deki şeyler ana sayfada | Herkes + Batur | 19 Eki 23:50 | PR #41 |
 | rahat-insaat | Ekran kilitliyken süren ayrı mod, aşama bildirimleri, hızlandırılmış teslim ve dar iPhone PWA sığma düzeltmesi | Odak | 19 Eki | codex/relaxed-construction PR |
 | n42 | Kara’ya sor: istenince açılan yardım, ilk gelene kısa tur, Köy’de “?” noktaları, sabit alt yazılar kalktı | Herkes | 19 Eki 07:40 | PR #37 |
@@ -91,6 +92,19 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### imece · Bir Taş da Senden
+Bütün köyler · 20 Ekim 2026 · `codex/anitkabir-imece` PR
+
+**Batur'un sözleri:** "tüm köylerin ortak yapısı", "herkes kendi katkısını yapmadan tamamlanmamalı", "4 kişi yapacağız", "direkt ön izlemeye gerek yok", "büyük kısmını yap işin ilk turda, önce uygulamayı incele ki uyumlu olsun". 2.000 dk hedef, herkes için 250 dk kişisel pay ve takvim kilidinin kaldırılması onaylandı.
+
+**Kararlar:** Tek küresel kayıt; kadro Batur'un açık başlatmasıyla dört kişi olarak sabitlenir. Üç bölümün 400/1.200/400 dk hedefleri ve kişi başına 50/150/50 dk imzaları birlikte aranır. Fazla çalışan başkasının zorunlu payını tüketemez. Seans 25/50/75 dk; Rahat varsayılan, Takipli alternatif. Ücretli servis yok; yaşayan Kara ve hazır kişisel metinler. Anıt küçültülmez: ortak alanda yakın açılır, tüm yerleşim ayrıca gezilir; eski kişisel haritalar doldurulmaz. Ayrıntılı rapor `ASTRA_RAPOR_IMECE.md`.
+
+**Korunanlar:** Eski yapılar/seanslar, kişisel Sıkı/Rahat kuralları, ücret/bonus sistemi, özel ekip verileri. Yeni kişisel Anıtkabir proje başlayınca ortak göreve yönlenir. Kaldırma mevcut owner yetkisiyle tek tek; filtre eklendi, kimsenin yapısı bu çalışmada silinmedi. Yayın Batur'da.
+
+**Denenip vazgeçilenler:** Kişi başına küçük anıt + ×N önce seçildi, sonra Batur tek ortak eser istedi. Her kişiye büyük kampüs kopyası köyü doldurduğu için terk edildi. 14 günlük yapay açılış kilidi yerine gerçek emek hedefi seçildi. Otomatik katılımcı seçme/muaf tutma yok.
+
+**Sınırlar:** Başladıktan sonra kadro devretme yok; ayrılan ve görevini bitirmemiş kişi projeyi bekletebilir. Ortak şantiye ayrı büyük görünümde; mevcut kişisel haritaya fiziksel bina eklenmez. Özel çalışan/vinç koreografisi ve açılış filmi ayrıca onaylı sonraki iş olabilir. Canlı yayın ve fiziksel iPhone doğrulaması yapılmadı.
 
 ### n43 · Komuta merkezi yetkileri ve Kütüp'ten haberler
 Herkes + Batur · 19 Eki 2026 · PR #41 (ikinci üs) · göç 27
