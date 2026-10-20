@@ -155,6 +155,78 @@ test("imece: relaxed work survives restart and concurrent finish; no private bui
   assert.equal((await f.as(0,"/imece")).data.minutes,25);
 });
 
+test("imece: only owner can correct an account; the slot's work and delivery survive without moving private rewards", async t => {
+  const f=await fixture(t);await f.launch();
+  const next=await f.call("/groups",{name:"Doğru Batur",username:"imece_correct",password:"imece123"});
+  await f.as(0,"/focus",{action:"start",imece:true,relaxed:true,minutes:50});await f.finish(0);
+  const before=(await f.owner("/owner/imece")).data;
+  const rows=f.sql.prepare("SELECT * FROM imece_contributions").all();
+  const old=f.sql.prepare("SELECT bricks FROM members WHERE id=?").get(f.ids[0]);
+  const body={memberId:next.data.memberId,rev:before.rev};
+  assert.equal((await f.as(0,"/owner/imece/crew/0",body)).status,401);
+  assert.equal((await f.call("/owner/imece/crew/0",body)).status,401);
+  const changed=await f.owner("/owner/imece/crew/0",body);
+  assert.equal(changed.status,200,JSON.stringify(changed.data));
+  assert.equal(changed.data.rev,before.rev+1);
+  assert.equal(changed.data.minutes,50);
+  assert.equal(changed.data.goal,2000);
+  assert.equal(changed.data.crew.length,4);
+  assert.deepEqual(changed.data.crew[0].personal,[50,0,0]);
+  assert.equal(changed.data.crew[0].name,"Doğru Batur");
+  assert.deepEqual(f.sql.prepare("SELECT * FROM imece_contributions").all(),rows);
+  assert.deepEqual(f.sql.prepare("SELECT bricks FROM members WHERE id=?").get(f.ids[0]),old);
+  assert.equal(f.sql.prepare("SELECT count(*) AS n FROM focus_log WHERE member_id=?").get(next.data.memberId).n,0);
+  assert.equal((await f.as(0,"/imece")).data.slot,-1);
+  assert.equal((await f.as(0,"/focus",{action:"start",imece:true,relaxed:true,minutes:25})).status,403);
+  const mine=(await f.call("/imece",undefined,next.cookie)).data;
+  assert.equal(mine.slot,0);
+  assert.equal(mine.delivery.minutes,50,"the slot's unacknowledged delivery is preserved");
+  assert.equal((await f.call("/focus",{action:"start",imece:true,relaxed:true,minutes:25},next.cookie)).status,200);
+  f.sql.prepare("UPDATE members SET focus_end=? WHERE id=?").run(Date.now()-1000,next.data.memberId);
+  assert.equal((await f.call("/focus",{action:"finish"},next.cookie)).status,200);
+  assert.equal((await f.owner("/owner/imece")).data.minutes,75);
+});
+
+test("imece: account correction rejects invalid, duplicate, stale, finished and unsettled work; departed slots remain recoverable", async t => {
+  const f=await fixture(t);await f.launch();
+  const next=await f.call("/groups",{name:"Yeni hesap",username:"imece_next",password:"imece123"});
+  const body={memberId:next.data.memberId,rev:(await f.owner("/owner/imece")).data.rev};
+  assert.equal((await f.owner("/owner/imece/crew/4",body)).status,400);
+  assert.equal((await f.owner("/owner/imece/crew/0",{...body,rev:body.rev-1})).status,409);
+  assert.equal((await f.owner("/owner/imece/crew/0",{...body,memberId:f.ids[1]})).status,409);
+  assert.equal((await f.owner("/owner/imece/crew/0",{...body,memberId:"missing"})).status,409);
+  assert.equal((await f.owner("/owner/imece/crew/0",{...body,memberId:42})).status,400);
+  await f.as(0,"/focus",{action:"start",imece:true,relaxed:true,minutes:25});
+  body.rev=(await f.owner("/owner/imece")).data.rev;
+  assert.equal((await f.owner("/owner/imece/crew/0",body)).status,409);
+  f.sql.prepare("UPDATE members SET focus_end=? WHERE id=?").run(Date.now()-1000,f.ids[0]);
+  assert.equal((await f.owner("/owner/imece/crew/0",body)).status,409,"an expired but unsettled session must retain its owner");
+  await f.as(0,"/focus",{action:"finish"});
+  f.sql.prepare("UPDATE imece_crew SET member_id=NULL WHERE slot=0").run();
+  body.rev=(await f.owner("/owner/imece")).data.rev;
+  const changed=await f.owner("/owner/imece/crew/0",body);
+  assert.equal(changed.status,200);
+  assert.equal(changed.data.crew[0].minutes,25);
+  assert.equal(changed.data.crew[0].memberId,next.data.memberId);
+  assert.equal((await f.owner("/owner/imece/crew/1",body)).status,409,"stale writes cannot overwrite the corrected roster");
+  f.sql.prepare("UPDATE imece_project SET completed=1").run();
+  assert.equal((await f.owner("/owner/imece/crew/1",{memberId:next.data.memberId,rev:changed.data.rev})).status,409);
+});
+
+test("imece: racing a mission start with account correction cannot orphan an active session", async t => {
+  const f=await fixture(t);await f.launch();
+  const next=await f.call("/groups",{name:"Yeni hesap",username:"imece_race",password:"imece123"});
+  const rev=(await f.owner("/owner/imece")).data.rev;
+  const [start,replace]=await Promise.all([
+    f.as(0,"/focus",{action:"start",imece:true,relaxed:true,minutes:25}),
+    f.owner("/owner/imece/crew/0",{memberId:next.data.memberId,rev}),
+  ]);
+  assert.ok(start.status===200||replace.status===200);
+  assert.ok(start.status!==200||replace.status!==200);
+  const orphan=f.sql.prepare("SELECT count(*) AS n FROM members m LEFT JOIN imece_crew c ON c.member_id=m.id WHERE m.focus_imece=1 AND m.focus_end>0 AND c.slot IS NULL").get();
+  assert.equal(orphan.n,0);
+});
+
 test("imece: acknowledging the displayed delivery cannot swallow a later contribution",async t=>{
   const f=await fixture(t);await f.launch();
   await f.as(0,"/focus",{action:"start",imece:true,relaxed:true,minutes:25});await f.finish(0);

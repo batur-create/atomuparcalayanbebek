@@ -44,8 +44,8 @@ export function createImece({ db, fail }) {
   }
   async function launch(ids, now) {
     if (!Array.isArray(ids) || ids.length !== IMECE_PEOPLE || ids.some((x) => typeof x !== "string") || new Set(ids).size !== IMECE_PEOPLE)
-      fail("Dört farklı kişiyi seç. Kadro başlangıçta kesinleşir.");
-    if (await db.get("SELECT id FROM imece_project WHERE id=?", [IMECE_ID])) fail("Ortak proje zaten başladı. Kadro ve hedef sonradan değişmez.", 409);
+      fail("Dört farklı kişiyi seç.");
+    if (await db.get("SELECT id FROM imece_project WHERE id=?", [IMECE_ID])) fail("Ortak proje zaten başladı. Hesap düzeltmesi için kadrodaki Hesabı değiştir düğmesini kullan.", 409);
     const members = await db.all("SELECT id,name,avatar,color FROM members WHERE id IN (?,?,?,?)", ids);
     if (members.length !== IMECE_PEOPLE) fail("Seçilen kişilerden biri artık uygulamada değil. Listeyi yenile.", 409);
     try {
@@ -58,6 +58,31 @@ export function createImece({ db, fail }) {
       ]);
     } catch (error) {
       if (await db.get("SELECT id FROM imece_project WHERE id=?", [IMECE_ID])) fail("Ortak proje zaten başladı.", 409);
+      throw error;
+    }
+  }
+  async function replace(slot, memberId, rev) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= IMECE_PEOPLE || typeof memberId !== "string" || !memberId || !Number.isInteger(rev))
+      fail("Katılımcı seçimini kontrol et.");
+    const raw = await read();
+    if (!raw.project || raw.project.rev !== rev) fail("Şantiye değişti. Katkıları yenileyip tekrar seç.", 409);
+    if (raw.progress.complete || raw.project.completed) fail("Tamamlanan projenin kadrosu değiştirilemez.", 409);
+    const current = raw.crew.find(c => c.slot === slot);
+    if (!current) fail("Kadro kaydı bulunamadı.", 409);
+    if (raw.crew.some(c => c.memberId === memberId)) fail("Bu hesap zaten kadroda. Farklı bir hesap seç.", 409);
+    const member = await db.get("SELECT id,name,avatar,color FROM members WHERE id=?", [memberId]);
+    if (!member) fail("Bu hesap artık uygulamada değil. Listeyi yenile.", 409);
+    if (raw.reservations.some(r => r.slot === slot)) fail("Önce eski hesabın şantiye seansını tamamla veya durdur; sonra hesabı değiştir.", 409);
+    try {
+      await db.batch([
+        guard(rev),
+        // Also guard account deletion and unfinished sessions in this transaction.
+        ["INSERT OR REPLACE INTO write_guard(id,valid) VALUES (1,CASE WHEN EXISTS (SELECT 1 FROM imece_crew WHERE slot=? AND member_id IS ?) AND EXISTS (SELECT 1 FROM members WHERE id=?) AND NOT EXISTS (SELECT 1 FROM members WHERE id IN (?,?) AND focus_imece=1 AND focus_end>0) THEN 1 ELSE 0 END)", [slot, current.memberId, memberId, current.memberId, memberId]],
+        ["UPDATE imece_crew SET member_id=?,name=?,avatar=?,color=? WHERE slot=?", [memberId, member.name, member.avatar, member.color, slot]],
+        bump(),
+      ]);
+    } catch (error) {
+      if (/snapshot_changed|FOREIGN KEY|UNIQUE constraint.*imece_crew/i.test(error.message)) fail("Şantiye veya hesap değişti. Katkıları yenileyip tekrar dene; varsa önce şantiye seansını bitir.", 409);
       throw error;
     }
   }
@@ -97,5 +122,5 @@ export function createImece({ db, fail }) {
     if(!Number.isInteger(through)||through<0||through>2000)fail("Teslim kaydı geçerli değil.");
     await db.run("UPDATE imece_crew SET seen_minutes=MAX(seen_minutes,MIN(?,(SELECT COALESCE(sum(minutes),0) FROM imece_contributions WHERE slot=imece_crew.slot))) WHERE member_id=?",[through,memberId]);
   }
-  return { view, launch, reserve, settle, seen, release: () => [bump()] };
+  return { view, launch, replace, reserve, settle, seen, release: () => [bump()] };
 }

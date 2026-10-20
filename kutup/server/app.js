@@ -2449,6 +2449,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }).catch(() => {});
     return json(await imece.view(null), 201);
   }, false);
+  route("POST", "/owner/imece/crew/:slot", async ({ request, ip, body, params }) => {
+    await requireOwner(request, ip);
+    await imece.replace(Number(params.slot), body.memberId, body.rev);
+    return json(await imece.view(null));
+  }, false);
 
   route("GET", "/owner/groups", async ({ request, ip }) => {
     await requireOwner(request, ip);
