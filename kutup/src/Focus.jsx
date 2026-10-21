@@ -53,7 +53,6 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     [lock, setLock] = useState(false),
     [floating, setFloating] = useState(() => !!floatWindow());
   useEffect(() => onFloat((w) => setFloating(!!w)), []);
-  useEffect(()=>{const open=()=>{if(!(me?.focusEnd>Date.now()))setPicking(true);};window.addEventListener("kutup:open-catalog",open);return()=>window.removeEventListener("kutup:open-catalog",open);},[me?.focusEnd]);
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
   // Build mode: the building sets the length. Free focus: you pick it. Under
