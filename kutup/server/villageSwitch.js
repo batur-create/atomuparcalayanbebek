@@ -6,6 +6,7 @@
 // shared project, and nothing that has already stood moved. Switching and
 // going back are one guarded batch each: the pointer, the statuses and the
 // 14-day window. Nothing here touches bricks, rewards, minutes or deliveries.
+import { modelOf } from "../shared/catalog.js";
 import { GENERATOR_VERSION, emptyLayout, validateLayout } from "../shared/koy2/planner.js";
 import { layoutAt, layoutStatements } from "./villageStore.js";
 
@@ -39,7 +40,8 @@ export async function inventory(db, groupId) {
   if (!group[0]) return null;
   const items = [
     ...projects.map((p) => ({ subject: { type: "imece", id: String(p.id) }, model: "anitkabir", owner: null, created: p.started })),
-    ...buildings.map((b) => ({ subject: { type: "building", id: String(b.id) }, model: b.model, owner: b.member_id, created: b.created, kind: b.kind, seed: b.seed })),
+    // The oldest buildings were saved before models existed: they are drawn by kind, as in the old village.
+    ...buildings.map((b) => ({ subject: { type: "building", id: String(b.id) }, model: modelOf(b.model, b.kind).id, owner: b.member_id, created: b.created, kind: b.kind, seed: b.seed })),
     ...runs.map((r) => ({ subject: { type: "site", id: String(r.id) }, model: r.model, owner: r.member_id, created: r.started, ends: r.ends, seed: r.seed })),
   ];
   return { group: group[0], items, counts: { buildings: buildings.length, sites: runs.length, projects: projects.length } };
