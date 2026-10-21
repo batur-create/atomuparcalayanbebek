@@ -186,6 +186,42 @@ export function defineSuite(target) {
     assert.equal((await state("charlie")).members.length, 1);
   });
 
+  // n46 C: real parallel requests on both hosts (node:sqlite and workerd + D1).
+  test(`[${target}] n46: twin starts with one request key make one run and one charge; a v2 team needs a new app`, async () => {
+    const solo = await request("/groups", { body: { name: "KoyC", groupName: "n46 C" } });
+    assert.equal(solo.status, 201, JSON.stringify(solo.data));
+    const cookie = solo.cookie;
+    await request("/__test/unlock", { body: { name: "KoyC", model: "ev" } });
+    const body = { action: "start", strict: true, model: "kulube", minutes: 25, requestKey: "n46c-suite-key-000001" };
+    const twins = await Promise.all([1, 2, 3].map(() => request("/focus", { cookie, body })));
+    assert.deepEqual(twins.map((r) => r.status), [200, 200, 200]);
+    let rows = (await request("/__test/village-rows", { body: { name: "KoyC" } })).data;
+    assert.equal(rows.runs.length, 1);
+    assert.equal(rows.receipts.length, 1);
+    assert.equal(rows.me.focus_run_id, rows.runs[0].id);
+    assert.equal(new Set(twins.map((r) => r.data.run)).size, 1);
+    assert.deepEqual(rows.changes.map((c) => c.op), ["start"]);
+    assert.equal((await request("/focus", { cookie, body: { ...body, model: "ev", minutes: 50 } })).status, 409);
+    await request("/__test/expire", { body: { name: "KoyC" } });
+    await request("/state", { cookie });
+    rows = (await request("/__test/village-rows", { body: { name: "KoyC" } })).data;
+    assert.equal(rows.runs[0].status, "completed");
+    assert.ok(rows.runs[0].building_id);
+    assert.deepEqual(rows.changes.map((c) => c.op), ["start", "convert", "create"]);
+    assert.equal(rows.group.village_content_rev, 3);
+    // Today's village until a layout is switched on; then only a v2 app sees it.
+    assert.equal((await request("/village", { cookie })).data.contractVersion, undefined);
+    const made = await request("/__test/village-v2", { body: { name: "KoyC" } });
+    assert.equal(made.status, 200);
+    assert.equal((await request("/village", { cookie })).status, 426);
+    const v2 = await request("/village", { cookie, headers: { "X-Kutup-Village-Version": "2" } });
+    assert.equal(v2.status, 200);
+    assert.equal(v2.data.contractVersion, 2);
+    assert.equal(v2.data.layoutId, made.data.id);
+    assert.equal(v2.data.buildings[0].placement.model, "kulube");
+    assert.deepEqual(v2.data.plots.map((p) => p.id), made.data.layout.plots.map((p) => p.id));
+  });
+
   test(`[${target}] drawn characters with accessories are kept; unknown or founder-only ones are not`, async () => {
     const save = async (avatar) => {
       const res = await request("/profile", { cookie: people.charlie, body: { name: "Ege", avatar, color: "mint", note: "" } });
