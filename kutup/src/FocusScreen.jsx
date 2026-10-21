@@ -4,7 +4,7 @@
 // screen, and the sounds a tap away. The controls stay out of sight until the
 // screen is touched.
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Expand, Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
+import { Expand, MapPinned,Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
 import { ConstructionScene } from "./Village.jsx";
 import { useZoom } from "./zoom.js";
 import { enterFullscreen, leaveFullscreen } from "./fullscreen.js";
@@ -95,7 +95,7 @@ function FlipClock({ parts }) {
   );
 }
 
-export function FocusScreen({ me, members = [], now, run, outcome, close }) {
+export function FocusScreen({ me, members = [], now, run, outcome, close,onVillage }) {
   const [pref, setPref] = useState(prefs),
     [controls, setControls] = useState(true),
     [sounds, setSounds] = useState(false),
@@ -189,7 +189,8 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
       const stage = root.querySelector('.fs-stage'), clock = root.querySelector('.fs-clock'), scene = root.querySelector('.fs-scene');
       const style = getComputedStyle(stage);
       const available = Math.max(1, stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom));
-      root.style.setProperty('--flip-size', `${Math.max(18, Math.min(240, clock.clientWidth / flipUnits, (available - 65) / 1.1))}px`);
+      const friendsHeight=root.querySelector(".desk-mates")?.getBoundingClientRect().height||0;
+      root.style.setProperty('--flip-size', `${Math.max(18, Math.min(240, clock.clientWidth / flipUnits, (available - 65-friendsHeight) / 1.1))}px`);
       root.style.setProperty('--digits-size', `${Math.max(28, Math.min(220, clock.clientWidth / (parts.join(':').length * .58), available * .4))}px`);
       if (scene) {
         const box = getComputedStyle(scene);
@@ -249,6 +250,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close }) {
 
       <div className="fs-controls" aria-hidden={!controls}>
         <div className="fs-bar">
+          <button type="button" className="fs-village btn outline" onClick={()=>{leaveFullscreen();(onVillage||close)();}}><MapPinned size={17}/>Köye bak · seans sürsün</button>
           <button className="fs-icon" aria-label="Odak ekranını kapat" onClick={exit}>
             <X size={20} />
           </button>

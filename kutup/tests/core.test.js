@@ -443,7 +443,7 @@ test("late focus settlement appears in village deltas without moving existing bu
   assert.deepEqual(full.buildings.find((b) => b[0] === village.buildings[0][0]).slice(4, 7), village.buildings[0].slice(4, 7));
 });
 
-test("joining a friend's session needs five minutes of it left (d28)", async () => {
+test("joining a friend's session needs twenty minutes and cannot grant short-session rewards", async () => {
   const sqlite = new DatabaseSync(":memory:");
   const app = createApp({ db: sqliteAdapter(sqlite) });
   const ada = await call(app, "/groups", { method: "POST", body: { name: "Ada", username: "ada_d28", password: "join-pass-1" } });
@@ -453,12 +453,12 @@ test("joining a friend's session needs five minutes of it left (d28)", async () 
   const focus = (cookie, body) => call(app, "/focus", { method: "POST", headers: { Cookie: cookie }, body });
   assert.equal((await focus(ada.cookie, { action: "start", minutes: 25 })).status, 200);
   const adaId = sqlite.prepare("SELECT id FROM members WHERE username = 'ada_d28'").get().id;
-  sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 6 * 60000, adaId);
-  assert.equal((await focus(bora.cookie, { action: "start", joinMember: adaId })).status, 200, "six minutes left: joins");
+  sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 21 * 60000, adaId);
+  assert.equal((await focus(bora.cookie, { action: "start", joinMember: adaId })).status, 200, "21 minutes left: watched free focus can qualify");
   sqlite.prepare("UPDATE members SET focus_end = ? WHERE id = ?").run(Date.now() + 4 * 60000, adaId);
   const late = await focus(cem.cookie, { action: "start", joinMember: adaId });
   assert.equal(late.status, 400, "four minutes left: no bonus for a last-minute join");
-  assert.match(late.data.error, /5 dakikadan az/);
+  assert.match(late.data.error, /en az 20 dakika/);
 });
 
 test("parallel joins reclaim distinct plots and cannot duplicate names", async () => {
@@ -1362,4 +1362,32 @@ test("kurtarma: a site the server cracked waits five minutes, then falls even if
   assert.equal(late.data.withered, true);
   assert.equal(row().focus_end, 0);
   assert.deepEqual(logged(), []);
+});
+
+
+test("join preview and confirmation enforce duration, price, pauses, mission separation and the quoted session",async()=>{
+  const sqlite=new DatabaseSync(":memory:"),app=createApp({db:sqliteAdapter(sqlite)});
+  try{
+    const ada=await call(app,"/groups",{method:"POST",body:{name:"Ada",username:"join_quote_a",password:"join-pass-1"}});
+    const bora=await call(app,"/join",{method:"POST",body:{invite:ada.data.group.invite,name:"Bora",username:"join_quote_b",password:"join-pass-1"}});
+    const aid=ada.data.memberId,bid=bora.data.memberId;
+    const focus=(who,body)=>call(app,"/focus",{method:"POST",headers:{Cookie:who.cookie},body});
+    assert.equal((await focus(ada,{action:"start",minutes:75})).status,200);
+    sqlite.prepare("UPDATE members SET focus_end=? WHERE id=?").run(Date.now()+41*60000,aid);
+    const preview=await call(app,`/focus/join/${aid}`,{headers:{Cookie:bora.cookie}});
+    assert.equal(preview.status,200);assert.equal(preview.data.canFree,true);
+    assert.ok(preview.data.models.some(m=>m.id==="kulube"));assert.ok(!preview.data.models.some(m=>m.id==="ev"));
+    const wallet=sqlite.prepare("SELECT bricks FROM members WHERE id=?").get(bid).bricks;
+    assert.equal((await focus(bora,{action:"start",joinMember:aid,strict:true,model:"ev"})).status,400);
+    assert.equal(sqlite.prepare("SELECT bricks FROM members WHERE id=?").get(bid).bricks,wallet);
+    sqlite.prepare("UPDATE members SET focus_paused_at=1 WHERE id=?").run(aid);
+    assert.equal((await focus(bora,{action:"start",joinMember:aid})).status,409);
+    sqlite.prepare("UPDATE members SET focus_paused_at=0,focus_imece=1 WHERE id=?").run(aid);
+    assert.equal((await focus(bora,{action:"start",joinMember:aid})).status,409);
+    sqlite.prepare("UPDATE members SET focus_imece=0,focus_end=? WHERE id=?").run(Date.now()+22*60000,aid);
+    assert.equal((await focus(bora,{action:"start",joinMember:aid,joinEnd:preview.data.friend.end})).status,409);
+    assert.equal((await focus(bora,{action:"start",joinMember:aid,strict:true})).status,400);
+    assert.equal((await focus(bora,{action:"start",joinMember:aid,honest:false})).status,200);
+    assert.equal(sqlite.prepare("SELECT focus_honest FROM members WHERE id=?").get(bid).focus_honest,1,"free joins always require watched minutes");
+  }finally{sqlite.close();}
 });

@@ -363,10 +363,11 @@ export function defineSuite(target) {
     const early = await request("/focus", { cookie: people.alice, body: { action: "finish" } });
     assert.equal(early.data.credited, 0);
     assert.equal((await request("/focus", { cookie: people.alice, body: { action: "start", minutes: 25 } })).status, 400);
-    assert.equal(
-      (await request("/focus", { cookie: people.bob, body: { action: "start", joinMember: aylin.id } })).status,
-      200,
-    );
+    const quote=await request(`/focus/join/${aylin.id}`,{cookie:people.bob});
+    assert.equal(quote.status,200);assert.equal(quote.data.canFree,true);
+    assert.equal(quote.data.models.length,0,"less than 25 minutes cannot build even a cottage");
+    assert.equal((await request("/focus",{cookie:people.bob,body:{action:"start",joinMember:aylin.id,joinEnd:quote.data.friend.end-1}})).status,409);
+    assert.equal((await request("/focus", { cookie: people.bob, body: { action: "start", joinMember: aylin.id,joinEnd:quote.data.friend.end } })).status,200);
     assert.equal(member(await state("bob"), "Deniz").focusEnd, aylin.focusEnd);
     assert.equal(
       (await request("/focus", { cookie: people.charlie, body: { action: "start", joinMember: aylin.id } })).status,
