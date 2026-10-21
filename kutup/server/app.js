@@ -10,6 +10,8 @@ import { createPushOutbox } from "./outbox.js";
 import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
 import {createBlueprintNotices} from "./blueprintNotices.js";
 import { createImece } from "./imece.js";
+import { layoutFrom } from "../shared/koy2/draft.js";
+import { COMPATIBILITY_VERSION, contentChange, layoutStatements, releaseStatements, v2Village } from "./villageStore.js";
 import { BACKUP_TABLES } from "../shared/backup.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
@@ -684,6 +686,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
               focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd,
               focus_honest AS honest, focus_away AS away, focus_rescued AS rescued, focus_cracked_at AS cracked, focus_relaxed AS relaxed,
               focus_imece AS imece, focus_imece_phase AS imecePhase, focus_imece_personal AS imecePersonal, focus_imece_ref AS imeceRef, focus_imece_project AS imeceProject,
+              focus_run_id AS runId,
               EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
        FROM members WHERE ${due}`,
       args,
@@ -749,10 +752,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           statements.push(
             ...districtChanges(groupId, spot?.changes, guard),
             [
-              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, patched)
-               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ?, focus_rescued FROM members WHERE id = ? AND focus_end = ?`,
+              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, patched, source_focus_run_id)
+               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ?, focus_rescued, focus_run_id FROM members WHERE id = ? AND focus_end = ?`,
               [buildingId, item.kind, item.id, now, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, s.id, s.ends],
             ],
+            // n46 C: the run's site becomes this building, once (unique source run).
+            ...(s.runId ? contentChange(groupId, "site", s.runId, "convert", buildingId, now, guard) : []),
+            ...contentChange(groupId, "building", buildingId, "create", s.runId, now, guard),
             ...(s.relaxed ? [[
               `INSERT INTO build_deliveries (id, member_id, model, kind, seed, minutes, ends, reward, created)
                SELECT ?, id, ?, ?, focus_seed, focus_minutes, focus_end, ?, ? FROM members WHERE id = ? AND focus_end = ?`,
@@ -782,8 +788,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             "INSERT INTO activity (id, member_id, kind, detail, created) SELECT ?, id, 'collapse', ?, focus_end FROM members WHERE id = ? AND focus_end = ?",
             [randomHex(16), item.id, s.id, s.ends],
           ],
+          ...(s.runId ? contentChange(groupId, "site", s.runId, "release", "failed", now, ["EXISTS (SELECT 1 FROM members WHERE id = ? AND focus_end = ?)", [s.id, s.ends]]) : []),
         );
       }
+      // n46 C: the stable run gets its one result; its building, if any, is the one above.
+      statements.push([
+        "UPDATE focus_runs SET status = ?, ends = ?, result = ?, building_id = (SELECT id FROM buildings WHERE source_focus_run_id = focus_runs.id), settled = ? WHERE id = (SELECT focus_run_id FROM members WHERE id = ? AND focus_end = ?) AND status = 'running'",
+        [finished ? "completed" : "failed", s.ends, finished ? `${s.credit}` : null, now, s.id, s.ends],
+      ]);
       for (const [delta, reason, note] of pay) statements.push(ledgerRow(s.id, delta, reason, ref, note, now, s.ends));
     }
     statements.push(...await imece.settle(sessions, now));
@@ -809,7 +821,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (finishing.length)
       statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.credit, 0), finishing.at(-1).id)));
     statements.push(
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0, focus_run_id = NULL WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
@@ -1036,6 +1048,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [Date.now(), id],
       ],
       ["DELETE FROM building_likes WHERE member_id = ? OR building_id IN (SELECT id FROM buildings WHERE member_id = ?)", [id, id]],
+      // n46 C: their buildings and any site leave every layout; the change is logged.
+      ...releaseStatements("building", "SELECT id FROM buildings WHERE member_id = ?", [id]),
+      ...releaseStatements("site", "SELECT id FROM focus_runs WHERE member_id = ?", [id]),
+      ...contentChange(member.group_id, "member", id, "delete", null, Date.now()),
+      ["DELETE FROM request_receipts WHERE actor = ?", [id]],
+      ["DELETE FROM focus_runs WHERE member_id = ?", [id]],
       ["DELETE FROM buildings WHERE member_id = ?", [id]],
       ["UPDATE districts SET member_id = NULL, buildings = 0 WHERE member_id = ?", [id]],
       ["DELETE FROM subscriptions WHERE member_id = ?", [id]],
@@ -1577,7 +1595,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // session releases its reservation, never pretends the selected work is done.
     if (m.focus_imece) {
       await retrying(async () => [
-        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL,focus_imece_project=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
+        ["UPDATE focus_runs SET status='cancelled', settled=?, result='stopped' WHERE id=(SELECT focus_run_id FROM members WHERE id=? AND focus_end=?) AND status='running'", [Date.now(),m.id,current.focus_end]],
+        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL,focus_imece_project=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL, focus_run_id=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
         ...imece.release(m.id,m.focus_imece_project), bump(m.group_id),
       ], m.group_id);
       return { credited: 0, seen: 0 };
@@ -1799,13 +1818,36 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             : []),
           ...(current.focus_relaxed ? [["DELETE FROM push_outbox WHERE member_id = ? AND json_extract(payload, '$.tag') = ?", [m.id, relaxedTag(m.id, current.focus_end)]]] : []),
           ...(current.focus_imece ? imece.release(m.id,m.focus_imece_project) : []),
-          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE id = ?", [m.id]],
+          // n46 C: the run ends cancelled; a building site gives its plot back.
+          ...(current.focus_run_id
+            ? [
+                ["UPDATE focus_runs SET status = 'cancelled', settled = ?, result = ? WHERE id = ? AND status = 'running'", [now, outcome.withered ? "withered" : early ? "early" : "stopped", current.focus_run_id]],
+                ...(current.focus_strict ? contentChange(m.group_id, "site", current.focus_run_id, "release", "cancelled", now) : []),
+              ]
+            : []),
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0, focus_run_id = NULL WHERE id = ?", [m.id]],
           bump(m.group_id),
         ];
       }, m.group_id);
       return changed(m, outcome);
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
+    // n46 C: a start may carry the app's request key. The same key with the
+    // same choices is the same start (a lost answer, a double tap): it returns
+    // the session already begun instead of an error or a second charge; the
+    // same key with other choices is refused. Older apps send no key.
+    const requestKey = body.requestKey == null ? null : String(body.requestKey);
+    if (requestKey !== null && !/^[A-Za-z0-9_-]{16,64}$/.test(requestKey)) fail("İstek anahtarı geçerli değil.");
+    const requestHash = await sha(JSON.stringify([body.strict === true, body.relaxed === true, body.imece === true, body.model ?? null, body.minutes ?? null, body.joinMember ?? null, body.rhythm === true]));
+    const replay = async () => {
+      if (!requestKey) return null;
+      const seen = await db.get("SELECT payload_hash AS hash, result_ref AS run FROM request_receipts WHERE scope = 'focus-start' AND actor = ? AND key = ?", [m.id, requestKey]);
+      if (!seen) return null;
+      if (seen.hash !== requestHash) fail("Bu istek başka seçimlerle zaten gönderildi. Sayfayı yenile.", 409);
+      return changed(m, { replayed: true, run: seen.run });
+    };
+    const again = await replay();
+    if (again) return again;
     if (body.imece != null && typeof body.imece !== "boolean") fail("Ortak görev seçimi geçerli değil.");
     const project = body.imece === true;
     if (project && (body.strict === true || body.model != null || body.joinMember || body.rhythm)) fail("Ortak görev, kişisel bina veya masa ritmiyle aynı seans olamaz.");
@@ -1864,7 +1906,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (state === "locked") fail(`${item.name} nadir bir yapı: önce planını bulman lazım. Bitirdiğin her seansta şansın var.`);
     }
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-    await retrying(async () => {
+    const runId = `run-${randomHex(12)}`;
+    const mode = project ? "imece" : strict ? (relaxed ? "relaxed" : "strict") : "free";
+    try { await retrying(async () => {
       const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);
       if (!current || current.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
       if (cost > current.bricks) fail(`${item.name} için ${cost - current.bricks} tuğla eksik.`);
@@ -1883,9 +1927,24 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && (body.joinMember || body.honest === true) ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
+      // n46 C: the session's stable run. Nothing else is open for this member
+      // now (the old one was settled above), so a stray running row is closed.
+      ["UPDATE focus_runs SET status = 'cancelled', result = 'orphan', settled = ? WHERE member_id = ? AND status = 'running'", [now, m.id]],
+      [
+        "INSERT INTO focus_runs (id, member_id, group_id, request_key, request_hash, mode, model, seed, minutes, started, ends) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [runId, m.id, m.group_id, requestKey, requestHash, mode, item?.id ?? null, seed, minutes, end - minutes * 60000, end],
+      ],
+      ["UPDATE members SET focus_run_id = ? WHERE id = ?", [runId, m.id]],
+      ...(strict ? contentChange(m.group_id, "site", runId, "start", item.id, now) : []),
+      ...(requestKey ? [["INSERT INTO request_receipts (scope, actor, key, payload_hash, result_ref, created) VALUES ('focus-start', ?, ?, ?, ?, ?)", [m.id, requestKey, requestHash, runId, now]]] : []),
       bump(m.group_id),
       ];
-    }, m.group_id);
+    }, m.group_id); } catch (error) {
+      // A twin request that won the race already began this very session.
+      const again = await replay();
+      if (again) return again;
+      throw error;
+    }
     // "Ekibi çağır": everyone gets a tap-to-join for the same end time.
     if (body.invite === true && minutes*60000 >= JOIN_LEAD) {
       try {
@@ -1900,7 +1959,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       } catch {}
     }
     if (relaxed && !project) await relaxedNotices(ctx, m.id).catch(() => {});
-    return changed(m);
+    return changed(m, { run: runId });
   });
 
   // Acceptance acknowledges an already-credited building, never creates rewards.
@@ -2256,10 +2315,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // The shared village in compact rows. Unchanged since `rev` → only the number
   // travels. `bbox=x0,y0,x1,y1` limits buildings to an area for very big villages.
-  route("GET", "/village", async ({ member, url }) => {
+  route("GET", "/village", async ({ member, url, request }) => {
     const gid = member.group_id,
       now = Date.now();
-    const { rev } = await db.get("SELECT village_rev AS rev FROM groups WHERE id = ?", [gid]);
+    const { rev, layout } = await db.get("SELECT village_rev AS rev, active_layout_id AS layout FROM groups WHERE id = ?", [gid]);
+    // n46 C: a team on a v2 layout is served only to an app that says it
+    // understands one (X-Kutup-Village-Version: 2); an older app is asked to
+    // update instead of guessing districts from owners. Every other team gets
+    // today's answer below, unchanged, whatever the app says.
+    if (layout) {
+      const version = Number(request.headers.get("x-kutup-village-version") || url.searchParams.get("v") || 1);
+      if (version < COMPATIBILITY_VERSION) return json({ updateRequired: true, contractVersion: 2, error: "Köy yenilendi. Görmek için uygulamayı güncelle." }, 426);
+      const answer = await v2Village(db, { groupId: gid, memberId: member.id, layoutId: layout, cursor: url.searchParams.get("cursor"), now });
+      if (!answer) fail("Köy düzeni bulunamadı.", 503);
+      return json(answer);
+    }
     const known = url.searchParams.get("rev");
     if (known !== null && Number(known) === rev) return json({ unchanged: true, rev });
     // Buildings never change after they are built except for likes, so a client
@@ -2335,9 +2405,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   });
   route("POST", "/buildings/:id/move", async ({ member: m, params, body }) => {
     const building = await ownBuilding(m, params.id);
+    // n46: in a v2 village a move is planned on its streets (package D), never on the old lattice.
+    if ((await db.get("SELECT active_layout_id AS a FROM groups WHERE id = ?", [m.group_id]))?.a)
+      fail("Köy yeni düzende. Taşıma bu sürümde kapalı; uygulamayı güncelle.", 409);
     const spot = (await spotsFor(m, building)).find((s) => Math.abs(s.x - Number(body.x)) < 0.01 && Math.abs(s.y - Number(body.y)) < 0.01);
     if (!spot) fail("Bu arsa artık boş değil. Başka birini seç.");
     await db.batch([
+      ...contentChange(m.group_id, "building", building.id, "move", null, Date.now()),
       ["UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ?, touched = ? WHERE id = ?", [spot.x, spot.y, spot.facing, spot.district, Date.now(), building.id]],
       ...(spot.district !== building.district_id
         ? [
@@ -2659,6 +2733,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [buildingId, member.id, item.id, item.kind, seed, minutes, now, now],
         ],
         ["UPDATE districts SET buildings = buildings + 1 WHERE id = ?", [spot.district.id]],
+        ...contentChange(member.group_id, "building", buildingId, "create", "gift", now),
         systemMessage(member.group_id, member.id, `Batur'dan hediye aldı: ${item.name} ${item.emoji} 🎁`),
         ledgerRow(member.id, 0, "gift", buildingId, `🎁 ${note}: ${item.name}`, now),
         bumpVillage(member.group_id),
@@ -2719,6 +2794,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     await db.batch([
       ["DELETE FROM building_likes WHERE building_id = ?", [building.id]],
       ["DELETE FROM build_deliveries WHERE id = ?", [building.id]],
+      ...releaseStatements("building", "?", [building.id]),
+      ...contentChange(building.group_id, "building", building.id, "delete", "owner", Date.now()),
       ["DELETE FROM buildings WHERE id = ?", [building.id]],
       ["UPDATE districts SET buildings = (SELECT count(*) FROM buildings b WHERE b.district_id = districts.id) WHERE id = ?", [building.district_id]],
       bumpVillage(building.group_id),
@@ -2795,6 +2872,43 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       // The named person's session started long ago and is still running.
       await db.run("UPDATE members SET focus_end = ?, focus_beat = ? WHERE name = ? AND focus_end > 0", [Date.now() + 5 * 60000, Date.now(), body.name]);
       return json({ ok: true });
+    }, false);
+
+  if (config.testHooks)
+    route("POST", "/__test/village-v2", async ({ body }) => {
+      // n46 C: puts the named person's team on a v2 layout drawn from its
+      // buildings and building sites (the owner panel does this in package G).
+      const who = await db.get("SELECT group_id FROM members WHERE name = ?", [body.name]);
+      const [buildings, runs, group] = await db.read([
+        ["SELECT id, member_id, model, created FROM buildings WHERE group_id = ? ORDER BY created, id", [who.group_id]],
+        ["SELECT id, member_id, model, started FROM focus_runs WHERE group_id = ? AND status = 'running' AND mode IN ('strict','relaxed')", [who.group_id]],
+        ["SELECT village_content_rev AS rev FROM groups WHERE id = ?", [who.group_id]],
+      ]);
+      const items = [
+        ...buildings.map((b) => ({ subject: { type: "building", id: b.id }, model: b.model, owner: b.member_id, created: b.created })),
+        ...runs.map((r) => ({ subject: { type: "site", id: r.id }, model: r.model, owner: r.member_id, created: r.started })),
+      ];
+      const { layout, missing } = layoutFrom(`group:${who.group_id}`, items);
+      const id = `v2-${randomHex(8)}`;
+      await db.batch([
+        ...layoutStatements(id, who.group_id, layout, { status: "active", sourceContentRev: group[0].rev }),
+        ["UPDATE groups SET active_layout_id = ? WHERE id = ?", [id, who.group_id]],
+        bumpVillage(who.group_id),
+      ]);
+      return json({ id, layout, missing });
+    }, false);
+
+  if (config.testHooks)
+    route("POST", "/__test/village-rows", async ({ body }) => {
+      const who = await db.get("SELECT id, group_id FROM members WHERE name = ?", [body.name]);
+      const [runs, changes, receipts, group, me] = await db.read([
+        ["SELECT * FROM focus_runs WHERE group_id = ? ORDER BY started, id", [who.group_id]],
+        ["SELECT * FROM village_changes WHERE group_id = ? ORDER BY rev", [who.group_id]],
+        ["SELECT scope, key, result_ref FROM request_receipts WHERE actor = ?", [who.id]],
+        ["SELECT village_content_rev, active_layout_id FROM groups WHERE id = ?", [who.group_id]],
+        ["SELECT focus_run_id, focus_end, bricks FROM members WHERE id = ?", [who.id]],
+      ]);
+      return json({ runs, changes, receipts, group: group[0], me: me[0] });
     }, false);
 
   if (config.testHooks)
