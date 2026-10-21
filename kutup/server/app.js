@@ -2587,9 +2587,30 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     return json(await imece.view(null,groupId)||await imece.view(null,"unassigned"));
   }, false);
+  // n46 E: the shared Anıtkabir takes its own big plot in a planned (v2) village,
+  // in the same batch that opens or moves the project; a lost race plans again.
+  const imeceSpatial = (now) => async (projectId, groupId) => {
+    const from = await db.get("SELECT group_id FROM imece_projects WHERE id = ?", [projectId]);
+    const out = [];
+    if (from?.group_id && from.group_id !== groupId) out.push(...releaseStatements("imece", "?", [projectId]), ...contentChange(from.group_id, "imece", projectId, "release", null, now), bumpVillage(from.group_id));
+    const active = await activeLayout(db, groupId);
+    if (!active) return out;
+    const placed = placeStatements(active, { subject: { type: "imece", id: projectId }, model: "anitkabir", owner: null, created: now });
+    if (placed.error) fail("Köyde ortak Anıtkabir için yeterince büyük bir yer hazırlanamadı. Batur’a haber ver; proje açılmadı.", 409);
+    return [...out, ...placed.statements, ...contentChange(groupId, "imece", projectId, "create", null, now), bumpVillage(groupId)];
+  };
+  const spatialRetry = async (run) => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await run();
+      } catch (error) {
+        if (error instanceof HttpError || attempt >= 3) throw error;
+      }
+    }
+  };
   route("POST", "/owner/imece", async ({ request, ip, body, ctx }) => {
     await requireOwner(request, ip);
-    const groupId=await imece.launch(body.members,Date.now(),body.groupId);
+    const groupId=await spatialRetry(()=>imece.launch(body.members,Date.now(),body.groupId,imeceSpatial(Date.now())));
     for (const id of body.members) await notifyMember(ctx, id, {
       title: "Kara: Bir Taş da Senden", body: "Ortak Anıtkabir şantiyesi açıldı. Kişisel görevin seni bekliyor; dördümüzün de emeği olmadan açılış yok.", url: "/?tab=focus&imece=1", tag: "imece-launch",
     }).catch(() => {});
@@ -2597,7 +2618,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
   route("POST", "/owner/imece/assign", async ({request,ip,body})=>{
     await requireOwner(request,ip);
-    await imece.assign(body.projectId,body.groupId,body.rev);
+    await spatialRetry(()=>imece.assign(body.projectId,body.groupId,body.rev,imeceSpatial(Date.now())));
     return json(await imece.view(null,body.groupId));
   },false);
   route("POST", "/owner/imece/crew/:slot", async ({ request, ip, body, params }) => {
@@ -2925,12 +2946,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       // n46 C: puts the named person's team on a v2 layout drawn from its
       // buildings and building sites (the owner panel does this in package G).
       const who = await db.get("SELECT group_id FROM members WHERE name = ?", [body.name]);
-      const [buildings, runs, group] = await db.read([
+      const [buildings, runs, group, projects] = await db.read([
         ["SELECT id, member_id, model, created FROM buildings WHERE group_id = ? ORDER BY created, id", [who.group_id]],
         ["SELECT id, member_id, model, started FROM focus_runs WHERE group_id = ? AND status = 'running' AND mode IN ('strict','relaxed')", [who.group_id]],
         ["SELECT village_content_rev AS rev FROM groups WHERE id = ?", [who.group_id]],
+        ["SELECT id, started FROM imece_projects WHERE group_id = ?", [who.group_id]],
       ]);
       const items = [
+        ...projects.map((p) => ({ subject: { type: "imece", id: p.id }, model: "anitkabir", owner: null, created: p.started })),
         ...buildings.map((b) => ({ subject: { type: "building", id: b.id }, model: b.model, owner: b.member_id, created: b.created })),
         ...runs.map((r) => ({ subject: { type: "site", id: r.id }, model: r.model, owner: r.member_id, created: r.started })),
       ];

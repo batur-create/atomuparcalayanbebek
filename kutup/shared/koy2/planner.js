@@ -22,12 +22,12 @@
 // no Math.random, no locale-dependent ordering.
 import {
   along, bend, cmp, createIndex, grow, hash, inPolygon, inside, lengthOf, lineBounds, lineLine, linePoint, lineRect, linesCross, overlap,
-  pointRect, q, rect, rectPolygon, rectWithin, rectsHit, rng, screenBox, segRect,
+  pointRect, q, rect, rectPolygon, rectWithin, rectsHit, rng, screenBox, segRect, lineRectNear, lineLineNear, linePointNear, nearPolygon,
 } from "./geom.js";
 import { GEOMETRY_VERSION, doorsAt, modelSpec, shapeAt, turn, worldRect } from "./models.js";
 import { TERRAIN_VERSION, makeTerrain } from "./terrain.js";
 
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2; // 2: shore strip, outward growth, final check (n46 E)
 export const PLAZA_R = 6.5;
 export const SQUARE_R = 3.2;
 export const WIDTH = { omurga: 2.4, sokak: 2.0, yaklasim: 2.4, kopru: 1.8, patika: 0.8, iskele: 0.9 };
@@ -38,6 +38,7 @@ const PLOT_DIAMETER = 6; // a typical house plot, the yardstick for distances
 const OWNER_SATURATE = 8 * PLOT_DIAMETER;
 const FOCUS_SATURATE = 30;
 const STREET_STEP = 1.3;
+const SHORE_KEEP = 3; // about 5 m of open bank in front of a dry plot's garden
 const FOCUS_KINDS = ["cesme", "cay", "sahaf", "pazar", "bahce"];
 const PLAZA_STREET = 22,
   SQUARE_STREET = 16,
@@ -61,29 +62,71 @@ export function emptyLayout(seed) {
   const base = (hash(`${seed}:f0`) % 360) * (Math.PI / 180);
   const dirs = [0, 1, 2, 3, 4, 5].map((i) => base + (i * Math.PI) / 3 + (R() * 2 - 1) * 0.14);
   const res = reserveFrom(layout, { x: 0, y: 0, r: PLAZA_R, node: "n0", id: "f0" }, dirs, PLAZA_STREET, "omurga", 0, id, []);
-  layout.nodes.push(...res.nodes);
-  layout.roads.push(...res.roads);
-  layout.seq = id.seq;
-  return layout;
+  // A new object (contexts are cached per layout object, never for a changed one).
+  return { ...layout, nodes: [...layout.nodes, ...res.nodes], roads: [...layout.roads, ...res.roads], seq: id.seq };
 }
 const subjectKey = (s) => `${s.type}:${s.id}`;
 export const plotOf = (layout, subject) => layout.plots.find((p) => subjectKey(p.subject) === subjectKey(subject)) || null;
 
 // ---------- context: indexes over what is already there ----------
+// Built once per layout object and reused; a plan's trial additions (an
+// opened corridor, a new street) are a thin overlay, not a rebuild, so a
+// placement costs about the same in a 1,000-building village as in a small one.
+const CONTEXTS = new WeakMap();
 function contextOf(layout, { exclude = null } = {}) {
-  const plots = layout.plots.filter((p) => !exclude || p.id !== exclude);
-  const plotIndex = createIndex(16),
-    roadIndex = createIndex(16),
-    doorIndex = createIndex(16);
-  for (const p of plots) {
-    plotIndex.add(p.plot, p);
-    if (p.door) doorIndex.add(lineBounds(p.door, 1), p);
+  let ctx = CONTEXTS.get(layout);
+  if (!ctx) {
+    const plotIndex = createIndex(16),
+      roadIndex = createIndex(16),
+      doorIndex = createIndex(16);
+    for (const p of layout.plots) {
+      plotIndex.add(p.plot, p);
+      if (p.door) doorIndex.add(lineBounds(p.door, 1), p);
+    }
+    for (const r of layout.roads) roadIndex.add(lineBounds(r.pts, r.w), r);
+    ctx = { layout, plots: layout.plots, plotIndex, roadIndex, doorIndex, terrain: layout.terrain };
+    CONTEXTS.set(layout, ctx);
   }
-  for (const r of layout.roads) roadIndex.add(lineBounds(r.pts, r.w), r);
-  return { layout, plots, plotIndex, roadIndex, doorIndex, terrain: layout.terrain };
+  if (!exclude) return ctx;
+  // The same indexes, blind to one plot (a building being moved, a plot being checked).
+  const keep = (p) => p.id !== exclude;
+  return {
+    ...ctx,
+    plots: ctx.plots.filter(keep),
+    plotIndex: { near: (r) => ctx.plotIndex.near(r).filter(keep) },
+    doorIndex: { near: (r) => ctx.doorIndex.near(r).filter(keep) },
+  };
 }
-const withAdded = (layout, { roads = [], foci = [], plots = [] }, exclude) =>
-  contextOf({ ...layout, roads: [...layout.roads, ...roads], foci: [...layout.foci, ...foci], plots: [...layout.plots, ...plots] }, { exclude });
+/** The layout with trial pieces added; a road with an existing id replaces it (a corridor being opened). */
+function withAdded(layout, { roads = [], foci = [], plots = [] }, exclude = null) {
+  const base = contextOf(layout, { exclude });
+  const swap = new Map(roads.map((r) => [r.id, r]));
+  const known = new Set(layout.roads.map((r) => r.id));
+  const merged = {
+    ...layout,
+    roads: [...layout.roads.map((r) => swap.get(r.id) || r), ...roads.filter((r) => !known.has(r.id))],
+    foci: [...layout.foci, ...foci],
+    plots: [...layout.plots, ...plots],
+  };
+  const extraRoads = createIndex(16),
+    extraPlots = createIndex(16),
+    extraDoors = createIndex(16);
+  for (const r of roads) extraRoads.add(lineBounds(r.pts, r.w), r);
+  for (const p of plots) {
+    extraPlots.add(p.plot, p);
+    if (p.door) extraDoors.add(lineBounds(p.door, 1), p);
+  }
+  const ctx = {
+    layout: merged,
+    plots: [...base.plots, ...plots],
+    plotIndex: { near: (r) => [...base.plotIndex.near(r), ...extraPlots.near(r)] },
+    roadIndex: { near: (r) => [...base.roadIndex.near(r).filter((x) => !swap.has(x.id)), ...extraRoads.near(r)] },
+    doorIndex: { near: (r) => [...base.doorIndex.near(r), ...extraDoors.near(r)] },
+    terrain: layout.terrain,
+  };
+  if (!exclude) CONTEXTS.set(merged, ctx);
+  return ctx;
+}
 
 // ---------- hard rules (plan §5.2) ----------
 // Each returns a reason code or null. A failed rule is never made up for by
@@ -111,10 +154,14 @@ function groundReason(ctx, spec, shape, { own = new Set(), allowWater = false, a
   }
   const t = ctx.terrain;
   if (!allowWater) {
-    if (lineRect(t.river.pts, ground) < t.river.w / 2 + 1.0) return "wrong_water_context";
-    if (rectPolygon(ground, t.lake.poly) < 1.0) return "wrong_water_context";
+    const lakeNear = nearPolygon(plot, t.lake.poly);
+    if (lineRectNear(t.river.pts, ground) < t.river.w / 2 + 1.0) return "wrong_water_context";
+    if (lakeNear && rectPolygon(ground, t.lake.poly) < 1.0) return "wrong_water_context";
+    // A strip along the bank and the shore stays open to everyone, and to the
+    // mills, bridges, jetties and lighthouses that can stand nowhere else.
+    if (lineRectNear(t.river.pts, plot) < t.river.w / 2 + SHORE_KEEP || (lakeNear && rectPolygon(plot, t.lake.poly) < SHORE_KEEP)) return "shore_reserved";
   }
-  if (!allowRail && t.rail && lineRect(t.rail.pts, plot) < t.rail.w / 2 + 0.8) return "rail_conflict";
+  if (!allowRail && t.rail && lineRectNear(t.rail.pts, plot) < t.rail.w / 2 + 0.8) return "rail_conflict";
   return null;
 }
 function pathReason(ctx, pts, { ownPlot = null, water = true } = {}) {
@@ -122,13 +169,15 @@ function pathReason(ctx, pts, { ownPlot = null, water = true } = {}) {
     const a = pts[i - 1],
       b = pts[i];
     for (const other of ctx.plotIndex.near(grow(rect(a[0], a[1], b[0], b[1]), 1))) if (segRect(a, b, other.ground) < 0.2) return "entrance_unconnected";
-    if (ownPlot && segRect(a, b, grow(ownPlot, -0.05)) <= 0) return "entrance_unconnected";
+    // A door path leaves its own building and keeps clear of it (a clear margin, so
+    // rounding the stored coordinates can never turn a graze into a crossing).
+    if (ownPlot && segRect(a, b, ownPlot) < 0.1) return "entrance_unconnected";
   }
   if (!water) return null;
   const t = ctx.terrain;
-  if (lineLine(pts, t.river.pts) < t.river.w / 2 + 0.3) return "entrance_unconnected";
-  if (pts.some((p) => inPolygon(p, t.lake.poly))) return "entrance_unconnected";
-  if (t.rail && lineLine(pts, t.rail.pts) < t.rail.w / 2 + 0.2) return "entrance_unconnected";
+  if (lineLineNear(pts, t.river.pts) < t.river.w / 2 + 0.3) return "entrance_unconnected";
+  if (nearPolygon(lineBounds(pts), t.lake.poly) && pts.some((p) => inPolygon(p, t.lake.poly))) return "entrance_unconnected";
+  if (t.rail && lineLineNear(pts, t.rail.pts) < t.rail.w / 2 + 0.2) return "entrance_unconnected";
   return null;
 }
 // Crossing angle of two polylines that cross (radians, 0..π/2), or 0.
@@ -177,9 +226,9 @@ function roadReason(ctx, pts, w, { skip = new Set(), startOn = null, cross = fal
     }
   }
   const t = ctx.terrain;
-  if (lineLine(pts, t.river.pts) < t.river.w / 2 + w / 2 + 0.8) return "wrong_water_context";
-  if (pts.some((p) => inPolygon(p, t.lake.poly)) || lineLine(pts, [...t.lake.poly, t.lake.poly[0]]) < w / 2 + 0.6) return "wrong_water_context";
-  if (t.rail && lineLine(pts, t.rail.pts) < t.rail.w / 2 + w / 2 + 0.8) return "rail_conflict";
+  if (lineLineNear(pts, t.river.pts) < t.river.w / 2 + w / 2 + 0.8) return "wrong_water_context";
+  if (nearPolygon(lineBounds(pts), t.lake.poly) && (pts.some((p) => inPolygon(p, t.lake.poly)) || lineLine(pts, [...t.lake.poly, t.lake.poly[0]]) < w / 2 + 0.6)) return "wrong_water_context";
+  if (t.rail && lineLineNear(pts, t.rail.pts) < t.rail.w / 2 + w / 2 + 0.8) return "rail_conflict";
   return null;
 }
 
@@ -358,8 +407,8 @@ function squareRoom(ctx, c, road) {
   if (ctx.roadIndex.near(box).some((x) => x.id !== road.id && linePoint(x.pts, c).d < r + x.w / 2 + 0.5)) return false;
   if (ctx.layout.foci.some((f) => Math.hypot(f.x - c[0], f.y - c[1]) < f.r + r + 6)) return false;
   const t = ctx.terrain;
-  if (linePoint(t.river.pts, c).d < r + t.river.w + 1 || inPolygon(c, t.lake.poly) || linePoint([...t.lake.poly, t.lake.poly[0]], c).d < r + 1) return false;
-  if (t.rail && linePoint(t.rail.pts, c).d < r + t.rail.w + 1) return false;
+  if (linePointNear(t.river.pts, c) < r + t.river.w + 1 || inPolygon(c, t.lake.poly) || linePoint([...t.lake.poly, t.lake.poly[0]], c).d < r + 1) return false;
+  if (t.rail && linePointNear(t.rail.pts, c) < r + t.rail.w + 1) return false;
   return true;
 }
 /** Reserved pieces that go with `start` (a reserved square takes its streets, a street what lies beyond it). */
@@ -413,6 +462,14 @@ function plotRecord(cand, req, id) {
  * `req.exclude`: a plot id to ignore (the building's own plot when moving it).
  */
 export function planPlacement(layout, req) {
+  const plan = planRaw(layout, req);
+  if (!plan.ok) return plan;
+  // A building being moved is checked without its old plot (it leaves it).
+  const bad = finalCheck(req.exclude ? { ...layout, plots: layout.plots.filter((p) => p.id !== req.exclude) } : layout, plan);
+  if (!bad) return plan;
+  return { ok: false, error: "no_plot", tried: plan.tried, rejected: { ...plan.rejected, [`final_${bad}`]: 1 } };
+}
+function planRaw(layout, req) {
   const spec = modelSpec(req.model, req.version ?? GEOMETRY_VERSION);
   if (!spec) return { ok: false, error: "unknown_model", tried: 0, rejected: {} };
   if (plotOf(layout, req.subject) && !req.exclude) return { ok: false, error: "already_placed", tried: 0, rejected: {} };
@@ -438,17 +495,36 @@ export function planPlacement(layout, req) {
     expansions = 0;
   for (const { r } of reserved) {
     if (expansions >= LIMITS.expansions || tried >= LIMITS.total) break;
+    const opened = { ...r, status: "usable" };
+    // A corridor whose fronts are all built up already is passed over without
+    // counting as an expansion: growth then reaches the village's edge (§5.4).
+    const trial = withAdded(layout, { roads: [opened] }, req.exclude);
+    if (!frontCandidates(spec, opened, req).some((c) => !groundReason(trial, spec, shapeAt(spec, c.x, c.y, c.facing)))) {
+      tally(rejected, "corridor_built_up");
+      continue;
+    }
     expansions++;
+    const budget = Math.min(32, LIMITS.total - tried);
+    const extra = { newRoad: lengthOf(r.pts) * 0.5, how: "open", opened };
+    // Judged first with the corridor alone: what opening it reserves beyond only
+    // takes candidates away (scores stay the same), so the reservations are
+    // planned only for a corridor whose best could still win.
+    const quick = bestOf(trial, frontCandidates(spec, opened, req, extra).sort(byDistance(anchor)), req, budget, rejected);
+    tried += quick.spent;
+    if (!quick.best || (best && better(quick.best, best) >= 0)) continue;
     const sub = ids(layout);
     Object.assign(sub.seq, id.seq);
-    const opened = { ...r, status: "usable" };
-    const base = { ...layout, roads: layout.roads.map((x) => (x.id === r.id ? opened : x)) };
-    const next = reserveAfter(base, opened, sub);
-    const local = withAdded(base, next, req.exclude);
-    const cands2 = frontCandidates(spec, opened, req, { newRoad: lengthOf(r.pts) * 0.5, how: "open", opened, next, seq: sub.seq }).sort(byDistance(anchor));
-    const found = bestOf(local, cands2, req, Math.min(32, LIMITS.total - tried), rejected);
-    tried += found.spent;
-    if (found.best && (!best || better(found.best, best) < 0)) best = found.best;
+    const next = reserveAfter(trial.layout, opened, sub);
+    const local = withAdded(layout, { roads: [opened, ...next.roads], foci: next.foci }, req.exclude);
+    let found = quick.best;
+    if (groundReason(local, spec, found.shape)) {
+      // The reservations take the best one: judge the corridor again with them.
+      found = bestOf(local, frontCandidates(spec, opened, req, extra).sort(byDistance(anchor)), req, budget, {}).best;
+      if (!found || (best && better(found, best) >= 0)) continue;
+    }
+    found.next = next;
+    found.seq = sub.seq;
+    best = found;
   }
   if (best) {
     // The reservations were made before the house; it was judged against them, so they stay clear.
@@ -463,9 +539,11 @@ export function planPlacement(layout, req) {
 }
 function fallbackStreet(ctx, spec, req, anchor, id, rejected, tried) {
   const L = ctx.layout;
-  const foci = L.foci.filter((f) => f.status !== "reserved" && !f.landmark).sort(nearFirst(anchor)).slice(0, LIMITS.foci);
+  // Every open square, nearest first, until the candidate budget is spent.
+  const foci = L.foci.filter((f) => f.status !== "reserved" && !f.landmark).sort(nearFirst(anchor));
   let best = null;
   for (const f of foci) {
+    if (tried >= LIMITS.total) break;
     const base = (hash(`${L.seed}:stub:${f.id}`) % 360) * (Math.PI / 180);
     for (let i = 0; i < 12 && tried < LIMITS.total; i++) {
       const a = base + (i * Math.PI) / 6;
@@ -517,12 +595,16 @@ function finish(layout, found, rejected, req) {
 // ---------- landmarks ----------
 function landmarkPlan(ctx, spec, req, anchor, id, rejected) {
   const L = ctx.layout;
-  const foci = L.foci.filter((f) => f.status !== "reserved" && !f.landmark).sort(nearFirst(anchor)).slice(0, 4);
+  // The four squares nearest the owner first; in a grown village the search
+  // moves outwards four squares at a time until a big enough site turns up.
+  const foci = L.foci.filter((f) => f.status !== "reserved" && !f.landmark).sort(nearFirst(anchor)).slice(0, 40);
   const half = Math.max(...spec.over.map(Math.abs)) + spec.front + spec.side;
-  let tried = 0;
+  let tried = 0,
+    links = 0;
   let best = null;
-  for (const parent of foci)
-    for (const extra of [8, 14, 22])
+  for (const [k, parent] of foci.entries()) {
+    if (best && k % 4 === 0) break;
+    for (const extra of [8, 14, 22, 32, 44])
       for (let i = 0; i < 12; i++) {
         const a = ((hash(`${L.seed}:mark:${parent.id}`) % 360) * Math.PI) / 180 + (i * Math.PI * 2) / 12;
         const d = [Math.cos(a), Math.sin(a)];
@@ -550,11 +632,24 @@ function landmarkPlan(ctx, spec, req, anchor, id, rejected) {
         const start = [q(parent.x + (toward[0] / len) * (parent.r + 0.3)), q(parent.y + (toward[1] / len) * (parent.r + 0.3))];
         const pts = bend(start, front, 0, 8);
         const rr = roadReason(ctx, pts, WIDTH.yaklasim, { skip: new Set([parent.id]), cross: true, soft });
+        cand.door = [door.point.map(q), front];
         if (rr || lineRect(pts, cand.shape.plot) < WIDTH.yaklasim / 2 + 0.15) {
           tally(rejected, `approach_${rr || "own_plot"}`);
+          // In a grown village houses stand round every square: the approach
+          // then joins the nearest street that can reach the forecourt (§5.4).
+          if (links >= 16) continue;
+          links++;
+          const hits = (r) => lineRect(r.pts, cand.shape.plot) < r.w / 2 + 0.15;
+          const link = connectors(ctx, front, id, soft, 0).find((l) => !l.error && !l.roads.some(hits) && !L.roads.some((r) => l.open.includes(r.id) && hits(r)));
+          if (!link) continue;
+          if (!link.roads.length) cand.door = [door.point.map(q), front, link.door[1]];
+          cand.link = link;
+          cand.newRoad = link.length + link.soft.size * 4;
+          cand.soft = link.soft;
+          cand.score = scoreOf(ctx, cand, req);
+          if (!best || better(cand, best) < 0) best = cand;
           continue;
         }
-        cand.door = [door.point.map(q), front];
         cand.newRoad = lengthOf(pts) + soft.size * 4;
         cand.pts = pts;
         cand.parent = parent;
@@ -562,7 +657,17 @@ function landmarkPlan(ctx, spec, req, anchor, id, rejected) {
         cand.score = scoreOf(ctx, cand, req);
         if (!best || better(cand, best) < 0) best = cand;
       }
+  }
   if (!best) return { error: "no_plot", tried };
+  if (best.link) {
+    const link = best.link;
+    if (link.seq) Object.assign(id.seq, link.seq);
+    best.road = link.road;
+    const door = best.door[0];
+    const fc = [q((door[0] + best.door[1][0]) / 2), q((door[1] + best.door[1][1]) / 2)];
+    const focus = { id: id.focus(), x: fc[0], y: fc[1], r: Math.max(1.5, spec.front * 0.5), kind: "eser", node: link.roads[0]?.b ?? null, parent: link.road.focus, landmark: true, status: "open" };
+    return { how: "landmark", cand: best, roads: link.roads, nodes: link.nodes, foci: [focus], open: link.open, id, tried, soft: link.soft };
+  }
   const node = { id: id.node(), x: best.pts.at(-1)[0], y: best.pts.at(-1)[1] };
   const road = { id: id.road(), a: best.parent.node, b: node.id, pts: best.pts, w: WIDTH.yaklasim, type: "yaklasim", status: "usable", focus: best.parent.id };
   best.road = road;
@@ -647,7 +752,7 @@ function contextPlan(ctx, spec, req, anchor, id, rejected) {
   if (kind === "bank") {
     // The wheel stands in the stream at its near edge, the body on the bank.
     const w = t.river.w;
-    for (const { p, dir } of nearest(t.river.pts, 1.5, 60))
+    for (const { p, dir } of nearest(t.river.pts, 1.5, 160))
       for (const side of [1, -1])
         for (const facing of spec.facings) {
           const n = [-dir[1] * side, dir[0] * side];
@@ -700,7 +805,7 @@ function contextPlan(ctx, spec, req, anchor, id, rejected) {
       }
     tries.sort((a, b) => Math.hypot(a.x - anchor[0], a.y - anchor[1]) - Math.hypot(b.x - anchor[0], b.y - anchor[1]) || a.facing - b.facing);
   } else if (kind === "bridge") {
-    for (const { p, dir } of nearest(t.river.pts, 2, 60))
+    for (const { p, dir } of nearest(t.river.pts, 2, 160))
       for (const facing of spec.facings) {
         if (Math.abs(dot(turn([1, 0], facing), dir)) > 0.5) continue; // the deck across the stream
         push(p[0], p[1], facing, { dir });
@@ -778,8 +883,10 @@ function doorLinks(ctx, kind, c, door0, id, soft, rejected) {
       tally(rejected, "entrance_unconnected");
       continue;
     }
-    // The new street must stay off this very plot too.
-    if (link.roads.some((r) => lineRect(r.pts, c.shape.plot) < r.w / 2 + 0.1)) {
+    // The new street, and a reserved one it opens, must stay off this very plot too
+    // (the same clearance validateLayout asks of every street).
+    const opening = ctx.layout.roads.filter((r) => link.open.includes(r.id));
+    if ([...link.roads, ...opening].some((r) => lineRect(r.pts, c.shape.plot) < r.w / 2 + 0.15)) {
       tally(rejected, "road_conflict");
       continue;
     }
@@ -845,7 +952,8 @@ function bridgeLinks(ctx, c, doors, anchor, id, soft, rejected) {
       tally(rejected, `connect_${link.error}`);
       continue;
     }
-    if (link.roads.some((r) => lineRect(r.pts, c.shape.plot) < r.w / 2 + 0.15)) {
+    const opening = ctx.layout.roads.filter((r) => link.open.includes(r.id));
+    if ([...link.roads, ...opening].some((r) => lineRect(r.pts, c.shape.plot) < r.w / 2 + 0.15)) {
       tally(rejected, "road_conflict");
       continue;
     }
@@ -856,6 +964,12 @@ function bridgeLinks(ctx, c, doors, anchor, id, soft, rejected) {
     const deck = { id: sub.road(), a: deckA.id, b: deckB.id, pts: [[deckA.x, deckA.y], [deckB.x, deckB.y]], w: WIDTH.kopru, type: "kopru", status: "usable", focus: link.road?.focus || "f0" };
     const joinAt = link.roads.length ? link.roads[0] : null;
     const rampPts = [[deckA.x, deckA.y], ramp0, link.door[1]].filter((p, i, a) => !i || Math.hypot(p[0] - a[i - 1][0], p[1] - a[i - 1][1]) > 0.05);
+    // The landing ramp starts at the water, so only what stands beside it is checked.
+    const rampBox = lineBounds(rampPts, WIDTH.sokak + 1.2);
+    if (ctx.plotIndex.near(rampBox).some((p) => lineRect(rampPts, p.plot) < WIDTH.sokak / 2 + 0.2) || ctx.doorIndex.near(rampBox).some((p) => lineLine(rampPts, p.door) < WIDTH.sokak / 2 + 0.4)) {
+      tally(rejected, "road_conflict");
+      continue;
+    }
     const rampA = joinAt ? joinAt.b : sub.node();
     const nodes = [...link.nodes];
     if (!joinAt) nodes.push({ id: rampA, x: q(link.door[1][0]), y: q(link.door[1][1]), on: link.road.id });
@@ -934,6 +1048,15 @@ export function reachableRoads(layout) {
       byNode.get(n).push(r);
     }
   const nodes = new Map(layout.nodes.map((n) => [n.id, n]));
+  // Streets that start from a junction on another street.
+  const branches = new Map();
+  for (const o of layout.roads)
+    for (const n of [o.a, o.b]) {
+      const on = nodes.get(n)?.on;
+      if (!on) continue;
+      if (!branches.has(on)) branches.set(on, []);
+      branches.get(on).push(o);
+    }
   const seen = new Set();
   const stack = layout.roads.filter((r) => r.a === "n0" || r.b === "n0");
   while (stack.length) {
@@ -941,36 +1064,58 @@ export function reachableRoads(layout) {
     if (seen.has(r.id)) continue;
     seen.add(r.id);
     for (const n of [r.a, r.b]) for (const o of byNode.get(n) || []) if (!seen.has(o.id)) stack.push(o);
-    for (const o of layout.roads) if (!seen.has(o.id) && [o.a, o.b].some((n) => nodes.get(n)?.on === r.id)) stack.push(o);
+    for (const o of branches.get(r.id) || []) if (!seen.has(o.id)) stack.push(o);
   }
   return seen;
+}
+/** Every broken rule of one placed plot. */
+function plotProblems(layout, p, reach, open) {
+  const problems = [];
+  const spec = modelSpec(p.model, p.gv);
+  const shape = { ground: p.ground, over: p.over, plot: p.plot };
+  const others = contextOf(layout, { exclude: p.id });
+  const deck = open.find((r) => r.type === "kopru" && lineRect(r.pts, p.ground) === 0);
+  const own = new Set(deck ? open.filter((r) => r === deck || [r.a, r.b].some((n) => n === deck.a || n === deck.b)).map((r) => r.id) : []);
+  const why = groundReason(others, spec, shape, { allowWater: spec.context !== "dry" && spec.context !== "rail", allowRail: spec.context === "rail", own, self: p.id });
+  if (why) problems.push(why);
+  if (p.door) {
+    const end = p.door.at(-1);
+    const road = open.find((r) => linePoint(r.pts, end).d <= r.w / 2 + 0.05);
+    if (!road) problems.push("entrance_unconnected");
+    else if (!reach.has(road.id)) problems.push("network_unreachable");
+    const pr = p.jetty ? pathReason(others, p.door, { water: false }) : pathReason(others, p.door, { ownPlot: ownBody(spec, p) });
+    if (pr) problems.push(pr);
+  } else if (spec.context === "bridge") {
+    if (!deck || !reach.has(deck.id)) problems.push("network_unreachable");
+  } else problems.push("entrance_unconnected");
+  if (spec.context !== "dry" && !contextFits(layout.terrain, spec, { ...p, shape })) problems.push("wrong_water_context");
+  return problems;
 }
 /** Every broken rule in a layout (empty when it is sound). */
 export function validateLayout(layout) {
   const problems = [];
   const reach = reachableRoads(layout);
   const open = layout.roads.filter((r) => r.status === "usable");
-  for (const p of layout.plots) {
-    const spec = modelSpec(p.model, p.gv);
-    const shape = { ground: p.ground, over: p.over, plot: p.plot };
-    const others = contextOf({ ...layout, plots: layout.plots.filter((o) => o !== p) });
-    const deck = open.find((r) => r.type === "kopru" && lineRect(r.pts, p.ground) === 0);
-    const own = new Set(deck ? open.filter((r) => r === deck || [r.a, r.b].some((n) => n === deck.a || n === deck.b)).map((r) => r.id) : []);
-    const why = groundReason(others, spec, shape, { allowWater: spec.context !== "dry" && spec.context !== "rail", allowRail: spec.context === "rail", own, self: p.id });
-    if (why) problems.push([p.id, why]);
-    if (p.door) {
-      const end = p.door.at(-1);
-      const road = open.find((r) => linePoint(r.pts, end).d <= r.w / 2 + 0.05);
-      if (!road) problems.push([p.id, "entrance_unconnected"]);
-      else if (!reach.has(road.id)) problems.push([p.id, "network_unreachable"]);
-      const pr = p.jetty ? pathReason(others, p.door, { water: false }) : pathReason(others, p.door, { ownPlot: ownBody(spec, p) });
-      if (pr) problems.push([p.id, pr]);
-    } else if (spec.context === "bridge") {
-      if (!deck || !reach.has(deck.id)) problems.push([p.id, "network_unreachable"]);
-    } else problems.push([p.id, "entrance_unconnected"]);
-    if (spec.context !== "dry" && !contextFits(layout.terrain, spec, { ...p, shape })) problems.push([p.id, "wrong_water_context"]);
-  }
+  for (const p of layout.plots) for (const why of plotProblems(layout, p, reach, open)) problems.push([p.id, why]);
   for (const r of layout.roads) if (!reach.has(r.id)) problems.push([r.id, "network_unreachable"]);
   return problems;
+}
+/**
+ * The last word on a plan: the layout as it would be, checked by the same
+ * rules as validateLayout around everything the plan touches. A plan that
+ * would break a rule anywhere is never written (plan §5.2).
+ */
+function finalCheck(layout, plan) {
+  const next = applyPlan(layout, plan);
+  const touched = [plan.plot.plot, ...plan.roads.map((r) => lineBounds(r.pts, r.w)), ...next.roads.filter((r) => plan.open.includes(r.id)).map((r) => lineBounds(r.pts, r.w))];
+  const area = touched.reduce((a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]);
+  const reach = reachableRoads(next);
+  const open = next.roads.filter((r) => r.status === "usable");
+  for (const r of plan.roads) if (!reach.has(r.id)) return "network_unreachable";
+  for (const p of contextOf(next).plotIndex.near(grow(area, 8))) {
+    const why = plotProblems(next, p, reach, open)[0];
+    if (why) return why;
+  }
+  return null;
 }
 export { inside };

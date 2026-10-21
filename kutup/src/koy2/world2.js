@@ -229,9 +229,9 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     // A personal site, or the shared Anıtkabir while its 2,000 minutes are still being built.
     const site = p.subject.type === "site" || (p.subject.type === "imece" && !!thing?.site && thing.site.shown < 1);
     const plan = site ? sitePlan(sp) : null;
-    // A personal site is fenced from its first minute (mobilisation comes first on
-    // a real site), so a session that just began is already visible on the map.
-    const fenced = p.subject.type === "site" ? plan.find((k) => k.key === "mobilize")?.b ?? 0 : 0;
+    // A site is fenced from its first minute (mobilisation comes first on a real
+    // site), so a session or a shared project that just began is already visible.
+    const fenced = site ? plan.find((k) => k.key === "mobilize")?.b ?? 0 : 0;
     const shown = site ? Math.max(fenced, thing?.site?.shown ?? 0.35) : 1;
     add(standing, {
       type: "building", id: p.subject.id, plotId: p.id, building: { ...thing, id: p.subject.id, model: p.model, memberId: p.owner, site }, owner, sp,

@@ -52,7 +52,9 @@ export function createImece({ db, fail }) {
       recent: contributions.slice(-8).reverse().map(({ slot, phase, minutes, personal, created }) => ({ slot, phase, minutes, personal, created })),
     };
   }
-  async function launch(ids, now, groupId) {
+  // `spatial(projectId, groupId)`: statements that give the project its place in
+  // the team's planned village, written in the same batch (n46 E).
+  async function launch(ids, now, groupId, spatial = async () => []) {
     if (!Array.isArray(ids) || ids.length !== IMECE_PEOPLE || ids.some((x) => typeof x !== "string") || new Set(ids).size !== IMECE_PEOPLE)
       fail("Dört farklı kişiyi seç.");
     const members = await db.all("SELECT id,name,avatar,color,group_id FROM members WHERE id IN (?,?,?,?)", ids);
@@ -61,9 +63,11 @@ export function createImece({ db, fail }) {
     if(members.some(m=>m.group_id!==groupId))fail("Dört katılımcı da aynı ekipten olmalı.",409);
     if(await projectFor(null,groupId))fail("Bu ekibin projesi zaten başladı. Hesabı değiştir düğmesini kullan.",409);
     const id=crypto.randomUUID(),projectId=id;
+    const place=await spatial(projectId,groupId);
     try {
       await db.batch([
         ["INSERT INTO imece_projects(id,group_id,started) VALUES (?,?,?)", [id,groupId,now]],
+        ...place,
         ...ids.map((id, slot) => {
           const m = members.find((m) => m.id === id);
           return ["INSERT INTO imece_slots(project_id,slot,member_id,name,avatar,color) VALUES (?,?,?,?,?,?)", [projectId,slot, id, m.name, m.avatar, m.color]];
@@ -75,13 +79,14 @@ export function createImece({ db, fail }) {
     }
     return groupId;
   }
-  async function assign(projectId,groupId,rev) {
+  async function assign(projectId,groupId,rev,spatial = async () => []) {
     if(typeof projectId!=="string"||typeof groupId!=="string"||!Number.isInteger(rev))fail("Proje ve ekip seçimini kontrol et.");
     const raw=await read(projectId);
     if(!raw.project||raw.project.rev!==rev)fail("Şantiye değişti; yeniden oku.",409);
     if(!await db.get("SELECT id FROM groups WHERE id=?",[groupId]))fail("Ekip bulunamadı.",404);
     if(raw.reservations.length)fail("Önce bu projenin devam eden seanslarını bitirin veya durdurun.",409);
-    try{await db.batch([guard(projectId,rev),["UPDATE imece_projects SET group_id=?,rev=rev+1 WHERE id=?",[groupId,projectId]]]);}
+    const place=await spatial(projectId,groupId);
+    try{await db.batch([guard(projectId,rev),["UPDATE imece_projects SET group_id=?,rev=rev+1 WHERE id=?",[groupId,projectId]],...place]);}
     catch(error){if(/snapshot_changed|UNIQUE|FOREIGN KEY/i.test(error.message))fail("Bu ekibin projesi var veya şantiye değişti. Yeniden oku; iki proje birleştirilmez.",409);throw error;}
   }
   async function replace(slot, memberId, rev, groupId) {

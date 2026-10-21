@@ -9,6 +9,7 @@
 import { GENERATOR_VERSION } from "../shared/koy2/planner.js";
 import { TERRAIN_VERSION } from "../shared/koy2/terrain.js";
 import { GEOMETRY_VERSION } from "../shared/koy2/models.js";
+import { IMECE_TOTAL } from "../shared/imece.js";
 
 export const CONTRACT_VERSION = 2;
 // The app version that understands a v2 village (X-Kutup-Village-Version).
@@ -137,7 +138,7 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
        FROM focus_runs r JOIN members m ON m.id = r.member_id AND m.focus_run_id = r.id WHERE r.group_id = ? AND r.status = 'running' AND r.mode IN ('strict','relaxed')`,
       [groupId],
     ],
-    ["SELECT id, started, completed FROM imece_projects WHERE group_id = ?", [groupId]],
+    ["SELECT p.id, p.started, p.completed, COALESCE((SELECT SUM(w.minutes) FROM imece_work w WHERE w.project_id = p.id), 0) AS minutes FROM imece_projects p WHERE p.group_id = ?", [groupId]],
     ["SELECT count(*) AS n FROM weekly WHERE group_id = ? AND kind = 'monument'", [groupId]],
   ]);
   const at = new Map(placements.map((p) => [`${p.type}:${p.id}`, { plotId: p.plot, x: p.x, y: p.y, z: p.z, facing: p.facing, scale: p.scale, geometryVersion: p.gv, model: p.model }]));
@@ -182,7 +183,8 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
         placement: at.get(`site:${r.id}`) || null,
       };
     }),
-    projects: projects.map((p) => ({ id: p.id, started: p.started, completed: p.completed, placement: at.get(`imece:${p.id}`) || null })),
+    // The shared Anıtkabir shows as much of itself as the crew's minutes have built.
+    projects: projects.map((p) => ({ id: p.id, started: p.started, completed: p.completed, minutes: p.minutes, goal: IMECE_TOTAL, stage: p.completed ? 1 : Math.min(1, p.minutes / IMECE_TOTAL), placement: at.get(`imece:${p.id}`) || null })),
     weeklyMonument: { stages: stages[0]?.n || 0, placement: at.get(`weekly_monument:${groupId}`) || null },
   };
 }

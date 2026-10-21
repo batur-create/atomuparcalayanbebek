@@ -193,3 +193,42 @@ export const lineBounds = (line, pad = 0) => [
   Math.max(...line.map((p) => p[0])) + pad,
   Math.max(...line.map((p) => p[1])) + pad,
 ];
+
+// ---------- long lines (the river, the railway, the pond's shore) ----------
+// The same distances as lineRect / lineLine / linePoint, exact whenever the
+// answer is under NEAR; anything farther comes back as Infinity. Checks
+// against a 640-unit river then cost a few segments, not a hundred.
+const NEAR = 12;
+const SEGMENTS = new WeakMap();
+function segmentsOf(line) {
+  let index = SEGMENTS.get(line);
+  if (!index) {
+    index = createIndex(16);
+    for (let i = 1; i < line.length; i++) index.add(lineBounds([line[i - 1], line[i]]), i);
+    SEGMENTS.set(line, index);
+  }
+  return index;
+}
+export function lineRectNear(line, r) {
+  let best = Infinity;
+  for (const i of segmentsOf(line).near(grow(r, NEAR))) best = Math.min(best, segRect(line[i - 1], line[i], r));
+  return best;
+}
+export function lineLineNear(pts, line) {
+  const index = segmentsOf(line);
+  let best = Infinity;
+  for (let k = 1; k < pts.length; k++)
+    for (const i of index.near(lineBounds([pts[k - 1], pts[k]], NEAR))) best = Math.min(best, lineLine([pts[k - 1], pts[k]], [line[i - 1], line[i]]));
+  return best;
+}
+export function linePointNear(line, p) {
+  let best = Infinity;
+  for (const i of segmentsOf(line).near([p[0] - NEAR, p[1] - NEAR, p[0] + NEAR, p[1] + NEAR])) best = Math.min(best, pointSeg(p, line[i - 1], line[i]));
+  return best;
+}
+/** Whether a rectangle comes within NEAR of a polygon's bounding box at all. */
+export function nearPolygon(r, poly) {
+  const b = lineBounds(poly);
+  return pointRectRect(r, b) < NEAR;
+}
+const pointRectRect = (a, b) => Math.hypot(Math.max(0, a[0] - b[2], b[0] - a[2]), Math.max(0, a[1] - b[3], b[1] - a[3]));
