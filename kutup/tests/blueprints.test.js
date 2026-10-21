@@ -94,7 +94,7 @@ test('weekly rights: migration and old-backup restore retain completed builds, e
   const [model,since]=WEEKLY_LEGACY[0];
   for(const [id,at,gift] of [['m',since+1000000,null],['gift',since+1000000,'Batur'],['late',since+15*86400000,null]])sql.prepare('INSERT INTO buildings(id,member_id,group_id,kind,model,minutes,seed,created,touched,gift) VALUES(?,?,\'g\',\'cottage\',?,25,1,?,?,?)').run('b'+id,id,model,at,at,gift);
   const {BACKUP_TABLES}=await import('../shared/backup.js');const backup={app:'kutup',schema:30,tables:{}};
-  for(const table of BACKUP_TABLES)if(table!=='blueprint_progress')backup.tables[table]=sql.prepare(`SELECT * FROM ${table}`).all();
+  for(const table of BACKUP_TABLES)if(!['blueprint_progress','imece_projects','imece_slots','imece_work'].includes(table))backup.tables[table]=sql.prepare(`SELECT * FROM ${table}`).all();
   await migrate(db);
   assert.deepEqual(sql.prepare('SELECT member_id,model,source FROM unlocks').all().map(r=>({...r})),[{member_id:'m',model:'postane',source:'weekly'}]);
   const restored=new DatabaseSync(':memory:');t.after(()=>restored.close());

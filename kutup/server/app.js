@@ -681,7 +681,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       `SELECT id, focus_minutes AS minutes, focus_strict AS strict, focus_beat AS beat, focus_end AS ends, focus_model AS model,
               focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd,
               focus_honest AS honest, focus_away AS away, focus_rescued AS rescued, focus_cracked_at AS cracked, focus_relaxed AS relaxed,
-              focus_imece AS imece, focus_imece_phase AS imecePhase, focus_imece_personal AS imecePersonal, focus_imece_ref AS imeceRef,
+              focus_imece AS imece, focus_imece_phase AS imecePhase, focus_imece_personal AS imecePersonal, focus_imece_ref AS imeceRef, focus_imece_project AS imeceProject,
               EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
        FROM members WHERE ${due}`,
       args,
@@ -807,7 +807,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (finishing.length)
       statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.credit, 0), finishing.at(-1).id)));
     statements.push(
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
@@ -1022,7 +1022,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   function deleteMember(member) {
     const id = member.id;
     return [
-      ...imece.release(),
+      ...imece.release(member.id,member.focus_imece_project),
       ["DELETE FROM reactions WHERE member_id = ? OR message_id IN (SELECT id FROM messages WHERE member_id = ?)", [id, id]],
       ["DELETE FROM attendees WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
       ["DELETE FROM plan_skips WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
@@ -1573,8 +1573,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // session releases its reservation, never pretends the selected work is done.
     if (m.focus_imece) {
       await retrying(async () => [
-        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
-        ...imece.release(), bump(m.group_id),
+        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL,focus_imece_project=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
+        ...imece.release(m.id,m.focus_imece_project), bump(m.group_id),
       ], m.group_id);
       return { credited: 0, seen: 0 };
     }
@@ -1746,7 +1746,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (action === "wither" && m.focus_relaxed) return json({ ok: true });
       if(m.focus_imece && m.focus_end>0 && m.focus_end<=now){
         await retrying(()=>settleFocus(m.group_id,now,m.id),m.group_id);
-        const done=await db.get("SELECT minutes FROM imece_contributions WHERE id=?",[m.focus_imece_ref]);
+        const done=await db.get("SELECT minutes FROM imece_work WHERE id=?",[m.focus_imece_ref]);
         return changed(m,{stopped:true,credited:done?.minutes||0,withered:false});
       }
       // A watched free session that is stopped keeps the minutes it was seen (n40).
@@ -1784,8 +1784,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
               ]
             : []),
           ...(current.focus_relaxed ? [["DELETE FROM push_outbox WHERE member_id = ? AND json_extract(payload, '$.tag') = ?", [m.id, relaxedTag(m.id, current.focus_end)]]] : []),
-          ...(current.focus_imece ? imece.release() : []),
-          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE id = ?", [m.id]],
+          ...(current.focus_imece ? imece.release(m.id,m.focus_imece_project) : []),
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE id = ?", [m.id]],
           bump(m.group_id),
         ];
       }, m.group_id);
@@ -1837,8 +1837,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (strict && !item) item = BY_ID[DEFAULT_MODEL[kindFor(minutes)]];
       end = now + minutes * 60000;
     }
-    if (item?.id === "anitkabir" && await db.get("SELECT id FROM imece_project LIMIT 1"))
-      fail("Anıtkabir artık bütün köylerin ortak görevi. Köy sekmesindeki Bir Taş da Senden kartını aç.", 409);
+    if (item?.id === "anitkabir")
+      fail("Anıtkabir ekibinin ortak görevi. Köy sekmesindeki Bir Taş da Senden kartını aç.", 409);
     const cost = item?.cost || 0;
     if (item && (item.rare || item.since)) {
       const plans = (await db.all("SELECT model FROM unlocks WHERE member_id = ?", [m.id])).map((u) => u.model);
@@ -1857,7 +1857,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       // An expired, uncredited session is settled before the new one starts.
       ...(await settleFocus(m.group_id, now, m.id)),
       ...(reservation?.statements || []),
-      ["UPDATE members SET focus_imece=?, focus_imece_phase=?, focus_imece_personal=?, focus_imece_ref=? WHERE id=?", [project ? 1 : 0, reservation?.phase || 0, reservation?.personal || 0, project ? crypto.randomUUID() : null, m.id]],
+      ["UPDATE members SET focus_imece=?, focus_imece_phase=?, focus_imece_personal=?, focus_imece_ref=?,focus_imece_project=? WHERE id=?", [project ? 1 : 0, reservation?.phase || 0, reservation?.personal || 0, project ? crypto.randomUUID() : null,reservation?.projectId||null, m.id]],
       [
         "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_relaxed = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ?, focus_honest = ?, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = ?, focus_cracked_at = 0 WHERE id = ?",
         [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && body.honest === true ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
@@ -2218,12 +2218,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ id, item: (await requests("f.id = ?", [id], { limit: 1 }))[0] }, 201);
   });
 
-  // Only the four due project workers are checked, even across villages. The
-  // returned data contains shared project profiles, never another team's state.
+  // The authenticated team is the scope, never a client-supplied project id.
   route("GET", "/imece", async ({ member }) => {
-    if (!await db.get("SELECT id FROM imece_project LIMIT 1")) return json(null);
-    const due = await db.all("SELECT DISTINCT group_id AS id FROM members WHERE focus_imece=1 AND focus_end>0 AND focus_end<=?", [Date.now()]);
-    for (const group of due) { await snapshot(group.id); onChange(group.id); }
+    await snapshot(member.group_id);
     return json(await imece.view(member.id));
   });
   route("POST", "/imece/seen", async ({ member, body }) => {
@@ -2437,22 +2434,35 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return json({ ok: true });
   }, false);
 
-  route("GET", "/owner/imece", async ({ request, ip }) => {
+  route("GET", "/owner/imece", async ({ request, ip, url }) => {
     await requireOwner(request, ip);
-    return json(await imece.view(null));
+    const groupId=url.searchParams.get("group");
+    const project=await imece.view(null,groupId)||await imece.view(null,"unassigned");
+    if(project){
+      // Finish old sessions before an owner corrects the project's team. Even
+      // a legacy worker from another team keeps their exact credited work.
+      const due=await db.all("SELECT DISTINCT group_id AS id FROM members WHERE focus_imece_project=? AND focus_imece=1 AND focus_end>0 AND focus_end<=?",[project.id,Date.now()]);
+      for(const g of due){await snapshot(g.id);onChange(g.id);}
+    }
+    return json(await imece.view(null,groupId)||await imece.view(null,"unassigned"));
   }, false);
   route("POST", "/owner/imece", async ({ request, ip, body, ctx }) => {
     await requireOwner(request, ip);
-    await imece.launch(body.members, Date.now());
+    const groupId=await imece.launch(body.members,Date.now(),body.groupId);
     for (const id of body.members) await notifyMember(ctx, id, {
       title: "Kara: Bir Taş da Senden", body: "Ortak Anıtkabir şantiyesi açıldı. Kişisel görevin seni bekliyor; dördümüzün de emeği olmadan açılış yok.", url: "/?tab=focus&imece=1", tag: "imece-launch",
     }).catch(() => {});
-    return json(await imece.view(null), 201);
+    return json(await imece.view(null,groupId), 201);
   }, false);
+  route("POST", "/owner/imece/assign", async ({request,ip,body})=>{
+    await requireOwner(request,ip);
+    await imece.assign(body.projectId,body.groupId,body.rev);
+    return json(await imece.view(null,body.groupId));
+  },false);
   route("POST", "/owner/imece/crew/:slot", async ({ request, ip, body, params }) => {
     await requireOwner(request, ip);
-    await imece.replace(Number(params.slot), body.memberId, body.rev);
-    return json(await imece.view(null));
+    await imece.replace(Number(params.slot),body.memberId,body.rev,body.groupId);
+    return json(await imece.view(null,body.groupId));
   }, false);
 
   route("GET", "/owner/groups", async ({ request, ip }) => {

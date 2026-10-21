@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 import { SCHEMA_VERSION, migrate, migrations } from "./schema.js";
 import { sqliteAdapter } from "./sqlite.js";
 import {WEEKLY_BACKFILL,WEEKLY_LEGACY} from "../shared/blueprints.js";
+import {IMECE_TEAM_IMPORT} from "../shared/imeceMigration.js";
 import {PLAN_LEGACY_IMPORT} from "../shared/plans.js";
 
 import { BACKUP_TABLES } from "../shared/backup.js";
@@ -45,6 +46,7 @@ export async function restoreBackup(backup, sqlite) {
       sqlite.exec(PLAN_LEGACY_IMPORT);
     }
     if(backup.schema<31) for(const sql of WEEKLY_BACKFILL) sqlite.exec(sql);
+    if(backup.schema<32) for(const sql of IMECE_TEAM_IMPORT) sqlite.exec(sql);
     const broken = sqlite.prepare("PRAGMA foreign_key_check").all();
     if (broken.length) throw new Error(`Yabancı anahtar hatası: ${broken.length} satır (${broken[0].table}).`);
     sqlite.exec("COMMIT");
@@ -56,7 +58,8 @@ export async function restoreBackup(backup, sqlite) {
   const counts = {};
   const weeklyRights = backup.schema<31 ? (backup.tables.buildings||[]).filter(b=>b.gift==null&&WEEKLY_LEGACY.some(([id,since])=>b.model===id&&b.created>=since&&b.created<since+14*86400000)).map(b=>({member_id:b.member_id,model:b.model})) : [];
   for (const table of BACKUP_TABLES) {
-    const expected = table==="unlocks"&&backup.schema<31
+    const legacyImece={imece_projects:"imece_project",imece_slots:"imece_crew",imece_work:"imece_contributions"};
+    const expected = backup.schema<32&&legacyImece[table] ? (backup.tables[legacyImece[table]]||[]).length : table==="unlocks"&&backup.schema<31
       ?new Set([...(backup.tables.unlocks||[]),...weeklyRights].map(r=>JSON.stringify([r.member_id,r.model]))).size
       :table==="attendees"&&backup.schema<30
       ?new Set([...(backup.tables.attendees||[]),...(backup.tables.plan_skips||[])].map(r=>JSON.stringify([r.plan_id,r.member_id]))).size
