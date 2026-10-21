@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
 | imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
 | plan-kesfi | Dakikaya göre şans, görünür garanti, haftalık kalıcı hak ve altı özgün nadir yapı | Katalog/Köy | 20 Eki | codex/blueprint-discovery PR |
 | bulusma | Tek buluşma, kişisel geliş saati, kopya önleme, düzenleme/iptal ve tek hatırlatma | Kütüp | 20 Eki | codex/holistic-meetups PR |
@@ -96,6 +97,15 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n45 · Komuta merkezinde ekip yönetimi
+Komuta merkezi (Batur) · 21 Ekim 2026 · claude/n45-ekip-yonetimi
+
+**Ne yapıldı:** `/batur` → Ekipler'in başında **Yeni ekip kur** (yalnız ad). Her ekip kartında kalemle **ad düzenleme**, **Davet bağlantısı** kutusu, **Kopyala** ve mevcut owner yetkisiyle **Yenile**. Üye araçları ve Duyuru yaz aynı yerde; boş ekipte Duyuru yaz pasif. Ortak Anıtkabir seçicisi yeni ekibi "henüz kimse yok" diye listeler, dört kişi olmadan başlatma düğmesi pasif kalır ve not gösterir; seçici açılışta kişisi olan ilk ekiple başlar. Sunucu: `POST /api/owner/groups` (ad + istek anahtarı), `POST /api/owner/groups/:id/name`; ikisi de `requireOwner` ve sunucu doğrulaması (2–40 karakter, anahtar `[A-Za-z0-9_-]{16,64}`). Göç **33**: `groups.owner_made`, `groups.request_key`, `groups.request_name` + kısmi tekil indeks.
+**Kararlar ve nedenleri:** Ekip katılımcısız kurulur; üye, oturum, çerez, mahalle satırı oluşmaz, Batur'un ve üyelerin oturumu değişmez. Tekrar gönderim aynı istek anahtarını taşır; aynı anahtar + aynı başlangıç adı aynı ekibi döner (eşzamanlı ikili gönderim de tek ekip, ad sonradan değişmiş olsa bile), aynı anahtar + farklı ad **409**. Karşılaştırma güncel ada değil ilk oluşturma adına (`groups.request_name`, ad düzenlemesi dokunmaz) bakar (Ediz/Batur, PR #54 incelemesi). Yeni form = yeni anahtar, aynı adla ikinci ekip bilinçli olarak kurulabilir. `owner_made=1` ekip son üye ayrılınca/çıkarılınca silinmez (adı, daveti, Anıtkabir bağlantısı kalır); uygulamadan kurulan ekiplerin eski davranışı (boşalınca silinir) aynı. Ad değişikliği `groups.rev` artırır; telefonlar yoklamayla görür. Proje kendiliğinden açılmaz; dört kişi, aynı ekip ve emek kuralları değişmedi.
+**Batur'un sözleri:** "Kütüp projesinde yalnız komuta merkezindeki ekip yönetimini geliştir." Kurallar: sahte katılımcı/ikinci hesap yok, oturumlar değişmesin, katılımcısız kurulsun ve son üye ayrılınca korunsun, mükerrer ekip olmasın, yetki ve doğrulama sunucuda, yeni ekip Anıtkabir seçicisinde görünsün ama proje başlamasın.
+**Kapsam dışı (istenmedi):** üye taşıma, ekip birleştirme, arşivleme, silme; köy yenilemesi. Canlı duman testine owner ekip kurma adımı eklenmedi: silme olmadığı için canlıda kalıcı boş ekip bırakırdı.
+**Dosyalar:** `server/schema.js` (33), `server/app.js`, `src/OwnerTeams.jsx`, `src/Owner.jsx`, `src/OwnerImece.jsx`, `src/styles.css`, `src/yenilikler.js` (sürüm 24), `tests/owner.test.js`, `tests/suite.js`, `tests/teams_browser.py`, `tests/imece.test.js` (31 öncesi yedek taklidinden 33 sütunları çıkarıldı).
 
 ### imece-katki · 150 dakika emek görünür
 Ortak Anıtkabir · 20 Ekim 2026 · codex/imece-contribution-clarity

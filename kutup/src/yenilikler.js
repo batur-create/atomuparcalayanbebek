@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 24,
+    tarih: "2026-10-21",
+    vakit: "öğle",
+    baslik: "Komuta merkezinden yeni ekipler",
+    maddeler: [
+      "Batur artık komuta merkezinden yeni bir ekip kurabiliyor. Ekip boş açılır; kimse kendiliğinden eklenmez, senin hesabın ve oturumun olduğu gibi kalır.",
+      "Yeni ekibe Batur’un paylaştığı davet bağlantısıyla katılırsın. Ekibin adını Batur düzenleyebilir; yeni ad herkesin uygulamasında görünür.",
+      "Komuta merkezinden kurulan ekip, son kişi ayrılsa da kaybolmaz. Anıtkabir projesi her ekipte yine Batur dört kişiyi seçip başlatınca açılır.",
+    ],
+  },
+  {
     surum: 23,
     tarih: "2026-10-21",
     vakit: "öğle",

@@ -12,6 +12,8 @@ import {
   KeyRound,
   Lock,
   LogOut,
+  Pencil,
+  Plus,
   RefreshCw,
   UserMinus,
 } from "lucide-react";
@@ -23,6 +25,7 @@ import { RequestTracker, ago } from "./Requests.jsx";
 import { Modal } from "./Modal.jsx";
 import { AnnounceModal, GiftModal } from "./OwnerGift.jsx";
 import { OwnerImece } from "./OwnerImece.jsx";
+import { InviteLink, NewTeamModal, RenameTeamModal } from "./OwnerTeams.jsx";
 
 const STAGE_FILTERS = [
   ["open", "Bekleyen", "📮"],
@@ -183,6 +186,8 @@ export function OwnerPage() {
     [recovery, setRecovery] = useState(null),
     [gift, setGift] = useState(null),
     [announce, setAnnounce] = useState(null),
+    [newTeam, setNewTeam] = useState(false),
+    [rename, setRename] = useState(null),
     [copied, setCopied] = useState(false),
     [pushOn, setPushOn] = useState(!!storage.get("kutup-owner-push"));
   // One browser has one push subscription; it may already serve the member side,
@@ -525,31 +530,43 @@ export function OwnerPage() {
             </>
           ) : (
             view === "imece" ? <OwnerImece groups={groups}/> : <div className="owner-groups">
+              <div className="panel owner-new-team">
+                <div>
+                  <h2>Yeni ekip</h2>
+                  <small>Boş kurulur, kimse eklenmez; davet bağlantısıyla gelenler katılır.</small>
+                </div>
+                <button className="btn primary" onClick={() => setNewTeam(true)}>
+                  <Plus size={15} /> Yeni ekip kur
+                </button>
+              </div>
               {groups.map((g) => (
-                <article className="panel owner-group" key={g.id}>
+                <article className="panel owner-group" key={g.id} data-team={g.id}>
                   <div className="owner-group-head">
                     <div>
-                      <h2>{g.name}</h2>
+                      <div className="owner-group-title">
+                        <h2>{g.name}</h2>
+                        <button
+                          className="icon-button"
+                          aria-label={`${g.name}: ekip adını düzenle`}
+                          title="Ekip adını düzenle"
+                          onClick={() => setRename(g)}
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      </div>
                       <small>
                         {g.members.length} kişi
                         {g.created ? ` · ${dateLabel(g.created)} kuruldu` : ""}
+                        {g.ownerMade ? " · komuta merkezinden, son kişi ayrılsa da kalır" : ""}
                       </small>
                     </div>
-                    <button className="btn primary" onClick={() => setAnnounce(g)}>
-                      <Megaphone size={15} /> Duyuru yaz
-                    </button>
                     <button
-                      className="btn outline"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            "Davet bağlantısı yenilensin mi? Eski bağlantı çalışmaz; yenisini ekip içinden paylaşırsınız.",
-                          )
-                        )
-                          act(() => api(`/owner/groups/${g.id}/invite`, {}));
-                      }}
+                      className="btn primary"
+                      disabled={!g.members.length}
+                      title={g.members.length ? undefined : "Ekipte henüz kimse yok"}
+                      onClick={() => setAnnounce(g)}
                     >
-                      <RefreshCw size={15} /> Daveti yenile
+                      <Megaphone size={15} /> Duyuru yaz
                     </button>
                     <button
                       className="text-button"
@@ -570,6 +587,12 @@ export function OwnerPage() {
                       <Download size={15} /> Tüm veriyi yedekle
                     </button>
                   </div>
+                  <InviteLink group={g} changed={load} />
+                  {!g.members.length && (
+                    <p className="owner-group-empty">
+                      Henüz kimse yok. Davet bağlantısını paylaş; katılan ilk kişi burada görünür.
+                    </p>
+                  )}
                   <ul>
                     {g.members.map((m) => (
                       <li key={m.id}>
@@ -663,7 +686,7 @@ export function OwnerPage() {
               ))}
               {!groups.length && (
                 <Empty emoji="🪑" title="Henüz ekip yok.">
-                  Ana sayfadan ilk ekibi kurduğunda burada görünür.
+                  Yukarıdan yeni ekip kurabilir ya da ana sayfadan ilk ekibi kurabilirsin.
                 </Empty>
               )}
             </div>
@@ -672,6 +695,8 @@ export function OwnerPage() {
       )}
       {gift && <GiftModal member={gift} close={() => setGift(null)} changed={load} />}
       {announce && <AnnounceModal group={announce} close={() => setAnnounce(null)} />}
+      {newTeam && <NewTeamModal close={() => setNewTeam(false)} changed={load} />}
+      {rename && <RenameTeamModal group={rename} close={() => setRename(null)} changed={load} />}
       {recovery && (
         <Modal title={`${recovery.name} için bir anahtar 🔑`} subtitle="24 saat geçerli, yalnızca bir kez kullanılabilir." close={() => setRecovery(null)}>
           <label className="field-label">Giriş / şifre sıfırlama kodu

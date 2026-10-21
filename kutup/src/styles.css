@@ -4896,3 +4896,94 @@ summary:focus-visible, canvas:focus-visible { outline: 3px solid var(--accent, #
     font-size: 20px;
   }
 }
+/* n45: Ekipler — a new team bar across both columns, the editable name and
+   each team's invite link with copy and renew. Tokens only. */
+.owner-new-team {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.owner-new-team h2 {
+  font-size: 18px;
+}
+.owner-new-team small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.owner-group-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.owner-group-title h2 {
+  overflow-wrap: anywhere;
+}
+.owner-group-title .icon-button {
+  color: var(--muted);
+}
+.owner-invite {
+  margin: 0 0 12px;
+}
+.owner-invite-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.owner-invite-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.owner-invite-url {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.owner-invite-row .btn {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+.owner-invite-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.owner-group-empty {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+.imece-owner-short {
+  font-size: 13px;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .owner-invite-row {
+    flex-wrap: wrap;
+  }
+  .owner-invite-url {
+    flex-basis: 100%;
+    font-size: 16px; /* no iOS zoom on focus */
+  }
+  .owner-invite-row .btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}

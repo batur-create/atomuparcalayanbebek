@@ -324,6 +324,17 @@ export const migrations = [
     "ALTER TABLE members ADD COLUMN focus_imece_project TEXT",
     ...IMECE_TEAM_IMPORT,
   ],
+  // 33 — n45: a team Batur opens from the panel starts with nobody in it and
+  // stays when its last member leaves; the creating request's key makes a
+  // repeated send return the same team, and the name it was first sent with
+  // (request_name, never renamed) tells a true repeat from a different
+  // request reusing the key. Teams opened from the app keep 0 / NULL.
+  [
+    "ALTER TABLE groups ADD COLUMN owner_made INTEGER NOT NULL DEFAULT 0 CHECK(owner_made IN (0,1))",
+    "ALTER TABLE groups ADD COLUMN request_key TEXT",
+    "ALTER TABLE groups ADD COLUMN request_name TEXT",
+    "CREATE UNIQUE INDEX groups_request ON groups(request_key) WHERE request_key IS NOT NULL",
+  ],
 ];
 
 export const SCHEMA_VERSION = migrations.length;

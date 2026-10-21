@@ -8,10 +8,12 @@ import "./imece.css";
 export function OwnerImece({groups}) {
   const [state,setState]=useState(undefined),[selected,setSelected]=useState([]),[error,setError]=useState(""),[busy,setBusy]=useState(false);
   const [editing,setEditing]=useState(null),[replacement,setReplacement]=useState(""),[notice,setNotice]=useState(""),[destination,setDestination]=useState("");
-  const [groupId,setGroupId]=useState(()=>groups[0]?.id||"");
+  // n45: a team opened in the panel is newest and still empty; start on a team with people.
+  const firstTeam=()=>(groups.find(g=>g.members.length)||groups[0])?.id||"";
+  const [groupId,setGroupId]=useState(firstTeam);
   const endpoint=`/owner/imece?group=${encodeURIComponent(groupId)}`;
   const load=async()=>{setBusy(true);setError("");try{setState(await get(endpoint));}catch(e){setError(e.message);}finally{setBusy(false);}};
-  useEffect(()=>{if(!groupId&&groups[0])setGroupId(groups[0].id);},[groups,groupId]);
+  useEffect(()=>{if(!groupId&&groups[0])setGroupId(firstTeam());},[groups,groupId]);
   useEffect(()=>{let alive=true;setState(undefined);setSelected([]);setEditing(null);setNotice("");setError("");setBusy(true);get(endpoint).then(s=>{if(alive)setState(s);}).catch(e=>{if(alive)setError(e.message);}).finally(()=>{if(alive)setBusy(false);});return()=>{alive=false;};},[endpoint]);
   const people=groups.filter(g=>g.id===groupId).flatMap(g=>g.members.map(m=>({...m,team:g.name})));
   const launch=async()=>{
@@ -35,7 +37,7 @@ export function OwnerImece({groups}) {
     try{setState(await api(`/owner/imece/crew/${person.slot}`,{memberId:replacement,rev:state.rev,groupId}));setEditing(null);setReplacement("");setNotice("Katılımcı hesabı güncellendi. Şantiyenin emeği ve görev ilerlemesi korundu.");}
     catch(e){setError(e.message);}finally{setBusy(false);}
   };
-  return <section className="panel imece-owner"><span className="imece-eyebrow">EKİBİN ORTAK PROJESİ</span><h2>Bir Taş da Senden</h2><label htmlFor="imece-team">Ekip</label><select id="imece-team" className="imece-team-picker" value={groupId} disabled={busy} onChange={e=>setGroupId(e.target.value)}>{groups.map(g=><option key={g.id} value={g.id}>{g.name} · {g.members.length} kişi · {g.id.slice(0,6)}</option>)}</select>
+  return <section className="panel imece-owner"><span className="imece-eyebrow">EKİBİN ORTAK PROJESİ</span><h2>Bir Taş da Senden</h2><label htmlFor="imece-team">Ekip</label><select id="imece-team" className="imece-team-picker" value={groupId} disabled={busy} onChange={e=>setGroupId(e.target.value)}>{groups.map(g=><option key={g.id} value={g.id}>{g.name} · {g.members.length?`${g.members.length} kişi`:"henüz kimse yok"} · {g.id.slice(0,6)}</option>)}</select>
     {error&&<p className="form-error" role="alert">{error} <button className="text-button" onClick={load}>Yeniden oku</button></p>}
     {notice&&<p role="status">{notice}</p>}
     {state===undefined?<p>Şantiye okunuyor…</p>:state?<>
@@ -51,7 +53,7 @@ export function OwnerImece({groups}) {
         <div className="imece-owner-replace-actions"><Busy className="btn primary" type="submit" loading={busy} disabled={!replacement}>Katılımcıyı güncelle</Busy><button className="btn outline" type="button" disabled={busy} onClick={()=>setEditing(null)}>Vazgeç</button></div>
       </form>}
       <p>Dört kişilik kadronun yanlış hesabını yalnız buradan düzeltebilirsin; katkı ve görev ilerlemesi korunur. Herkesin kişisel görevleri bitmeden açılış yapılmaz. Tamamlanan projenin kadrosu değiştirilemez.</p><button className="btn outline" disabled={busy} onClick={load}>Katkıları yenile</button>
-    </>:<><p>Bu ekipten dört kişi seç; Kara her birine ayrı bir görev mektubu getirsin. Proje ancak bu düğmeye bastığında açılır. Seçilen görünen adlar, avatarlar ve katkılar yalnız kendi ekibinin şantiyesinde görünür.</p><p><b>Hedef:</b> 400 + 1.200 + 400 = 2.000 dk. <b>Kişisel pay:</b> herkes için 50 + 150 + 50 = 250 dk. Kalan 1.000 dk paylaşılır. Test veya terk edilmiş hesap seçme; yanlış hesabı daha sonra buradan düzeltebilirsin.</p><div className="imece-owner-roster">{people.map(p=><label key={p.id}><input type="checkbox" checked={selected.includes(p.id)} disabled={!selected.includes(p.id)&&selected.length===4} onChange={e=>setSelected(a=>e.target.checked?[...a,p.id]:a.filter(id=>id!==p.id))}/><Avatar member={p}/><span><b>{p.name}</b><small>{p.team}{selected.includes(p.id)?` · ${IMECE_ROLES[selected.indexOf(p.id)].name}`:""}</small></span></label>)}</div><Busy className="btn primary" loading={busy} disabled={selected.length!==4} onClick={launch}><Flag size={18}/>Dört ustayı göreve çağır · {selected.length}/4</Busy></>}
+    </>:<><p>Bu ekipten dört kişi seç; Kara her birine ayrı bir görev mektubu getirsin. Proje ancak bu düğmeye bastığında açılır. Seçilen görünen adlar, avatarlar ve katkılar yalnız kendi ekibinin şantiyesinde görünür.</p><p><b>Hedef:</b> 400 + 1.200 + 400 = 2.000 dk. <b>Kişisel pay:</b> herkes için 50 + 150 + 50 = 250 dk. Kalan 1.000 dk paylaşılır. Test veya terk edilmiş hesap seçme; yanlış hesabı daha sonra buradan düzeltebilirsin.</p>{people.length<4&&<p className="imece-owner-short" role="note">Bu ekipte {people.length?`${people.length} kişi var`:"henüz kimse yok"}; projeyi başlatmak için dört kişi gerekir. Davet bağlantısı Ekipler bölümünde.</p>}<div className="imece-owner-roster">{people.map(p=><label key={p.id}><input type="checkbox" checked={selected.includes(p.id)} disabled={!selected.includes(p.id)&&selected.length===4} onChange={e=>setSelected(a=>e.target.checked?[...a,p.id]:a.filter(id=>id!==p.id))}/><Avatar member={p}/><span><b>{p.name}</b><small>{p.team}{selected.includes(p.id)?` · ${IMECE_ROLES[selected.indexOf(p.id)].name}`:""}</small></span></label>)}</div><Busy className="btn primary" loading={busy} disabled={selected.length!==4} onClick={launch}><Flag size={18}/>Dört ustayı göreve çağır · {selected.length}/4</Busy></>}
     <hr/><h3>Eski Anıtkabirler</h3><p>Otomatik kaldırılmaz. Ekipler → kişi → 🎁 → Köyü yolundan “Yalnız Anıtkabir” filtresiyle tek tek kaldırabilirsin. Tuğla ve odak dakikaları değişmez; kaldırılan yapının kendisi ve beğenileri silinir.</p>
   </section>;
 }
