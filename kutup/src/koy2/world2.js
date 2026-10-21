@@ -7,7 +7,8 @@
 //
 // Nothing here reads the server's v1 rows: the caller hands in the layout and
 // what stands on each plot (things: subjectKey → { kind, seed, model, memberId,
-// site }). Still a prototype in package B; the live map keeps buildWorld().
+// site }). The live map draws with this once a team's v2 layout is switched on
+// (package D); every other team keeps buildWorld().
 import { BY_ID } from "../../shared/catalog.js";
 import { hash, lengthOf, along, linePoint, inPolygon, pointRect, rng as rand, screenOf } from "../../shared/koy2/geom.js";
 import { modelSpec } from "../../shared/koy2/models.js";
@@ -15,7 +16,7 @@ import { buildingSVG, mirrored, ridgeOf, spec, box, poly, seg, ellipse, WOOD, ST
 import { sitePlan, siteSVG } from "../construction.js";
 import { specialOf } from "../special.js";
 import {
-  COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, plazaArt, rockArt, bushArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
+  COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, plazaArt, rockArt, bushArt, spotArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
 } from "../villageWorld.js";
 
 const { ROAD, ROAD_EDGE, WATER, PLAZA_STONE, PLAZA_RING } = PALETTE;
@@ -114,8 +115,9 @@ function figureArt(v, x, y, coat) {
 /**
  * world: the same shape buildWorld() returns (items, query, bounds, area, …).
  * layout: a v2 layout; things: Map subjectKey → { kind, seed, model, memberId, site: { shown } }.
+ * spots: while moving a building, the planned plots it may go to ({ x, y, facing }).
  */
-export function buildWorld2({ layout, things = new Map(), members = [], me = null, sky = skyAt(), monument = 0, references = [], extras = [] }) {
+export function buildWorld2({ layout, things = new Map(), members = [], me = null, sky = skyAt(), monument = 0, references = [], extras = [], spots = [] }) {
   const season = sky.season;
   const t = layout.terrain;
   const people = new Map(members.map((m) => [m.id, m]));
@@ -227,7 +229,10 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     // A personal site, or the shared Anıtkabir while its 2,000 minutes are still being built.
     const site = p.subject.type === "site" || (p.subject.type === "imece" && !!thing?.site && thing.site.shown < 1);
     const plan = site ? sitePlan(sp) : null;
-    const shown = site ? thing?.site?.shown ?? 0.35 : 1;
+    // A personal site is fenced from its first minute (mobilisation comes first on
+    // a real site), so a session that just began is already visible on the map.
+    const fenced = p.subject.type === "site" ? plan.find((k) => k.key === "mobilize")?.b ?? 0 : 0;
+    const shown = site ? Math.max(fenced, thing?.site?.shown ?? 0.35) : 1;
     add(standing, {
       type: "building", id: p.subject.id, plotId: p.id, building: { ...thing, id: p.subject.id, model: p.model, memberId: p.owner, site }, owner, sp,
       depth: p.x + p.y, x: p.x, y: p.y,
@@ -249,6 +254,15 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       },
     });
   }
+
+  // Move mode: the planned plots the picked building can go to (same marker as today's map).
+  spots.forEach((s, i) => {
+    add(standing, {
+      type: "building", id: `spot-${i}`, building: { spot: true, ...s }, sp: { hw: 1.7 }, depth: s.x + s.y + 0.01, x: s.x, y: s.y,
+      bbox: boxOf(s.x, s.y, 4, 4, 3.4, 2.6), hit: boxOf(s.x, s.y, 2.6, 2.6, 2.6, 1.8), top: 2.2,
+      draw: (v) => spotArt(v, s),
+    });
+  });
 
   // ---------- trees, bushes, lamps: deterministic, kept clear of everything ----------
   const extent = [Infinity, Infinity, -Infinity, -Infinity];

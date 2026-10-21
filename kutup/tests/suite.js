@@ -220,6 +220,26 @@ export function defineSuite(target) {
     assert.equal(v2.data.layoutId, made.data.id);
     assert.equal(v2.data.buildings[0].placement.model, "kulube");
     assert.deepEqual(v2.data.plots.map((p) => p.id), made.data.layout.plots.map((p) => p.id));
+    // n46 D: two people start building at the same moment on a v2 team: two sites, two different plots.
+    const mate = await request("/join", { body: { invite: solo.data.group.invite, name: "KoyD" } });
+    assert.equal(mate.status, 201, JSON.stringify(mate.data));
+    const v2h = { "X-Kutup-Village-Version": "2" };
+    const pair = await Promise.all(
+      [cookie, mate.cookie].map((c, i) => request("/focus", { cookie: c, headers: v2h, body: { action: "start", strict: true, model: "kulube", minutes: 25, requestKey: `n46d-suite-key-00000${i}` } })),
+    );
+    assert.deepEqual(pair.map((r) => r.status), [200, 200], JSON.stringify(pair.map((r) => r.data.error)));
+    const both = (await request("/village", { cookie: mate.cookie, headers: v2h })).data;
+    assert.equal(both.sites.length, 2);
+    assert.ok(both.sites.every((s) => s.placement));
+    assert.notEqual(both.sites[0].placement.plotId, both.sites[1].placement.plotId);
+    // One finishes: its building stands on the plot its site held.
+    const held = both.sites.find((s) => s.focusRunId === pair[0].data.run).placement;
+    await request("/__test/expire", { body: { name: "KoyC" } });
+    await request("/state", { cookie });
+    const after = (await request("/village", { cookie, headers: v2h })).data;
+    assert.deepEqual(after.sites.map((s) => s.focusRunId), [pair[1].data.run]);
+    const built = after.buildings.find((b) => b.placement?.plotId === held.plotId);
+    assert.equal(built?.model, "kulube");
   });
 
   test(`[${target}] drawn characters with accessories are kept; unknown or founder-only ones are not`, async () => {

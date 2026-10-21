@@ -1,8 +1,12 @@
 // The village of my group, kept in sync incrementally. Lives apart from the
 // map (VillageMap.jsx, loaded on demand) so the app shell can fetch it early.
 import { useEffect, useRef, useState } from "react";
-import { api, get } from "./api.js";
+import { api } from "./api.js";
 import { mergeVillage } from "./villageWorld.js";
+
+// This app can draw a planned (v2) village; a team still on today's village gets today's answer.
+const V2 = { "X-Kutup-Village-Version": "2" };
+const get = (path, signal) => api(path, undefined, "GET", V2, signal);
 
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
 export function useVillage(session, villageRev) {
@@ -28,7 +32,8 @@ export function useVillage(session, villageRev) {
       inFlight = true;
       const have = known.current.data;
       try {
-        const raw = await get(`/village${have ? `?rev=${have.rev}&after=${have.until || 0}` : ""}`, controller.signal);
+        const since = have?.v2 ? `?cursor=${encodeURIComponent(have.cursor)}` : have ? `?rev=${have.rev}&after=${have.until || 0}` : "";
+        const raw = await get(`/village${since}`, controller.signal);
         if (gone) return;
         let next = mergeVillage(known.current.data, raw);
         // A building was taken back (n43): fetch the village whole once.

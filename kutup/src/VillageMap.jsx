@@ -6,6 +6,8 @@ import { ArrowUpRight, Expand, Heart, LocateFixed, Minus, Plus, Shrink, X } from
 import { api, dateLabel, get, minutesLabel, shortTime } from "./api.js";
 import { Avatar } from "./ui.jsx";
 import { buildWorld, focusing, skyAt, tinter } from "./villageWorld.js";
+import { buildWorld2 } from "./koy2/world2.js";
+import { siteStage } from "./koy2/village2.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene } from "./Village.jsx";
 import { useZoom } from "./zoom.js";
@@ -44,10 +46,22 @@ export function useVillageWorld({ village, members, me, groupId, spots }) {
   const people = members
     .map((m) => `${m.id}:${m.status}:${m.name}:${m.avatar}:${m.color}:${m.chainEnd || 0}:${focusing(m, now) ? (m.focusPausedAt ? "p" : "f") : ""}`)
     .join("|");
-  const world = useMemo(
-    () => (village ? buildWorld({ groupKey: groupId || "demo", village, members, me, sky, spots }) : null),
-    [village, people, me, sky.key, groupId, expiry, spots],
-  );
+  // n46: a planned village's sites rise with the server's minutes; redraw them once a minute.
+  const [minute, tickMinute] = useState(0);
+  const building = !!village?.v2 && village.sites.some((s) => s.status === "running");
+  useEffect(() => {
+    if (!building) return;
+    const timer = setInterval(() => tickMinute((n) => n + 1), 60000);
+    return () => clearInterval(timer);
+  }, [building]);
+  const world = useMemo(() => {
+    if (!village) return null;
+    if (!village.v2) return buildWorld({ groupKey: groupId || "demo", village, members, me, sky, spots });
+    const now = Date.now();
+    const things = new Map(village.things);
+    for (const s of village.sites) things.set(`site:${s.focusRunId}`, { ...things.get(`site:${s.focusRunId}`), site: { shown: siteStage(s, now) } });
+    return buildWorld2({ layout: village.layout, things, members, me, sky, monument: village.monument, spots });
+  }, [village, people, me, sky.key, groupId, expiry, spots, village?.v2 ? minute : 0]);
   return { world, sky, tint };
 }
 
@@ -126,7 +140,32 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
 }
 
 // ---------- building card ----------
-function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
+const SITE_STATUS = { running: "yükseliyor", paused: "molada", cracked: "çatladı, kurtarılmayı bekliyor", completing: "bitmek üzere" };
+// n46: a site on a planned village: whose, what, and how far the server says it is.
+function SiteCard({ site, owner, me, close }) {
+  const item = modelOf(site.modelId);
+  const shown = Math.round(siteStage(site) * 100);
+  return (
+    <div className="building-card" role="dialog" aria-label={`${item.name} inşaatı`}>
+      <button className="icon-button building-card-close" aria-label="Kartı kapat" onClick={close}>
+        <X size={16} />
+      </button>
+      <div className="building-card-head">
+        <span className="building-card-emoji" aria-hidden="true">🏗️</span>
+        <div>
+          <strong>{item.name} inşaatı</strong>
+          <small>%{shown} · {SITE_STATUS[site.status] || "sürüyor"}</small>
+        </div>
+      </div>
+      <div className="building-card-who">
+        {owner ? <Avatar member={owner} size="tiny" /> : null}
+        <span>{owner ? (site.memberId === me ? "Senin inşaatın" : `Yapan: ${owner.name}`) : "Bir komşu"} · {minutesLabel(Math.round(site.durationMs / 60000))} odak</span>
+      </div>
+    </div>
+  );
+}
+
+function BuildingCard({ building, owner, me, onLike, onMove, close, canLike, planned = false }) {
   const [busy, setBusy] = useState(false);
   const item = modelOf(building.model, building.kind),
     kind = { label: item.name, emoji: item.emoji };
@@ -171,7 +210,7 @@ function BuildingCard({ building, owner, me, onLike, onMove, close, canLike }) {
       </button>
       {mine && onMove && (
         <button className="text-button building-move" onClick={() => onMove(building)}>
-          Taşı · mahallende başka bir arsaya
+          {planned ? "Taşı · köyde başka bir arsaya" : "Taşı · mahallende başka bir arsaya"}
         </button>
       )}
     </div>
@@ -243,6 +282,8 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   }, [showScene, outcome?.at, village]);
   const building = picked && village?.buildings.find((b) => b.id === picked);
   const owner = building && members.find((m) => m.id === building.memberId);
+  // n46: on a planned village a site can be picked too.
+  const site = picked && !building && village?.v2 ? village.sites.find((s) => s.focusRunId === picked) : null;
   const count = village?.buildings.length || 0;
   const settled = world?.districts.filter(d=>d.memberId).length || 0;
   const myCount = village?.buildings.filter((b) => b.memberId === me?.id).length || 0;
@@ -374,10 +415,22 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 </button>
               </div>
             )}
+            {site && !moving && (
+              <SiteCard
+                site={site}
+                owner={members.find((m) => m.id === site.memberId)}
+                me={me?.id}
+                close={() => {
+                  setPicked(null);
+                  map.current?.view.select(null);
+                }}
+              />
+            )}
             {building && !moving && (
               <BuildingCard
                 building={building}
                 owner={owner}
+                planned={!!village?.v2}
                 me={me?.id}
                 canLike={!!session}
                 close={() => {
@@ -387,7 +440,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 onMove={async (b) => {
                   try {
                     const r = await get(`/buildings/${b.id}/spots`);
-                    if (!r.spots.length) return notify("Mahallende şu an boş arsa yok. Yeni bir bina yeni mahalle açar.");
+                    if (!r.spots.length) return notify(village?.v2 ? "Köyde şu an bu yapıya uygun boş arsa yok." : "Mahallende şu an boş arsa yok. Yeni bir bina yeni mahalle açar.");
                     setPicked(null);
                     map.current?.view.select(null);
                     setMoving({ building: b, spots: r.spots.map(([x, y, facing]) => ({ x, y, facing })) });
