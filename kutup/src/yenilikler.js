@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 23,
+    tarih: "2026-10-21",
+    vakit: "öğle",
+    baslik: "Odakta daha az seçenek, daha net karar",
+    maddeler: [
+      "Tek seans ekranı: bina eklemek isteğe bağlı. Bu seansı binasız yap ile yalnızca süre tut; Bina ekle ile geri dön. Binasız çalışmada malzeme ücreti yok, uzakta geçen dakika sayılmaz, maaş yarım.",
+      "İnşaatta Ekranı kapatarak çalış anahtarı var. Açıkken ekranı kilitleyebilirsin, maaş yarım. Kapalıyken Kütüp açık kalmalı, maaş tam; mevcut çatlama ve kurtarma kuralları aynı.",
+      "Anıtkabir ve arkadaşa katılımda aynı ekran anahtarı kullanılır. Anıtkabir’de iki durumda da yarım maaş; emeğin ortak projeye yazılır. Mevcut seanslar ve seçtiğin ekran tercihi korunur.",
+    ],
+  },
+  {
     surum: 22,
     tarih: "2026-10-21",
     vakit: "gece",

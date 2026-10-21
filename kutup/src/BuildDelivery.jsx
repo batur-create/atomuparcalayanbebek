@@ -28,7 +28,7 @@ export function BuildDelivery({ delivery, accept }) {
   // n43: a building Batur gave as a present plays the same replay, as his gift.
   const gift = delivery.gift;
   return <Modal title={gift ? (playing ? "Batur sana bir yapı gönderdi." : "Hediyen köyde yerini aldı.") : playing ? "Bir şantiye böyle yükseldi." : "Emeğin köyde yerini aldı."}
-    subtitle={gift ? `🎁 ${gift} · ${item.name}` : `${delivery.minutes} dakika rahat inşaat · ${item.name}`} close={() => finish(false)} className="build-delivery">
+    subtitle={gift ? `🎁 ${gift} · ${item.name}` : `${delivery.minutes} dakika inşaat · ${item.name}`} close={() => finish(false)} className="build-delivery">
     <div className="delivery-label"><span>{playing ? <FastForward size={15} /> : <Check size={15} />}{playing ? "18 SANİYEDE ŞANTİYEN" : "TESLİME HAZIR"}</span><b>{item.emoji} {item.name}</b></div>
     <div className="delivery-scene">
       <ConstructionScene run={playing ? run.current : null} outcome={playing ? null : built.current} />

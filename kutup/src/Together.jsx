@@ -9,6 +9,7 @@ import {Modal} from "./Modal.jsx";
 import { chime } from "./Sound.jsx";
 import { JOIN_LEAD,HONEST_MIN,modelOf } from "../shared/catalog.js";
 import "./together.css";
+import {ScreenOffOption} from "./ScreenOffOption.jsx";
 
 const minutesLeft = (m, now) => Math.max(1, Math.ceil((m.focusEnd - (m.focusPausedAt || now)) / 60000));
 
@@ -47,7 +48,7 @@ export function JoinBanner({friend,me,now,join,close,onImece}){
     {!quote&&!error?<p>Arkadaşının seansı okunuyor…</p>:quote?.imece?<><p>Bu bir Anıtkabir görevi. Zamanlayıcısına katılmak, senin kişisel görevini başlatmaz.</p><p>Şantiyede kendi 25, 50 veya 75 dakikalık görevini seç; katkın kendi hesabına yazılır.</p><button className="btn primary" onClick={onImece}>Anıtkabir görevimi aç</button></>:quote?.paused?<p>Arkadaşın çay molasında. Seansına döndüğünde yeniden katılabilirsin.</p>:quote&&remaining<HONEST_MIN?<p>20 dakikadan az kaldı. Köyden yeni bir 25 dakikalık seans başlatabilirsin; kısa süreden tamamlanmış bina veya ödül üretilmez.</p>:quote?<form className="join-choice" onSubmit={async e=>{e.preventDefault();setBusy(true);try{await join({end:quote.friend.end,strict:canBuild,model:item?.id,relaxed});}finally{setBusy(false);}}}>
       <p><b>{friend.name}</b> ile aynı anda, saat <b>{shortTime(quote.friend.end)}</b> biteceksiniz. Sana kalan süre <b>{remaining} dk</b>.</p>
       <fieldset><legend>Sen ne yapacaksın?</legend><label><input type="radio" name="join-mode" checked={!build} onChange={()=>setBuild(false)}/>Yalnız odak · kişisel bina yapılmaz</label><label><input type="radio" name="join-mode" checked={build} disabled={!models.length} onChange={()=>setBuild(true)}/>Kendi binamı inşa et</label></fieldset>
-      {build&&models.length>0?<><label htmlFor="join-model">Kendi yapın</label><select id="join-model" value={model} onChange={e=>setModel(e.target.value)}>{models.map(m=><option key={m.id} value={m.id}>{m.name} · en az {m.minutes} dk · {m.cost} tuğla</option>)}</select><label><input type="checkbox" checked={relaxed} onChange={e=>setRelaxed(e.target.checked)}/>Rahat inşaat · ekranı kapatabilirim</label></>:!models.length?<p>Kalan süreye, tuğlana ve planlarına uygun bina yok. Yalnız odaklanabilir veya ayrı bir inşaat başlatabilirsin.</p>:null}
+      {build&&models.length>0?<><label htmlFor="join-model">Kendi yapın</label><select id="join-model" value={model} onChange={e=>setModel(e.target.value)}>{models.map(m=><option key={m.id} value={m.id}>{m.name} · en az {m.minutes} dk · {m.cost} tuğla</option>)}</select><ScreenOffOption relaxed={relaxed} onChange={setRelaxed} disabled={busy}/></>:!models.length?<p>Kalan süreye, tuğlana ve planlarına uygun bina yok. Yalnız odaklanabilir veya ayrı bir inşaat başlatabilirsin.</p>:null}
       <p className="join-summary">{canBuild?`${item.name} sana ait olacak. ${item.cost} tuğla şimdi ödenir; ${remaining} dk boyunca ${relaxed?"ekran kapalıyken de":"Kütüp açıkken"} çalışıp seansı tamamlaman gerekir. Arkadaşının binası kopyalanmaz.`:"Yalnız izlenen odak dakikaların kaydedilir. En az 20 dakika tamamlamalısın; malzeme ücreti ve kişisel bina yok."}</p>
       <Busy type="submit" className="btn primary full" loading={busy} disabled={build&&!item}>{canBuild?`${item.cost} tuğla öde ve katıl`:"Yalnız odaklanarak katıl"}</Busy>
     </form>:null}

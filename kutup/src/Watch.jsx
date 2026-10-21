@@ -88,7 +88,7 @@ export function FloatPanel({ me, now, asking, crack, phoneGone, here }) {
   const soft = asking > 0 && now - asking < 60000;
   return createPortal(
     <div className={`float ${alarm ? (soft ? "soft" : "alarm") : ""}`} onClick={asking && !crack ? here : undefined}>
-      <div className="top">{item ? `${item.emoji} ${item.name}` : "🎧 Serbest odak"}</div>
+      <div className="top">{item ? `${item.emoji} ${item.name}` : "🎧 Yalnız odak"}</div>
       <div className="clock">
         {String(Math.floor(left / 60)).padStart(2, "0")}:{String(left % 60).padStart(2, "0")}
       </div>
@@ -176,7 +176,7 @@ export function LockSheet({ minutes, start, close, notifications, askNotificatio
       {blocked ? (
         <p className="form-error">
           Bildirimler kapalı: çıkınca uyarı gelmez, binan sessizce çatlar.{" "}
-          {isIOS ? "iPhone Ayarlar → Bildirimler → Kütüp'ten aç." : "Tarayıcının site ayarlarından Bildirimler'e izin ver."} O zamana kadar Serbest modla çalışabilirsin.
+          {isIOS ? "iPhone Ayarlar → Bildirimler → Kütüp'ten aç." : "Tarayıcının site ayarlarından Bildirimler'e izin ver."} O zamana kadar Yalnız odak seçeneğiyle çalışabilirsin.
         </p>
       ) : notifications === "unsupported" && isIOS ? (
         <p className="form-footnote">Uyarı bildirimleri için Kütüp'ü ana ekrana ekle.</p>

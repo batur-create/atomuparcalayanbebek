@@ -14,6 +14,7 @@ import { DeskMates } from "./Together.jsx";
 import { Ask } from "./Help.jsx";
 import { Modal } from "./Modal.jsx";
 import { LockSheet } from "./Watch.jsx";
+import {ScreenOffOption} from "./ScreenOffOption.jsx";
 import "./delivery.css";
 import { closeBuildNotice } from "./buildNotices.js";
 import { floatSupported, floatWindow, onFloat, primeFloat } from "./float.js";
@@ -136,7 +137,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       "/focus",
       { action: "start", minutes: length, strict: fidan, relaxed: fidan && relaxed, honest: !fidan, device: onComputer() ? "desk" : "phone", rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
       fidan
-        ? relaxed ? `Rahat inşaat başladı 🌙 ${item.name} yükseliyor. Ekranı kilitleyebilirsin.` : `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
+        ? relaxed ? `İnşaat başladı 🌙 ${item.name} yükseliyor. Ekranı kilitleyebilirsin.` : `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
         : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧 Burada geçen her dakika sayılır.",
     );
     setBusy(false);
@@ -147,7 +148,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     >
       <div className="focus-card-header">
         <span>
-          <Headphones size={18} /> ODAK MODU
+          <Headphones size={18} /> ODAK
         </span>
         <button type="button" className="brick-chip" aria-label={`Tuğla kasan: ${bricks} tuğla`} onClick={() => setPicking("wallet")}>
           🧱 {bricks}
@@ -199,7 +200,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </b>
           <span>
             {running && me.focusImece ? me.focusRelaxed ? "ortak görev · ekranı kilitleyebilirsin" : "ortak görev · seansı Kütüp açıkken tamamla" : growing
-              ? me.focusRelaxed ? "🌙 rahat inşaat · ekranı kilitleyebilirsin" : onComputer()
+              ? me.focusRelaxed ? "🌙 ekranı kilitleyebilirsin" : onComputer()
                 ? "🏗️ sekmeler serbest, bu sekmeyi kapatma"
                 : `🏗️ çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön`
               : running
@@ -210,44 +211,8 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </span>
         </div>
       </div>
-      {!compact && !running && !finishing && (
-        <div className="studio-mode" role="group" aria-label="Çalışma şekli">
-          {[
-            [true, "🏗️", "İnşaat", "köye bina, tam maaş"],
-            [false, "🎧", "Serbest", "bina yok, yarım maaş"],
-          ].map(([on, icon, label, hint]) => (
-            <button
-              key={label}
-              type="button"
-              className={fidan === on ? "on" : ""}
-              aria-pressed={fidan === on}
-              onClick={() => {
-                setFidan(on);
-                storage.set("kutup-fidan-on", on ? "1" : "0");
-              }}
-            >
-              <span aria-hidden="true">{icon}</span>
-              <b>{label}</b>
-              <small>{hint}</small>
-            </button>
-          ))}
-        </div>
-      )}
       {!running && !finishing && fidan && (
-        <div className="build-mode-pick" role="group" aria-label="İnşaat şekli">
-          {[[false, "Sıkı", "Kütüp açık kalsın · tam maaş"], [true, "Rahat", "Ekranı kilitle · yarım maaş"]].map(([value, label, hint]) => (
-            <button key={label} type="button" aria-pressed={relaxed === value} onClick={() => { setRelaxed(value); storage.set("kutup-build-mode", value ? "relaxed" : "strict"); }}>
-              <b>{value ? "☾" : "✳"} {label}</b><small>{hint}</small>
-            </button>
-          ))}
-          <p>{relaxed ? "Ekranı kilitleyebilir, başka uygulamaya geçebilirsin; inşaat sürer, ara sıra bildirim gelir. Kimse izlemediği için maaş yarım, bina yine senin." : `Ekran açık kalır, pil biraz gider. Çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön, yoksa binan çatlar. Tam maaş.`}</p>
-          {relaxed && askNotifications && notificationState() !== "granted" && notificationState() !== "unsupported" && (
-            <button type="button" className="build-notice-enable" onClick={() => requireMember(askNotifications)}>Aşama bildirimlerini aç</button>
-          )}
-        </div>
-      )}
-      {!running && !finishing && fidan && (
-        <button type="button" className="build-pick" onClick={() => setPicking(true)}>
+        <><button type="button" className="build-pick" onClick={() => setPicking(true)}>
           <BuildingThumb id={item.id} size={62} />
           <span>
             <b>
@@ -259,9 +224,19 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           </span>
           <span className="build-pick-change">Değiştir</span>
         </button>
+        <button type="button" className="text-button focus-no-build" onClick={()=>{setFidan(false);storage.set("kutup-fidan-on","0");}}>Bu seansı binasız yap</button></>
+      )}
+      {!running && !finishing && fidan && (
+        <div className="build-screen-setting">
+          <ScreenOffOption relaxed={relaxed} studio onChange={value=>{setRelaxed(value);storage.set("kutup-build-mode",value?"relaxed":"strict");}}/>
+          {relaxed && askNotifications && notificationState() !== "granted" && notificationState() !== "unsupported" && (
+            <button type="button" className="build-notice-enable" onClick={() => requireMember(askNotifications)}>Aşama bildirimlerini aç</button>
+          )}
+        </div>
       )}
       {!running && !finishing && !fidan && (
         <>
+          <button type="button" className="sound-pill focus-add-build" onClick={()=>{setFidan(true);storage.set("kutup-fidan-on","1");}}>🏗️ Bina ekle · isteğe bağlı</button>
           <div className="duration-options">
             {[25, 50, 75].map((n) => (
               <button
@@ -278,12 +253,8 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       )}
       {!compact && !running && !finishing && (
         <p className="mode-hint">
-          {fidan
-            ? relaxed ? "Süreyi biz tutarız. Dönünce şantiyenin hızlandırılmış yapımını izle ve binanı gör." : onComputer()
-              ? "Bitince köyüne eklenir. Bu sekmeyi kapatma."
-              : `Bitince köyüne eklenir. Çıkarsan ${BUILD_LEAVE / 1000} sn içinde dön.`
-            : `Yapı yok: ${duration} dk → ${wageFor(duration, false)} 🧱. Uzakta geçen dakika sayılmaz.`}
-          <Ask tab="focus" topic={fidan ? "leave" : "modes"} label={fidan ? "Uygulamadan çıkarsam ne olur?" : "Serbest ne demek?"} />
+          {!fidan&&`Uygulamada geçen süre sayılır: ${duration} dk → ${wageFor(duration, false)} 🧱.`}
+          <Ask tab="focus" topic={fidan ? "leave" : "modes"} label={fidan ? "Ekran ayarı ve kurallar" : "Yalnız odak ne demek?"} />
         </p>
       )}
       {round && !running && !finishing && (

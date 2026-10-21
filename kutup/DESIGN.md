@@ -123,6 +123,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 ## 9. Onaylananlar ve reddedilenler
 
+- ✔ **Tek odak seansı (21 Eki):** Batur benzer adları ve kalabalığı kaldırma yetkisi verdi; binasız odağı inşaatın karşısında büyük bir mod gibi sunmayı sorguladı. İki büyük mod seçicisi kaldırıldı. Seçili bina + küçük binasız çalışma bağlantısı, üç akışta aynı Ekranı kapatarak çalış anahtarı. Maaş/telefon kuralı yalnız seçilen durum için kısa açıklanır. Tema jetonları, 360/390 px ve klavye kontrolü; sunucu ve mevcut tercihler korunur. Rapor `RAPOR_ODAK_SADELESTIRME.md`.
+
 - ✔ **Doğal köy (20 Eki, sonraki paketler):** Batur yapay bölgeleri ve yayılmayı düzeltmeyi istedi, uygulamayı onayladı. Kayıtlı evler aynı yerde; boş rezervler kamerayı büyütmez. Sahiplik sınırları yerine ortak çayır, ağaç kümeleri, ince toprak yollar ve ev/gölet kesmeyen komşu patikaları. Yeni evler yalnız güvenli adaylar arasından komşulara yakın yerleşir. Aynı 30 bina ile önce/sonra, telefon ve gece kontrol edildi. Rapor `RAPOR_DOGAL_KOY.md`.
 
 Her görsel kararda buraya bir satır ekle. Ayrıntı KARARLAR.md'de, işin kodu altında.

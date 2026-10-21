@@ -35,6 +35,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-join-') as temp:
                 page.locator('.focus-card').get_by_role('button',name='Katılımı seç',exact=True).click()
                 modal=page.get_by_role('dialog',name='Birlikte odaklan',exact=True);expect(modal).to_be_visible()
                 expect(modal.locator('.join-summary')).to_contain_text('Arkadaşının binası kopyalanmaz')
+                expect(modal.get_by_role('switch',name='Ekranı kapatarak çalış',exact=True)).to_be_checked()
                 check(next(m['focusEnd'] for m in api(b,'/state')['members'] if m['id']==second['memberId'])==0,'Opening the choice does not start a session')
                 check(page.evaluate('document.documentElement.scrollWidth<=390'),'Join choice fits a 390px phone')
                 modal.screenshot(path=str(out/'katilim-secimi.png'))
