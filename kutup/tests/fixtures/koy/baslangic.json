@@ -1,0 +1,159 @@
+{
+ "scene": "baslangic",
+ "synthetic": true,
+ "groupKey": "n46-baslangic",
+ "now": 1790874000000,
+ "members": [
+  {
+   "id": "m0",
+   "name": "Batur",
+   "color": "lilac",
+   "avatar": "📚",
+   "joined": 1790845200000
+  },
+  {
+   "id": "m1",
+   "name": "Bensu",
+   "color": "mint",
+   "avatar": "📚",
+   "joined": 1790845260000
+  },
+  {
+   "id": "m2",
+   "name": "Sıla",
+   "color": "blue",
+   "avatar": "📚",
+   "joined": 1790845320000
+  },
+  {
+   "id": "m3",
+   "name": "Ediz",
+   "color": "peach",
+   "avatar": "📚",
+   "joined": 1790845380000
+  }
+ ],
+ "districts": [
+  {
+   "id": "d000",
+   "memberId": "m0",
+   "q": 1,
+   "r": 0,
+   "seed": 115264787
+  },
+  {
+   "id": "d001",
+   "memberId": "m1",
+   "q": -1,
+   "r": 0,
+   "seed": 306723126
+  },
+  {
+   "id": "d002",
+   "memberId": "m2",
+   "q": 1,
+   "r": -1,
+   "seed": 143962303
+  },
+  {
+   "id": "d003",
+   "memberId": "m3",
+   "q": 0,
+   "r": 1,
+   "seed": 955446279
+  }
+ ],
+ "buildings": [
+  {
+   "id": "b000",
+   "memberId": "m0",
+   "model": "ev",
+   "kind": "house",
+   "seed": 365822,
+   "minutes": 50,
+   "created": 1790848800000,
+   "x": 13.45,
+   "y": -21.6,
+   "facing": 1,
+   "districtId": "d000"
+  },
+  {
+   "id": "b001",
+   "memberId": "m1",
+   "model": "kulube",
+   "kind": "cottage",
+   "seed": 143441,
+   "minutes": 25,
+   "created": 1790852400000,
+   "x": -19.6,
+   "y": 12.75,
+   "facing": 0,
+   "districtId": "d001"
+  },
+  {
+   "id": "b002",
+   "memberId": "m2",
+   "model": "kahve",
+   "kind": "cottage",
+   "seed": 810584,
+   "minutes": 25,
+   "created": 1790856000000,
+   "x": -9.18,
+   "y": -21.28,
+   "facing": 1,
+   "districtId": "d002"
+  },
+  {
+   "id": "b003",
+   "memberId": "m0",
+   "model": "sahaf",
+   "kind": "house",
+   "seed": 588203,
+   "minutes": 50,
+   "created": 1790859600000,
+   "x": 21.29,
+   "y": -19.48,
+   "facing": 0,
+   "districtId": "d000"
+  },
+  {
+   "id": "b004",
+   "memberId": "m3",
+   "model": "bostan",
+   "kind": "cottage",
+   "seed": 476298,
+   "minutes": 25,
+   "created": 1790863200000,
+   "x": 22.64,
+   "y": 10.74,
+   "facing": 1,
+   "districtId": "d003"
+  },
+  {
+   "id": "b005",
+   "memberId": "m1",
+   "model": "cicekci",
+   "kind": "cottage",
+   "seed": 253917,
+   "minutes": 25,
+   "created": 1790866800000,
+   "x": -24,
+   "y": 16.51,
+   "facing": 1,
+   "districtId": "d001"
+  }
+ ],
+ "sessions": [
+  {
+   "memberId": "m2",
+   "model": "ev",
+   "kind": "house",
+   "minutes": 50,
+   "strict": true,
+   "imece": false,
+   "end": 1790876280000,
+   "seed": 309338
+  }
+ ],
+ "imece": null
+}

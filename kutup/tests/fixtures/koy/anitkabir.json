@@ -1,0 +1,176 @@
+{
+ "scene": "anitkabir",
+ "synthetic": true,
+ "groupKey": "n46-anitkabir",
+ "now": 1790874000000,
+ "members": [
+  {
+   "id": "m0",
+   "name": "Batur",
+   "color": "lilac",
+   "avatar": "📚",
+   "joined": 1790845200000
+  },
+  {
+   "id": "m1",
+   "name": "Bensu",
+   "color": "mint",
+   "avatar": "📚",
+   "joined": 1790845260000
+  },
+  {
+   "id": "m2",
+   "name": "Sıla",
+   "color": "blue",
+   "avatar": "📚",
+   "joined": 1790845320000
+  },
+  {
+   "id": "m3",
+   "name": "Ediz",
+   "color": "peach",
+   "avatar": "📚",
+   "joined": 1790845380000
+  }
+ ],
+ "districts": [
+  {
+   "id": "d000",
+   "memberId": "m0",
+   "q": 1,
+   "r": 0,
+   "seed": 504369542
+  },
+  {
+   "id": "d001",
+   "memberId": "m1",
+   "q": -1,
+   "r": 0,
+   "seed": 158526409
+  },
+  {
+   "id": "d002",
+   "memberId": "m2",
+   "q": 1,
+   "r": -1,
+   "seed": 378755348
+  },
+  {
+   "id": "d003",
+   "memberId": "m3",
+   "q": 0,
+   "r": 1,
+   "seed": 597540570
+  },
+  {
+   "id": "d004",
+   "memberId": "m0",
+   "q": 2,
+   "r": 0,
+   "seed": 209732919
+  }
+ ],
+ "buildings": [
+  {
+   "id": "b000",
+   "memberId": "m0",
+   "model": "ev",
+   "kind": "house",
+   "seed": 814767,
+   "minutes": 50,
+   "created": 1790848800000,
+   "x": 20.24,
+   "y": -11.77,
+   "facing": 1,
+   "districtId": "d000"
+  },
+  {
+   "id": "b001",
+   "memberId": "m1",
+   "model": "kulube",
+   "kind": "cottage",
+   "seed": 37148,
+   "minutes": 25,
+   "created": 1790852400000,
+   "x": -21.83,
+   "y": 16.73,
+   "facing": 0,
+   "districtId": "d001"
+  },
+  {
+   "id": "b002",
+   "memberId": "m2",
+   "model": "konak",
+   "kind": "house",
+   "seed": 370005,
+   "minutes": 50,
+   "created": 1790856000000,
+   "x": -2.06,
+   "y": -25.37,
+   "facing": 0,
+   "districtId": "d002"
+  },
+  {
+   "id": "b003",
+   "memberId": "m3",
+   "model": "kahve",
+   "kind": "cottage",
+   "seed": 592386,
+   "minutes": 25,
+   "created": 1790859600000,
+   "x": 21.85,
+   "y": 1.76,
+   "facing": 0,
+   "districtId": "d003"
+  },
+  {
+   "id": "b004",
+   "memberId": "m0",
+   "model": "anitkabir",
+   "kind": "house",
+   "seed": 704291,
+   "minutes": 50,
+   "created": 1790863200000,
+   "x": 45.53,
+   "y": -41.93,
+   "facing": 1,
+   "districtId": "d004"
+  },
+  {
+   "id": "b005",
+   "memberId": "m2",
+   "model": "galata",
+   "kind": "tower",
+   "seed": 926672,
+   "minutes": 75,
+   "created": 1790866800000,
+   "x": -13.56,
+   "y": -30.75,
+   "facing": 1,
+   "districtId": "d002"
+  }
+ ],
+ "sessions": [
+  {
+   "memberId": "m3",
+   "model": null,
+   "kind": "house",
+   "minutes": 50,
+   "strict": false,
+   "imece": true,
+   "end": 1790876400000,
+   "seed": 641356
+  }
+ ],
+ "imece": {
+  "projectId": "p-n46",
+  "minutes": 640,
+  "goal": 2000,
+  "crew": [
+   "m0",
+   "m1",
+   "m2",
+   "m3"
+  ]
+ }
+}
