@@ -2,7 +2,7 @@
 // rescue card for a cracked site, the "orada mısın?" card on a computer, the
 // floating window that keeps the clock above every other app, and the lock
 // guide a phone sees before a build starts.
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Modal } from "./Modal.jsx";
 import { isIOS, keepScreenOn, storage } from "./ui.jsx";
@@ -77,9 +77,19 @@ export function HereCard({ asking, now, strict, here }) {
 
 /** The floating window's content, drawn into Chrome's picture-in-picture window. */
 export function FloatPanel({ me, now, asking, crack, phoneGone, here }) {
-  const [win, setWin] = useState(floatWindow);
-  useEffect(() => onFloat(setWin), []);
-  if (!win || !me?.focusEnd) return null;
+  // requestWindow may finish between render and subscription. React rechecks
+  // this external window snapshot so that opening cannot leave an empty body.
+  const win = useSyncExternalStore(onFloat, floatWindow);
+  if (!win) return null;
+  // Opening is requested on the start tap, before the server confirms a run.
+  // Keep the window useful even when that request is slow or fails.
+  if (!me?.focusEnd) return createPortal(
+    <div className="float">
+      <div className="top">Kütüp · odak</div>
+      <p>Seansını Kütüp'ten başlatabilirsin.</p>
+    </div>,
+    win.document.body,
+  );
   const left = Math.max(0, Math.ceil((me.focusEnd - (me.focusPausedAt || now)) / 1000));
   const total = (me.focusMinutes || 1) * 60;
   const item = me.focusStrict ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : null;
@@ -88,7 +98,7 @@ export function FloatPanel({ me, now, asking, crack, phoneGone, here }) {
   const soft = asking > 0 && now - asking < 60000;
   return createPortal(
     <div className={`float ${alarm ? (soft ? "soft" : "alarm") : ""}`} onClick={asking && !crack ? here : undefined}>
-      <div className="top">{item ? `${item.emoji} ${item.name}` : "🎧 Yalnız odak"}</div>
+      <div className="top">{me.focusImece ? "🏛️ Ortak Anıtkabir" : item ? `${item.emoji} ${item.name}` : "🎧 Yalnız odak"}</div>
       <div className="clock">
         {String(Math.floor(left / 60)).padStart(2, "0")}:{String(left % 60).padStart(2, "0")}
       </div>
@@ -107,7 +117,7 @@ export function FloatPanel({ me, now, asking, crack, phoneGone, here }) {
           </button>
         </>
       ) : (
-        <p>{me.focusPausedAt ? "☕ Çay molası" : item ? "Şantiye seni bekliyor 👀" : "Uzakta geçen dakika sayılmaz"}</p>
+        <p>{me.focusPausedAt ? "☕ Çay molası" : me.focusRelaxed ? "Ekran kapalıyken de sürer" : item ? "Şantiye seni bekliyor 👀" : "Uzakta geçen dakika sayılmaz"}</p>
       )}
     </div>,
     win.document.body,

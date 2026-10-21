@@ -1681,7 +1681,7 @@ function KutupApp({ initial, restart }) {
       {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} onVillage={()=>{setFocusScreen(false);navigate("focus");setTimeout(()=>document.querySelector(".village-map-wrap")?.scrollIntoView({behavior:"smooth",block:"center"}),150);}} />}
       {crack && <RescueCard crack={crack} rescue={rescue} letGo={letGo} />}
       {!crack && asking !== 0 && <HereCard asking={asking} now={now} strict={watchStrict} here={() => hereRef.current()} />}
-      {watchEnd > 0 && <FloatPanel me={me} now={now} asking={asking} crack={crack} phoneGone={phoneGone} here={() => hereRef.current()} />}
+      <FloatPanel me={me} now={now} asking={asking} crack={crack} phoneGone={phoneGone} here={() => hereRef.current()} />
       <JoinBanner
         friend={data.members.find((x) => x.id === joinAsk)}
         me={me}
