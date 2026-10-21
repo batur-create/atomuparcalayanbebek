@@ -1053,7 +1053,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [member.group_id, member.group_id],
       ],
       [
-        "DELETE FROM groups WHERE id = ? AND NOT EXISTS (SELECT 1 FROM members WHERE group_id = ?)",
+        // n45: a team Batur opened from the panel outlives its last member.
+        "DELETE FROM groups WHERE id = ? AND owner_made = 0 AND NOT EXISTS (SELECT 1 FROM members WHERE group_id = ?)",
         [member.group_id, member.group_id],
       ],
       bump(member.group_id),
@@ -2493,7 +2494,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   route("GET", "/owner/groups", async ({ request, ip }) => {
     await requireOwner(request, ip);
     const [groups, members] = await db.read([
-      ["SELECT id, name, invite, created FROM groups ORDER BY created DESC", []],
+      ["SELECT id, name, invite, created, owner_made AS ownerMade FROM groups ORDER BY created DESC", []],
       [
         `SELECT m.id, m.group_id AS groupId, m.name, m.avatar, m.color, m.status, m.status_until AS statusUntil, m.joined, m.username, m.badge,
            MAX(s.seen) AS seen, count(s.token) AS devices,
@@ -2513,6 +2514,39 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           .map(({ statusUntil, ...m }) => ({ ...m, status: statusUntil < now ? "away" : m.status })),
       })),
     );
+  }, false);
+
+  // n45: Batur opens a team from the panel. Nobody is added to it (not even
+  // him), no cookie is set, and the same request key sent again (a double tap,
+  // a retried call) gives back the team it already made.
+  route("POST", "/owner/groups", async ({ request, ip, body }) => {
+    await requireOwner(request, ip);
+    const name = text(body.name, 40, "Ekip adı", 2);
+    const key = body.requestKey;
+    if (typeof key !== "string" || !/^[A-Za-z0-9_-]{16,64}$/.test(key))
+      fail("İstek doğrulanamadı. Sayfayı yenileyip tekrar dene.");
+    const id = crypto.randomUUID();
+    if (!(await db.get("SELECT 1 AS hit FROM groups WHERE request_key = ?", [key])))
+      await db.run(
+        "INSERT OR IGNORE INTO groups (id, name, invite, rev, created, owner_made, request_key) VALUES (?, ?, ?, 0, ?, 1, ?)",
+        [id, name, randomToken(18), Date.now(), key],
+      );
+    const group = await db.get(
+      "SELECT id, name, invite, created, owner_made AS ownerMade FROM groups WHERE request_key = ?",
+      [key],
+    );
+    if (!group) fail("Ekip kurulamadı. Tekrar dene.", 503);
+    const created = group.id === id;
+    return json({ group: { ...group, members: [] }, created }, created ? 201 : 200);
+  }, false);
+
+  route("POST", "/owner/groups/:id/name", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const name = text(body.name, 40, "Ekip adı", 2);
+    const result = await db.run("UPDATE groups SET name = ?, rev = rev + 1 WHERE id = ?", [name, params.id]);
+    if (!result.changes) fail("Ekip bulunamadı.", 404);
+    onChange(params.id);
+    return json({ ok: true, name });
   }, false);
 
   route("POST", "/owner/groups/:id/invite", async ({ request, ip, params }) => {

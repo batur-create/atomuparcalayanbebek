@@ -830,6 +830,37 @@ export function defineSuite(target) {
     assert.equal(after.some((g) => g.name === "Başka ekip"), false, "empty groups disappear");
   });
 
+  test(`[${target}] Batur opens an empty team once, renames it, and it outlives its last member (n45)`, async () => {
+    const owner = await ownerSession();
+    const before = (await request("/owner/groups", { cookie: owner })).data.length;
+    const key = `n45-${target}-${randomBytes(8).toString("hex")}`;
+    assert.equal((await request("/owner/groups", { cookie: people.alice, body: { name: "Hukuk", requestKey: key } })).status, 401);
+    const sent = await Promise.all([1, 2].map(() => request("/owner/groups", { cookie: owner, body: { name: "Hukuk", requestKey: key } })));
+    assert.equal(new Set(sent.map((r) => r.data.group.id)).size, 1, "one team for one request, even sent twice at once");
+    assert.equal(sent.every((r) => !r.setCookie), true, "no session cookie is set");
+    const made = sent[0].data.group;
+    const retried = await request("/owner/groups", { cookie: owner, body: { name: "Hukuk", requestKey: key } });
+    assert.equal(retried.status, 200);
+    assert.equal(retried.data.group.id, made.id);
+    let groups = (await request("/owner/groups", { cookie: owner })).data;
+    assert.equal(groups.length, before + 1);
+    assert.equal(groups.find((g) => g.id === made.id).members.length, 0);
+    assert.equal((await request("/session", { cookie: people.alice })).data.group.id, group.id, "existing sessions stay put");
+    assert.equal((await request(`/owner/groups/${made.id}/name`, { cookie: owner, body: { name: "Hukuk tayfası" } })).status, 200);
+    assert.equal((await request(`/invites/${made.invite}`)).data.name, "Hukuk tayfası");
+    const renewed = (await request(`/owner/groups/${made.id}/invite`, { cookie: owner, body: {} })).data.invite;
+    const joined = await request("/join", { body: { invite: renewed, name: "Ada" } });
+    assert.equal(joined.status, 201);
+    assert.equal(joined.data.group.name, "Hukuk tayfası");
+    assert.equal((await request("/leave", { cookie: joined.cookie, body: {} })).status, 200);
+    groups = (await request("/owner/groups", { cookie: owner })).data;
+    const kept = groups.find((g) => g.id === made.id);
+    assert.ok(kept, "the team stays");
+    assert.equal(kept.members.length, 0);
+    assert.equal(kept.invite, renewed);
+    assert.equal((await request(`/owner/imece?group=${made.id}`, { cookie: owner })).data, null, "no project starts by itself");
+  });
+
   test(`[${target}] leaving removes the profile and its traces`, async () => {
     let stream;
     if (target === "node") {
