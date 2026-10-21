@@ -3,6 +3,9 @@ import { Flag } from "lucide-react";
 import { api, get } from "./api.js";
 import { Avatar, Busy } from "./ui.jsx";
 import { IMECE_ROLES } from "../shared/imece.js";
+import { ownerPlaceIn } from "./koy2/browserPlan.js";
+// n46 G: in a planned village the shared Anıtkabir's plot is found in this browser; the server checks it.
+const anitkabirPlan=(groupId)=>ownerPlaceIn(get,groupId,{subject:{type:"imece",id:"new"},model:"anitkabir",owner:null,created:Date.now()},20000);
 import "./imece.css";
 
 export function OwnerImece({groups}) {
@@ -19,13 +22,13 @@ export function OwnerImece({groups}) {
   const launch=async()=>{
     const names=selected.map(id=>people.find(m=>m.id===id)?.name).join(", ");
     if(!confirm(`Bir Taş da Senden başlatılsın mı?\n\nKadro: ${names}\nToplam 2.000 dakika. Herkes için 250 dakika kişisel görev. Takvim kilidi yok.\n\nSeçilen dört kişinin göreve katılacağını doğrula. Yanlış hesabı daha sonra Hesabı değiştir ile düzeltebilirsin.`))return;
-    setBusy(true);setError("");try{setState(await api("/owner/imece",{members:selected,groupId}));}catch(e){setError(e.message);}finally{setBusy(false);}
+    setBusy(true);setError("");try{const village=await anitkabirPlan(groupId);setState(await api("/owner/imece",{members:selected,groupId,...(village?{village}:{})}));}catch(e){setError(e.message);}finally{setBusy(false);}
   };
   const assign=async target=>{
     if(!target||!state||busy)return;
     const team=groups.find(g=>g.id===target);
     if(!confirm(`Bu projeyi ${team?.name} ekibine bağlayalım mı?\n\n${state.minutes} dk katkı, görev payları ve çizim aynen korunur. Hesapların ekipleri değişmez; gerekiyorsa bu ekipten doğru hesapları sonra seç. Var olan başka bir projenin üstüne yazılmaz.`))return;
-    setBusy(true);setError("");try{setState(await api("/owner/imece/assign",{projectId:state.id,groupId:target,rev:state.rev}));setGroupId(target);setNotice("Projenin ekibi güncellendi. Yapılan işler korundu.");}catch(e){setError(e.message);}finally{setBusy(false);}
+    setBusy(true);setError("");try{const village=await anitkabirPlan(target);setState(await api("/owner/imece/assign",{projectId:state.id,groupId:target,rev:state.rev,...(village?{village}:{})}));setGroupId(target);setNotice("Projenin ekibi güncellendi. Yapılan işler korundu.");}catch(e){setError(e.message);}finally{setBusy(false);}
   };
   const person=state?.crew.find(p=>p.slot===editing);
   const replace=async e=>{

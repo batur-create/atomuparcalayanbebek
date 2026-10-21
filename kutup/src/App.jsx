@@ -255,7 +255,7 @@ function KutupApp({ initial, restart }) {
     );
   }, [data, session]);
   const me = data.members.find((m) => m.id === session?.memberId);
-  const { village, like, error: villageError, retry: retryVillage } = useVillage(session, data.group.villageRev);
+  const { village, like, error: villageError, retry: retryVillage, planFor } = useVillage(session, data.group.villageRev);
   useSoundFollowsFocus(!!me?.focusEnd && me.focusEnd > now);
   // n14: ask about badges again after whatever can earn one.
   const lastSaid = data.messages.findLast?.((x) => x.memberId === me?.id && x.kind !== "system")?.id || "";
@@ -946,6 +946,9 @@ function KutupApp({ initial, restart }) {
   const mutate = async (path, body, success, method = "POST", onError) => {
     const epoch = sessionEpoch.current;
     try {
+      // n46 G: in a planned village a building session's plot is found here, in this browser; the server checks it.
+      if (path === "/focus" && body?.action === "start" && body.strict && body.model && village?.v2)
+        body = { ...body, village: await planFor({ subject: { type: "site", id: "new" }, model: body.model, owner: session.memberId, created: Date.now() }) };
       const result = await api(path, body, method);
       const state = result.state || (await get("/state"));
       if (epoch !== sessionEpoch.current) return false;

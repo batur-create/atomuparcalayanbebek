@@ -103,7 +103,48 @@ export async function readLayout(db, layoutId, { since = 0 } = {}) {
     plots: live(plots).map((p) => (subjects.has(p.id) ? { ...p, subject: subjects.get(p.id) } : p)),
     seq: meta.seq,
   };
-  return { row, layout, deletes: { nodes: gone(nodes), roads: gone(roads), neighborhoods: gone(foci), plots: gone(plots) } };
+  return { row, layout, subjects: placements, deletes: { nodes: gone(nodes), roads: gone(roads), neighborhoods: gone(foci), plots: gone(plots) } };
+}
+
+// ---------- n46 G: parsed layouts kept between requests ----------
+// Parsing a 300-building village costs a few milliseconds of the free plan's
+// ~10 ms per request. A layout is kept per isolate with the revision it was
+// read at; every change to a layout's rows raises that revision, so a kept
+// copy is used only when the revision still matches, and is brought forward
+// with the changed rows only (the same delta a member's app gets).
+const KEPT = new Map();
+const KEEP = 12;
+const mergeRows = (before, rows, gone) => {
+  const byId = new Map(before.map((x) => [x.id, x]));
+  for (const id of gone) byId.delete(id);
+  for (const x of rows) byId.set(x.id, x);
+  return [...byId.values()];
+};
+/** The layout at revision `rev` (from a fresh read of its row), parsed as little as possible. Do not change what it returns. */
+export async function layoutAt(db, layoutId, rev) {
+  const kept = KEPT.get(layoutId);
+  if (kept && kept.rev === rev) return kept;
+  const stored = await readLayout(db, layoutId, { since: kept && kept.rev < rev ? kept.rev : 0 });
+  if (!stored) return null;
+  let { layout } = stored;
+  if (kept && kept.rev < rev) {
+    const d = stored.deletes;
+    const plots = mergeRows(kept.layout.plots.map(({ subject, ...p }) => p), layout.plots.map(({ subject, ...p }) => p), d.plots);
+    const subjects = new Map(stored.subjects.map((p) => [p.plot, { type: p.type, id: p.id }]));
+    layout = {
+      ...layout,
+      terrain: layout.terrain || kept.layout.terrain,
+      nodes: mergeRows(kept.layout.nodes, layout.nodes, d.nodes),
+      roads: mergeRows(kept.layout.roads, layout.roads, d.roads),
+      foci: mergeRows(kept.layout.foci, layout.foci, d.neighborhoods),
+      plots: plots.map((p) => (subjects.has(p.id) ? { ...p, subject: subjects.get(p.id) } : p)),
+    };
+  }
+  const entry = { id: layoutId, rev: stored.row.rev, row: stored.row, layout };
+  KEPT.delete(layoutId);
+  KEPT.set(layoutId, entry);
+  if (KEPT.size > KEEP) KEPT.delete(KEPT.keys().next().value);
+  return entry;
 }
 
 const cursorOf = (row, contentRev) => `${row.id}:${row.rev}:${contentRev}`;
@@ -127,7 +168,8 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
   if (known && cursor === current) return { contractVersion: CONTRACT_VERSION, unchanged: true, cursor: current };
   // A delta only within the same layout and only forward; else the whole village.
   const delta = known && known.layoutId === head.id && known.rev <= head.rev ? known.rev : 0;
-  const stored = await readLayout(db, layoutId, { since: delta });
+  // The whole village comes from the kept copy when it is current (no re-parsing).
+  const stored = delta ? await readLayout(db, layoutId, { since: delta }) : { ...(await layoutAt(db, layoutId, head.rev)), deletes: {} };
   const { row, layout, deletes } = stored;
   const [placements, buildings, liked, runs, projects, stages] = await db.read([
     ["SELECT subject_type AS type, subject_id AS id, plot_id AS plot, x, y, z, facing, scale, geometry_version AS gv, model FROM village_placements WHERE layout_id = ?", [layoutId]],
@@ -154,6 +196,8 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
     serverNow: now,
     generatorVersion: row.generator_version,
     terrainVersion: row.terrain_version,
+    // The layout's id counters: a member's browser plans its own new plot on them (n46 G).
+    seq: layout.seq,
     geometryManifest: { version: GEOMETRY_VERSION, generator: GENERATOR_VERSION, terrain: TERRAIN_VERSION },
     full: !delta,
     regions: layout.terrain ? [{ key: "*", terrain: layout.terrain }] : [],

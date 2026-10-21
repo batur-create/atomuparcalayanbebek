@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api.js";
 import { mergeVillage } from "./villageWorld.js";
+import { placeIn } from "./koy2/browserPlan.js";
 
 // This app can draw a planned (v2) village; a team still on today's village gets today's answer.
 const V2 = { "X-Kutup-Village-Version": "2" };
@@ -14,6 +15,7 @@ export function useVillage(session, villageRev) {
   const [error, setError] = useState("");
   const [attempt, retry] = useState(0);
   const known = useRef({ member: null, data: null });
+  const refreshRef = useRef(async () => {});
   useEffect(() => {
     if (!session) {
       known.current = { member: null, data: null };
@@ -51,6 +53,7 @@ export function useVillage(session, villageRev) {
         inFlight = false;
       }
     };
+    refreshRef.current = refresh;
     refresh();
     window.addEventListener("online", refresh);
     return () => {
@@ -68,6 +71,13 @@ export function useVillage(session, villageRev) {
     retry((n) => n + 1);
     return r;
   };
-  return { village, like, error, retry: () => retry((n) => n + 1) };
+  // n46 G: a new plot planned here, on the village as it stands right now (one
+  // small catch-up first), for the server to check; null leaves it to the server.
+  const planFor = async (req) => {
+    if (!known.current.data?.v2) return null;
+    await refreshRef.current().catch(() => {});
+    return placeIn(known.current.data, req);
+  };
+  return { village, like, error, retry: () => retry((n) => n + 1), planFor };
 }
 
