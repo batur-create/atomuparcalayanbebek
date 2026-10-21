@@ -954,3 +954,7 @@ export function pointOnPath(path, t) {
     k = (target - path.lengths[i - 1]) / span;
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
 }
+
+// n46 köy v2 (src/koy2/world2.js) draws its village with the same art.
+export { strokeLine, fillShape, treeArt, bushArt, rockArt, lampArt, plazaArt, signArt, boxOf, lineBox, detailFor, meadowDetail, COATS, SKINS, HATS };
+export const PALETTE = { MEADOW, ROAD, ROAD_EDGE, TRACK, WATER, PLAZA_STONE, PLAZA_RING };
