@@ -2,7 +2,7 @@
 // and the coffee card. Split out of App.jsx (n29).
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Expand, Headphones, PictureInPicture2, Play, SlidersHorizontal, Square } from "lucide-react";
-import { minutesLabel } from "./api.js";
+import { api, minutesLabel } from "./api.js";
 import { Busy, keepScreenOn, releaseScreen, screenAwake, storage } from "./ui.jsx";
 import { KaraBuddy } from "./Kara.jsx";
 import { kindFor } from "../shared/village.js";
@@ -18,6 +18,7 @@ import {ScreenOffOption} from "./ScreenOffOption.jsx";
 import "./delivery.css";
 import { closeBuildNotice } from "./buildNotices.js";
 import { floatSupported, floatWindow, onFloat, primeFloat } from "./float.js";
+import { deviceId, relaxedChoice } from "./device.js";
 
 // Each digit is its own element keyed by value, so only the digit that changed
 // re-mounts and rolls in.
@@ -46,7 +47,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
-    [relaxed, setRelaxed] = useState(() => storage.get("kutup-build-mode") === "relaxed"),
+    [relaxed, setRelaxed] = useState(() => relaxedChoice(me)),
     [model, setModel] = useState(pickedModel),
     [picking, setPicking] = useState(false),
     [mixer, setMixer] = useState(false),
@@ -54,6 +55,15 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     [lock, setLock] = useState(false),
     [floating, setFloating] = useState(() => !!floatWindow());
   useEffect(() => onFloat((w) => setFloating(!!w)), []);
+  // The switch follows the account (n47): a choice made on another device shows here too.
+  useEffect(() => {
+    if (me?.buildMode) setRelaxed(me.buildMode === "relaxed");
+  }, [me?.buildMode]);
+  const chooseRelaxed = (value) => {
+    setRelaxed(value);
+    storage.set("kutup-build-mode", value ? "relaxed" : "strict");
+    if (me) api("/build-mode", { relaxed: value }).catch(() => {});
+  };
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
   // Build mode: the building sets the length. Free focus: you pick it. Under
@@ -108,7 +118,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       setBusy(true);
       const cancelled = await mutate(
         "/focus",
-        { action: "cancel" },
+        { action: "cancel", end: me.focusEnd, relaxed: !!me.focusRelaxed },
         growing
           ? early
             ? "Vazgeçtin; malzeme kasana geri döndü. Hazır olunca yeniden."
@@ -135,7 +145,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     setBusy(true);
     await mutate(
       "/focus",
-      { action: "start", minutes: length, strict: fidan, relaxed: fidan && relaxed, honest: !fidan, device: onComputer() ? "desk" : "phone", rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
+      { action: "start", minutes: length, strict: fidan, relaxed: fidan && relaxed, honest: !fidan, device: onComputer() ? "desk" : "phone", deviceId: deviceId(), rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
       fidan
         ? relaxed ? `İnşaat başladı 🌙 ${item.name} yükseliyor. Ekranı kilitleyebilirsin.` : `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
         : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧 Burada geçen her dakika sayılır.",
@@ -228,7 +238,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
       )}
       {!running && !finishing && fidan && (
         <div className="build-screen-setting">
-          <ScreenOffOption relaxed={relaxed} studio onChange={value=>{setRelaxed(value);storage.set("kutup-build-mode",value?"relaxed":"strict");}}/>
+          <ScreenOffOption relaxed={relaxed} studio onChange={chooseRelaxed}/>
           {relaxed && askNotifications && notificationState() !== "granted" && notificationState() !== "unsupported" && (
             <button type="button" className="build-notice-enable" onClick={() => requireMember(askNotifications)}>Aşama bildirimlerini aç</button>
           )}

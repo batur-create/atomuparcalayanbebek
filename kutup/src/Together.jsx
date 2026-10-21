@@ -2,6 +2,7 @@
 // right now, the tap-to-join banner from an invite, a coffee call that waits
 // for an answer, and new board messages that reach you wherever you are.
 import React, { useEffect, useRef, useState } from "react";
+import {relaxedChoice} from "./device.js";
 import { X } from "lucide-react";
 import { Avatar,Busy,storage } from "./ui.jsx";
 import {get,shortTime} from "./api.js";
@@ -31,7 +32,7 @@ export function DeskMates({me,members,now,dark=false,onJoin}){
 
 /** Invites and roster buttons open the same explicit join confirmation. */
 export function JoinBanner({friend,me,now,join,close,onImece}){
-  const [quote,setQuote]=useState(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[model,setModel]=useState(""),[build,setBuild]=useState(true),[relaxed,setRelaxed]=useState(()=>storage.get("kutup-build-mode")==="relaxed"),[attempt,setAttempt]=useState(0);
+  const [quote,setQuote]=useState(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[model,setModel]=useState(""),[build,setBuild]=useState(true),[relaxed,setRelaxed]=useState(()=>relaxedChoice(me)),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
     setQuote(null);setError("");
     if(!friend||!me)return;

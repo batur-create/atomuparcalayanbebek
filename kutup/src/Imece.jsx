@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import {deviceId} from "./device.js";
 import { ArrowRight, Check, Flag, Hammer, Users } from "lucide-react";
 import { api, get } from "./api.js";
 import { Avatar, Busy, keepScreenOn, releaseScreen, reducedMotion, storage } from "./ui.jsx";
@@ -87,7 +88,7 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
     setBusy(true);
     if(relaxed)releaseScreen();else keepScreenOn();
     try{
-      const r=await mutate("/focus",{action:"start",imece:true,minutes:length,relaxed,device:matchMedia("(pointer:coarse)").matches?"phone":"desk"},`Kara: ${length} dakikalık görev başladı. ${relaxed?"Ekranı kilitleyebilirsin; dönüşte emeğini birlikte göreceğiz.":"Kütüp açık kalsın; seçtiğin seansı tamamlayalım."}`);
+      const r=await mutate("/focus",{action:"start",imece:true,minutes:length,relaxed,device:matchMedia("(pointer:coarse)").matches?"phone":"desk",deviceId:deviceId()},`Kara: ${length} dakikalık görev başladı. ${relaxed?"Ekranı kilitleyebilirsin; dönüşte emeğini birlikte göreceğiz.":"Kütüp açık kalsın; seçtiğin seansı tamamlayalım."}`);
       if(r){setIntro(false);storage.set(`kutup-imece-intro:${memberId}:${data.started}`,"1");}
       await load();
     }finally{setBusy(false);}
@@ -114,7 +115,7 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
       <Suspense fallback={<Loading text="Ortak şantiye kuruluyor…"/>}><ImeceScene minutes={data.minutes} complete={data.complete} crew={data.crew} replay={replay} onReplayDone={replayDone}/></Suspense>
       {data.complete?<div className="imece-complete"><Flag size={28}/><h3>Son taşında hepimiz varız.</h3><p>Dört ustanın üç bölümdeki katılımı da tamamlandı. Aşağıdaki emek defteri ve Anıtkabir artık ortak hatıramız.</p></div>:<section className="imece-mission" id="imece-mission">
         <span className="imece-eyebrow">{mine?mine.role.name:"ORTAK ŞANTİYE"}</span><h3>{current?.name}</h3><p>{current?.action}</p><p className="imece-why">{current?.why}</p>
-        {working?<div className="imece-working" role="status"><Hammer size={20}/><div><strong>Görevin sürüyor · {Math.max(0,Math.ceil((me.focusEnd-now)/60000))} dk kaldı</strong><p>{me.focusRelaxed?"Ekranı kapatabilirsin. Sunucudaki süre devam eder; geri geldiğinde katkın yazılır.":"Kütüp açık kalsın. Seansın tamamı uygulamada görülürse seçilen görev yazılır."}</p><button className="text-button" disabled={busy} onClick={async()=>{if(!confirm("Bu görev seansını durduralım mı? Önceki katkılarınız korunur; bu seans projeye yazılmaz."))return;setBusy(true);try{await mutate("/focus",{action:"cancel"},"Görev durdu. Önceki ortak emeğiniz korunuyor.");await load();}finally{setBusy(false);}}}>Bu seansı durdur</button></div></div>
+        {working?<div className="imece-working" role="status"><Hammer size={20}/><div><strong>Görevin sürüyor · {Math.max(0,Math.ceil((me.focusEnd-now)/60000))} dk kaldı</strong><p>{me.focusRelaxed?"Ekranı kapatabilirsin. Sunucudaki süre devam eder; geri geldiğinde katkın yazılır.":"Kütüp açık kalsın. Seansın tamamı uygulamada görülürse seçilen görev yazılır."}</p><button className="text-button" disabled={busy} onClick={async()=>{if(!confirm("Bu görev seansını durduralım mı? Önceki katkılarınız korunur; bu seans projeye yazılmaz."))return;setBusy(true);try{await mutate("/focus",{action:"cancel",end:me.focusEnd,relaxed:!!me.focusRelaxed},"Görev durdu. Önceki ortak emeğiniz korunuyor.");await load();}finally{setBusy(false);}}}>Bu seansı durdur</button></div></div>
           : !mine?<p className="imece-explain">Bu projenin kadrosunu Batur dört kişi olarak belirledi. Şantiyeyi ve katkı defterini gezebilirsin.</p>
           : running?<p className="imece-explain">Şu an başka bir odak seansın var. Onu tamamlayınca ortak göreve başlayabilirsin.</p>
           : choices.length===0?<p className="imece-explain">Bu bölümde sana açık iş kalmadı. Bölümün toplam işi ve herkesin katılım payı tamamlanınca yeni bölüm kendiliğinden açılacak. Bu sırada kişisel köyünde çalışabilirsin.</p>

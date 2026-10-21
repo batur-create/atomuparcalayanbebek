@@ -393,6 +393,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     };
   }
   const bump = (groupId) => ["UPDATE groups SET rev = rev + 1 WHERE id = ?", [groupId]];
+  // One account, many devices (n47). Each browser sends a random id of its own;
+  // the device that started a session is the one that watches it. Any other
+  // open device only shows it: it cannot report leaving, crack or let it go.
+  const deviceOf = (body) => (typeof body.deviceId === "string" && /^[a-z0-9]{12,40}$/.test(body.deviceId) ? body.deviceId : null);
+  const watchKey = (memberId) => `focus-watch:${memberId}`;
+  const modeKey = (memberId) => `build-mode:${memberId}`;
+  const keep = (key, value) => ["INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [key, value]];
+  // A device that is not the watcher. Sessions started by an older app have no
+  // watcher: there every device keeps the old rules.
+  const notWatcher = async (memberId, body) => {
+    const watch = (await db.get("SELECT value FROM settings WHERE key = ?", [watchKey(memberId)]))?.value;
+    return !!watch && deviceOf(body) !== watch;
+  };
   // The village has its own revision so the map is only refetched when it changed.
   const bumpVillage = (groupId) => ["UPDATE groups SET village_rev = village_rev + 1 WHERE id = ?", [groupId]];
   // n14 + anket (17 Eki): a new badge gets one Pano line; hidden ones stay secret.
@@ -407,7 +420,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_imece AS focusImece, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, board_seen AS boardSeen, updated, badge";
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_imece AS focusImece, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, board_seen AS boardSeen, updated, badge, " +
+    // n47: which device of the account watches the running session, and the
+    // account's screen-off choice for the next build (kept in settings, per member).
+    "(SELECT value FROM settings WHERE key = 'focus-watch:' || members.id) AS focusWatch, (SELECT value FROM settings WHERE key = 'build-mode:' || members.id) AS buildMode";
   async function readSnapshot(groupId, now) {
     const [groups, members, focus, messages, reactions, plans, attendees, villages, weekly, planTotals] =
       await db.read([
@@ -1046,6 +1062,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM activity WHERE member_id = ?", [id]],
       ["DELETE FROM unlocks WHERE member_id = ?", [id]],
       ["DELETE FROM settings WHERE key=?",[blueprintNotices.key(id)]],
+      ["DELETE FROM settings WHERE key IN (?, ?)", [watchKey(id), modeKey(id)]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
@@ -1657,6 +1674,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (!current || current.focus_relaxed || current.focus_end <= now || current.focus_paused_at || (!current.focus_strict && !current.focus_honest)) return json({ ok: true });
       // A session started on a computer is the computer's to watch; a glance at the phone is fine.
       if (current.focus_device === "desk") return json({ ok: true });
+      // Another phone or tablet of the same account going dark is not leaving (n47).
+      if (await notWatcher(m.id, body)) return json({ ok: true, ignored: true });
       // Already away or cracked: this is the same absence, not a new countdown.
       if (current.focus_left_at > 0 || current.focus_cracked_at > 0) return json({ ok: true });
       const left = await db.run("UPDATE members SET focus_left_at = ? WHERE id = ? AND focus_end = ? AND focus_left_at = 0 AND focus_cracked_at = 0", [now, m.id, current.focus_end]);
@@ -1694,7 +1713,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // app says so itself, in case the server's countdown never ran.
     if (action === "crack") {
       const current = await db.get("SELECT focus_end, focus_strict, focus_relaxed, focus_left_at FROM members WHERE id = ?", [m.id]);
-      if (current?.focus_strict && !current.focus_relaxed && current.focus_end > now) {
+      if (current?.focus_strict && !current.focus_relaxed && current.focus_end > now && !(await notWatcher(m.id, body))) {
         const away = Math.min(Math.max(0, Number(body.away) || 0), RESCUE_HOLD);
         if (!current.focus_left_at) await db.run("UPDATE members SET focus_left_at = ? WHERE id = ? AND focus_end = ? AND focus_left_at = 0", [now - away, m.id, current.focus_end]);
         await crack(m, current.focus_end, now);
@@ -1734,7 +1753,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (current.focus_cracked_at > 0) return json({ ok: true, cracked: true });
       // Phone and computer together (n40): while the phone is out of the app,
       // the computer cannot keep the session alive; only the phone coming back can.
-      const desk = body.device === "desk";
+      // Only the watching phone coming back clears it; any other device is a helper (n47).
+      const desk = body.device === "desk" || (await notWatcher(m.id, body));
       if (desk && current.focus_left_at > 0) return json({ ok: true, phoneAway: true });
       const back = !desk && current.focus_left_at > 0 ? [bump(m.group_id)] : [];
       if (current.focus_strict) {
@@ -1757,7 +1777,16 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // In the first two minutes it costs nothing; after that the site collapses,
     // half of the materials come back now and 30% when the rubble is cleared.
     if (action === "cancel" || action === "wither") {
-      if (action === "wither" && m.focus_relaxed) return json({ ok: true });
+      if (action === "wither" && m.focus_relaxed) return json({ ok: true, ignored: true });
+      // Only the watching device lets a site go by itself; anyone may choose to (n47).
+      if (action === "wither" && body.chosen !== true && (await notWatcher(m.id, body))) return json({ ok: true, ignored: true });
+      // Giving up names the session it means (n47): a device showing an old
+      // picture (another session, or a screen-off one it took for a watched
+      // one) is sent to refresh instead of ending what it did not see.
+      if (action === "cancel" && m.focus_end > 0 && body.end != null) {
+        if (body.end !== m.focus_end) fail("Bu seans başka bir cihazda değişti. Sayfayı yenile.", 409);
+        if (!!m.focus_relaxed !== (body.relaxed === true)) fail("Bu seansın ekran ayarı başka bir cihazda farklı. Sayfayı yenile.", 409);
+      }
       if(m.focus_imece && m.focus_end>0 && m.focus_end<=now){
         await retrying(()=>settleFocus(m.group_id,now,m.id),m.group_id);
         const done=await db.get("SELECT minutes FROM imece_work WHERE id=?",[m.focus_imece_ref]);
@@ -1883,6 +1912,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && (body.joinMember || body.honest === true) ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
+      deviceOf(body) ? keep(watchKey(m.id), deviceOf(body)) : ["DELETE FROM settings WHERE key = ?", [watchKey(m.id)]],
+      ...(strict ? [keep(modeKey(m.id), relaxed ? "relaxed" : "strict")] : []),
       bump(m.group_id),
       ];
     }, m.group_id);
@@ -1948,6 +1979,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   });
 
   // The team's rhythm: anyone may set it; the board says who did.
+  // The screen-off choice for the next build follows the account (n47): every
+  // device shows the same switch. A running session keeps the mode it began with.
+  route("POST", "/build-mode", async ({ member: m, body }) => {
+    if (typeof body.relaxed !== "boolean") fail("İnşaat şekli geçerli değil.");
+    await db.batch([keep(modeKey(m.id), body.relaxed ? "relaxed" : "strict"), bump(m.group_id)]);
+    return changed(m);
+  });
   route("POST", "/rhythm", async ({ member: m, body }) => {
     const rhythm = body.rhythm == null ? null : String(body.rhythm);
     if (rhythm && !RHYTHMS[rhythm]) fail("Bu ritim yok.");
