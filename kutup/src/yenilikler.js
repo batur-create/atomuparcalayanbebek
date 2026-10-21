@@ -10,6 +10,41 @@
 
 export const YENILIKLER = [
   {
+    surum: 27,
+    tarih: "2026-10-21",
+    vakit: "gece",
+    baslik: "Yeni köy hazır, Batur açınca gelecek",
+    maddeler: [
+      "Köyün yeni hali hazır: sokaklar, meydanlar, dere, köprüler, ray ve göl kenarıyla daha gerçek bir kasaba. Şimdilik hiçbir ekipte açık değil; Batur ekip ekip açacak.",
+      "Yeni köyde inşaatlı seans başlatınca şantiyen hemen köyde görünür ve binan bitince tam o arsada yükselir.",
+      "Binan, tuğlan, dakikaların, kalplerin ve Anıtkabir emeğin geçişte olduğu gibi kalır. Binalar yerinden kendiliğinden oynamaz.",
+      "Binanın yerini beğenmezsen köyde ona uygun boş arsalar önerilir; sen seçmeden hiçbir şey taşınmaz.",
+      "Köyde komşular kahveye, sahafa, meydandaki banka gider; dere kıyısında kuşlar, bahçelerde kelebekler olur. Arada yağmur, kışın kar yağar.",
+      "Yeni köy beğenilmezse Batur 14 gün içinde tek dokunuşla eski köye döndürebilir; arada kurduğun binalar orada da yerini bulur.",
+    ],
+  },
+  {
+    surum: 26,
+    tarih: "2026-10-21",
+    vakit: "akşam",
+    baslik: "Aynı hesap, beş cihaz, tek seans",
+    maddeler: [
+      "Ekranı kapatarak çalış anahtarı artık hesabına bağlı: telefonda açtıysan bilgisayarda da açık görünür.",
+      "Seansı hangi cihazda başlattıysan o izler. Aynı hesapla açtığın diğer cihazlar seansı yalnız gösterir; kapansalar ya da kilitlenseler de binan çatlamaz, yıkılmaz.",
+      "Uzun süre açık kalmış eski bir Kütüp sekmesi, yeni sürüm çıkınca kendini yeniler; eski kurallarla çalışmaz.",
+    ],
+  },
+  {
+    surum: 25,
+    tarih: "2026-10-21",
+    vakit: "öğle",
+    baslik: "Hesap değiştirince çökme düzeldi",
+    maddeler: [
+      "Aynı telefonda birden çok hesabı olanlarda, uygulama açılırken “Küçük bir mola verdik” ekranı çıkıp bir türlü geçmeyebiliyordu. Artık telefon hangi hesaptaysan o hesabın ekibini açıyor.",
+      "O ekran yine bir gün çıkarsa “Tekrar aç” uygulamayı sunucudan tertemiz açar; aynı ekrana takılı kalmazsın.",
+    ],
+  },
+  {
     surum: 24,
     tarih: "2026-10-21",
     vakit: "öğle",

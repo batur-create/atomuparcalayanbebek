@@ -68,6 +68,7 @@ for (let i = 0; i < 5; i++) {
   await call("V1: seans bitti, bina köye", "/state", { headers: { Cookie: ada.cookie } });
   await call("V1: hediye", `/owner/members/${ege.data.memberId}/gift`, { method: "POST", headers: owner, body: { model: MODELS[i % 8] } });
 }
+for (let i = 0; i < 3; i++) await call("V1: yedek (npm run yayin önce alır)", "/owner/backup", { headers: owner });
 // The switch, as Komuta merkezi does it.
 await call("owner: köy durumu", `/owner/village/${gid}`, { headers: owner });
 const source = (await call("owner: kaynak", `/owner/village/${gid}/source`, { headers: owner })).data;
@@ -117,6 +118,7 @@ for (let i = 0; i < 3; i++) {
   if (!plans.length) continue;
   await call("üye: binayı taşı (tarayıcı planı)", `/buildings/${own.id}/move`, { method: "POST", headers: as(ada), body: { x: plans[0].plot.x, y: plans[0].plot.y, village: { layoutRev: village.layoutRev, plan: sendable(plans[0]) } } });
 }
+for (let i = 0; i < 3; i++) await call("owner: yedek, yeni köy açıkken", "/owner/backup", { headers: owner });
 const st = (await call(null, `/owner/village/${gid}`, { headers: owner })).data;
 await call("owner: eski köye dön", `/owner/village/${gid}/rollback`, { method: "POST", headers: owner, body: { active: st.active.id, contentRev: st.contentRev } });
 

@@ -22,6 +22,13 @@ test('state never moves backwards when a slow request arrives after a write', ()
   assert.equal(mergeState(current, next), next);
 });
 
+test('a reply for another team never replaces the open one', () => {
+  const current = { group: { id: 'g', rev: 8 }, serverTime: 100 };
+  assert.equal(mergeState(current, { group: { id: 'other', rev: 9 }, serverTime: 200 }), current);
+  const first = { group: { id: 'g', rev: 1 }, serverTime: 1 };
+  assert.equal(mergeState({ group: { name: '', rev: 0 }, members: [] }, first), first);
+});
+
 test('village deltas keep positions, update likes, discard departures and ignore stale responses', () => {
   const first = mergeVillage(null, raw(1, [home('a')]));
   const next = mergeVillage(first, raw(2, [home('a', 2, 1), home('b')], { partial: true }));

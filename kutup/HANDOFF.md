@@ -397,3 +397,11 @@ console.log("saved", file.split("/").pop(), "bytes", text.length, "schema", data
 3. Batur onay vermeden başlama. Onay gelince panodaki sıradaki işe (en düşük `order`'lı `next`) geç, işi `doing` yap. Tanımı eksikse önce Batur'a sor.
 4. Her paketten sonra: `npm run test:all` → `npm run deploy` → canlı duman testi (geçici veriyi sil) → commit ve push → Batur'a kısa özet.
 5. Kalite çıtası: telefonda akıcı ve okunaklı, mevcut sıcak kâğıt-lila tasarım diliyle uyumlu; her şey Türkçe ve samimi. Görsel ayrıntı Batur için çok önemli; aceleye getirme, ama her paketi canlıya almadan sonrakine geçme.
+
+## 9. Dar düzeltme: yüzen pencerenin boş kalması (21 Ekim 2026)
+
+Batur yalnız siyah kalan yüzen pencerenin düzeltilmesini, Claude'un yarım işlerinin korunmasını istedi. Dal `codex/fix-floating-black-window`, taban `5eca87e1`; teslim PR, birleştirme/yayın Batur'da. `FloatPanel`, yalnız presence watcher açıkken değil Document PiP penceresi açıkken çizilir; ekran kapalı ve ortak görev sayaçları görünür. Pencere açılışı React `useSyncExternalStore` ile izlenir; seans başlatma yanıtı beklenirken de boş ekran yok. Sunucu, şema ve odak/ödül hesapları değişmedi. `npm run test:all` **207/207**; yerel veride gerçek Chromium Document PiP ile `python tests/float_browser.py` **24/24**. Claude'un açık #61 değişikliği bu düzeltmenin üstüne `git apply --check` ile çakışmasız uygulanabiliyor; bu kontrol onun dalını değiştirmedi. Ayrıntı: [RAPOR_YUZEN_PENCERE.md](RAPOR_YUZEN_PENCERE.md).
+
+## 10. Köy yenilemesi n46, A–H (21 Ekim 2026)
+
+Yeni köy (v2) sekiz paket halinde geldi: PR #55 → #56 → #58 → #59 → #60 → #63 → #64 → H, bu sırayla birleştirilmeli. **Göç 34** bu işin; sıradaki göç 35. Yeni köy hiçbir ekipte kendiliğinden açılmaz; Batur Komuta merkezi → Ekipler → Köy düzeni'nden ekip ekip açar ve 14 gün içinde tek dokunuşla geri döner. Ücretsiz Cloudflare planında kalmak için yeni bina yeri işlemi yapanın tarayıcısında planlanır, sunucu yalnız kontrol eder (`checkPlan`). Kod `shared/koy2`, `src/koy2`, `server/village*.js`. Yayın, yedek, açma/geri dönüş, izlenecekler ve açık kalanlar (fiziksel cihaz doğrulaması bekliyor): [docs/koy/H-DEVIR.md](docs/koy/H-DEVIR.md).
