@@ -2517,8 +2517,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
 
   // n45: Batur opens a team from the panel. Nobody is added to it (not even
-  // him), no cookie is set, and the same request key sent again (a double tap,
-  // a retried call) gives back the team it already made.
+  // him), no cookie is set. The same request key with the same starting name
+  // (a double tap, a retried call) gives back the team it already made, even
+  // after a rename; the same key with a different name is refused. The
+  // comparison uses the name the team was created with, never its current one.
   route("POST", "/owner/groups", async ({ request, ip, body }) => {
     await requireOwner(request, ip);
     const name = text(body.name, 40, "Ekip adı", 2);
@@ -2528,16 +2530,19 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const id = crypto.randomUUID();
     if (!(await db.get("SELECT 1 AS hit FROM groups WHERE request_key = ?", [key])))
       await db.run(
-        "INSERT OR IGNORE INTO groups (id, name, invite, rev, created, owner_made, request_key) VALUES (?, ?, ?, 0, ?, 1, ?)",
-        [id, name, randomToken(18), Date.now(), key],
+        "INSERT OR IGNORE INTO groups (id, name, invite, rev, created, owner_made, request_key, request_name) VALUES (?, ?, ?, 0, ?, 1, ?, ?)",
+        [id, name, randomToken(18), Date.now(), key, name],
       );
     const group = await db.get(
-      "SELECT id, name, invite, created, owner_made AS ownerMade FROM groups WHERE request_key = ?",
+      "SELECT id, name, invite, created, owner_made AS ownerMade, request_name AS requested FROM groups WHERE request_key = ?",
       [key],
     );
     if (!group) fail("Ekip kurulamadı. Tekrar dene.", 503);
-    const created = group.id === id;
-    return json({ group: { ...group, members: [] }, created }, created ? 201 : 200);
+    const { requested, ...team } = group;
+    if (requested !== name)
+      fail(`Bu istek daha önce “${requested}” adıyla bir ekip kurdu. Pencereyi kapatıp Ekipler listesine bak; yeni bir ekip için formu yeniden aç.`, 409);
+    const created = team.id === id;
+    return json({ group: { ...team, members: [] }, created }, created ? 201 : 200);
   }, false);
 
   route("POST", "/owner/groups/:id/name", async ({ request, ip, params, body }) => {

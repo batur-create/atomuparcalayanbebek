@@ -848,6 +848,10 @@ export function defineSuite(target) {
     assert.equal((await request("/session", { cookie: people.alice })).data.group.id, group.id, "existing sessions stay put");
     assert.equal((await request(`/owner/groups/${made.id}/name`, { cookie: owner, body: { name: "Hukuk tayfası" } })).status, 200);
     assert.equal((await request(`/invites/${made.invite}`)).data.name, "Hukuk tayfası");
+    const late = await request("/owner/groups", { cookie: owner, body: { name: "Hukuk", requestKey: key } });
+    assert.equal(late.status, 200, "the original request repeated after a rename still finds its team");
+    assert.equal(late.data.group.id, made.id);
+    assert.equal((await request("/owner/groups", { cookie: owner, body: { name: "Hukuk tayfası", requestKey: key } })).status, 409, "same key, other starting name");
     const renewed = (await request(`/owner/groups/${made.id}/invite`, { cookie: owner, body: {} })).data.invite;
     const joined = await request("/join", { body: { invite: renewed, name: "Ada" } });
     assert.equal(joined.status, 201);

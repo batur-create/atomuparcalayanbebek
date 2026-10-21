@@ -189,9 +189,38 @@ test("sending the same create again, or twice at once, gives back one team (n45)
   assert.equal(new Set(both.map((r) => r.data.group.id)).size, 1);
   assert.deepEqual(both.map((r) => r.status).sort(), [200, 200, 201]);
   assert.equal(groups(), 3);
+  // The same key with other starting parameters is refused and changes nothing.
+  const clash = await call(app, "/owner/groups", { method: "POST", headers: owner, body: { name: "Hukuk", requestKey: KEY } });
+  assert.equal(clash.status, 409);
+  assert.match(clash.data.error, /“Tıp” adıyla/);
+  assert.equal(groups(), 3);
+  assert.equal(sqlite.prepare("SELECT name FROM groups WHERE request_key = ?").get(KEY).name, "Tıp");
+  // Spacing is normalised the same way as on creation, so it is the same request.
+  assert.equal((await call(app, "/owner/groups", { method: "POST", headers: owner, body: { name: "  Tıp ", requestKey: KEY } })).status, 200);
   // A new form (new key) is a new team, even with the same name.
   assert.equal((await call(app, "/owner/groups", { method: "POST", headers: owner, body: { name: "Tıp", requestKey: "n45-request-key-0003" } })).status, 201);
   assert.equal(groups(), 4);
+});
+
+test("a repeat is judged by the name the team was created with, not its current name (n45)", async () => {
+  const { sqlite, app, owner } = await team();
+  const groups = () => sqlite.prepare("SELECT count(*) AS n FROM groups").get().n;
+  const first = await call(app, "/owner/groups", { method: "POST", headers: owner, body: { name: "Tıp", requestKey: KEY } });
+  assert.equal(first.status, 201);
+  assert.equal((await call(app, `/owner/groups/${first.data.group.id}/name`, { method: "POST", headers: owner, body: { name: "Tıp Fakültesi" } })).status, 200);
+  // The late repeat of the original request still finds its team, under the new name.
+  const late = await call(app, "/owner/groups", { method: "POST", headers: owner, body: { name: "Tıp", requestKey: KEY } });
+  assert.equal(late.status, 200);
+  assert.equal(late.data.created, false);
+  assert.equal(late.data.group.id, first.data.group.id);
+  assert.equal(late.data.group.name, "Tıp Fakültesi");
+  // Sending the current name with the old key is a different request: refused.
+  const renamedClash = await call(app, "/owner/groups", { method: "POST", headers: owner, body: { name: "Tıp Fakültesi", requestKey: KEY } });
+  assert.equal(renamedClash.status, 409);
+  assert.equal(groups(), 2);
+  assert.deepEqual({ ...sqlite.prepare("SELECT name, request_name FROM groups WHERE id = ?").get(first.data.group.id) }, { name: "Tıp Fakültesi", request_name: "Tıp" }, "a rename never touches the starting parameters");
+  // Teams opened in the app carry no request parameters.
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM groups WHERE owner_made = 0 AND (request_key IS NOT NULL OR request_name IS NOT NULL)").get().n, 0);
 });
 
 test("Batur renames a team; members see it on their next read (n45)", async () => {
@@ -271,6 +300,6 @@ test("backup and restore keep a team Batur opened (n45)", async () => {
   const { restoreBackup } = await import("../server/restore.js");
   const copy = new DatabaseSync(":memory:");
   await restoreBackup(backup, copy);
-  assert.deepEqual({ ...copy.prepare("SELECT name, owner_made, request_key FROM groups WHERE id = ?").get(made.id) }, { name: "Hukuk", owner_made: 1, request_key: KEY });
+  assert.deepEqual({ ...copy.prepare("SELECT name, owner_made, request_key, request_name FROM groups WHERE id = ?").get(made.id) }, { name: "Hukuk", owner_made: 1, request_key: KEY, request_name: "Hukuk" });
   copy.close();
 });

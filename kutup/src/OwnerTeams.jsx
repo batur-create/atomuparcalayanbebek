@@ -91,6 +91,8 @@ export function NewTeamModal({ close, changed }) {
       await changed();
     } catch (err) {
       setError(err.message);
+      // The key already made a team under another starting name: show it in the list.
+      if (err.status === 409) changed();
     } finally {
       setBusy(false);
     }
