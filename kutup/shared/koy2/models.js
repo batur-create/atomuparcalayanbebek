@@ -20,9 +20,27 @@ export const CONTEXT = {
   kemer: "bridge",
   istasyon: "rail", // platform along the railway
 };
+// How the water and rail models sit on their context, read off their drawings
+// (src/rareBuildings.js, src/rareBuildings2.js, src/vernacular.js) in drawing
+// units; modelSpec() multiplies by the model's scale. Local facing-0 axes.
+//   door:  the public entrance when it is not centred on the +y wall
+//   wet:   points that must stand in the river (the mill wheel)
+//   dry:   the part that must stay on dry ground (the mill body, the platform)
+//   track: the rails drawn with the model, laid on the railway (local y, x0..x1)
+//   span:  the deck crosses the river along local x (the river runs along y)
+const FIT = {
+  sudegirmeni: { door: { x: 1.45, y: 0.37, dir: [1, 0] }, wet: [[-0.45, 1.48]], dry: [-1.45, -1.2, 1.45, 1.0] },
+  istasyon: { door: { x: 0, y: -1.25, dir: [0, -1] }, track: { y: 1.98, x0: -2.5, x1: 2.5 }, dry: [-2.25, -1.25, 2.25, 1.4] },
+  yuzenev: { door: { x: 3.0, y: 0.62, dir: [1, 0] } },
+  asmakopru: { span: true },
+  kemer: { span: true },
+};
+const times = (v, k) => (Array.isArray(v) ? v.map((x) => times(x, k)) : typeof v === "number" ? v * k : v);
+
 // Landmarks get a plot of their own with a forecourt and an approach road.
 const LANDMARK_SIZE = 5;
-export const isLandmark = (id) => MONUMENTS.has(id) || Math.max(...MODEL_DATA[id].over.map(Math.abs)) >= LANDMARK_SIZE;
+// (A bridge is long, not a landmark: its plot is the crossing itself.)
+export const isLandmark = (id) => MONUMENTS.has(id) || (!CONTEXT[id] && Math.max(...MODEL_DATA[id].over.map(Math.abs)) >= LANDMARK_SIZE);
 
 // Space in front of the door (garden, steps, forecourt) and around the sides.
 const FRONT = { cottage: 0.9, house: 1.1, tower: 1.1 };
@@ -42,13 +60,17 @@ export function modelSpec(id, version = GEOMETRY_VERSION) {
   const span = Math.max(g[2] - g[0], g[3] - g[1]);
   // Bridges are entered from both ends of the deck (along local x); every
   // other model has one public door, centred on its +y wall (src/iso.js).
+  const fit = FIT[id] || {};
+  const k = m.k;
   const entrances =
     context === "bridge"
       ? [
           { x: g[0], y: 0, dir: [-1, 0], type: "main" },
           { x: g[2], y: 0, dir: [1, 0], type: "main" },
         ]
-      : [{ x: 0, y: g[3], dir: [0, 1], type: "main" }];
+      : fit.door
+        ? [{ x: fit.door.x * k, y: fit.door.y * k, dir: fit.door.dir, type: "main" }]
+        : [{ x: 0, y: g[3], dir: [0, 1], type: "main" }];
   const spec = {
     id,
     version,
@@ -60,10 +82,16 @@ export function modelSpec(id, version = GEOMETRY_VERSION) {
     entrances,
     context,
     landmark,
-    // Landmarks keep a forecourt a third of their size deep for the view and the crowd.
-    front: landmark ? Math.max(3, span * 0.33) : FRONT[m.kind] || 1,
+    // Landmarks keep a forecourt a third of their size deep for the view and the crowd;
+    // a bridge's landings are its front.
+    front: landmark ? Math.max(3, span * 0.33) : context === "bridge" ? 0 : FRONT[m.kind] || 1,
     side: landmark ? 1.2 : SIDE,
     facings: [0, 1],
+    fit: {
+      wet: fit.wet ? times(fit.wet, k) : null,
+      dry: fit.dry ? times(fit.dry, k) : null,
+      track: fit.track ? { y: fit.track.y * k, x0: fit.track.x0 * k, x1: fit.track.x1 * k } : null,
+    },
   };
   cache.set(key, spec);
   return spec;
@@ -78,7 +106,7 @@ export const worldRect = (r, x, y, facing) => {
   const l = localRect(r, facing);
   return [x + l[0], y + l[1], x + l[2], y + l[3]];
 };
-const turn = ([a, b], facing) => (facing ? [b, a] : [a, b]);
+export const turn = ([a, b], facing) => (facing ? [b, a] : [a, b]);
 /** Doors of a placed model in world coordinates: point just outside the wall and outward direction. */
 export function doorsAt(spec, x, y, facing) {
   return spec.entrances.map((e) => {
@@ -92,10 +120,10 @@ export function shapeAt(spec, x, y, facing) {
   const ground = worldRect(spec.ground, x, y, facing),
     over = worldRect(spec.over, x, y, facing);
   const both = [Math.min(ground[0], over[0]), Math.min(ground[1], over[1]), Math.max(ground[2], over[2]), Math.max(ground[3], over[3])];
-  const [dx, dy] = turn([0, 1], facing);
+  const [dx, dy] = turn(spec.entrances[0].dir, facing);
   const s = spec.side,
     f = spec.front;
   // The front margin lies on the door side; the others get the side margin.
-  const plot = [both[0] - s, both[1] - s, both[2] + s + (dx > 0 ? f : 0), both[3] + s + (dy > 0 ? f : 0)];
+  const plot = [both[0] - s - (dx < 0 ? f : 0), both[1] - s - (dy < 0 ? f : 0), both[2] + s + (dx > 0 ? f : 0), both[3] + s + (dy > 0 ? f : 0)];
   return { ground, over, plot };
 }

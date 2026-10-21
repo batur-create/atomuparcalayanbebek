@@ -1,13 +1,23 @@
-// n46 köy v2 terrain: one river with a lake on it and one country railway,
-// drawn from the layout's seed, laid out before any house so that a
-// watermill, a floating house, a bridge or a station always has somewhere
-// true to stand. The village starts on dry ground around the square; water
-// and rails lie a short walk away, and a model that needs them opens a
-// connected street towards them (plan §4.4, §5.4).
+// n46 köy v2 terrain: one river, one pond and one country railway, drawn
+// from the layout's seed, laid out before any house so that a watermill, a
+// floating house, a bridge or a station always has somewhere true to stand.
+// The village starts on dry ground around the square; water and rails lie a
+// short walk away, and a model that needs them opens a connected street
+// towards them (plan §4.4, §5.4).
+//
+// Where each lies follows the drawings. The isometric camera looks from the
+// +x/+y side, so a model shows only its +x and +y faces: the mill's wheel,
+// the station's platform rails and the floating house's jetty are all drawn
+// there. So the river and the railway run in front of the village (towards
+// +y and +x, one each), where a mill or a station on the village side turns
+// its wheel or its platform to them; the pond lies behind (towards −x or −y),
+// where a floating house's jetty and a lighthouse's door look back to the
+// houses. The railway crosses the river on its own bridge well outside the
+// village (≥ 70 units, about 110 m, from the square).
 //
 // Same seed + version → the same numbers on every host. Ground is level
 // (z = 0) in version 1; heightAt() is where terraces come in later.
-import { bend, hash, linePoint, q, rng } from "./geom.js";
+import { bend, hash, linesCross, q, rng } from "./geom.js";
 
 export const TERRAIN_VERSION = 1;
 export const RIVER_WIDTH = 3.2; // about 5 m
@@ -17,8 +27,8 @@ const REACH = 320; // half length of the river and railway
 function meander(base, dir, normal, R) {
   const p1 = R() * Math.PI * 2,
     p2 = R() * Math.PI * 2,
-    a1 = 4 + R() * 3,
-    a2 = 1.5 + R() * 1.5;
+    a1 = 3 + R() * 2.5,
+    a2 = 1 + R() * 1.2;
   const pts = [];
   for (let s = -REACH; s <= REACH; s += 6) {
     const n = a1 * Math.sin(s / 41 + p1) + a2 * Math.sin(s / 17 + p2);
@@ -29,41 +39,45 @@ function meander(base, dir, normal, R) {
 
 export function makeTerrain(seed, version = TERRAIN_VERSION) {
   const R = rng(hash(`terrain:${version}:${seed}`));
-  // The river passes 44–52 units (70–85 m) from the square.
-  const a = R() * Math.PI * 2,
-    dist = 44 + R() * 8;
-  const normal = [Math.cos(a), Math.sin(a)],
-    dir = [-Math.sin(a), Math.cos(a)];
+  // The river in front, 44–52 units (70–85 m) from the square, nearly square to an axis.
+  const front = R() < 0.5 ? 0 : 1;
+  const rn = front ? [1, 0] : [0, 1],
+    tn = front ? [0, 1] : [1, 0];
+  const tilt = (R() * 2 - 1) * 0.12;
+  const normal = [rn[0] * Math.cos(tilt) - rn[1] * Math.sin(tilt), rn[0] * Math.sin(tilt) + rn[1] * Math.cos(tilt)];
+  const dir = [-normal[1], normal[0]];
+  const dist = 44 + R() * 8;
   const river = meander([normal[0] * dist, normal[1] * dist], dir, normal, R);
-  // A lake where the river widens, a little up or down stream of the closest point.
-  const along = (R() * 2 - 1) * 24;
-  const at = linePoint(river, [normal[0] * dist + dir[0] * along, normal[1] * dist + dir[1] * along]).point;
+  // The railway along the other front axis, 58–70 units out, gently bent so a
+  // station finds a straight run; it crosses the river far from the houses.
+  let rail = null;
+  for (let tries = 0; tries < 8 && !rail; tries++) {
+    const d2 = 58 + R() * 12;
+    const t2 = [-tn[1], tn[0]];
+    const start = [tn[0] * d2 - t2[0] * REACH, tn[1] * d2 - t2[1] * REACH],
+      end = [tn[0] * d2 + t2[0] * REACH, tn[1] * d2 + t2[1] * REACH];
+    const line = bend(start, end, (R() * 2 - 1) * 12, 80);
+    let ok = true;
+    for (let i = 1; i < line.length && ok; i++)
+      for (let j = 1; j < river.length && ok; j++)
+        if (linesCross([line[i - 1], line[i]], [river[j - 1], river[j]]) && Math.hypot(line[i][0], line[i][1]) < 70) ok = false;
+    if (ok) rail = line;
+  }
+  // The pond behind the village, opposite the railway, 30–38 units out.
+  const pa = Math.atan2(-tn[1], -tn[0]) + (R() * 2 - 1) * 0.5;
+  const pd = 30 + R() * 8;
+  const cx = Math.cos(pa) * pd,
+    cy = Math.sin(pa) * pd;
   const rx = 10 + R() * 3,
     ry = 6.5 + R() * 2;
-  const cx = at[0] + normal[0] * 2.5,
-    cy = at[1] + normal[1] * 2.5;
   const lake = [];
   for (let i = 0; i < 28; i++) {
     const t = (i / 28) * Math.PI * 2,
-      wob = 1 + 0.07 * Math.sin(3 * t + a) + 0.05 * Math.sin(5 * t + 2 * a);
-    // The long axis lies along the river.
+      wob = 1 + 0.07 * Math.sin(3 * t + pa) + 0.05 * Math.sin(5 * t + 2 * pa);
+    // The long side faces the village.
     const u = Math.cos(t) * rx * wob,
       v = Math.sin(t) * ry * wob;
-    lake.push([q(cx + dir[0] * u + normal[0] * v), q(cy + dir[1] * u + normal[1] * v)]);
-  }
-  // The railway runs on the other side of the square, 58–70 units out,
-  // never crossing the river near the village.
-  let rail = null;
-  for (let tries = 0; tries < 8 && !rail; tries++) {
-    const b = a + Math.PI + (R() * 2 - 1) * 0.7,
-      d2 = 58 + R() * 12;
-    const n2 = [Math.cos(b), Math.sin(b)],
-      t2 = [-Math.sin(b), Math.cos(b)];
-    const start = [n2[0] * d2 - t2[0] * REACH, n2[1] * d2 - t2[1] * REACH],
-      end = [n2[0] * d2 + t2[0] * REACH, n2[1] * d2 + t2[1] * REACH];
-    const line = bend(start, end, (R() * 2 - 1) * 18, 40);
-    const near = line.filter((p) => Math.hypot(p[0], p[1]) < 160);
-    if (near.every((p) => linePoint(river, p).d > RIVER_WIDTH + 6)) rail = line;
+    lake.push([q(cx - Math.sin(pa) * u + Math.cos(pa) * v), q(cy + Math.cos(pa) * u + Math.sin(pa) * v)]);
   }
   return { version, seed, river: { pts: river, w: RIVER_WIDTH }, lake: { poly: lake, cx: q(cx), cy: q(cy) }, rail: rail ? { pts: rail, w: RAIL_WIDTH } : null };
 }
