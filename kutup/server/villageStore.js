@@ -133,7 +133,7 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
     ["SELECT id, member_id AS memberId, kind, model, seed, minutes, created, likes, patched, gift FROM buildings WHERE group_id = ? ORDER BY created, id", [groupId]],
     ["SELECT building_id AS id FROM building_likes WHERE member_id = ? AND building_id IN (SELECT id FROM buildings WHERE group_id = ?)", [memberId, groupId]],
     [
-      `SELECT r.id, r.member_id AS memberId, r.model, r.minutes, r.started, r.ends, r.status, r.timing_revision AS timingRevision, m.focus_paused_at AS paused
+      `SELECT r.id, r.member_id AS memberId, r.model, r.minutes, r.started, r.ends, r.status, r.timing_revision AS timingRevision, m.focus_paused_at AS paused, m.focus_end AS focusEnd, m.focus_cracked_at AS cracked
        FROM focus_runs r JOIN members m ON m.id = r.member_id AND m.focus_run_id = r.id WHERE r.group_id = ? AND r.status = 'running' AND r.mode IN ('strict','relaxed')`,
       [groupId],
     ],
@@ -147,6 +147,7 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
     groupId,
     layoutId: row.id,
     layoutRev: row.rev,
+    seed: row.seed,
     contentRev: group.contentRev,
     cursor: current,
     serverNow: now,
@@ -162,17 +163,25 @@ export async function v2Village(db, { groupId, memberId, layoutId, cursor, now =
     deletes,
     // Every building of the team, placed or (in a draft that is behind) not yet.
     buildings: buildings.map((b) => ({ ...b, liked: mine.has(b.id), patched: !!b.patched, placement: at.get(`building:${b.id}`) || null })),
-    sites: runs.map((r) => ({
-      focusRunId: r.id,
-      memberId: r.memberId,
-      modelId: r.model,
-      status: r.paused ? "paused" : "running",
-      timingRevision: r.timingRevision,
-      durationMs: r.minutes * 60000,
-      verifiedElapsedMs: Math.max(0, Math.min(r.minutes * 60000, now - r.started)),
-      serverAsOf: now,
-      placement: at.get(`site:${r.id}`) || null,
-    })),
+    // The stage the server stands behind: the session's own minutes so far
+    // (a break or a rescue moves the end, not the work), frozen while paused.
+    sites: runs.map((r) => {
+      const duration = r.minutes * 60000,
+        asOf = r.paused || now;
+      const elapsed = Math.max(0, Math.min(duration, duration - Math.max(0, r.focusEnd - asOf)));
+      return {
+        focusRunId: r.id,
+        memberId: r.memberId,
+        modelId: r.model,
+        status: r.paused ? "paused" : r.cracked ? "cracked" : r.focusEnd <= now ? "completing" : "running",
+        timingRevision: r.timingRevision,
+        durationMs: duration,
+        verifiedElapsedMs: elapsed,
+        verifiedStage: Math.round((elapsed / duration) * 1000) / 1000,
+        serverAsOf: now,
+        placement: at.get(`site:${r.id}`) || null,
+      };
+    }),
     projects: projects.map((p) => ({ id: p.id, started: p.started, completed: p.completed, placement: at.get(`imece:${p.id}`) || null })),
     weeklyMonument: { stages: stages[0]?.n || 0, placement: at.get(`weekly_monument:${groupId}`) || null },
   };
