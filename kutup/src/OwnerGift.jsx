@@ -9,6 +9,7 @@ import { Busy } from "./ui.jsx";
 import { Modal } from "./Modal.jsx";
 import { BuildingThumb } from "./Economy.jsx";
 import { Loading } from "./Illustrations.jsx";
+import { ownerPlaceIn } from "./koy2/browserPlan.js";
 
 const DEFAULT_NOTE = "Batur'dan hediye";
 // Buildings whose plan can be given: the rare ones and the weekly ones (after
@@ -101,7 +102,11 @@ export function GiftModal({ member, close, changed }) {
               onClick={() =>
                 run(
                   "gift",
-                  () => api(`/owner/members/${member.id}/gift`, { model: item.id, note: note.trim() }),
+                  // n46 G: in a planned village the plot is found in this browser; the server checks it.
+                  async () => {
+                    const village = await ownerPlaceIn(get, member.groupId, { subject: { type: "building", id: "new" }, model: item.id, owner: member.id, created: Date.now() });
+                    return api(`/owner/members/${member.id}/gift`, { model: item.id, note: note.trim(), ...(village ? { village } : {}) });
+                  },
                   `${item.emoji} ${item.name} ${member.name} kişisinin köyüne kondu. Bildirimi açıksa telefonuna düştü 🎁`,
                 )
               }

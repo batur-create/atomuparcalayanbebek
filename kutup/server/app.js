@@ -10,6 +10,10 @@ import { createPushOutbox } from "./outbox.js";
 import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
 import {createBlueprintNotices} from "./blueprintNotices.js";
 import { createImece } from "./imece.js";
+import { layoutFrom } from "../shared/koy2/draft.js";
+import { activeLayout, convertStatements, moveOptions, moveStatements, placeStatements } from "./villageSpatial.js";
+import { COMPATIBILITY_VERSION, contentChange, layoutStatements, readLayout, releaseStatements, v2Village } from "./villageStore.js";
+import { activateStatements, checkLayout, checkPart, inventory, rollbackStatements, storeStatements, switchState } from "./villageSwitch.js";
 import { BACKUP_TABLES } from "../shared/backup.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
@@ -164,8 +168,7 @@ function json(data, status = 200, headers = {}) {
   for (const [key, value] of Array.isArray(headers) ? headers : Object.entries(headers)) list.append(key, value);
   return new Response(JSON.stringify(data), { status, headers: list });
 }
-async function readBody(request) {
-  const max = 16384;
+async function readBody(request, max = 16384) {
   if (Number(request.headers.get("content-length")) > max) fail("İstek çok büyük.", 413);
   if (!request.body) return "";
   const reader = request.body.getReader();
@@ -187,6 +190,8 @@ async function readBody(request) {
     reader.releaseLock();
   }
 }
+// A whole village layout (about 90 KB for a hundred buildings), owner only.
+const BIG_BODY = 2_000_000;
 export const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "same-origin",
@@ -700,6 +705,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
               focus_cost AS cost, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd,
               focus_honest AS honest, focus_away AS away, focus_rescued AS rescued, focus_cracked_at AS cracked, focus_relaxed AS relaxed,
               focus_imece AS imece, focus_imece_phase AS imecePhase, focus_imece_personal AS imecePersonal, focus_imece_ref AS imeceRef, focus_imece_project AS imeceProject,
+              focus_run_id AS runId,
               EXISTS (SELECT 1 FROM focus_log f WHERE f.member_id = members.id AND f.created >= ${day} AND f.created < members.focus_end) AS earlier
        FROM members WHERE ${due}`,
       args,
@@ -765,10 +771,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           statements.push(
             ...districtChanges(groupId, spot?.changes, guard),
             [
-              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, patched)
-               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ?, focus_rescued FROM members WHERE id = ? AND focus_end = ?`,
+              `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, patched, source_focus_run_id)
+               SELECT ?, id, group_id, ?, ?, focus_minutes, focus_seed, focus_end, ?, ?, ?, ?, ?, focus_rescued, focus_run_id FROM members WHERE id = ? AND focus_end = ?`,
               [buildingId, item.kind, item.id, now, spot?.x ?? null, spot?.y ?? null, spot?.facing ?? 0, spot?.district.id ?? null, s.id, s.ends],
             ],
+            // n46 C: the run's site becomes this building, once (unique source run).
+            ...(s.runId ? [...convertStatements(s.runId, buildingId, guard), ...contentChange(groupId, "site", s.runId, "convert", buildingId, now, guard)] : []),
+            ...contentChange(groupId, "building", buildingId, "create", s.runId, now, guard),
             ...(s.relaxed ? [[
               `INSERT INTO build_deliveries (id, member_id, model, kind, seed, minutes, ends, reward, created)
                SELECT ?, id, ?, ?, focus_seed, focus_minutes, focus_end, ?, ? FROM members WHERE id = ? AND focus_end = ?`,
@@ -798,8 +807,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             "INSERT INTO activity (id, member_id, kind, detail, created) SELECT ?, id, 'collapse', ?, focus_end FROM members WHERE id = ? AND focus_end = ?",
             [randomHex(16), item.id, s.id, s.ends],
           ],
+          ...(s.runId ? [...releaseStatements("site", "?", [s.runId]), ...contentChange(groupId, "site", s.runId, "release", "failed", now, ["EXISTS (SELECT 1 FROM members WHERE id = ? AND focus_end = ?)", [s.id, s.ends]])] : []),
         );
       }
+      // n46 C: the stable run gets its one result; its building, if any, is the one above.
+      statements.push([
+        "UPDATE focus_runs SET status = ?, ends = ?, result = ?, building_id = (SELECT id FROM buildings WHERE source_focus_run_id = focus_runs.id), settled = ? WHERE id = (SELECT focus_run_id FROM members WHERE id = ? AND focus_end = ?) AND status = 'running'",
+        [finished ? "completed" : "failed", s.ends, finished ? `${s.credit}` : null, now, s.id, s.ends],
+      ]);
       for (const [delta, reason, note] of pay) statements.push(ledgerRow(s.id, delta, reason, ref, note, now, s.ends));
     }
     statements.push(...await imece.settle(sessions, now));
@@ -825,7 +840,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (finishing.length)
       statements.push(...(await monumentStatements(groupId, now, finishing.reduce((t, s) => t + s.credit, 0), finishing.at(-1).id)));
     statements.push(
-      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE ${due}`, args],
+      [`UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0, focus_run_id = NULL WHERE ${due}`, args],
       bump(groupId),
     );
     return statements;
@@ -882,6 +897,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (state?.expiredPause) {
       const pause = "CASE WHEN focus_minutes >= 70 THEN 600000 WHEN focus_minutes >= 40 THEN 300000 ELSE 0 END";
       await db.batch([
+        // n46 D: the site's timing changed; its run stays the same.
+        [`UPDATE focus_runs SET timing_revision = timing_revision + 1 WHERE id IN (SELECT focus_run_id FROM members WHERE group_id = ? AND focus_paused_at > 0 AND ? - focus_paused_at >= ${pause})`, [groupId, now]],
         [`UPDATE members SET focus_end = focus_end + ${pause}, focus_beat = focus_paused_at + ${pause}, focus_paused_at = 0 WHERE group_id = ? AND focus_paused_at > 0 AND ? - focus_paused_at >= ${pause}`, [groupId, now]],
         bump(groupId),
       ]);
@@ -1052,6 +1069,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [Date.now(), id],
       ],
       ["DELETE FROM building_likes WHERE member_id = ? OR building_id IN (SELECT id FROM buildings WHERE member_id = ?)", [id, id]],
+      // n46 C: their buildings and any site leave every layout; the change is logged.
+      ...releaseStatements("building", "SELECT id FROM buildings WHERE member_id = ?", [id]),
+      ...releaseStatements("site", "SELECT id FROM focus_runs WHERE member_id = ?", [id]),
+      ...contentChange(member.group_id, "member", id, "delete", null, Date.now()),
+      ["DELETE FROM request_receipts WHERE actor = ?", [id]],
+      ["DELETE FROM focus_runs WHERE member_id = ?", [id]],
       ["DELETE FROM buildings WHERE member_id = ?", [id]],
       ["UPDATE districts SET member_id = NULL, buildings = 0 WHERE member_id = ?", [id]],
       ["DELETE FROM subscriptions WHERE member_id = ?", [id]],
@@ -1097,12 +1120,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- routes ----------
   const routes = [];
-  const route = (method, path, handler, auth = true) => {
+  // `big`: an owner-only route that takes a whole village layout; the owner is checked before the body is read.
+  const route = (method, path, handler, auth = true, big = false) => {
     const keys = [];
     const pattern = new RegExp(
       `^${path.replace(/:(\w+)/g, (_, key) => (keys.push(key), "([^/]+)"))}$`,
     );
-    routes.push({ method, pattern, keys, handler, auth });
+    routes.push({ method, pattern, keys, handler, auth, big });
   };
   // Every write answers with the fresh state so the client needs no second request.
   const changed = async (member, extra = {}, status = 200) => {
@@ -1594,7 +1618,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     // session releases its reservation, never pretends the selected work is done.
     if (m.focus_imece) {
       await retrying(async () => [
-        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL,focus_imece_project=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
+        ["UPDATE focus_runs SET status='cancelled', settled=?, result='stopped' WHERE id=(SELECT focus_run_id FROM members WHERE id=? AND focus_end=?) AND status='running'", [Date.now(),m.id,current.focus_end]],
+        ["UPDATE members SET focus_end=0, focus_minutes=0, focus_imece=0, focus_imece_phase=0, focus_imece_personal=0, focus_imece_ref=NULL,focus_imece_project=NULL, focus_relaxed=0, focus_honest=0, focus_away=0, focus_left_at=0, focus_device=NULL, focus_run_id=NULL WHERE id=? AND focus_end=?", [m.id,current.focus_end]],
         ...imece.release(m.id,m.focus_imece_project), bump(m.group_id),
       ], m.group_id);
       return { credited: 0, seen: 0 };
@@ -1660,6 +1685,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         end = current.focus_end + Math.max(0, gone) + extra * 60000;
       await db.batch([
         ["UPDATE bricks_log SET ref = ? WHERE member_id = ? AND ref = ?", [sessionRef(m.id, end), m.id, sessionRef(m.id, current.focus_end)]],
+        ["UPDATE focus_runs SET timing_revision = timing_revision + 1 WHERE id = (SELECT focus_run_id FROM members WHERE id = ? AND focus_end = ? AND focus_rescued = 0)", [m.id, current.focus_end]],
         ["UPDATE members SET focus_end = ?, focus_beat = ?, focus_rescued = 1, focus_left_at = 0, focus_cracked_at = 0 WHERE id = ? AND focus_end = ? AND focus_rescued = 0", [end, now, m.id, current.focus_end]],
         bump(m.group_id),
       ]);
@@ -1730,6 +1756,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (current.focus_pause_used) fail("Bu inşaatın çay molası kullanıldı.");
         if (!teaBreakFor(current.focus_minutes)) fail("25 dakikalık yapılarda çay molası yok.");
         await db.batch([
+          ["UPDATE focus_runs SET timing_revision = timing_revision + 1 WHERE id = (SELECT focus_run_id FROM members WHERE id = ? AND focus_end = ?)", [m.id, current.focus_end]],
           ["UPDATE members SET focus_paused_at = ?, focus_pause_used = 1 WHERE id = ? AND focus_end = ?", [now, m.id, current.focus_end]],
           bump(m.group_id),
         ]);
@@ -1740,6 +1767,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         end = current.focus_end + taken;
       await db.batch([
         ["UPDATE bricks_log SET ref = ? WHERE member_id = ? AND ref = ?", [sessionRef(m.id, end), m.id, sessionRef(m.id, current.focus_end)]],
+        ["UPDATE focus_runs SET timing_revision = timing_revision + 1 WHERE id = (SELECT focus_run_id FROM members WHERE id = ? AND focus_paused_at > 0)", [m.id]],
         ["UPDATE members SET focus_end = ?, focus_paused_at = 0, focus_beat = ? WHERE id = ? AND focus_paused_at > 0", [end, now, m.id]],
         bump(m.group_id),
       ]);
@@ -1828,13 +1856,36 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
             : []),
           ...(current.focus_relaxed ? [["DELETE FROM push_outbox WHERE member_id = ? AND json_extract(payload, '$.tag') = ?", [m.id, relaxedTag(m.id, current.focus_end)]]] : []),
           ...(current.focus_imece ? imece.release(m.id,m.focus_imece_project) : []),
-          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0 WHERE id = ?", [m.id]],
+          // n46 C: the run ends cancelled; a building site gives its plot back.
+          ...(current.focus_run_id
+            ? [
+                ["UPDATE focus_runs SET status = 'cancelled', settled = ?, result = ? WHERE id = ? AND status = 'running'", [now, outcome.withered ? "withered" : early ? "early" : "stopped", current.focus_run_id]],
+                ...(current.focus_strict ? [...releaseStatements("site", "?", [current.focus_run_id]), ...contentChange(m.group_id, "site", current.focus_run_id, "release", "cancelled", now)] : []),
+              ]
+            : []),
+          ["UPDATE members SET focus_end = 0, focus_minutes = 0, focus_strict = 0, focus_relaxed = 0, focus_imece = 0, focus_imece_phase = 0, focus_imece_personal = 0, focus_imece_ref = NULL, focus_imece_project = NULL, focus_model = NULL, focus_cost = 0, focus_paused_at = 0, focus_pause_used = 0, focus_honest = 0, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = NULL, focus_cracked_at = 0, focus_run_id = NULL WHERE id = ?", [m.id]],
           bump(m.group_id),
         ];
       }, m.group_id);
       return changed(m, outcome);
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
+    // n46 C: a start may carry the app's request key. The same key with the
+    // same choices is the same start (a lost answer, a double tap): it returns
+    // the session already begun instead of an error or a second charge; the
+    // same key with other choices is refused. Older apps send no key.
+    const requestKey = body.requestKey == null ? null : String(body.requestKey);
+    if (requestKey !== null && !/^[A-Za-z0-9_-]{16,64}$/.test(requestKey)) fail("İstek anahtarı geçerli değil.");
+    const requestHash = await sha(JSON.stringify([body.strict === true, body.relaxed === true, body.imece === true, body.model ?? null, body.minutes ?? null, body.joinMember ?? null, body.rhythm === true]));
+    const replay = async () => {
+      if (!requestKey) return null;
+      const seen = await db.get("SELECT payload_hash AS hash, result_ref AS run FROM request_receipts WHERE scope = 'focus-start' AND actor = ? AND key = ?", [m.id, requestKey]);
+      if (!seen) return null;
+      if (seen.hash !== requestHash) fail("Bu istek başka seçimlerle zaten gönderildi. Sayfayı yenile.", 409);
+      return changed(m, { replayed: true, run: seen.run });
+    };
+    const again = await replay();
+    if (again) return again;
     if (body.imece != null && typeof body.imece !== "boolean") fail("Ortak görev seçimi geçerli değil.");
     const project = body.imece === true;
     if (project && (body.strict === true || body.model != null || body.joinMember || body.rhythm)) fail("Ortak görev, kişisel bina veya masa ritmiyle aynı seans olamaz.");
@@ -1893,7 +1944,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (state === "locked") fail(`${item.name} nadir bir yapı: önce planını bulman lazım. Bitirdiğin her seansta şansın var.`);
     }
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-    await retrying(async () => {
+    const runId = `run-${randomHex(12)}`;
+    const mode = project ? "imece" : strict ? (relaxed ? "relaxed" : "strict") : "free";
+    try { await retrying(async () => {
       const current = await db.get("SELECT focus_end, bricks FROM members WHERE id = ?", [m.id]);
       if (!current || current.focus_end > now) fail("Önce mevcut odak oturumunu tamamla veya durdur.");
       if (cost > current.bricks) fail(`${item.name} için ${cost - current.bricks} tuğla eksik.`);
@@ -1902,7 +1955,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if(!friend||friend.focus_end!==end||friend.focus_paused_at||friend.focus_imece)fail("Arkadaşının seansı değişti. Yeniden katılmayı dene.",409);
       }
       const reservation = project ? await imece.reserve(m.id, minutes) : null;
+      // n46 D: in a v2 village a building session reserves its final plot now
+      // and shows a real site; the plot is planned after any older session of
+      // this member is settled, on the layout as it stands (guarded by its rev).
+      let site = [];
+      if (strict && (await db.get("SELECT active_layout_id AS a FROM groups WHERE id = ?", [m.group_id]))?.a) {
+        await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
+        const active = await activeLayout(db, m.group_id);
+        if (active) {
+          const placed = placeStatements(active, { subject: { type: "site", id: runId }, model: item.id, owner: m.id, created: now }, body.village);
+          if (placed.error) fail(`Köyde ${item.name} için şu an uygun yer hazırlanamadı. Başka bir yapı seç ya da biraz sonra dene.`, 409);
+          site = placed.statements;
+        }
+      }
       return [
+      ...site,
       // An expired, uncredited session is settled before the new one starts.
       ...(await settleFocus(m.group_id, now, m.id)),
       ...(reservation?.statements || []),
@@ -1912,11 +1979,26 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && (body.joinMember || body.honest === true) ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
+      // n46 C: the session's stable run. Nothing else is open for this member
+      // now (the old one was settled above), so a stray running row is closed.
+      ["UPDATE focus_runs SET status = 'cancelled', result = 'orphan', settled = ? WHERE member_id = ? AND status = 'running'", [now, m.id]],
+      [
+        "INSERT INTO focus_runs (id, member_id, group_id, request_key, request_hash, mode, model, seed, minutes, started, ends) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [runId, m.id, m.group_id, requestKey, requestHash, mode, item?.id ?? null, seed, minutes, end - minutes * 60000, end],
+      ],
+      ["UPDATE members SET focus_run_id = ? WHERE id = ?", [runId, m.id]],
+      ...(strict ? contentChange(m.group_id, "site", runId, "start", item.id, now) : []),
+      ...(requestKey ? [["INSERT INTO request_receipts (scope, actor, key, payload_hash, result_ref, created) VALUES ('focus-start', ?, ?, ?, ?, ?)", [m.id, requestKey, requestHash, runId, now]]] : []),
       deviceOf(body) ? keep(watchKey(m.id), deviceOf(body)) : ["DELETE FROM settings WHERE key = ?", [watchKey(m.id)]],
       ...(strict ? [keep(modeKey(m.id), relaxed ? "relaxed" : "strict")] : []),
       bump(m.group_id),
       ];
-    }, m.group_id);
+    }, m.group_id); } catch (error) {
+      // A twin request that won the race already began this very session.
+      const again = await replay();
+      if (again) return again;
+      throw error;
+    }
     // "Ekibi çağır": everyone gets a tap-to-join for the same end time.
     if (body.invite === true && minutes*60000 >= JOIN_LEAD) {
       try {
@@ -1931,7 +2013,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       } catch {}
     }
     if (relaxed && !project) await relaxedNotices(ctx, m.id).catch(() => {});
-    return changed(m);
+    return changed(m, { run: runId });
   });
 
   // Acceptance acknowledges an already-credited building, never creates rewards.
@@ -2294,10 +2376,21 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // The shared village in compact rows. Unchanged since `rev` → only the number
   // travels. `bbox=x0,y0,x1,y1` limits buildings to an area for very big villages.
-  route("GET", "/village", async ({ member, url }) => {
+  route("GET", "/village", async ({ member, url, request }) => {
     const gid = member.group_id,
       now = Date.now();
-    const { rev } = await db.get("SELECT village_rev AS rev FROM groups WHERE id = ?", [gid]);
+    const { rev, layout } = await db.get("SELECT village_rev AS rev, active_layout_id AS layout FROM groups WHERE id = ?", [gid]);
+    // n46 C: a team on a v2 layout is served only to an app that says it
+    // understands one (X-Kutup-Village-Version: 2); an older app is asked to
+    // update instead of guessing districts from owners. Every other team gets
+    // today's answer below, unchanged, whatever the app says.
+    if (layout) {
+      const version = Number(request.headers.get("x-kutup-village-version") || url.searchParams.get("v") || 1);
+      if (version < COMPATIBILITY_VERSION) return json({ updateRequired: true, contractVersion: 2, error: "Köy yenilendi. Görmek için uygulamayı güncelle." }, 426);
+      const answer = await v2Village(db, { groupId: gid, memberId: member.id, layoutId: layout, cursor: url.searchParams.get("cursor"), now });
+      if (!answer) fail("Köy düzeni bulunamadı.", 503);
+      return json(answer);
+    }
     const known = url.searchParams.get("rev");
     if (known !== null && Number(known) === rev) return json({ unchanged: true, rev });
     // Buildings never change after they are built except for likes, so a client
@@ -2368,14 +2461,39 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     return building;
   };
   route("GET", "/buildings/:id/spots", async ({ member: m, params }) => {
+    // n46 D: in a v2 village the choices are planned on its streets.
+    const active = await activeLayout(db, m.group_id);
+    if (active) {
+      const own = await db.get("SELECT id FROM buildings WHERE id = ? AND member_id = ?", [params.id, m.id]);
+      if (!own) fail("Bu bina senin değil ya da bulunamadı.", 404);
+      return json({ spots: moveOptions(active, own.id).map((p) => [p.plot.x, p.plot.y, p.plot.facing]), layoutRev: active.rev });
+    }
     const spots = await spotsFor(m, await ownBuilding(m, params.id));
     return json({ spots: spots.map((s) => [s.x, s.y, s.facing]) });
   });
   route("POST", "/buildings/:id/move", async ({ member: m, params, body }) => {
     const building = await ownBuilding(m, params.id);
+    // n46 D: in a v2 village a move is planned on its streets, never on the old
+    // lattice. The target is checked again on a fresh read; if someone took it
+    // meanwhile the building stays where it is.
+    if ((await db.get("SELECT active_layout_id AS a FROM groups WHERE id = ?", [m.group_id]))?.a) {
+      for (let attempt = 0; ; attempt++) {
+        const active = await activeLayout(db, m.group_id);
+        const moved = moveStatements(active, building.id, Number(body.x), Number(body.y), body.village);
+        if (moved.error) fail("Bu arsa artık boş değil. Başka birini seç.", 409);
+        try {
+          await db.batch([...moved.statements, ...contentChange(m.group_id, "building", building.id, "move", moved.plot.id, Date.now()), bumpVillage(m.group_id)]);
+          break;
+        } catch (error) {
+          if (attempt >= 3) throw error;
+        }
+      }
+      return changed(m);
+    }
     const spot = (await spotsFor(m, building)).find((s) => Math.abs(s.x - Number(body.x)) < 0.01 && Math.abs(s.y - Number(body.y)) < 0.01);
     if (!spot) fail("Bu arsa artık boş değil. Başka birini seç.");
     await db.batch([
+      ...contentChange(m.group_id, "building", building.id, "move", null, Date.now()),
       ["UPDATE buildings SET pos_x = ?, pos_y = ?, facing = ?, district_id = ?, touched = ? WHERE id = ?", [spot.x, spot.y, spot.facing, spot.district, Date.now(), building.id]],
       ...(spot.district !== building.district_id
         ? [
@@ -2510,9 +2628,134 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }
     return json(await imece.view(null,groupId)||await imece.view(null,"unassigned"));
   }, false);
+  // n46 E: the shared Anıtkabir takes its own big plot in a planned (v2) village,
+  // in the same batch that opens or moves the project; a lost race plans again.
+  const imeceSpatial = (now, sent = null) => async (projectId, groupId) => {
+    const from = await db.get("SELECT group_id FROM imece_projects WHERE id = ?", [projectId]);
+    const out = [];
+    if (from?.group_id && from.group_id !== groupId) out.push(...releaseStatements("imece", "?", [projectId]), ...contentChange(from.group_id, "imece", projectId, "release", null, now), bumpVillage(from.group_id));
+    const active = await activeLayout(db, groupId);
+    if (!active) return out;
+    const placed = placeStatements(active, { subject: { type: "imece", id: projectId }, model: "anitkabir", owner: null, created: now }, sent);
+    if (placed.error) fail("Köyde ortak Anıtkabir için yeterince büyük bir yer hazırlanamadı. Batur’a haber ver; proje açılmadı.", 409);
+    return [...out, ...placed.statements, ...contentChange(groupId, "imece", projectId, "create", null, now), bumpVillage(groupId)];
+  };
+  const spatialRetry = async (run) => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await run();
+      } catch (error) {
+        if (error instanceof HttpError || attempt >= 3) throw error;
+      }
+    }
+  };
+  // ---------- n46 G: a team's village layout (owner only, plan §8) ----------
+  // Drafts are planned in the owner's browser and only checked here; the
+  // switch and the way back are one guarded batch each.
+  const switchFailed = () => fail("Bu arada köyde bir şey değişti (yeni bina, şantiye ya da başka bir geçiş). Durumu yenileyip tekrar dene.", 409);
+  async function switchBatch(statements) {
+    try {
+      await db.batch(statements);
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
+      switchFailed();
+    }
+  }
+  route("GET", "/owner/village/:groupId", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    const state = await switchState(db, params.groupId);
+    if (!state) fail("Ekip bulunamadı.", 404);
+    return json(state);
+  }, false);
+  // What the owner's browser needs to plan or preview: the inventory and, if asked, a stored layout.
+  route("GET", "/owner/village/:groupId/source", async ({ request, ip, params, url }) => {
+    await requireOwner(request, ip);
+    const inv = await inventory(db, params.groupId);
+    if (!inv) fail("Ekip bulunamadı.", 404);
+    // "active": the team's live layout, for a gift or the Anıtkabir planned in the owner's browser.
+    const asked = url.searchParams.get("layout");
+    const id = asked === "active" ? inv.group.active : asked;
+    let layout = null,
+      layoutRev = null;
+    if (id) {
+      const row = await db.get("SELECT id FROM village_layouts WHERE id = ? AND group_id = ? AND kind = 'v2'", [id, params.groupId]);
+      if (!row) fail("Düzen bulunamadı.", 404);
+      const stored = await readLayout(db, id);
+      layout = stored.layout;
+      layoutRev = stored.row.rev;
+    }
+    const members = await db.all("SELECT id, name, color, avatar FROM members WHERE group_id = ?", [params.groupId]);
+    return json({ seed: `group:${params.groupId}`, contentRev: inv.group.rev, items: inv.items, members, layout, layoutId: id || null, layoutRev });
+  }, false);
+  route("POST", "/owner/village/:groupId/layouts", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const role = body.role === "previous" ? "previous" : "draft";
+    const inv = await inventory(db, params.groupId);
+    if (!inv) fail("Ekip bulunamadı.", 404);
+    if (Number(body.contentRev) !== inv.group.rev) switchFailed();
+    let base = null,
+      until = 0;
+    if (body.base) {
+      const row = await db.get("SELECT id, rollback_until AS until FROM village_layouts WHERE id = ? AND group_id = ? AND kind = 'v2' AND status = ?", [String(body.base), params.groupId, role]);
+      if (!row) switchFailed();
+      base = (await readLayout(db, row.id)).layout;
+      until = row.until;
+    } else if (role === "previous") fail("Geri dönüş düzeni yalnız eşitlenebilir.");
+    const problem = await checkLayout(db, params.groupId, body.layout, { base, items: inv.items });
+    if (problem) fail(problem, 422);
+    const id = `v2-${randomHex(8)}`;
+    await switchBatch(storeStatements(id, params.groupId, body.layout, { role, contentRev: inv.group.rev, replaces: base ? String(body.base) : null, until, now: Date.now() }));
+    return json(await switchState(db, params.groupId), 201);
+  }, false, true);
+  // Every rule of a stored layout, a part per request (a whole village at once is more CPU than a free-plan request has).
+  route("POST", "/owner/village/:groupId/layouts/:layoutId/check", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const part = await checkPart(db, params.groupId, params.layoutId, Number(body.from) || 0);
+    if (!part) fail("Düzen bulunamadı.", 404);
+    if (part.problem) fail(part.problem, 422);
+    if (part.statements) await db.batch(part.statements);
+    return json({ checked: part.checked, total: part.total, sound: part.sound });
+  }, false);
+  route("POST", "/owner/village/:groupId/activate", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const state = await switchState(db, params.groupId);
+    if (!state) fail("Ekip bulunamadı.", 404);
+    const draft = state.draft;
+    if (!draft || draft.id !== body.draftId) switchFailed();
+    if ((state.active.id || null) !== (body.active || null) || state.contentRev !== Number(body.contentRev)) switchFailed();
+    if (draft.behind) fail("Taslak geride: önce eşitle.", 409);
+    if (!draft.sound) fail("Taslağın kontrolü bitmedi.", 409);
+    if (draft.coverage.missing || draft.coverage.extra || draft.coverage.twice) fail("Taslakta eksik ya da fazla yapı var; önce eşitle.", 409);
+    await switchBatch([
+      ...activateStatements(params.groupId, { draftId: draft.id, active: state.active.id, contentRev: state.contentRev, now: Date.now() }),
+      bumpVillage(params.groupId),
+      bump(params.groupId),
+    ]);
+    onChange(params.groupId);
+    return json(await switchState(db, params.groupId));
+  }, false);
+  route("POST", "/owner/village/:groupId/rollback", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const state = await switchState(db, params.groupId);
+    if (!state) fail("Ekip bulunamadı.", 404);
+    const back = state.previous;
+    if (!state.active.id || !back) fail("Dönülecek bir önceki köy yok.", 409);
+    if (!back.open) fail("Geri dönüş süresi doldu.", 409);
+    if ((state.active.id || null) !== (body.active || null) || state.contentRev !== Number(body.contentRev)) switchFailed();
+    if (back.kind === "v2" && (back.behind || back.coverage.missing || back.coverage.extra || !back.sound)) fail("Önceki köy geride: önce onu eşitle.", 409);
+    if (back.kind === "legacy" && back.coverage.missing) fail("Bazı binaların eski köyde yeri henüz yok; biraz sonra tekrar dene.", 409);
+    await switchBatch([
+      ...rollbackStatements(params.groupId, { previous: back, active: state.active.id, contentRev: state.contentRev, now: Date.now() }),
+      bumpVillage(params.groupId),
+      bump(params.groupId),
+    ]);
+    onChange(params.groupId);
+    return json(await switchState(db, params.groupId));
+  }, false);
+
   route("POST", "/owner/imece", async ({ request, ip, body, ctx }) => {
     await requireOwner(request, ip);
-    const groupId=await imece.launch(body.members,Date.now(),body.groupId);
+    const groupId=await spatialRetry(()=>imece.launch(body.members,Date.now(),body.groupId,imeceSpatial(Date.now(),body.village)));
     for (const id of body.members) await notifyMember(ctx, id, {
       title: "Kara: Bir Taş da Senden", body: "Ortak Anıtkabir şantiyesi açıldı. Kişisel görevin seni bekliyor; dördümüzün de emeği olmadan açılış yok.", url: "/?tab=focus&imece=1", tag: "imece-launch",
     }).catch(() => {});
@@ -2520,7 +2763,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
   route("POST", "/owner/imece/assign", async ({request,ip,body})=>{
     await requireOwner(request,ip);
-    await imece.assign(body.projectId,body.groupId,body.rev);
+    await spatialRetry(()=>imece.assign(body.projectId,body.groupId,body.rev,imeceSpatial(Date.now(),body.village)));
     return json(await imece.view(null,body.groupId));
   },false);
   route("POST", "/owner/imece/crew/:slot", async ({ request, ip, body, params }) => {
@@ -2685,7 +2928,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       now = Date.now();
       const spot = (await loadPlanner(member.group_id)).place(member.id, item.kind, newDistrictId, { model: item.id });
       if (!spot) fail("Köyde bu yapıya yer bulunamadı.", 409);
+      // n46 D: a v2 village gives the gift its own plot on a street, like any building.
+      const active = await activeLayout(db, member.group_id);
+      const placed = active ? placeStatements(active, { subject: { type: "building", id: buildingId }, model: item.id, owner: member.id, created: now }, body.village) : null;
+      if (placed?.error) fail("Köyde bu yapıya yer bulunamadı.", 409);
       return [
+        ...(placed?.statements || []),
         ...districtChanges(member.group_id, spot.changes),
         [
           `INSERT INTO buildings (id, member_id, group_id, kind, model, minutes, seed, created, touched, pos_x, pos_y, facing, district_id, gift)
@@ -2697,6 +2945,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           [buildingId, member.id, item.id, item.kind, seed, minutes, now, now],
         ],
         ["UPDATE districts SET buildings = buildings + 1 WHERE id = ?", [spot.district.id]],
+        ...contentChange(member.group_id, "building", buildingId, "create", "gift", now),
         systemMessage(member.group_id, member.id, `Batur'dan hediye aldı: ${item.name} ${item.emoji} 🎁`),
         ledgerRow(member.id, 0, "gift", buildingId, `🎁 ${note}: ${item.name}`, now),
         bumpVillage(member.group_id),
@@ -2757,6 +3006,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     await db.batch([
       ["DELETE FROM building_likes WHERE building_id = ?", [building.id]],
       ["DELETE FROM build_deliveries WHERE id = ?", [building.id]],
+      ...releaseStatements("building", "?", [building.id]),
+      ...contentChange(building.group_id, "building", building.id, "delete", "owner", Date.now()),
       ["DELETE FROM buildings WHERE id = ?", [building.id]],
       ["UPDATE districts SET buildings = (SELECT count(*) FROM buildings b WHERE b.district_id = districts.id) WHERE id = ?", [building.district_id]],
       bumpVillage(building.group_id),
@@ -2836,6 +3087,45 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     }, false);
 
   if (config.testHooks)
+    route("POST", "/__test/village-v2", async ({ body }) => {
+      // n46 C: puts the named person's team on a v2 layout drawn from its
+      // buildings and building sites (the owner panel does this in package G).
+      const who = await db.get("SELECT group_id FROM members WHERE name = ?", [body.name]);
+      const [buildings, runs, group, projects] = await db.read([
+        ["SELECT id, member_id, model, created FROM buildings WHERE group_id = ? ORDER BY created, id", [who.group_id]],
+        ["SELECT id, member_id, model, started FROM focus_runs WHERE group_id = ? AND status = 'running' AND mode IN ('strict','relaxed')", [who.group_id]],
+        ["SELECT village_content_rev AS rev FROM groups WHERE id = ?", [who.group_id]],
+        ["SELECT id, started FROM imece_projects WHERE group_id = ?", [who.group_id]],
+      ]);
+      const items = [
+        ...projects.map((p) => ({ subject: { type: "imece", id: p.id }, model: "anitkabir", owner: null, created: p.started })),
+        ...buildings.map((b) => ({ subject: { type: "building", id: b.id }, model: b.model, owner: b.member_id, created: b.created })),
+        ...runs.map((r) => ({ subject: { type: "site", id: r.id }, model: r.model, owner: r.member_id, created: r.started })),
+      ];
+      const { layout, missing } = layoutFrom(`group:${who.group_id}`, items);
+      const id = `v2-${randomHex(8)}`;
+      await db.batch([
+        ...layoutStatements(id, who.group_id, layout, { status: "active", sourceContentRev: group[0].rev }),
+        ["UPDATE groups SET active_layout_id = ? WHERE id = ?", [id, who.group_id]],
+        bumpVillage(who.group_id),
+      ]);
+      return json({ id, layout, missing });
+    }, false);
+
+  if (config.testHooks)
+    route("POST", "/__test/village-rows", async ({ body }) => {
+      const who = await db.get("SELECT id, group_id FROM members WHERE name = ?", [body.name]);
+      const [runs, changes, receipts, group, me] = await db.read([
+        ["SELECT * FROM focus_runs WHERE group_id = ? ORDER BY started, id", [who.group_id]],
+        ["SELECT * FROM village_changes WHERE group_id = ? ORDER BY rev", [who.group_id]],
+        ["SELECT scope, key, result_ref FROM request_receipts WHERE actor = ?", [who.id]],
+        ["SELECT village_content_rev, active_layout_id FROM groups WHERE id = ?", [who.group_id]],
+        ["SELECT focus_run_id, focus_end, bricks FROM members WHERE id = ?", [who.id]],
+      ]);
+      return json({ runs, changes, receipts, group: group[0], me: me[0] });
+    }, false);
+
+  if (config.testHooks)
     route("POST", "/__test/push-outbox", async ({ body }) => {
       // Isolated tests only. Production must never expose queue controls.
       if (body.action === "due")
@@ -2875,7 +3165,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         const joining = /^\/(groups|join|transfer\/claim|owner\/claim)$/.test(path);
         // Test-only clock controls are not real traffic.
         // Test runs (one IP, hundreds of writes) get more room; real traffic does not.
-        if (!(config.testHooks && path.startsWith("/__test/"))) limit(`${ip}:${joining ? "join" : "write"}`, joining ? 15 : config.testHooks ? 400 : 120);
+        if (!(config.testHooks && path.startsWith("/__test/"))) limit(`${ip}:${joining ? "join" : "write"}`, joining ? (config.testHooks ? 30 : 15) : config.testHooks ? 400 : 120);
       }
       const match = routes
         .map((r) => ({ r, m: r.method === method && path.match(r.pattern) }))
@@ -2888,8 +3178,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       }
       let body = {};
       if (writes) {
-        const raw = await readBody(request);
-        if (raw.length > 12000) fail("İstek çok büyük.", 413);
+        if (match.r.big) await requireOwner(request, ip);
+        const raw = await readBody(request, match.r.big ? BIG_BODY : 16384);
+        if (!match.r.big && raw.length > 12000) fail("İstek çok büyük.", 413);
         if (raw) {
           try {
             body = JSON.parse(raw);

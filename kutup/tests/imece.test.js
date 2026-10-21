@@ -325,6 +325,11 @@ test("imece teams: migration and pre-32 backup restore retain every legacy minut
   for(const table of ["imece_projects","imece_slots","imece_work"])delete backup.tables[table];
   for(const m of backup.tables.members){delete m.focus_imece_project;m.token||=`legacy-${m.id}`;}
   for(const g of backup.tables.groups){delete g.owner_made;delete g.request_key;delete g.request_name;} // added by migration 33
+  // added by migration 34 (n46 C)
+  for(const g of backup.tables.groups){delete g.active_layout_id;delete g.village_content_rev;}
+  for(const m of backup.tables.members)delete m.focus_run_id;
+  for(const b of backup.tables.buildings||[])delete b.source_focus_run_id;
+  for(const table of ["focus_runs","request_receipts","village_changes","village_layouts","village_regions","village_nodes","village_roads","village_neighborhoods","village_plots","village_placements"])delete backup.tables[table];
   backup.tables.imece_project=[{id:"bir-tas-da-senden",rev:3,started:1,completed:0}];
   backup.tables.imece_crew=backup.tables.members.map((m,slot)=>({slot,member_id:m.id,name:m.name,avatar:m.avatar,color:m.color,seen_minutes:0}));
   backup.tables.imece_contributions=[{id:"legacy-credit",slot:0,phase:0,minutes:50,personal:50,session_end:1,created:1}];

@@ -24,6 +24,27 @@ MODES = {
       const world = buildWorld({groupKey: fixture.groupKey, village: {rev: 1, monument: 1, districts: fixture.districts, buildings, ruins: []}, members, me: 'm0', sky});
       return {world, sky, tint: tinter(sky), createView};
     }''',
+    'v2': '''async ({fixture, hour, scale}) => {
+      const {skyAt, tinter} = await import('/src/villageWorld.js');
+      const {createView} = await import('/src/villageView.js');
+      const {layoutFrom} = await import('/shared/koy2/draft.js');
+      const {buildWorld2} = await import('/src/koy2/world2.js');
+      const sky = skyAt(Date.UTC(2026, 9, 20, hour));
+      const items = fixture.buildings.map(b => ({subject: {type: 'building', id: b.id}, model: b.model, owner: b.memberId, created: b.created}));
+      for (const s of fixture.sessions) if (s.strict && !s.imece) items.push({subject: {type: 'site', id: `run-${s.memberId}`}, model: s.model, owner: s.memberId, created: s.end - s.minutes * 60000});
+      if (fixture.imece) items.push({subject: {type: 'imece', id: fixture.imece.projectId}, model: 'anitkabir', owner: null, created: fixture.now - 1});
+      const t0 = performance.now();
+      const {layout, missing} = layoutFrom(fixture.groupKey, items);
+      const planMs = performance.now() - t0;
+      const things = new Map(fixture.buildings.map(b => [`building:${b.id}`, {kind: b.kind, seed: b.seed, model: b.model, memberId: b.memberId}]));
+      for (const s of fixture.sessions) if (s.strict && !s.imece) things.set(`site:run-${s.memberId}`, {kind: s.kind, seed: s.seed, model: s.model, memberId: s.memberId, site: {shown: Math.min(.9, s.minutes / 50)}});
+      if (fixture.imece) things.set(`imece:${fixture.imece.projectId}`, {kind: 'house', seed: 1923, model: 'anitkabir', site: {shown: fixture.imece.minutes / fixture.imece.goal}});
+      const members = fixture.members.map(m => ({...m, status: 'away', focusEnd: 0, focusPausedAt: 0}));
+      const t1 = performance.now();
+      const world = buildWorld2({layout, things, members, me: 'm0', sky, monument: 1});
+      window.koyLayout = layout;
+      return {world, sky, tint: tinter(sky), createView, stats: {planMs, worldMs: performance.now() - t1, missing: missing.length, plots: layout.plots.length}};
+    }''',
 }
 
 def start_server(temp):
@@ -45,29 +66,33 @@ SETUP = '''async ({mode, fixture, hour, scale}) => {
   document.body.style.cssText = 'margin:0;overflow:hidden;background:#a4c481';
   await document.fonts.ready;
   const make = eval(mode);
-  const {world, sky, tint, createView} = await make({fixture, hour, scale});
+  const made = await make({fixture, hour, scale});
+  const {world, sky, tint, createView} = made;
   const view = createView(document.querySelector('#map'), {interactive: true});
   view.resize(innerWidth, innerHeight);
   view.setWorld(world, sky, tint);
   window.mapTest = {view, world};
-  return {count: world.count, area: world.area};
+  return {count: world.count, area: world.area, stats: made.stats || null};
 }'''
 
 def shoot(page, out, label, mode, fixture, hour=9, scale=None):
-    page.evaluate(SETUP, {'mode': MODES[mode], 'fixture': fixture, 'hour': hour, 'scale': scale})
+    info = page.evaluate(SETUP, {'mode': MODES[mode], 'fixture': fixture, 'hour': hour, 'scale': scale})
     if scale:
-        # A common world scale: the same metres per pixel in every scene and mode.
-        page.evaluate('s => { const w = mapTest.world, a = w.area; mapTest.view.fit(a, 16, 0); mapTest.view.zoomTo && mapTest.view.zoomTo(s); }', scale)
+        # A common world scale: the same metres per pixel in every scene and mode, centred on the square.
+        page.evaluate('s => { mapTest.view.limits(0.5, 40); mapTest.view.flyTo({x: 0, y: -2, s}, 0); }', scale)
     else:
         page.evaluate('() => mapTest.view.fit(mapTest.world.area, 16, 0)')
     page.wait_for_timeout(400)
+    t0 = time.time()
     page.screenshot(path=str(out / f'{label}.png'))
+    return {**(info.get('stats') or {}), 'shotMs': round((time.time() - t0) * 1000)}
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', required=True)
     ap.add_argument('--mode', default='legacy', choices=list(MODES))
     ap.add_argument('--scenes', default=','.join(SCENES))
+    ap.add_argument('--scale', type=float, default=None, help='same world scale (px per unit) for every shot')
     args = ap.parse_args()
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     results = {}
@@ -83,13 +108,14 @@ def main():
                         errors = []
                         page.on('pageerror', lambda e: errors.append(str(e)))
                         page.goto(base + '/tests/koy-harness.html')
-                        shoot(page, out, f'{args.mode}-{scene}-{tag}', args.mode, fixture)
-                        results[f'{scene}-{tag}'] = {'errors': errors}
+                        label = f'{args.mode}-{scene}-{tag}' + ('-olcek' if args.scale else '')
+                        stats = shoot(page, out, label, args.mode, fixture, scale=args.scale)
+                        results[f'{scene}-{tag}'] = {'errors': errors, **stats}
                         page.close()
                 browser.close()
         finally:
             server.terminate(); server.wait(timeout=10)
-    (out / f'{args.mode}-results.json').write_text(json.dumps(results, indent=1))
+    (out / f"{args.mode}{'-olcek' if args.scale else ''}-results.json").write_text(json.dumps(results, indent=1))
     bad = {k: v for k, v in results.items() if v['errors']}
     print(json.dumps({'shots': len(results), 'errors': bad}))
     if bad: raise SystemExit(1)

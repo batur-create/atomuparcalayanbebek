@@ -8,6 +8,7 @@ import {
   LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, drawnSize, ellipse, mirrored, poly, patchSVG, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
 } from "./iso.js";
 import { BY_ID } from "../shared/catalog.js";
+import { mergeVillage2 } from "./koy2/village2.js";
 
 export const GROUND = "#a4c481";
 const MEADOW = "#accb8c",
@@ -35,6 +36,9 @@ const row = ([id, memberId, kind, seed, x, y, facing, minutes, created, likes, m
 });
 /** Merges an /api/village answer into what we already have (it may be partial). */
 export function mergeVillage(prev, raw) {
+  // n46: a team on a planned (v2) layout answers in its own contract.
+  if (raw?.contractVersion === 2) return mergeVillage2(prev, raw);
+  if (prev?.v2) prev = null;
   if (!raw || raw.unchanged) return prev;
   if (prev && raw.rev < prev.rev) return prev;
   const buildings = new Map(raw.partial && prev ? prev.buildings.map((b) => [b.id, b]) : []);
@@ -370,7 +374,7 @@ function plazaArt(view, stages = 0) {
  * members: state.members; me: my id; sky: skyAt().
  */
 // A free plot while moving a building: a glowing footprint and a pin.
-function spotArt(v, s) {
+export function spotArt(v, s) {
   const P = v.at(s.x, s.y),
     r = 1.7,
     unit = Math.abs(P(0, 0, 1)[1] - P(0, 0, 0)[1]);
@@ -954,3 +958,7 @@ export function pointOnPath(path, t) {
     k = (target - path.lengths[i - 1]) / span;
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
 }
+
+// n46 köy v2 (src/koy2/world2.js) draws its village with the same art.
+export { strokeLine, fillShape, treeArt, bushArt, rockArt, lampArt, plazaArt, signArt, boxOf, lineBox, detailFor, meadowDetail, COATS, SKINS, HATS };
+export const PALETTE = { MEADOW, ROAD, ROAD_EDGE, TRACK, WATER, PLAZA_STONE, PLAZA_RING };

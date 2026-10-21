@@ -1,8 +1,13 @@
 // The village of my group, kept in sync incrementally. Lives apart from the
 // map (VillageMap.jsx, loaded on demand) so the app shell can fetch it early.
 import { useEffect, useRef, useState } from "react";
-import { api, get } from "./api.js";
+import { api } from "./api.js";
 import { mergeVillage } from "./villageWorld.js";
+import { placeIn } from "./koy2/browserPlan.js";
+
+// This app can draw a planned (v2) village; a team still on today's village gets today's answer.
+const V2 = { "X-Kutup-Village-Version": "2" };
+const get = (path, signal) => api(path, undefined, "GET", V2, signal);
 
 /** The village of my group, kept in sync incrementally (only changed rows travel). */
 export function useVillage(session, villageRev) {
@@ -10,6 +15,7 @@ export function useVillage(session, villageRev) {
   const [error, setError] = useState("");
   const [attempt, retry] = useState(0);
   const known = useRef({ member: null, data: null });
+  const refreshRef = useRef(async () => {});
   useEffect(() => {
     if (!session) {
       known.current = { member: null, data: null };
@@ -28,7 +34,8 @@ export function useVillage(session, villageRev) {
       inFlight = true;
       const have = known.current.data;
       try {
-        const raw = await get(`/village${have ? `?rev=${have.rev}&after=${have.until || 0}` : ""}`, controller.signal);
+        const since = have?.v2 ? `?cursor=${encodeURIComponent(have.cursor)}` : have ? `?rev=${have.rev}&after=${have.until || 0}` : "";
+        const raw = await get(`/village${since}`, controller.signal);
         if (gone) return;
         let next = mergeVillage(known.current.data, raw);
         // A building was taken back (n43): fetch the village whole once.
@@ -46,6 +53,7 @@ export function useVillage(session, villageRev) {
         inFlight = false;
       }
     };
+    refreshRef.current = refresh;
     refresh();
     window.addEventListener("online", refresh);
     return () => {
@@ -63,6 +71,13 @@ export function useVillage(session, villageRev) {
     retry((n) => n + 1);
     return r;
   };
-  return { village, like, error, retry: () => retry((n) => n + 1) };
+  // n46 G: a new plot planned here, on the village as it stands right now (one
+  // small catch-up first), for the server to check; null leaves it to the server.
+  const planFor = async (req) => {
+    if (!known.current.data?.v2) return null;
+    await refreshRef.current().catch(() => {});
+    return placeIn(known.current.data, req);
+  };
+  return { village, like, error, retry: () => retry((n) => n + 1), planFor };
 }
 

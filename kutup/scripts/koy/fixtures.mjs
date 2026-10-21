@@ -116,3 +116,15 @@ export function protectedRows(f) {
     imece: f.imece ? [f.imece.projectId, f.imece.minutes, f.imece.goal, ...f.imece.crew] : null,
   };
 }
+
+// What the v2 planner places for a scene (n46 B): every building, a site for
+// each session that builds a model, and the team's shared project on its own
+// area. A session without a building and a crew member's imece minutes get no
+// personal site (plan rule 19).
+export function inventoryOf(f) {
+  const items = f.buildings.map((b) => ({ subject: { type: "building", id: b.id }, model: b.model, owner: b.memberId, created: b.created }));
+  for (const s of f.sessions)
+    if (s.strict && !s.imece) items.push({ subject: { type: "site", id: `run-${s.memberId}` }, model: s.model, owner: s.memberId, created: s.end - s.minutes * 60000 });
+  if (f.imece) items.push({ subject: { type: "imece", id: f.imece.projectId }, model: "anitkabir", owner: null, created: f.now - 1 });
+  return items;
+}

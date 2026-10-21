@@ -4987,3 +4987,44 @@ summary:focus-visible, canvas:focus-visible { outline: 3px solid var(--accent, #
     justify-content: center;
   }
 }
+/* n46 G: Komuta merkezi → Köy düzeni */
+.owner-village section {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+}
+.owner-village h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.owner-village p {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+}
+.owner-village-now,
+.owner-village-busy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.owner-village-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.owner-village-actions .btn {
+  min-height: 44px;
+}
+.owner-village-preview {
+  display: block;
+  width: 100%;
+  height: min(52vh, 360px);
+  margin: 0 0 10px;
+  border-radius: 12px;
+  background: #a4c481;
+  touch-action: none;
+}
+.owner-village-note {
+  color: var(--good, #2f7d4a);
+  font-weight: 600;
+}

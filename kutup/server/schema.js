@@ -4,6 +4,7 @@
 import {WEEKLY_BACKFILL} from "../shared/blueprints.js";
 import {PLAN_LEGACY_IMPORT} from "../shared/plans.js";
 import {IMECE_TEAM_IMPORT} from "../shared/imeceMigration.js";
+import {VILLAGE_LEGACY_SNAPSHOT} from "../shared/koy2/legacySnapshot.js";
 export const migrations = [
   // 1 — the original Kütüp schema (idempotent, so pre-versioning databases pass through).
   [
@@ -334,6 +335,55 @@ export const migrations = [
     "ALTER TABLE groups ADD COLUMN request_key TEXT",
     "ALTER TABLE groups ADD COLUMN request_name TEXT",
     "CREATE UNIQUE INDEX groups_request ON groups(request_key) WHERE request_key IS NOT NULL",
+  ],
+  // 34 — n46 C: the village renewal's records, beside today's (nothing old is
+  // rewritten). A focus session gets a stable run id that survives breaks and
+  // rescues; a personal building points back to the run that built it, once.
+  // Repeated requests are told apart by receipts. Every change that matters to
+  // the village's layout is logged per team in order (content rev), so a draft
+  // layout can catch up. Layouts (legacy baseline, v2 drafts, the active one,
+  // the previous one) keep their streets, squares, plots and placements as
+  // small rows with JSON. groups.active_layout_id NULL = today's village (V1).
+  [
+    `CREATE TABLE focus_runs(id TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, group_id TEXT NOT NULL,
+      request_key TEXT, request_hash TEXT, mode TEXT NOT NULL CHECK(mode IN ('free','strict','relaxed','imece')), model TEXT, seed INTEGER NOT NULL DEFAULT 0,
+      minutes INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'running' CHECK(status IN ('running','completed','failed','cancelled')),
+      started INTEGER NOT NULL, ends INTEGER NOT NULL, timing_revision INTEGER NOT NULL DEFAULT 0, result TEXT, building_id TEXT, settled INTEGER NOT NULL DEFAULT 0)`,
+    "CREATE UNIQUE INDEX focus_runs_request ON focus_runs(member_id, request_key) WHERE request_key IS NOT NULL",
+    "CREATE UNIQUE INDEX focus_runs_running ON focus_runs(member_id) WHERE status = 'running'",
+    "CREATE INDEX focus_runs_group ON focus_runs(group_id, status)",
+    "ALTER TABLE members ADD COLUMN focus_run_id TEXT",
+    "ALTER TABLE buildings ADD COLUMN source_focus_run_id TEXT",
+    "CREATE UNIQUE INDEX buildings_source_run ON buildings(source_focus_run_id) WHERE source_focus_run_id IS NOT NULL",
+    `CREATE TABLE request_receipts(scope TEXT NOT NULL, actor TEXT NOT NULL, key TEXT NOT NULL, payload_hash TEXT NOT NULL, result_ref TEXT, created INTEGER NOT NULL,
+      PRIMARY KEY(scope, actor, key))`,
+    "ALTER TABLE groups ADD COLUMN active_layout_id TEXT",
+    "ALTER TABLE groups ADD COLUMN village_content_rev INTEGER NOT NULL DEFAULT 0",
+    `CREATE TABLE village_changes(group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE, rev INTEGER NOT NULL, entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL, op TEXT NOT NULL, ref TEXT, created INTEGER NOT NULL, PRIMARY KEY(group_id, rev))`,
+    `CREATE TABLE village_layouts(id TEXT PRIMARY KEY, group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL CHECK(kind IN ('legacy','v2')), status TEXT NOT NULL CHECK(status IN ('baseline','draft','active','previous','retired')),
+      seed TEXT NOT NULL, generator_version INTEGER NOT NULL, terrain_version INTEGER NOT NULL, compatibility_version INTEGER NOT NULL,
+      rev INTEGER NOT NULL DEFAULT 1, source_content_rev INTEGER NOT NULL DEFAULT 0, applied_content_rev INTEGER NOT NULL DEFAULT 0,
+      created INTEGER NOT NULL, rollback_until INTEGER NOT NULL DEFAULT 0, meta TEXT, snapshot TEXT)`,
+    "CREATE INDEX village_layouts_group ON village_layouts(group_id, status)",
+    `CREATE TABLE village_regions(layout_id TEXT NOT NULL REFERENCES village_layouts(id) ON DELETE CASCADE, region_key TEXT NOT NULL,
+      bounds TEXT, terrain TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(layout_id, region_key))`,
+    `CREATE TABLE village_nodes(layout_id TEXT NOT NULL REFERENCES village_layouts(id) ON DELETE CASCADE, id TEXT NOT NULL, ord INTEGER NOT NULL, data TEXT NOT NULL,
+      rev INTEGER NOT NULL DEFAULT 1, deleted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(layout_id, id))`,
+    `CREATE TABLE village_roads(layout_id TEXT NOT NULL REFERENCES village_layouts(id) ON DELETE CASCADE, id TEXT NOT NULL, ord INTEGER NOT NULL,
+      type TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('usable','reserved')), data TEXT NOT NULL,
+      rev INTEGER NOT NULL DEFAULT 1, deleted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(layout_id, id))`,
+    `CREATE TABLE village_neighborhoods(layout_id TEXT NOT NULL REFERENCES village_layouts(id) ON DELETE CASCADE, id TEXT NOT NULL, ord INTEGER NOT NULL,
+      status TEXT NOT NULL, data TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 1, deleted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(layout_id, id))`,
+    `CREATE TABLE village_plots(layout_id TEXT NOT NULL REFERENCES village_layouts(id) ON DELETE CASCADE, id TEXT NOT NULL, ord INTEGER NOT NULL, data TEXT NOT NULL,
+      rev INTEGER NOT NULL DEFAULT 1, deleted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(layout_id, id))`,
+    `CREATE TABLE village_placements(layout_id TEXT NOT NULL REFERENCES village_layouts(id) ON DELETE CASCADE,
+      subject_type TEXT NOT NULL CHECK(subject_type IN ('building','site','imece','weekly_monument')), subject_id TEXT NOT NULL,
+      plot_id TEXT NOT NULL, x REAL NOT NULL, y REAL NOT NULL, z REAL NOT NULL DEFAULT 0, facing INTEGER NOT NULL CHECK(facing IN (0,1)),
+      scale REAL NOT NULL, geometry_version INTEGER NOT NULL, model TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY(layout_id, subject_type, subject_id), UNIQUE(layout_id, plot_id))`,
+    ...VILLAGE_LEGACY_SNAPSHOT,
   ],
 ];
 
