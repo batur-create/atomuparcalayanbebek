@@ -8,6 +8,7 @@ import { SCHEMA_VERSION, migrate } from "./schema.js";
 import { generateVapidKeys, sendPush } from "./push.js";
 import { createPushOutbox } from "./outbox.js";
 import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
+import {createBlueprintNotices} from "./blueprintNotices.js";
 import { createImece } from "./imece.js";
 import { BACKUP_TABLES } from "../shared/backup.js";
 import { avatarAllowed } from "../shared/avatars.js";
@@ -202,6 +203,7 @@ export const SECURITY_HEADERS = {
  */
 export function createApp({ db, config = {}, live = "poll", onChange = () => {} }) {
   const imece = createImece({ db, fail });
+  const blueprintNotices=createBlueprintNotices({db,fail});
   let ready, vapid, lastCleanup = 0;
   // The address the app is really served from, for pushes sent by the timer,
   // which has no request of its own (d23). PUBLIC_ORIGIN wins when it is set.
@@ -1043,6 +1045,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM bricks_log WHERE member_id = ?", [id]],
       ["DELETE FROM activity WHERE member_id = ?", [id]],
       ["DELETE FROM unlocks WHERE member_id = ?", [id]],
+      ["DELETE FROM settings WHERE key=?",[blueprintNotices.key(id)]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
@@ -1935,6 +1938,12 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       unlocks: unlocks.map((u) => u.model),
       discovery: discoveryStatus(discovery[0],blueprintPool(Date.now()),unlocks.map(u=>u.model)),
     });
+  });
+
+  route("GET","/blueprints/rewards",async({member})=>json({items:(await blueprintNotices.pending(member.id)).filter(p=>BY_ID[p.model])}));
+  route("POST","/blueprints/rewards/seen",async({member,body})=>{
+    await blueprintNotices.seen(member.id,body.memberId,body.models);
+    return json({ok:true});
   });
 
   // The team's rhythm: anyone may set it; the board says who did.

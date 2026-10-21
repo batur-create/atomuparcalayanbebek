@@ -102,7 +102,7 @@ export const HELP = {
       {
         id: "rare",
         q: "Kilitli binalar nasıl açılır?",
-        a: "Tamamladığın her 25 dakika için %5 plan şansı var; 75 dakika tek seans ile 3 × 25 dakika eşittir. Plan çıkmadan 500 dakika emekte, sahip olmadığın rastgele bir plan garanti. Katalogdaki Plan keşfi kalan süreyi gösterir; gün kaçırmak ilerlemeyi silmez. 7, 14 ve 30 günlük seride ayrıca rastgele eksik plan kazanırsın. Havuz bittiyse yeni plan beklenir. Haftalık yapıyı iki haftalık açık dönemde tamamlarsan planı kalıcı senin olur.",
+        a: "Tamamladığın her 25 dakika için %5 plan şansı var; 75 dakika tek seans ile 3 × 25 dakika eşittir. Plan çıkmadan 500 dakika emekte, sahip olmadığın rastgele bir plan garanti. Katalogdaki Plan keşfi kalan süreyi gösterir; gün kaçırmak ilerlemeyi silmez. 7, 14 ve 30 günlük seride ayrıca rastgele eksik plan kazanırsın. Plan bulunca Kara’nın özel postası açılır; Planlarıma bak düğmesiyle yapını seçebilirsin. Mardin Evi ve Atakule dahil 14 nadir yapı planla kalıcı açılır, plan her inşaatta yeniden kullanılır. Havuz bittiyse yeni plan beklenir. Haftalık yapıyı iki haftalık açık dönemde tamamlarsan planı kalıcı senin olur.",
       },
       {
         id: "village",

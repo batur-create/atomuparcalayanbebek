@@ -117,3 +117,21 @@ test('weekly rights: completing the weekly building writes a permanent plan with
   Date.now=()=>WEEKLY_LEGACY[0][1]+20*86400000;
   assert.equal((await as('/focus',{action:'start',minutes:25,strict:true,relaxed:true,model:'postane'})).status,200);
 });
+
+
+test('plan reveal: account-scoped durable acknowledgements preserve later finds and all ownership',async t=>{
+  const {sql,id,as,call}=await fixture(t),now=Date.now();
+  sql.prepare('INSERT INTO unlocks(member_id,model,source,created) VALUES(?,?,?,?)').run(id,'fener','random',now-2*86400000);
+  assert.deepEqual((await as('/blueprints/rewards')).data.items,[],"old collection is not replayed on first use");
+  const add=sql.prepare('INSERT INTO unlocks(member_id,model,source,created) VALUES(?,?,?,?)');
+  add.run(id,'mardinevi','random',now);
+  assert.deepEqual((await as('/blueprints/rewards')).data.items.map(p=>p.model),['mardinevi']);
+  assert.equal((await call('/blueprints/rewards')).status,401);
+  assert.equal((await as('/blueprints/rewards/seen',{memberId:'other',models:['mardinevi']})).status,409);
+  assert.equal((await as('/blueprints/rewards/seen',{memberId:id,models:['atakule']})).status,403);
+  add.run(id,'atakule','guarantee',now+1);
+  await Promise.all([as('/blueprints/rewards/seen',{memberId:id,models:['mardinevi']}),as('/blueprints/rewards/seen',{memberId:id,models:['mardinevi']})]);
+  assert.deepEqual((await as('/blueprints/rewards')).data.items.map(p=>p.model),['atakule'],"a new find cannot be swallowed by an old reveal");
+  assert.equal((await as('/wallet')).data.unlocks.length,3,"acknowledgement consumes no plan");
+  assert.equal(sql.prepare('SELECT count(*) n FROM blueprint_progress WHERE member_id=?').get(id).n,0);
+});

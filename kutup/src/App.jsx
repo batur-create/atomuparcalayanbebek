@@ -1,3 +1,4 @@
+import {useBlueprintRewards} from "./useBlueprintRewards.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, LazyMotion, MotionConfig, m as M } from "motion/react";
 // Motion's animation and layout engine loads after the first paint.
@@ -44,7 +45,7 @@ import { useSoundFollowsFocus } from "./Sound.jsx";
 import { CallOverlay, JoinBanner, MessageBanner } from "./Together.jsx";
 import { useVillage } from "./villageData.js";
 import { clearLast, readLast, saveLast } from "./lastState.js";
-import { AchievementCheer, AchievementsModal, DeskMap, BuildDelivery, FocusScreen, OwnerPage, VillagePanel, ImeceEntry, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
+import { BlueprintReveal,AchievementCheer, AchievementsModal, DeskMap, BuildDelivery, FocusScreen, OwnerPage, VillagePanel, ImeceEntry, WeekStory, YenilikModal, prefetchScreens } from "./later.jsx";
 import { useYenilik } from "./yenilikNokta.js";
 import { StoryNudge, storyFresh } from "./storyLink.jsx";
 import { AnnounceCard, NewsCard, Shortcuts } from "./Haberler.jsx";
@@ -218,6 +219,7 @@ function KutupApp({ initial, restart }) {
   const [buildOutcome, setBuildOutcome] = useState(null);
   const [receipt, setReceipt] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
+  const [catalogSignal,setCatalogSignal]=useState(0);
   const [focusScreen, setFocusScreen] = useState(false);
   // n28: the week's story, opened from the home card, the Ben tab or Sunday's notification.
   const [story, setStory] = useState(false);
@@ -257,6 +259,7 @@ function KutupApp({ initial, restart }) {
   useSoundFollowsFocus(!!me?.focusEnd && me.focusEnd > now);
   // n14: ask about badges again after whatever can earn one.
   const lastSaid = data.messages.findLast?.((x) => x.memberId === me?.id && x.kind !== "system")?.id || "";
+  const blueprintRewards=useBlueprintRewards(session?me?.id:null,`${me?.bricks}|${me?.focusEnd}`);
   const [cheer, endCheer] = useAchievementWatch(session ? me : null, `${me?.bricks}|${me?.status}|${lastSaid}`);
   const here = data.members.filter((m) => ["here", "break"].includes(m.status));
   const focusMembers = data.members.filter((m) => m.focusEnd > now);
@@ -1466,6 +1469,8 @@ function KutupApp({ initial, restart }) {
                 now={now}
                 requireMember={requireMember}
                 mutate={mutate}
+                catalogSignal={catalogSignal}
+                consumeCatalogSignal={()=>setCatalogSignal(0)}
                 onScreen={() => setFocusScreen(true)}
                 rhythm={data.group.rhythm}
                 outcome={buildOutcome}
@@ -1661,6 +1666,7 @@ function KutupApp({ initial, restart }) {
       )}
       {modal === "achievements" && me && <AchievementsModal me={me} close={() => setModal(null)} />}
       {modal === "yenilikler" && <YenilikModal gorulen={yenilik.gorulen} gordu={yenilik.gordu} close={() => setModal(null)} />}
+      {!!blueprintRewards.items.length&&!focusScreen&&!modal&&!story&&!cheer&&!crack&&!deliveries.length&&!(me?.focusEnd>now)&&<BlueprintReveal items={blueprintRewards.items} close={()=>blueprintRewards.acknowledge()} onCatalog={()=>{blueprintRewards.acknowledge();navigate("focus");setCatalogSignal(n=>n+1);}}/>}
       {cheer && !focusScreen && (
         <AchievementCheer
           cheer={cheer}

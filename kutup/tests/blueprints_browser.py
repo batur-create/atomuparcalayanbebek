@@ -8,7 +8,7 @@ artifacts=Path(args.artifacts);artifacts.mkdir(parents=True,exist_ok=True);check
 def check(ok,label):
     assert ok,label
     checks.append(label)
-models=['agacevi','japoncay','sudegirmeni','istasyon','planetaryum','kristalkutuphane']
+models=['agacevi','japoncay','sudegirmeni','istasyon','planetaryum','kristalkutuphane','kapadokya','yuzenev','asmakopru','kervansaray','mardinevi','atakule']
 with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     base=f'http://127.0.0.1:{port}';key=secrets.token_hex(24)
@@ -31,6 +31,10 @@ with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
                 page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
                 page.add_init_script("if(location.protocol==='http:'){localStorage.setItem('kutup-mode','light');localStorage.setItem('kutup-motion','still');localStorage.setItem('kutup-tur','done');}")
                 def open_catalog():
+                    # This suite checks the catalogue and construction. The
+                    # dedicated reveal suite exercises the once-only modal.
+                    owned=call("/wallet")["unlocks"]
+                    if owned:call("/blueprints/rewards/seen",{"memberId":me["memberId"],"models":owned})
                     page.goto(base+'/?tab=focus');expect(page.locator('.build-pick')).to_be_visible()
                     page.wait_for_timeout(250)
                     for _ in range(8):
@@ -39,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
                     page.locator('.build-pick').click();expect(page.get_by_role('dialog',name='Ne inşa ediyorsun?')).to_be_visible();expect(page.locator('.blueprint-discovery')).to_be_visible()
                 open_catalog()
                 expect(page.locator('.blueprint-discovery')).to_contain_text('Garantiye 500 dk kaldı')
-                check(page.locator('.catalog-class.rare .catalog-item').count()>=8,'Eight or more discoverable buildings appear in the real catalogue')
+                check(page.locator('.catalog-class.rare .catalog-item').count()>=14,'Fourteen or more discoverable buildings appear in the real catalogue')
                 page.locator('.catalog-item',has_text='Ağaç Evi').click(force=True)
                 expect(page.locator('.catalog-hint')).to_contain_text('belirli bir yapı değil')
                 check(True,'Locked card explains random missing plan, chance, guarantee and streak bonus')
@@ -55,7 +59,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
                 check(page.locator('.blueprint-discovery progress').get_attribute('value')=='317','API-backed guarantee shows carried minutes as well as completed draws')
                 for model in models:call('/owner/members/'+me['memberId']+'/unlock',{'model':model},True)
                 open_catalog()
-                check(page.locator('.catalog-class.rare .catalog-item.locked').count()==2,'Six gifted plans unlock without resetting discovery')
+                check(page.locator('.catalog-class.rare .catalog-item.locked').count()==2,'Twelve gifted plans unlock without resetting discovery')
                 expect(page.locator('.blueprint-discovery')).to_contain_text('183 dk')
                 page.locator('.catalog-item',has_text='Japon Çay Evi').click()
                 expect(page.locator('.build-pick')).to_contain_text('Japon Çay Evi')
@@ -65,8 +69,8 @@ with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
                     started=call('/focus',{'action':'start','strict':True,'relaxed':True,'model':model})
                     check(started['state']['members'][0]['focusModel']==model,model+' starts with its own model and class')
                     call('/__test/expire',{'name':'Batur','away':True});call('/focus',{'action':'finish'})
-                wallet=call('/wallet');check(all(wallet['built'].get(m)==1 for m in models),'All six unique buildings complete and persist in the village')
-                check(len(wallet['unlocks'])==7,'Real construction minutes trigger the earned guarantee while gifts do not reset it')
+                wallet=call('/wallet');check(all(wallet['built'].get(m)==1 for m in models),'All twelve unique buildings complete and persist in the village')
+                check(len(wallet['unlocks'])==len(models)+1,'Real construction minutes trigger the earned guarantee while gifts do not reset it')
                 for delivery in call('/build-deliveries'):call('/build-deliveries/'+delivery['id'],{})
                 # Detailed contact sheet: actual shared SVG geometry, without application changes.
                 gallery=ctx.new_page();gallery.goto(base)
@@ -77,7 +81,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
                 }''',models)
                 gallery.goto('about:blank')
                 gallery.set_content('<style>body{margin:0;background:#f2efe5;color:#30312f;font:16px Arial}main{display:grid;grid-template-columns:repeat(3,360px);gap:16px;padding:24px}figure{margin:0;background:#fffdf7;border:1px solid #dcd8c9;border-radius:20px;overflow:hidden}svg{display:block;width:360px;height:280px}figcaption{padding:0 20px 20px}b,small{display:block}small{color:#64665e;font-size:13px;line-height:1.5;margin-top:6px;min-height:58px}</style><main>'+html+'</main>')
-                gallery.set_viewport_size({'width':1160,'height':850});gallery.screenshot(path=str(artifacts/'alti-yeni-nadir-yapi.png'),full_page=True)
+                gallery.set_viewport_size({'width':1160,'height':850});gallery.screenshot(path=str(artifacts/'oniki-nadir-yapi.png'),full_page=True)
                 page.goto(base+'/?tab=focus');expect(page.locator('.village-canvas')).to_be_visible();page.screenshot(path=str(artifacts/'yeni-yapilar-koyde.png'))
                 owned=call('/wallet')['unlocks']
                 for model in ['fener','sera']:
