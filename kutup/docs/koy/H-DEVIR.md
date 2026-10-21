@@ -107,7 +107,23 @@ Testlerle doğrulanan:
 ## Kanıt (son commit'e göre)
 
 - `npm run test:all`: **261/261.** Node ve Worker aynı testleri koşuyor; buna tek tek paketlerin testleri de dahil.
-- Tarayıcı kontrolleri telefon görünümünde (390 px) gerçek Chromium ile koştu. Sonuçlar PR açıklamasında, görseller `/mnt/project-files/kutup/n46/`.
+- Gerçek Chromium'da tarayıcı kontrolleri, hepsi geçti:
+
+  | Kontrol | Sonuç |
+  |---|---|
+  | `test:browser` (genel, 1.000 binalık köy dahil) | 100/100 |
+  | `test:browser:focus-join` | 5/5 |
+  | `test:browser:relaxed` | 23/23 |
+  | `test:browser:imece` | 46/46 |
+  | `test:browser:teams` | 23/23 |
+  | `test:browser:devices` (n47) | 14/14 |
+  | `float_browser.py` (#62) | 24/24 |
+  | `koy_d_browser.py` | 7/7 |
+  | `koy_f_browser.py` | 8/8 |
+  | `koy_g_browser.py` | 15/15 |
+
+- Tema kontrolü (`node scripts/theme-check.mjs`): 252/252 çift.
+- Görseller `/mnt/project-files/kutup/n46/`.
 - Paket raporları:
   - [A-TABAN](A-TABAN.md)
   - [B-PROTOTIP](B-PROTOTIP.md)
