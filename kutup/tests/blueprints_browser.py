@@ -31,6 +31,10 @@ with tempfile.TemporaryDirectory(prefix='kutup-blueprints-') as directory:
                 page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
                 page.add_init_script("if(location.protocol==='http:'){localStorage.setItem('kutup-mode','light');localStorage.setItem('kutup-motion','still');localStorage.setItem('kutup-tur','done');}")
                 def open_catalog():
+                    # This suite checks the catalogue and construction. The
+                    # dedicated reveal suite exercises the once-only modal.
+                    owned=call("/wallet")["unlocks"]
+                    if owned:call("/blueprints/rewards/seen",{"memberId":me["memberId"],"models":owned})
                     page.goto(base+'/?tab=focus');expect(page.locator('.build-pick')).to_be_visible()
                     page.wait_for_timeout(250)
                     for _ in range(8):
