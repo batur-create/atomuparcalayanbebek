@@ -1,0 +1,94 @@
+[
+  {
+    "count": 32,
+    "unbalanced": false,
+    "placed": 32,
+    "missed": [],
+    "squares": 4,
+    "streets": 15,
+    "violations": 0,
+    "ownerMedian": 21.1,
+    "ms": {
+      "median": 6,
+      "p95": 41,
+      "max": 41.8,
+      "total": 401.6
+    }
+  },
+  {
+    "count": 100,
+    "unbalanced": false,
+    "placed": 100,
+    "missed": [],
+    "squares": 11,
+    "streets": 53,
+    "violations": 0,
+    "ownerMedian": 13.3,
+    "ms": {
+      "median": 8.8,
+      "p95": 23.9,
+      "max": 77.9,
+      "total": 1111.2
+    }
+  },
+  {
+    "count": 100,
+    "unbalanced": true,
+    "placed": 100,
+    "missed": [],
+    "squares": 12,
+    "streets": 52,
+    "violations": 0,
+    "ownerMedian": 11.1,
+    "ms": {
+      "median": 5.7,
+      "p95": 20.5,
+      "max": 57.6,
+      "total": 991.3
+    }
+  },
+  {
+    "count": 500,
+    "unbalanced": false,
+    "placed": 499,
+    "missed": [
+      "fener (no_context_plot)"
+    ],
+    "squares": 82,
+    "streets": 392,
+    "violations": 0,
+    "ownerMedian": 11.1,
+    "ms": {
+      "median": 22,
+      "p95": 47.6,
+      "max": 229,
+      "total": 12197.3
+    }
+  },
+  {
+    "count": 1000,
+    "unbalanced": false,
+    "placed": 991,
+    "missed": [
+      "sudegirmeni (no_plot)",
+      "firin (no_plot)",
+      "firin (no_plot)",
+      "ev (no_plot)",
+      "fener (no_context_plot)",
+      "burj (no_plot)",
+      "suleymaniye (no_plot)",
+      "keops (no_plot)",
+      "fener (no_context_plot)"
+    ],
+    "squares": 174,
+    "streets": 845,
+    "violations": 0,
+    "ownerMedian": 11.7,
+    "ms": {
+      "median": 34.4,
+      "p95": 75.6,
+      "max": 414,
+      "total": 40188.9
+    }
+  }
+]

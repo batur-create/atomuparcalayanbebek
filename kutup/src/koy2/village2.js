@@ -44,7 +44,8 @@ export function mergeVillage2(prev, raw) {
   for (const p of raw.projects || []) {
     if (!p.placement) continue;
     on.set(p.placement.plotId, { type: "imece", id: p.id });
-    things.set(`imece:${p.id}`, { model: "anitkabir", site: p.completed ? null : { shown: 0.35 } });
+    // The shared Anıtkabir rises with the crew's minutes (the same 2,000-minute ledger).
+    things.set(`imece:${p.id}`, { model: "anitkabir", site: p.completed ? null : { shown: p.stage ?? 0 }, project: p });
   }
   if (raw.weeklyMonument?.placement) on.set(raw.weeklyMonument.placement.plotId, { type: "weekly_monument", id: raw.groupId });
   const layout = {

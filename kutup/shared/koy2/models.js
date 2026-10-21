@@ -10,7 +10,19 @@
 import { MODEL_DATA } from "./modelData.js";
 import { MONUMENTS } from "../olcek.js";
 
-export const GEOMETRY_VERSION = 1;
+export const GEOMETRY_VERSION = 2;
+// What changed in each geometry version. A placement keeps the version it was
+// made with; a newer version never quietly redraws an older placement.
+//   1  the drawings as measured in package B
+//   2  Anıtkabir 1.25× (Batur's choice on 21 Oct 2026, card "B · 1,25×"): the
+//      Hall of Honour about 28 m against a 2-storey house, about 1.4 times its
+//      height (the real ratio is about 2; 1.5× filled a phone screen alone)
+const VERSION_SCALE = { 2: { anitkabir: 1.25 } };
+const scaleAt = (id, version) => {
+  let k = 1;
+  for (let v = 2; v <= version; v++) k *= VERSION_SCALE[v]?.[id] || 1;
+  return k;
+};
 // What ground a model needs (plan §4.3 terrainContext).
 export const CONTEXT = {
   sudegirmeni: "bank", // the wheel turns in a flowing river
@@ -50,12 +62,14 @@ const FRONT = { cottage: 0.9, house: 1.1, tower: 1.1 };
 const SIDE = 0.35;
 
 const cache = new Map();
-/** The model's contract at a geometry version (only version 1 exists). */
+/** The model's contract at a geometry version (1 or 2). */
 export function modelSpec(id, version = GEOMETRY_VERSION) {
   const key = `${id}@${version}`;
   if (cache.has(key)) return cache.get(key);
-  const m = MODEL_DATA[id];
-  if (!m || version !== GEOMETRY_VERSION) return null;
+  const base = MODEL_DATA[id];
+  if (!base || !(version >= 1 && version <= GEOMETRY_VERSION)) return null;
+  const f = scaleAt(id, version);
+  const m = f === 1 ? base : { ...base, k: base.k * f, hw: base.hw * f, ground: times(base.ground, f), over: times(base.over, f), h: base.h * f };
   const context = CONTEXT[id] || "dry";
   const landmark = isLandmark(id);
   const g = m.ground,
