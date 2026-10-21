@@ -10,6 +10,20 @@
 
 export const YENILIKLER = [
   {
+    surum: 27,
+    tarih: "2026-10-21",
+    vakit: "gece",
+    baslik: "Yeni köy hazır, Batur açınca gelecek",
+    maddeler: [
+      "Köyün yeni hali hazır: sokaklar, meydanlar, dere, köprüler, ray ve göl kenarıyla daha gerçek bir kasaba. Şimdilik hiçbir ekipte açık değil; Batur ekip ekip açacak.",
+      "Yeni köyde inşaatlı seans başlatınca şantiyen hemen köyde görünür ve binan bitince tam o arsada yükselir.",
+      "Binan, tuğlan, dakikaların, kalplerin ve Anıtkabir emeğin geçişte olduğu gibi kalır. Binalar yerinden kendiliğinden oynamaz.",
+      "Binanın yerini beğenmezsen köyde ona uygun boş arsalar önerilir; sen seçmeden hiçbir şey taşınmaz.",
+      "Köyde komşular kahveye, sahafa, meydandaki banka gider; dere kıyısında kuşlar, bahçelerde kelebekler olur. Arada yağmur, kışın kar yağar.",
+      "Yeni köy beğenilmezse Batur 14 gün içinde tek dokunuşla eski köye döndürebilir; arada kurduğun binalar orada da yerini bulur.",
+    ],
+  },
+  {
     surum: 26,
     tarih: "2026-10-21",
     vakit: "akşam",
