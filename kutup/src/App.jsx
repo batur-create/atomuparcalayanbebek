@@ -66,6 +66,8 @@ import { TOUR } from "./helpTopics.js";
 import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
 import { paintBar, useColorMode } from "./colorMode.js";
+import { deviceId, relaxedChoice } from "./device.js";
+import { watchForNewVersion } from "./freshness.js";
 
 // Four tabs (n17): who is where (with plans), the village, the board, and me.
 // Old "?tab=plans" links (plan notifications) open the plans on the home page.
@@ -640,6 +642,15 @@ function KutupApp({ initial, restart }) {
   // Where the session started (n40): a phone start makes the phone the timer
   // and the computer its helper; a computer start leaves the phone free to glance at.
   const watchDevice = me?.focusDevice || "";
+  // One account, many devices (n47): the device that started the session
+  // watches it. Every other device only shows it, the server's word as is.
+  // Sessions from an older app have no watcher and keep the old rules.
+  const watchHelper = !!watchEnd && !!me?.focusWatch && me.focusWatch !== deviceId();
+  // A tab left open keeps the app it was opened with; a newer one replaces it
+  // when that is safe: never while this device watches a session.
+  const reloadSafe = useRef(() => true);
+  reloadSafe.current = () => !watchEnd || watchHelper;
+  useEffect(() => watchForNewVersion(() => reloadSafe.current()), []);
   const meRef = useRef(me);
   meRef.current = me;
   // While on a tea break (and until it would have ended) leaving the app is fine.
@@ -662,6 +673,22 @@ function KutupApp({ initial, restart }) {
     if (!watchEnd) return releaseScreen();
     const strict = watchStrict,
       desk = onComputer();
+    if (watchHelper) {
+      // Not the watching device: it never reports leaving, never cracks or lets
+      // the site go by itself; the server's crack shows the same rescue card.
+      crackedRef.current = (away, at) => {
+        if (!strict || crackRef.current) return;
+        crackRef.current = { away, at };
+        setCrack({ away, at, minutes: meRef.current?.focusMinutes || 0 });
+      };
+      if (meRef.current?.focusCrackedAt > 0) crackedRef.current(Math.max(0, Date.now() - (meRef.current.focusLeftAt || meRef.current.focusCrackedAt)), meRef.current.focusCrackedAt);
+      const helped = () => {
+        if (desk || document.visibilityState === "visible") api("/focus", { action: "beat", device: desk ? "desk" : "phone", deviceId: deviceId() }).catch(() => {});
+      };
+      helped();
+      const pulse = setInterval(helped, BEAT_EVERY);
+      return () => clearInterval(pulse);
+    }
     // A phone opened beside a session the computer started: nothing to watch here.
     if (!desk && watchDevice === "desk") return;
     // How long an absence may be before it counts: a page reload or a quick
@@ -680,12 +707,15 @@ function KutupApp({ initial, restart }) {
       gone = true;
       setCrack((crackRef.current = null));
       releaseScreen();
+      let ignored = false;
       try {
-        const r = await api("/focus", { action: "wither" });
+        const r = await api("/focus", { action: "wither", deviceId: deviceId() });
         if (epoch !== sessionEpoch.current) return;
         if (r.state) updateData(r.state);
+        ignored = !!r.ignored;
       } catch {}
-      if (epoch !== sessionEpoch.current) return;
+      // The server kept the site (another device watches it): say nothing false.
+      if (epoch !== sessionEpoch.current || ignored) return;
       notify("İnşaatın çöktü 🧱 Uygulamadan çıkınca yıkılır. Bir dahakine!");
       navigator.vibrate?.(300);
     };
@@ -700,7 +730,7 @@ function KutupApp({ initial, restart }) {
       setCrack({ away, at: since, minutes: meRef.current?.focusMinutes || 0 });
       navigator.vibrate?.([200, 100, 200]);
       if (!at)
-        api("/focus", { action: "crack", away })
+        api("/focus", { action: "crack", away, deviceId: deviceId() })
           .then((r) => epoch === sessionEpoch.current && r.state && updateData(r.state))
           .catch(() => {});
     };
@@ -718,7 +748,7 @@ function KutupApp({ initial, restart }) {
     const beat = () => {
       if (gone || crackRef.current || quietSince) return;
       remember();
-      api("/focus", { action: "beat", device: desk ? "desk" : "phone" })
+      api("/focus", { action: "beat", device: desk ? "desk" : "phone", deviceId: deviceId() })
         .then((r) => {
           if (r?.stopped) {
             gone = true;
@@ -735,7 +765,7 @@ function KutupApp({ initial, restart }) {
         keepalive: true,
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", "X-Kutup": "1" },
-        body: JSON.stringify({ action: "away" }),
+        body: JSON.stringify({ action: "away", deviceId: deviceId() }),
       }).catch(() => {});
     // Coming back to a session that kept running while the app was closed.
     try {
@@ -879,7 +909,7 @@ function KutupApp({ initial, restart }) {
       document.removeEventListener("visibilitychange", visibility);
       releaseScreen();
     };
-  }, [watchEnd, watchStrict, watchDevice]);
+  }, [watchEnd, watchStrict, watchDevice, watchHelper]);
   // Phone and computer together (n40): the phone was picked up mid-session.
   // An open computer rings too, and its floating window turns red, so the
   // computer helps call you back instead of covering for the phone.
@@ -909,7 +939,7 @@ function KutupApp({ initial, restart }) {
   const letGo = async () => {
     setCrack((crackRef.current = null));
     try {
-      const r = await api("/focus", { action: "wither" });
+      const r = await api("/focus", { action: "wither", chosen: true, deviceId: deviceId() });
       if (r.state) updateData(r.state);
     } catch {}
     notify("İnşaatın çöktü 🧱 Bir dahakine sonuna kadar!");
@@ -1046,7 +1076,7 @@ function KutupApp({ initial, restart }) {
     const strict=choice.strict,relaxed=strict&&choice.relaxed;
     if(!relaxed)keepScreenOn();
     if(onComputer()&&!relaxed)primeFloat();
-    const result=await mutate("/focus",{action:"start",joinMember:m.id,joinEnd:choice.end,strict,relaxed,honest:!strict,device:onComputer()?"desk":"phone",...(strict?{model:choice.model}:{})},"Aynı anda bitecek iki ayrı çalışma. İyi çalışmalar! 🤝");
+    const result=await mutate("/focus",{action:"start",joinMember:m.id,joinEnd:choice.end,strict,relaxed,honest:!strict,device:onComputer()?"desk":"phone",deviceId:deviceId(),...(strict?{model:choice.model}:{})},"Aynı anda bitecek iki ayrı çalışma. İyi çalışmalar! 🤝");
     if(result)setJoinAsk(null);
     return !!result;
   });
@@ -1719,13 +1749,13 @@ function KutupApp({ initial, restart }) {
             // building if it is affordable, a cottage otherwise.
             const strict = storage.get("kutup-fidan-on") !== "0",
               picked = BY_ID[pickedModel()],
-              relaxed = strict && storage.get("kutup-build-mode") === "relaxed",
+              relaxed = strict && relaxedChoice(me),
               model = picked.class === "small" && picked.cost <= (me?.bricks || 0) ? picked.id : "kulube";
             if (strict && !relaxed) keepScreenOn();
             setReceipt(null);
             await mutate(
               "/focus",
-              { action: "start", minutes: 25, strict, relaxed, ...(strict ? { model } : {}), ...(receipt.together ? { invite: true } : {}) },
+              { action: "start", minutes: 25, strict, relaxed, device: onComputer() ? "desk" : "phone", deviceId: deviceId(), ...(strict ? { model } : {}), ...(receipt.together ? { invite: true } : {}) },
               strict ? `Seri sürüyor 🔥 ${BY_ID[model].name} için temel atıldı.` : "Seri sürüyor 🔥 25 dakika daha.",
             );
           }}

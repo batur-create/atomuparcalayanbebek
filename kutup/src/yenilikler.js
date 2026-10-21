@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 26,
+    tarih: "2026-10-21",
+    vakit: "akşam",
+    baslik: "Aynı hesap, beş cihaz, tek seans",
+    maddeler: [
+      "Ekranı kapatarak çalış anahtarı artık hesabına bağlı: telefonda açtıysan bilgisayarda da açık görünür.",
+      "Seansı hangi cihazda başlattıysan o izler. Aynı hesapla açtığın diğer cihazlar seansı yalnız gösterir; kapansalar ya da kilitlenseler de binan çatlamaz, yıkılmaz.",
+      "Uzun süre açık kalmış eski bir Kütüp sekmesi, yeni sürüm çıkınca kendini yeniler; eski kurallarla çalışmaz.",
+    ],
+  },
+  {
     surum: 25,
     tarih: "2026-10-21",
     vakit: "öğle",

@@ -70,6 +70,11 @@ export const HELP = {
         a: `Ekranı kapatarak çalış kapalıyken inşaatta uygulamadan çıkarsan ${sec(BUILD_LEAVE)} saniye içinde dön. Dönmezsen bina çatlar; ${min(RESCUE_WINDOW)} dakika içinde dönersen birkaç dakika ekleyip kurtarırsın (25 dk’lık seansa +${rescueMinutes(25)} dk). Daha uzun kalırsan bina yıkılır. Bilgisayarda sekme değiştirmek serbest, yeter ki Kütüp sekmesi açık kalsın. Anahtar açıksa ekranı kilitlemek, başka uygulamaya geçmek veya sekmeyi kapatmak inşaatı bozmaz. Dönünce hızlandırılmış yapımı izlersin.`,
       },
       {
+        id: "devices",
+        q: "Aynı hesap birkaç cihazda açıksa?",
+        a: `Seansı hangi cihazda başlattıysan o cihaz izler. Aynı hesapla açtığın diğer telefon, tablet veya bilgisayarlar seansı yalnız gösterir: kapansalar, kilitlenseler ya da kapağı kapansa da binayı çatlatmaz ve yıkmaz. Ekranı kapatarak çalış anahtarı da hesabına bağlı; bir cihazda değiştirirsen hepsinde aynı görünür.`,
+      },
+      {
         id: "quit",
         q: "Vazgeç ile Pes et farkı ne?",
         a: `İlk ${min(GRACE)} dakikada Vazgeç bedavadır, hiçbir şey kaybetmezsin. Sonra Pes et dersen bina yıkılır: malzemenin yarısı hemen geri gelir. Kalan enkazı ${RUIN_DAYS} gün içinde bir seansla kaldırırsan biraz daha geri gelir.`,
