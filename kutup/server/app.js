@@ -1849,7 +1849,6 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (strict && !item) item = BY_ID[DEFAULT_MODEL[kindFor(minutes)]];
       end = now + minutes * 60000;
     }
-    if(strict&&item&&!fits(item,minutes))fail(`Kalan süre ${item.name} için yeterli değil. Daha küçük yapı veya yalnız odak seç.`);
     if (item?.id === "anitkabir" && await db.get("SELECT id FROM imece_project LIMIT 1"))
       fail("Anıtkabir artık bütün köylerin ortak görevi. Köy sekmesindeki Bir Taş da Senden kartını aç.", 409);
     const cost = item?.cost || 0;
