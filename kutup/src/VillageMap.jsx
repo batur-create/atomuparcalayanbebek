@@ -244,9 +244,9 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   const building = picked && village?.buildings.find((b) => b.id === picked);
   const owner = building && members.find((m) => m.id === building.memberId);
   const count = village?.buildings.length || 0;
-  const settled = village?.districts.filter((d) => d.memberId).length || 0;
+  const settled = world?.districts.filter(d=>d.memberId).length || 0;
   const myCount = village?.buildings.filter((b) => b.memberId === me?.id).length || 0;
-  const people = members.filter((m) => village?.districts.some((d) => d.memberId === m.id));
+  const people = members.filter(m=>world?.focusOf(m.id));
   const flyTo = (memberId) => {
     const target = world?.focusOf(memberId);
     if (target) map.current?.view.flyTo({ x: target[0], y: target[1], s: 9 }, 650);

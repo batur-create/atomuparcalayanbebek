@@ -2,21 +2,18 @@
 // buildings, signs and lamps, each with a screen-space box and a depth, indexed
 // in a coarse grid so the map only draws what a tile or the viewport needs.
 import {
-  FOOTPRINT, LANE, LANE_SHARE, PLAZA, RADIUS, cellKey, cellLayout, lineDistance, monumentCells, nearestOnLine, parentOf, roadNetwork, screenOf,
+  FOOTPRINT, LANE, LANE_SHARE, PLAZA, RADIUS, SPACING,cellKey, cellLayout, lineDistance, monumentCells, nearestOnLine, parentOf, roadNetwork, screenOf,
 } from "../shared/village.js";
 import {
   LIT, STONE, WOOD, box, buildingSVG, chimneyTop, circle, drawnSize, ellipse, mirrored, poly, patchSVG, ridgeOf, rng, seg, snowSVG, spec, vinesSVG,
 } from "./iso.js";
 import { BY_ID } from "../shared/catalog.js";
 
-export const GROUND = "#a4d078";
-const MEADOW = "#b3da88",
-  // A soft, wide band instead of a hard outline where a district meets the fields.
-  MEADOW_EDGE = "#a8d07d",
+export const GROUND = "#a4c481";
+const MEADOW = "#accb8c",
   FLOWERS = ["#ffffff", "#f7d154", "#f29bb8", "#b9a3ea"],
-  PLOT = "#c9d98f",
-  ROAD = "#ecdcb9",
-  ROAD_EDGE = "#cfb98f",
+  ROAD = "#dfcfaf",
+  ROAD_EDGE = "#c5b590",
   TRACK = "#d8c69f",
   WATER = "#8ec8dc",
   PLAZA_STONE = "#e7dece",
@@ -393,7 +390,12 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
   // A monument's district (n44) has a ring road round its centre.
   const monuments = monumentCells(groupKey, village.districts.map((d) => [d.q, d.r]), village.buildings);
   const layoutOf = (q, r) => cellLayout(groupKey, q, r, monuments.has(cellKey(q, r)));
-  const districts = village.districts.map((d) => ({ ...d, layout: layoutOf(d.q, d.r) }));
+  const occupied=new Set(village.buildings.filter(b=>b.x!=null).map(b=>b.districtId));
+  const legacyOwners=new Set(village.buildings.filter(b=>b.x!=null&&!b.districtId).map(b=>b.memberId));
+  const ruins=new Set(village.ruins.filter(r=>r.until>Date.now()).map(r=>r.memberId));
+  // Empty signup reservations stay on the server, not in the camera's bounds.
+  // My own plot and a neighbour currently studying are still discoverable.
+  const districts = village.districts.filter(d=>occupied.has(d.id)||legacyOwners.has(d.memberId)||d.memberId===me||ruins.has(d.memberId)||focusing(people.get(d.memberId)||{})).map((d) => ({ ...d, layout: layoutOf(d.q, d.r) }));
   const network = roadNetwork(groupKey, districts.map((d) => [d.q, d.r]), monuments);
   const linkSet = new Set(network.links);
   const built = new Set(districts.map((d) => cellKey(d.q, d.r)));
@@ -532,8 +534,13 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     const L = d.layout;
     const [cx, cy] = L.center;
     const owner = d.memberId ? people.get(d.memberId) : null;
-    if (!d.passThrough)
-      add(ground, { pass: 0, bbox: boxOf(cx, cy, 24, 24, 13, 13), draw: (v) => fillShape(v, L.boundary, owner ? MEADOW : PLOT, MEADOW_EDGE, 0.9) });
+    // Terrain has no ownership border. Offset, translucent meadow patches
+    // blend into the common ground instead of one outlined island per district.
+    const field=rng(L.seed+101),patches=Array.from({length:4},()=>({x:cx+(field()-.5)*17,y:cy+(field()-.5)*17,rx:4+field()*6,ry:2+field()*4}));
+    add(ground,{pass:0,bbox:boxOf(cx,cy,28,28,16,16),draw:v=>{
+      const P=v.at(0,0);
+      for(const p of patches){const [x,y]=P(p.x,p.y);ellipse(x,y,p.rx*v.s,p.ry*v.s*.5,MEADOW,.16);}
+    }});
     if (L.hill && !d.passThrough) {
       const { x, y, r } = L.hill;
       add(ground, { pass: 1, bbox: boxOf(x, y, r * 1.8, r * 1.8, r, r), draw: (v) => {
@@ -556,8 +563,9 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
     const r = rng(L.seed + 3);
     const trees = [...L.trees];
     // A few wild trees just outside the edge soften where the village meets the fields.
+    const grove=r()*Math.PI*2;
     for (let i = 0; i < 6; i++) {
-      const a = r() * Math.PI * 2,
+      const a = grove+(r()-.5)*1.5,
         dist = L.radiusAt(a) + 0.8 + r() * 3.2;
       trees.push({ x: cx + Math.cos(a) * dist, y: cy + Math.sin(a) * dist, size: 0.7 + r() * 0.5, tone: r(), wild: true });
     }
@@ -597,7 +605,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       if (spots.length) add(ground, { pass: 1, bbox: boxOf(cx, cy, 24, 24, 13, 13), draw: (v) => meadowDetail(v, spots) });
       for (let i = 0; i < 7; i++) {
         const a = rr() * Math.PI * 2,
-          dist = L.radiusAt(a) - 1 - rr() * 1.6,
+          dist = Math.sqrt(rr())*(L.radiusAt(a)-1),
           x = cx + Math.cos(a) * dist,
           y = cy + Math.sin(a) * dist,
           size = 0.8 + rr() * 0.6,
@@ -609,7 +617,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
         else add(standing, { type: "rock", depth: x + y, x, y, bbox: boxOf(x, y, 0.9, 0.9, 0.6, 0.5), draw: (v) => rockArt(v, x, y, size) });
       }
     }
-    if (!d.passThrough && L.sign) {
+    if (!d.passThrough && L.sign && owner) {
       const [x, y] = L.sign;
       const label = owner ? owner.name : "Boş arsa";
       const color = owner ? MEMBER_COLORS[owner.color] || MEMBER_COLORS.lilac : null;
@@ -624,7 +632,28 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
 
   // Roads: edges first, then the surface, so junctions melt together.
   const roads = [];
-  for (const link of network.links) roads.push({ line: link, kind: "road" });
+  for (const link of network.links) {
+    // A tiny bend stays inside the already reserved road corridor.
+    const [a,b]=link,len=Math.hypot(b[0]-a[0],b[1]-a[1]),steps=Math.max(2,Math.ceil(len/1.5));
+    if(len<.001)continue;
+    const line=Array.from({length:steps+1},(_,i)=>{const t=i/steps,w=.24*Math.sin(Math.PI*t)**2*Math.sin(Math.PI*2*t);return[a[0]+(b[0]-a[0])*t-(b[1]-a[1])/len*w,a[1]+(b[1]-a[1])*t+(b[0]-a[0])/len*w];});
+    roads.push({line,kind:"road"});
+  }
+  // A few soft walking links join neighbouring clusters without making every
+  // trip go back through the square. They avoid every saved house and pond;
+  // later buildings can make a path change, never the other way around.
+  const cellMap=new Map(districts.map(d=>[cellKey(d.q,d.r),d]));
+  for(const d of districts)for(const [dq,dr] of [[1,0],[0,1],[1,-1]]){
+    const neighbour=cellMap.get(cellKey(d.q+dq,d.r+dr));if(!neighbour)continue;
+    const a=d.layout.entrance,b=neighbour.layout.entrance,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+    if(len<6||len>SPACING*1.35)continue;
+    for(const bend of [.18,-.18,0]){
+      const mid=[(a[0]+b[0])/2-dy*bend,(a[1]+b[1])/2+dx*bend],steps=Math.ceil(len/.65);
+      const line=Array.from({length:steps+1},(_,i)=>{const t=i/steps,u=1-t;return[u*u*a[0]+2*u*t*mid[0]+t*t*b[0],u*u*a[1]+2*u*t*mid[1]+t*t*b[1]];});
+      if(line.some(([x,y])=>Math.hypot(x,y)<PLAZA+1||blockedByHome(x,y,.7)||[d,neighbour].some(c=>c.layout.pond&&Math.hypot(x-c.layout.pond.x,y-c.layout.pond.y)<c.layout.pond.rx+.6)))continue;
+      roads.push({line,kind:"footpath"});break;
+    }
+  }
   for (const key of network.cells) {
     const [q, r] = key.split(",").map(Number);
     const L = layoutOf(q, r);
@@ -633,15 +662,15 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       // Lanes towards cells nobody has settled yet are only a dirt track.
       const leadsTo = i > 0 ? childKeys[i - 1] : null;
       const live = L.monument || i === 0 || (leadsTo && (network.cells.has(leadsTo) || built.has(leadsTo)));
-      roads.push({ line, kind: live ? "road" : "track" });
+      if(live)roads.push({ line, kind: "road" });
     });
   }
   for (const r of roads) {
     const bbox = lineBox(r.line, 3);
     if (r.kind === "road") {
-      add(ground, { pass: 2, bbox, draw: (v) => strokeLine(v, r.line, LANE * 1.7 + 0.3, ROAD_EDGE) });
-      add(ground, { pass: 3, bbox, draw: (v) => strokeLine(v, r.line, LANE * 1.7, ROAD) });
-    } else add(ground, { pass: 3, bbox, draw: (v) => strokeLine(v, r.line, LANE * 1.1, TRACK, 0.75) });
+      add(ground, { pass: 2, bbox, draw: (v) => strokeLine(v, r.line, LANE * 1.25 + 0.25, ROAD_EDGE) });
+      add(ground, { pass: 3, bbox, draw: (v) => strokeLine(v, r.line, LANE * 1.25, ROAD) });
+    } else add(ground, { pass: 3, bbox, draw: (v) => strokeLine(v, r.line, LANE * .72, TRACK, 0.72) });
   }
   // Lamps halfway along the roads between districts.
   for (const link of network.links) {
@@ -828,7 +857,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       area = [Math.min(area[0], sx), Math.min(area[1], sy - 4), Math.max(area[2], sx), Math.max(area[3], sy)];
     }
   return {
-    items, query, bounds, area, districts, balloons, walkers, villagers, glows, smoke, buildings: homes, lit, farLabels,
+    items, query, bounds, area, districts, walkingLinks:roads.filter(r=>r.kind==="footpath").map(r=>r.line),balloons, walkers, villagers, glows, smoke, buildings: homes, lit, farLabels,
     lamps: standing.filter((item) => item.type === "lamp"),
     byId: new Map(standing.filter((item) => item.id).map((item) => [item.id, item])),
     names: new Map(members.map((m) => [m.id, m.name])),
