@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
 | n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
 | imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
 | plan-kesfi | Dakikaya göre şans, görünür garanti, haftalık kalıcı hak ve altı özgün nadir yapı | Katalog/Köy | 20 Eki | codex/blueprint-discovery PR |
@@ -97,6 +98,13 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n46 · Köy yenilemesi (A–H)
+Köy · 21 Ekim 2026 · claude/n46-a-taban → … (PR zinciri)
+
+**Plan:** `docs/KOY_TAM_UYGULAMA_PLANI.md` (dal `codex/koy-plan-devir-20261021`, d5f2fd74; 18 revizyon + 19. madde: başlangıçta görünür şantiye, başarıda aynı yerde tek bina, sonra isteğe bağlı taşıma).
+**Ediz'in sözleri:** "Plandaki A–H aşamalarının tamamını paketler halinde uygula. Her pakette kontrolleri tamamla, PR hazırla ve yeniden onay beklemeden sonraki pakete devam et." "Birleştirme, yayın ve canlı yerleşimi etkinleştirme bende."
+**A · Taban:** dört sabit sentetik sahne (baslangic, yapi32, baskin100 76/8/8/8, anitkabir), korunan satır sağlamaları, gerçek `/api/village` v1 yanıtı, eski köyün ölçülen sorunları (`docs/koy/A-TABAN.md`). Ekip yönetimi (§9) PR #54 ile zaten birleşmişti; yeniden yapılmadı. Önceki analizdeki 37 ölçek kayması bu tabanda yeniden üretilemedi (0), raporda açık yazıldı.
 
 ### n45 · Komuta merkezinde ekip yönetimi
 Komuta merkezi (Batur) · 21 Ekim 2026 · claude/n45-ekip-yonetimi

@@ -1,0 +1,1001 @@
+{
+ "note": "n46 A taban manifesti. Sentetik fixture; canlı veri okunmadı.",
+ "head": "8dde317ac3a94f08719ea6bc17da004c60107ca2",
+ "branch": "claude/n46-a-taban",
+ "schemaVersions": 33,
+ "models": [
+  {
+   "id": "kulube",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 0,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "bostan",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 15,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "cicekci",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 25,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "kahve",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 30,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "ev",
+   "kind": "house",
+   "class": "medium",
+   "cost": 40,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "sahaf",
+   "kind": "house",
+   "class": "medium",
+   "cost": 60,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "firin",
+   "kind": "house",
+   "class": "medium",
+   "cost": 70,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "konak",
+   "kind": "house",
+   "class": "medium",
+   "cost": 80,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "kubbe",
+   "kind": "house",
+   "class": "medium",
+   "cost": 85,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 15,
+   "targetHeight": 5,
+   "claim": 3.92
+  },
+  {
+   "id": "serender",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 35,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 5,
+   "realPlan": 5,
+   "targetHeight": 3.13,
+   "claim": 1.56
+  },
+  {
+   "id": "kerpic",
+   "kind": "house",
+   "class": "medium",
+   "cost": 65,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 5,
+   "realPlan": 14,
+   "targetHeight": 3.13,
+   "claim": 3.87
+  },
+  {
+   "id": "kemer",
+   "kind": "house",
+   "class": "medium",
+   "cost": 75,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 9,
+   "realPlan": 30,
+   "targetHeight": 5.63,
+   "claim": 4.5
+  },
+  {
+   "id": "konsol",
+   "kind": "house",
+   "class": "medium",
+   "cost": 95,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 16,
+   "targetHeight": 5,
+   "claim": 3.97
+  },
+  {
+   "id": "pazar",
+   "kind": "house",
+   "class": "medium",
+   "cost": 90,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 24,
+   "targetHeight": 5,
+   "claim": 4.31
+  },
+  {
+   "id": "kule",
+   "kind": "tower",
+   "class": "large",
+   "cost": 90,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "degirmen",
+   "kind": "tower",
+   "class": "large",
+   "cost": 120,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "saat",
+   "kind": "tower",
+   "class": "large",
+   "cost": 140,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "amfi",
+   "kind": "house",
+   "class": "large",
+   "cost": 130,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 14,
+   "realPlan": 34,
+   "targetHeight": 7.03,
+   "claim": 4.62
+  },
+  {
+   "id": "sukulesi",
+   "kind": "tower",
+   "class": "large",
+   "cost": 110,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 30,
+   "realPlan": 12,
+   "targetHeight": 9.18,
+   "claim": 3.75
+  },
+  {
+   "id": "kapsul",
+   "kind": "tower",
+   "class": "large",
+   "cost": 135,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 54,
+   "realPlan": 20,
+   "targetHeight": 11.28,
+   "claim": 4.15
+  },
+  {
+   "id": "burgu",
+   "kind": "tower",
+   "class": "large",
+   "cost": 145,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 90,
+   "realPlan": 30,
+   "targetHeight": 13.49,
+   "claim": 4.5
+  },
+  {
+   "id": "pisa",
+   "kind": "tower",
+   "class": "large",
+   "cost": 160,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 56,
+   "realPlan": 20,
+   "targetHeight": 11.42,
+   "claim": 4.15
+  },
+  {
+   "id": "kolezyum",
+   "kind": "house",
+   "class": "large",
+   "cost": 180,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": true,
+   "realHeight": 48,
+   "realPlan": 189,
+   "targetHeight": 10.82,
+   "claim": 6
+  },
+  {
+   "id": "keops",
+   "kind": "house",
+   "class": "large",
+   "cost": 200,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": true,
+   "realHeight": 147,
+   "realPlan": 230,
+   "targetHeight": 16.01,
+   "claim": 6
+  },
+  {
+   "id": "galata",
+   "kind": "tower",
+   "class": "large",
+   "cost": 150,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 67,
+   "realPlan": 17,
+   "targetHeight": 12.16,
+   "claim": 4.02
+  },
+  {
+   "id": "suleymaniye",
+   "kind": "house",
+   "class": "large",
+   "cost": 190,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": true,
+   "realHeight": 76,
+   "realPlan": 104,
+   "targetHeight": 12.71,
+   "claim": 5.78
+  },
+  {
+   "id": "anitkabir",
+   "kind": "house",
+   "class": "large",
+   "cost": 190,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": true,
+   "realHeight": 33.5,
+   "realPlan": 150,
+   "targetHeight": 9.54,
+   "claim": 6
+  },
+  {
+   "id": "eyfel",
+   "kind": "tower",
+   "class": "large",
+   "cost": 200,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 330,
+   "realPlan": 125,
+   "targetHeight": 21.25,
+   "claim": 5.99
+  },
+  {
+   "id": "sidney",
+   "kind": "house",
+   "class": "large",
+   "cost": 210,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": true,
+   "realHeight": 65,
+   "realPlan": 183,
+   "targetHeight": 12.03,
+   "claim": 6
+  },
+  {
+   "id": "burj",
+   "kind": "tower",
+   "class": "large",
+   "cost": 250,
+   "rare": false,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 828,
+   "realPlan": 120,
+   "targetHeight": 29.32,
+   "claim": 5.94
+  },
+  {
+   "id": "kutuphane",
+   "kind": "house",
+   "class": "large",
+   "cost": 150,
+   "rare": false,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "postane",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 35,
+   "rare": false,
+   "weekly": true,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "cay",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 35,
+   "rare": false,
+   "weekly": true,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "fener",
+   "kind": "tower",
+   "class": "large",
+   "cost": 160,
+   "rare": true,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "sera",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 45,
+   "rare": true,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  },
+  {
+   "id": "agacevi",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 65,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 11,
+   "realPlan": 12,
+   "targetHeight": 6.46,
+   "claim": 3.75
+  },
+  {
+   "id": "japoncay",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 55,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 5,
+   "realPlan": 10,
+   "targetHeight": 3.13,
+   "claim": 3.13
+  },
+  {
+   "id": "sudegirmeni",
+   "kind": "house",
+   "class": "medium",
+   "cost": 110,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 14,
+   "targetHeight": 5,
+   "claim": 3.87
+  },
+  {
+   "id": "istasyon",
+   "kind": "house",
+   "class": "medium",
+   "cost": 115,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 20,
+   "targetHeight": 5,
+   "claim": 4.15
+  },
+  {
+   "id": "planetaryum",
+   "kind": "house",
+   "class": "large",
+   "cost": 190,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 12,
+   "realPlan": 18,
+   "targetHeight": 6.66,
+   "claim": 4.07
+  },
+  {
+   "id": "kristalkutuphane",
+   "kind": "house",
+   "class": "large",
+   "cost": 180,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 12,
+   "realPlan": 16,
+   "targetHeight": 6.66,
+   "claim": 3.97
+  },
+  {
+   "id": "kapadokya",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 80,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 12,
+   "targetHeight": 5,
+   "claim": 3.75
+  },
+  {
+   "id": "yuzenev",
+   "kind": "cottage",
+   "class": "small",
+   "cost": 90,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 5,
+   "realPlan": 12,
+   "targetHeight": 3.13,
+   "claim": 3.75
+  },
+  {
+   "id": "asmakopru",
+   "kind": "house",
+   "class": "medium",
+   "cost": 120,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 15,
+   "realPlan": 70,
+   "targetHeight": 7.2,
+   "claim": 5.34
+  },
+  {
+   "id": "kervansaray",
+   "kind": "house",
+   "class": "medium",
+   "cost": 150,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 8,
+   "realPlan": 35,
+   "targetHeight": 5,
+   "claim": 4.65
+  },
+  {
+   "id": "mardinevi",
+   "kind": "house",
+   "class": "medium",
+   "cost": 130,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 9,
+   "realPlan": 16,
+   "targetHeight": 5.63,
+   "claim": 3.97
+  },
+  {
+   "id": "atakule",
+   "kind": "tower",
+   "class": "large",
+   "cost": 210,
+   "rare": true,
+   "weekly": false,
+   "special": true,
+   "monument": false,
+   "realHeight": 125,
+   "realPlan": 30,
+   "targetHeight": 15.13,
+   "claim": 4.5
+  },
+  {
+   "id": "gozlemevi",
+   "kind": "tower",
+   "class": "large",
+   "cost": 100,
+   "rare": true,
+   "weekly": false,
+   "special": false,
+   "monument": false,
+   "realHeight": null,
+   "realPlan": null,
+   "targetHeight": null,
+   "claim": null
+  }
+ ],
+ "villageWire": {
+  "fields": [
+   "id",
+   "memberId",
+   "kind",
+   "seed",
+   "x",
+   "y",
+   "facing",
+   "minutes",
+   "created",
+   "likes",
+   "mine",
+   "model",
+   "patched",
+   "gift"
+  ],
+  "districts": [
+   "id",
+   "memberId",
+   "q",
+   "r",
+   "seed"
+  ],
+  "ruins": [
+   "memberId",
+   "kind",
+   "x",
+   "y",
+   "until"
+  ],
+  "top": [
+   "rev",
+   "partial",
+   "until",
+   "districts",
+   "buildings",
+   "ruins",
+   "monument",
+   "total"
+  ],
+  "sample": "village-v1.json"
+ },
+ "scenes": {
+  "baslangic": {
+   "people": 4,
+   "buildings": 6,
+   "activeSessions": 1,
+   "sitesExpected": 1,
+   "protectedSha": "b176a8e204889bd8",
+   "legacy": {
+    "counts": {
+     "buildings": 6,
+     "doorsUnlinked": 0,
+     "doorsThrough": 0,
+     "scaleDrift": 0,
+     "squeezed": 0,
+     "overlaps": 0,
+     "laneHits": 0,
+     "contextless": 0,
+     "districts": 4,
+     "lanes": 11,
+     "monumentCells": 0,
+     "unplaced": 0
+    },
+    "detail": {
+     "buildings": 6,
+     "doorsUnlinked": [],
+     "doorsThrough": [],
+     "scaleDrift": [],
+     "squeezed": [],
+     "overlaps": [],
+     "laneHits": [],
+     "contextless": [],
+     "districts": 4,
+     "lanes": 11,
+     "monumentCells": 0,
+     "unplaced": []
+    },
+    "growth": {
+     "added": 100,
+     "changed": []
+    }
+   }
+  },
+  "yapi32": {
+   "people": 6,
+   "buildings": 32,
+   "activeSessions": 3,
+   "sitesExpected": 2,
+   "protectedSha": "0c72a876fe01154a",
+   "legacy": {
+    "counts": {
+     "buildings": 32,
+     "doorsUnlinked": 1,
+     "doorsThrough": 1,
+     "scaleDrift": 0,
+     "squeezed": 6,
+     "overlaps": 0,
+     "laneHits": 0,
+     "contextless": 5,
+     "districts": 8,
+     "lanes": 23,
+     "monumentCells": 0,
+     "unplaced": 0
+    },
+    "detail": {
+     "buildings": 32,
+     "doorsUnlinked": [
+      "b030"
+     ],
+     "doorsThrough": [
+      [
+       "b031",
+       "b001"
+      ]
+     ],
+     "scaleDrift": [],
+     "squeezed": [
+      [
+       "b014",
+       "amfi",
+       1.25,
+       1.31
+      ],
+      [
+       "b016",
+       "kemer",
+       1.09,
+       1.49
+      ],
+      [
+       "b025",
+       "istasyon",
+       1.04,
+       1.17
+      ],
+      [
+       "b026",
+       "yuzenev",
+       1,
+       1.03
+      ],
+      [
+       "b028",
+       "kervansaray",
+       1,
+       1.45
+      ],
+      [
+       "b029",
+       "mardinevi",
+       1.46,
+       1.54
+      ]
+     ],
+     "overlaps": [],
+     "laneHits": [],
+     "contextless": [
+      [
+       "b016",
+       "kemer",
+       "water"
+      ],
+      [
+       "b024",
+       "sudegirmeni",
+       "water"
+      ],
+      [
+       "b025",
+       "istasyon",
+       "rail"
+      ],
+      [
+       "b026",
+       "yuzenev",
+       "water"
+      ],
+      [
+       "b027",
+       "asmakopru",
+       "water"
+      ]
+     ],
+     "districts": 8,
+     "lanes": 23,
+     "monumentCells": 0,
+     "unplaced": []
+    },
+    "growth": {
+     "added": 100,
+     "changed": []
+    }
+   }
+  },
+  "baskin100": {
+   "people": 4,
+   "buildings": 100,
+   "activeSessions": 2,
+   "sitesExpected": 2,
+   "protectedSha": "7bc9d066b6c42fca",
+   "legacy": {
+    "counts": {
+     "buildings": 100,
+     "doorsUnlinked": 3,
+     "doorsThrough": 7,
+     "scaleDrift": 0,
+     "squeezed": 0,
+     "overlaps": 0,
+     "laneHits": 0,
+     "contextless": 0,
+     "districts": 14,
+     "lanes": 37,
+     "monumentCells": 0,
+     "unplaced": 0
+    },
+    "detail": {
+     "buildings": 100,
+     "doorsUnlinked": [
+      "b015",
+      "b016",
+      "b094"
+     ],
+     "doorsThrough": [
+      [
+       "b005",
+       "b004"
+      ],
+      [
+       "b006",
+       "b000"
+      ],
+      [
+       "b014",
+       "b010"
+      ],
+      [
+       "b042",
+       "b036"
+      ],
+      [
+       "b049",
+       "b047"
+      ],
+      [
+       "b065",
+       "b058"
+      ],
+      [
+       "b097",
+       "b079"
+      ]
+     ],
+     "scaleDrift": [],
+     "squeezed": [],
+     "overlaps": [],
+     "laneHits": [],
+     "contextless": [],
+     "districts": 14,
+     "lanes": 37,
+     "monumentCells": 0,
+     "unplaced": []
+    },
+    "growth": {
+     "added": 100,
+     "changed": []
+    }
+   }
+  },
+  "anitkabir": {
+   "people": 4,
+   "buildings": 6,
+   "activeSessions": 1,
+   "sitesExpected": 0,
+   "protectedSha": "b4a22f29801e0793",
+   "legacy": {
+    "counts": {
+     "buildings": 6,
+     "doorsUnlinked": 1,
+     "doorsThrough": 0,
+     "scaleDrift": 0,
+     "squeezed": 1,
+     "overlaps": 0,
+     "laneHits": 0,
+     "contextless": 0,
+     "districts": 5,
+     "lanes": 12,
+     "monumentCells": 1,
+     "unplaced": 0
+    },
+    "detail": {
+     "buildings": 6,
+     "doorsUnlinked": [
+      "b004"
+     ],
+     "doorsThrough": [],
+     "scaleDrift": [],
+     "squeezed": [
+      [
+       "b004",
+       "anitkabir",
+       4.07,
+       4.25
+      ]
+     ],
+     "overlaps": [],
+     "laneHits": [],
+     "contextless": [],
+     "districts": 5,
+     "lanes": 12,
+     "monumentCells": 1,
+     "unplaced": []
+    },
+    "growth": {
+     "added": 100,
+     "changed": []
+    }
+   }
+  }
+ }
+}
