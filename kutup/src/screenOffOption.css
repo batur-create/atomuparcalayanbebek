@@ -1,0 +1,14 @@
+.screen-off-option { --option-ink: var(--ink); --option-muted: var(--muted); --option-border: var(--border); --option-on: var(--accent); --option-knob: var(--paper); margin: 10px 0; color: var(--option-ink); }
+.screen-off-option.studio { --option-ink: var(--studio-text); --option-muted: var(--studio-soft); --option-border: var(--studio-faint); --option-on: var(--pop); --option-knob: var(--studio); }
+.screen-off-option > label { display: flex; justify-content: space-between; align-items: center; gap: 14px; min-height: 44px; cursor: pointer; }
+.screen-off-option b { font-size: 13px; font-weight: 650; }
+.screen-off-option input { appearance: none; flex: 0 0 38px; width: 38px; height: 22px; margin: 0; padding: 2px; border: 1px solid var(--option-muted); border-radius: 99px; background: transparent; cursor: pointer; }
+.screen-off-option input::before { content: ""; display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--option-muted); }
+.screen-off-option input:checked { background: var(--option-on); border-color: var(--option-on); }
+.screen-off-option input:checked::before { transform: translateX(16px); background: var(--option-knob); }
+.screen-off-option input:focus-visible { outline: 2px solid var(--option-on); outline-offset: 4px; }
+.screen-off-option input:disabled { cursor: wait; }
+.screen-off-option p { color: var(--option-muted); font-size: 11.5px; line-height: 1.6; margin: 0; }
+
+.focus-card .focus-no-build { color: var(--studio-soft); font-size: 11.5px; min-height: 44px; }
+.focus-card .focus-add-build { margin: 10px 0; min-height: 44px; }

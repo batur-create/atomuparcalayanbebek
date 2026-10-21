@@ -52,12 +52,12 @@ export const HELP = {
       {
         id: "start",
         q: "Nasıl başlarım?",
-        a: "İnşaat’ı seç, Sıkı ya da Rahat modunu ve binanı seç (ilk binalar bedava), alttaki büyük düğmeye bas. Sıkı’da Kütüp açık kalsın; Rahat’ta ekranı kilitleyebilirsin. Bitince bina köye eklenir, cebine tuğla girer.",
+        a: "Seansında bina varsa bitince köyüne eklenir (ilk binalar bedava). Bina istemiyorsan Bu seansı binasız yap seçeneğine dokun; sonra Bina ekle ile geri alabilirsin. İnşaatta telefonu kilitlemek istiyorsan Ekranı kapatarak çalış anahtarını aç. Alttaki büyük düğmeyle başla. Anıtkabir ve arkadaşa katılımda da aynı ekran anahtarı kullanılır.",
       },
       {
         id: "modes",
-        q: "İnşaat ile Serbest farkı ne?",
-        a: `İnşaat: seçtiğin bina yükselir, bitince köye eklenir, tam maaş alırsın. Sıkı’da uygulamada kalırsın; Rahat’ta ekranı kilitleyebilir, başka uygulamaya geçebilir, sekmeyi kapatabilirsin. Serbest: bina yok, süreyi sen seçersin, maaş yarım; uygulamadan uzakta geçen dakika sayılmaz.`,
+        q: "İnşaat ile Yalnız odak farkı ne?",
+        a: `İnşaat: malzemesini öder, süreyi tamamlayınca seçtiğin binayı köyüne eklersin. Ekranı kapatarak çalış anahtarı kapalıysa Kütüp açık kalır ve maaş tamdır; açıksa ekranı kilitleyebilir veya uygulamadan çıkabilirsin, maaş yarımdır. Yalnız odak: bina ve malzeme ücreti yok, süreyi sen seçersin, maaş yarımdır; uzakta geçen dakika sayılmaz. Anıtkabir ortak görevdir: iki ekran ayarında da yarım maaş, tamamlanan seansın süresi projeye katkı.`,
       },
       {
         id: "bricks",
@@ -67,7 +67,7 @@ export const HELP = {
       {
         id: "leave",
         q: "Telefondan çıkarsam ne olur?",
-        a: `Sıkı inşaatta uygulamadan çıkarsan ${sec(BUILD_LEAVE)} saniye içinde dön. Dönmezsen bina çatlar; ${min(RESCUE_WINDOW)} dakika içinde dönersen birkaç dakika ekleyip kurtarırsın (25 dk’lık seansa +${rescueMinutes(25)} dk). Daha uzun kalırsan bina yıkılır. Bilgisayarda sekme değiştirmek serbest, yeter ki Kütüp sekmesi açık kalsın. Rahat inşaatta ekranı kilitlemek, başka uygulamaya geçmek veya sekmeyi kapatmak inşaatı bozmaz. Dönünce hızlandırılmış yapımı izlersin.`,
+        a: `Ekranı kapatarak çalış kapalıyken inşaatta uygulamadan çıkarsan ${sec(BUILD_LEAVE)} saniye içinde dön. Dönmezsen bina çatlar; ${min(RESCUE_WINDOW)} dakika içinde dönersen birkaç dakika ekleyip kurtarırsın (25 dk’lık seansa +${rescueMinutes(25)} dk). Daha uzun kalırsan bina yıkılır. Bilgisayarda sekme değiştirmek serbest, yeter ki Kütüp sekmesi açık kalsın. Anahtar açıksa ekranı kilitlemek, başka uygulamaya geçmek veya sekmeyi kapatmak inşaatı bozmaz. Dönünce hızlandırılmış yapımı izlersin.`,
       },
       {
         id: "quit",
@@ -77,7 +77,7 @@ export const HELP = {
       {
         id: "tea",
         q: "Çay molası ne?",
-        a: `50 dakika ve üstü Sıkı inşaatta bir kez mola verebilirsin (50 dk’ya ${min(teaBreakFor(50))}, 75 dk’ya ${min(teaBreakFor(75))} dakika). Molada bina bekler, uygulamadan çıkabilirsin. Rahat inşaatta zaten uygulamadan çıkabilirsin; ayrı çay molası yoktur.`,
+        a: `Ekranı kapatarak çalış kapalıyken, 50 dakika ve üstü inşaatta bir kez mola verebilirsin (50 dk’ya ${min(teaBreakFor(50))}, 75 dk’ya ${min(teaBreakFor(75))} dakika). Molada bina bekler, uygulamadan çıkabilirsin. Anahtar açıksa zaten uygulamadan çıkabilirsin; ayrı çay molası yoktur.`,
       },
       {
         id: "rhythm",

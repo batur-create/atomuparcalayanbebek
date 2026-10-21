@@ -87,6 +87,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-imece-browser-') as directory:
                 expect(modal.locator('.imece-my-contribution')).to_contain_text('Senin toplam katkın')
                 expect(modal.locator('canvas.imece-static')).to_be_visible()
                 check('Batur' in modal.locator('.imece-kara').inner_text(),'Kara introduces a personal mission by name')
+                expect(modal.get_by_role('switch',name='Ekranı kapatarak çalış',exact=True)).to_be_checked()
                 page.screenshot(path=str(artifacts/'telefon-baslangic.png'))
                 modal.get_by_role('button',name='Çalışmaya başla · 25 dk',exact=False).click()
                 expect(modal.get_by_text('Görevin sürüyor',exact=False)).to_be_visible()

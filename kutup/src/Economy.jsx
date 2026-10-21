@@ -258,7 +258,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
       {discovery && <section className="blueprint-discovery" aria-label="Plan keşfi">
         <div className="blueprint-heading"><span aria-hidden="true">📜</span><div><strong>{discovery.left ? "Çalıştıkça yeni planlara yaklaş" : "Mevcut plan koleksiyonu tamamlandı"}</strong><p>{discovery.left ? `Garantiye ${discovery.remaining} dk kaldı · Keşfedilecek ${discovery.left} plan` : "Havuzdaki bütün planlar sende. Yeni plan gelince keşfe devam."}</p></div></div>
         {discovery.left>0 && <><progress max={discovery.guarantee} value={discovery.worked} aria-label={`Plan garantisi: ${discovery.worked} / ${discovery.guarantee} dakika`}/><small>Seans bitince güncellenir. Gün kaçırmak ilerlemeni silmez.</small></>}
-        <details><summary>Planlar nasıl kazanılıyor?</summary><p>{planHow} 75 dk tek seans ile 3 × 25 dk aynı şansı verir. Artan dakikalar birikir; uzun seansta birden fazla farklı plan çıkabilir. Yarım kalan inşaat sayılmaz; kısmi serbest çalışmada yalnız onaylanan dakika sayılır. Sıkı, Rahat, serbest ve ortak görevler aynı kurala uyar.</p><p>Plan kalıcıdır, kullanılınca tükenmez. Malzemeyi yine öder ve yapıyı çalışarak inşa edersin. Hediye ve seri planı emek sayacını sıfırlamaz. Tüm havuz tamamlanınca keşif bekler.</p><p>Haftalık yapıyı herkese açık olduğu dönemde tamamlamak onun planını kalıcı açar. İki hafta sonra, planı olmayanların onu keşfetmesi gerekir.</p></details>
+        <details><summary>Planlar nasıl kazanılıyor?</summary><p>{planHow} 75 dk tek seans ile 3 × 25 dk aynı şansı verir. Artan dakikalar birikir; uzun seansta birden fazla farklı plan çıkabilir. Yarım kalan inşaat sayılmaz; kısmi odak çalışmasında yalnız onaylanan dakika sayılır. Ekran ayarı, kişisel bina veya ortak görev seçimin bu keşif kuralını değiştirmez.</p><p>Plan kalıcıdır, kullanılınca tükenmez. Malzemeyi yine öder ve yapıyı çalışarak inşa edersin. Hediye ve seri planı emek sayacını sıfırlamaz. Tüm havuz tamamlanınca keşif bekler.</p><p>Haftalık yapıyı herkese açık olduğu dönemde tamamlamak onun planını kalıcı açar. İki hafta sonra, planı olmayanların onu keşfetmesi gerekir.</p></details>
       </section>}
       {hint && (
         <p className="catalog-hint" role="status">
@@ -318,7 +318,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
 const TITLES = {
   cancelled: "Vazgeçildi · malzeme iade",
   built: "Maaş fişi",
-  plain: "Maaş fişi · serbest çalışma",
+  plain: "Maaş fişi · yalnız odak",
   collapsed: "Yarım kalan inşaat",
 };
 /** The receipt of one session (materials, wage, bonuses, refunds), shown once it is settled. */
