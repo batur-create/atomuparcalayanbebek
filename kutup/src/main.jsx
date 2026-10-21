@@ -16,6 +16,14 @@ import "./dark.css";
 import "./themes.css";
 import "./polish.css";
 
+// The quick first picture (n29) is dropped before reopening: if that picture
+// is what broke the page, the next opening starts from the server instead.
+const reopen = () => {
+  try {
+    localStorage.setItem("kutup-last", "null");
+  } catch {}
+  location.reload();
+};
 class ErrorBoundary extends React.Component {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -27,7 +35,7 @@ class ErrorBoundary extends React.Component {
         <span>🪴</span>
         <h1>Küçük bir mola verdik.</h1>
         <p>Sayfayı yenileyip kaldığın yerden devam edebilirsin.</p>
-        <button className="btn primary" onClick={() => location.reload()}>
+        <button className="btn primary" onClick={reopen}>
           Tekrar aç
         </button>
       </div>
