@@ -1024,7 +1024,6 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   function deleteMember(member) {
     const id = member.id;
     return [
-      ["DELETE FROM settings WHERE key=?",[blueprintNotices.key(id)]],
       ...imece.release(),
       ["DELETE FROM reactions WHERE member_id = ? OR message_id IN (SELECT id FROM messages WHERE member_id = ?)", [id, id]],
       ["DELETE FROM attendees WHERE member_id = ? OR plan_id IN (SELECT id FROM plans WHERE member_id = ?)", [id, id]],
@@ -1046,6 +1045,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ["DELETE FROM bricks_log WHERE member_id = ?", [id]],
       ["DELETE FROM activity WHERE member_id = ?", [id]],
       ["DELETE FROM unlocks WHERE member_id = ?", [id]],
+      ["DELETE FROM settings WHERE key=?",[blueprintNotices.key(id)]],
       ["DELETE FROM sessions WHERE member_id = ?", [id]],
       ["DELETE FROM members WHERE id = ?", [id]],
       [
