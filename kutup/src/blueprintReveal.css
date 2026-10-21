@@ -1,0 +1,18 @@
+.blueprint-reveal { text-align: center; overflow-x: hidden; }
+.plan-reveal-stamp { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 9px 13px; border: 1px dashed var(--accent); color: var(--accent-deep); border-radius: 10px; font-size: 11px; letter-spacing: 1.5px; }
+.plan-reveal-gallery { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; margin: 16px 0; }
+.plan-reveal-gallery.many { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.plan-reveal-gallery article { min-width: 0; }
+.plan-reveal-gallery h3 { font-size: 23px; margin: 9px 0; }
+.plan-reveal-gallery p { font-size: 13px; line-height: 1.5; color: var(--muted); margin-bottom: 7px; }
+.plan-reveal-gallery small { color: var(--muted); font-size: 11px; }
+.plan-reveal-art { display: grid; place-items: center; padding: 12px 0; border-radius: 16px; background: var(--accent-soft); animation: plan-unfold .65s var(--ease-spring,ease-out) both; }
+.plan-reveal-art .building-thumb { max-width: 100%; }
+.plan-reveal-gallery.many h3 { font-size: 17px; }
+.plan-reveal-letter { padding: 14px; border-radius: 14px; background: var(--hero); color: var(--ink); line-height: 1.6; font-size: 14px; }
+.plan-reveal-owned { display: flex; gap: 7px; justify-content: center; align-items: center; color: var(--accent-deep); font-weight: 700; font-size: 13px; margin: 16px 0 8px; }
+.plan-reveal-help { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.plan-reveal-actions { display: grid; gap: 10px; margin-top: 18px; }
+@keyframes plan-unfold { from { opacity: 0; transform: translateY(10px) scale(.9) rotate(-2deg); } to { opacity: 1; transform: none; } }
+html[data-motion="still"] .plan-reveal-art { animation: none; }
+@media(prefers-reduced-motion:reduce) { .plan-reveal-art { animation: none; } }

@@ -41,7 +41,7 @@ const clockTR = (t) => {
 };
 const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
 const notificationState = () => (typeof Notification === "undefined" ? "unsupported" : Notification.permission);
-export function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin, askNotifications }) {
+export function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin, askNotifications,catalogSignal=0,consumeCatalogSignal }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
@@ -53,6 +53,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     [lock, setLock] = useState(false),
     [floating, setFloating] = useState(() => !!floatWindow());
   useEffect(() => onFloat((w) => setFloating(!!w)), []);
+  useEffect(()=>{const open=()=>{if(!(me?.focusEnd>Date.now()))setPicking(true);};window.addEventListener("kutup:open-catalog",open);return()=>window.removeEventListener("kutup:open-catalog",open);},[me?.focusEnd]);
   const finishing = !!me?.focusEnd && me.focusEnd <= now;
   const running = !!me?.focusEnd && !finishing;
   // Build mode: the building sets the length. Free focus: you pick it. Under
@@ -79,6 +80,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     setModel(id);
     storage.set("kutup-model", id);
   };
+  useEffect(()=>{if(catalogSignal>0){if(!(me?.focusEnd>Date.now()))setPicking(true);consumeCatalogSignal?.();}},[catalogSignal]);
   const tea = (action) =>
     mutate("/focus", { action }, action === "pause" ? `Çay molası ☕ İnşaat ${teaMax / 60000} dakika bekliyor; uygulamadan çıkabilirsin.` : "Molaya son, işçiler sahada! 🏗️");
   // The break runs out: back to work by itself.

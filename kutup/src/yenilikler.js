@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 22,
+    tarih: "2026-10-21",
+    vakit: "gece",
+    baslik: "Kara’nın plan postası",
+    maddeler: [
+      "Altı yeni nadir yapı: Mardin Evi, Atakule, Kapadokya Kaya Evi, Yüzen Ev, Asma Köprü ve Kervansaray. Hepsinin kendine özgü çizimi ve yapım aşamaları var.",
+      "Yeni plan bulunca Kara özel bir kutlamayla haber verir. Planlarıma bak düğmesi koleksiyonunu açar; kaldırdığın mesaj başka cihazında tekrar çıkmaz.",
+      "Bu yapılar planla kalıcı açılır. İnşa ederken planın tükenmez; malzemesini ödeyip çalışma seansını tamamlaman gerekir. Keşif şansı ve garanti süresi aynı.",
+    ],
+  },
+  {
     surum: 21,
     tarih: "2026-10-20",
     vakit: "akşam",

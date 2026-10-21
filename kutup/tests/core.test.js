@@ -202,7 +202,7 @@ test("the tuğla economy: wages grow with session length, refunds split 50/30/20
   assert.deepEqual([0, 1, 3, 9].map((n) => imeceBonus(n)), [0, 0.05, 0.15, 0.2]);
   assert.equal(imeceBonus(2, true), 0.16);
   for (const id of ["firin", "sahaf", "kahve", "kutuphane", "degirmen"]) assert.ok(BY_ID[id].effect, id);
-  assert.deepEqual(RARE.map((i) => i.id), ["fener", "sera", "agacevi", "japoncay", "sudegirmeni", "istasyon", "planetaryum", "kristalkutuphane"]);
+  assert.deepEqual(RARE.map((i) => i.id), ["fener", "sera", "agacevi", "japoncay", "sudegirmeni", "istasyon", "planetaryum", "kristalkutuphane", "kapadokya", "yuzenev", "asmakopru", "kervansaray", "mardinevi", "atakule"]);
   // Weekly buildings: on sale for a fortnight from their Monday, then by blueprint only.
   const post = BY_ID.postane, DAY = 86400000;
   assert.deepEqual([post.since - 1, post.since, post.since + 13 * DAY, post.since + 14 * DAY].map((t) => stateOf(post, t)), ["soon", "new", "new", "locked"]);

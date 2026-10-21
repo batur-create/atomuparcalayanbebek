@@ -189,7 +189,7 @@ function design({draw,height,wallTop,reach,labels,info,material="timber"}){
     ground:["mobilize","layout"],
     steps:[
       {key:"base",label:labels[0],w:1.6,cost:3,stock:"stone"},
-      {key:"frame",label:labels[1],w:2.2,cost:7,lift:true,liftAs:material==="steel"?"steelBeam":"studs",stock:material,inspect:"taşıyıcı bağlantıları ve şakul",next:"kaplamaya geçilebilir"},
+      {key:"frame",label:labels[1],w:2.2,cost:7,lift:true,liftAs:material==="steel"?"steelBeam":material==="stone"?"blocks":"studs",stock:material,inspect:"taşıyıcı bağlantıları ve şakul",next:"kaplamaya geçilebilir"},
       {key:"skin",label:labels[2],w:2.1,cost:6,stock:material},
     ],frameEnd:.65,
     later:[
@@ -202,8 +202,14 @@ function design({draw,height,wallTop,reach,labels,info,material="timber"}){
     building(P,sp,seed,{lit=false,detail=2,shadowP=P}={}){return(detail?castShadow(shadowP,rectOutline(-reach,-reach,reach,reach),height*.35):"")+draw(P,done,lit,detail);},
     workHeight:(sp,p,k)=>p.key==="frame"?wallTop*k:p.key==="roof"?wallTop+(height-wallTop)*k:p.key==="base"?.2:wallTop*.6,
     crew:(sp,p,k)=>[at(-.75,reach-.2,Math.max(0,(p.key==="roof"?wallTop:0)),p.key==="frame"?"hammer":"carry"),at(.75,reach,0,"carry")],
-    metraj:(sp,p,k)=>p.key==="base"?{stone:k*2.8}:p.key==="frame"||p.key==="roof"?material==="steel"?{steel:k*(p.key==="frame"?.65:.3)}:{timber:k*(p.key==="frame"?1.2:.6)}:p.key==="skin"?{timber:k*.6}:{},
-    items:(q,num)=>[`Taş ${num(q.stone||0)} m³`,material==="steel"?`Çelik ${num(q.steel,2)} t`:`Kereste ${num(q.timber,2)} m³`],
+    metraj:(sp,p,k)=>{
+      if(p.key==="base")return material==="concrete"?{concrete:k*3.2,steel:k*.3}:{stone:k*2.8};
+      if(!["frame","roof","skin"].includes(p.key))return {};
+      if(material==="stone")return {stone:k*(p.key==="frame"?4:2)};
+      if(material==="concrete")return {concrete:k*(p.key==="frame"?6:2),steel:k*.45};
+      return material==="steel"?{steel:k*(p.key==="frame"?.65:.3)}:{timber:k*(p.key==="frame"?1.2:.6)};
+    },
+    items:(q,num)=>material==="concrete"?[`Beton ${num(q.concrete)} m³`,`Donatı ${num(q.steel,2)} t`]:material==="stone"?[`Taş ${num(q.stone||0)} m³`]:[`Taş ${num(q.stone||0)} m³`,material==="steel"?`Çelik ${num(q.steel,2)} t`:`Kereste ${num(q.timber,2)} m³`],
   };
 }
 export const DISCOVERY_BUILDINGS={
@@ -214,3 +220,5 @@ export const DISCOVERY_BUILDINGS={
   planetarium:design({info:["Dairesel yapının tabanı ve çevre kaidesi aynı kotta hazırlanır. Çatıdan gelen kuvvetlerin temele düzenli dağılması için çevre ankrajları ölçülür.", "Çevre kolonları üstte çelik bir halka ile bağlanır. Bu halka kubbenin dışa açılma isteğini toplar; birleşimler kapanmadan önce kontrol edilir.", "Kavisli cepheye yalıtımlı paneller takılır. İçeride gökyüzü gösterisi yapılacağı için istenmeyen ışık ve su girişini önleyen katmanlar tamamlanır.", "Kubbe dilimleri halka üzerine sırayla bağlanır. Bakır kuşaklar birleşimleri örter; ısının etkisiyle uzayan metalin hareket edebileceği pay bırakılır.", "Giriş pavyonu ve aydınlatma kurulur, cepheye takımyıldız işaretleri ve küçük Satürn heykeli yerleştirilir. Kapılar ve güvenli çıkışlar kontrol edilir."],draw:planetarium,height:3.55,wallTop:1.8,reach:2.4,material:"steel",labels:["Dairesel temel ve taş kaide","Çevre kolonları ve çelik halka","Yalıtımlı dış kabuk panelleri","Kubbe dilimleri ve bakır kuşaklar","Giriş, takımyıldızlar ve Satürn heykeli"]}),
   crystallibrary:design({info:["Taş platform hazırlanır, çelik ayakların ankraj yuvaları ölçülür. Cephe suyu okuma salonuna yönelmesin diye giriş çevresinde dışa eğim bırakılır.", "Çelik kolonlar ve çaprazlar bağlanır. Çaprazlar cam panellere taşıyıcılık yüklemeden rüzgâr kuvvetlerini temele aktarır; cıvatalar kontrol edilir.", "Kitap rafları yerleştirilir, güvenli cam paneller ince kayıtlara oturtulur. Cam ile metal arasındaki contalar su sızmasını ve sert teması önler.", "Katlanan çatı yüzeyleri tek tek monte edilir. Köşe birleşimlerinin su tahliyesi ve cam panellerin taşınması için gereken mesnetler tamamlanır.", "Giriş kapıları, okuma ışıkları ve saksılar yerleştirilir. Cam kenarları, açık kaçış yolu ve gece aydınlatması kontrol edilince yapı teslim edilir."],draw:crystal,height:4.55,wallTop:2.9,reach:2.3,material:"steel",labels:["Taş platform ve ankraj yuvaları","Çelik kolonlar ve çapraz bağlantılar","Kitap rafları, cam cephe ve kayıtlar","Kristal çatı: katlanmış cam yüzeyler","Giriş, okuma ışıkları ve saksılar"]}),
 };
+
+export {design,WOOD,STONE,TEAL,TILE,STEEL,COPPER,gable,window,plate,quad,beam};

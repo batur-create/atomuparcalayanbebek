@@ -1118,6 +1118,13 @@ export function defineSuite(target) {
     await request("/focus",{cookie,body:{action:"finish"}});
     assert.deepEqual((await request("/wallet",{cookie})).data.discovery,wallet.discovery);
     assert.equal(JSON.stringify(wallet).includes('seed'),false);
+    const notice=await request('/blueprints/rewards',{cookie});
+    assert.equal(notice.status,200);assert.deepEqual(notice.data.items.map(p=>p.model),wallet.unlocks);
+    const mid=(await request('/session',{cookie})).data.memberId;
+    assert.equal((await request('/blueprints/rewards/seen',{cookie,body:{memberId:'other-account',models:wallet.unlocks}})).status,409);
+    assert.equal((await request('/blueprints/rewards/seen',{cookie,body:{memberId:mid,models:wallet.unlocks}})).status,200);
+    assert.deepEqual((await request('/blueprints/rewards',{cookie})).data.items,[]);
+    assert.deepEqual((await request('/wallet',{cookie})).data.discovery,wallet.discovery);
     assert.equal((await request('/leave',{cookie,body:{}})).status,200);
   });
 
