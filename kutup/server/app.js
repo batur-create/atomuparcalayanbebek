@@ -12,7 +12,8 @@ import {createBlueprintNotices} from "./blueprintNotices.js";
 import { createImece } from "./imece.js";
 import { layoutFrom } from "../shared/koy2/draft.js";
 import { activeLayout, convertStatements, moveOptions, moveStatements, placeStatements } from "./villageSpatial.js";
-import { COMPATIBILITY_VERSION, contentChange, layoutStatements, releaseStatements, v2Village } from "./villageStore.js";
+import { COMPATIBILITY_VERSION, contentChange, layoutStatements, readLayout, releaseStatements, v2Village } from "./villageStore.js";
+import { activateStatements, checkLayout, checkPart, inventory, rollbackStatements, storeStatements, switchState } from "./villageSwitch.js";
 import { BACKUP_TABLES } from "../shared/backup.js";
 import { avatarAllowed } from "../shared/avatars.js";
 import { REQUEST_KINDS, allowedStatuses, statusPush } from "../shared/requests.js";
@@ -167,8 +168,7 @@ function json(data, status = 200, headers = {}) {
   for (const [key, value] of Array.isArray(headers) ? headers : Object.entries(headers)) list.append(key, value);
   return new Response(JSON.stringify(data), { status, headers: list });
 }
-async function readBody(request) {
-  const max = 16384;
+async function readBody(request, max = 16384) {
   if (Number(request.headers.get("content-length")) > max) fail("İstek çok büyük.", 413);
   if (!request.body) return "";
   const reader = request.body.getReader();
@@ -190,6 +190,8 @@ async function readBody(request) {
     reader.releaseLock();
   }
 }
+// A whole village layout (about 90 KB for a hundred buildings), owner only.
+const BIG_BODY = 2_000_000;
 export const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "same-origin",
@@ -1101,12 +1103,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- routes ----------
   const routes = [];
-  const route = (method, path, handler, auth = true) => {
+  // `big`: an owner-only route that takes a whole village layout; the owner is checked before the body is read.
+  const route = (method, path, handler, auth = true, big = false) => {
     const keys = [];
     const pattern = new RegExp(
       `^${path.replace(/:(\w+)/g, (_, key) => (keys.push(key), "([^/]+)"))}$`,
     );
-    routes.push({ method, pattern, keys, handler, auth });
+    routes.push({ method, pattern, keys, handler, auth, big });
   };
   // Every write answers with the fresh state so the client needs no second request.
   const changed = async (member, extra = {}, status = 200) => {
@@ -1931,7 +1934,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
         const active = await activeLayout(db, m.group_id);
         if (active) {
-          const placed = placeStatements(active, { subject: { type: "site", id: runId }, model: item.id, owner: m.id, created: now });
+          const placed = placeStatements(active, { subject: { type: "site", id: runId }, model: item.id, owner: m.id, created: now }, body.village);
           if (placed.error) fail(`Köyde ${item.name} için şu an uygun yer hazırlanamadı. Başka bir yapı seç ya da biraz sonra dene.`, 409);
           site = placed.statements;
         }
@@ -2438,7 +2441,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if ((await db.get("SELECT active_layout_id AS a FROM groups WHERE id = ?", [m.group_id]))?.a) {
       for (let attempt = 0; ; attempt++) {
         const active = await activeLayout(db, m.group_id);
-        const moved = moveStatements(active, building.id, Number(body.x), Number(body.y));
+        const moved = moveStatements(active, building.id, Number(body.x), Number(body.y), body.village);
         if (moved.error) fail("Bu arsa artık boş değil. Başka birini seç.", 409);
         try {
           await db.batch([...moved.statements, ...contentChange(m.group_id, "building", building.id, "move", moved.plot.id, Date.now()), bumpVillage(m.group_id)]);
@@ -2589,13 +2592,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
   // n46 E: the shared Anıtkabir takes its own big plot in a planned (v2) village,
   // in the same batch that opens or moves the project; a lost race plans again.
-  const imeceSpatial = (now) => async (projectId, groupId) => {
+  const imeceSpatial = (now, sent = null) => async (projectId, groupId) => {
     const from = await db.get("SELECT group_id FROM imece_projects WHERE id = ?", [projectId]);
     const out = [];
     if (from?.group_id && from.group_id !== groupId) out.push(...releaseStatements("imece", "?", [projectId]), ...contentChange(from.group_id, "imece", projectId, "release", null, now), bumpVillage(from.group_id));
     const active = await activeLayout(db, groupId);
     if (!active) return out;
-    const placed = placeStatements(active, { subject: { type: "imece", id: projectId }, model: "anitkabir", owner: null, created: now });
+    const placed = placeStatements(active, { subject: { type: "imece", id: projectId }, model: "anitkabir", owner: null, created: now }, sent);
     if (placed.error) fail("Köyde ortak Anıtkabir için yeterince büyük bir yer hazırlanamadı. Batur’a haber ver; proje açılmadı.", 409);
     return [...out, ...placed.statements, ...contentChange(groupId, "imece", projectId, "create", null, now), bumpVillage(groupId)];
   };
@@ -2608,9 +2611,113 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       }
     }
   };
+  // ---------- n46 G: a team's village layout (owner only, plan §8) ----------
+  // Drafts are planned in the owner's browser and only checked here; the
+  // switch and the way back are one guarded batch each.
+  const switchFailed = () => fail("Bu arada köyde bir şey değişti (yeni bina, şantiye ya da başka bir geçiş). Durumu yenileyip tekrar dene.", 409);
+  async function switchBatch(statements) {
+    try {
+      await db.batch(statements);
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
+      switchFailed();
+    }
+  }
+  route("GET", "/owner/village/:groupId", async ({ request, ip, params }) => {
+    await requireOwner(request, ip);
+    const state = await switchState(db, params.groupId);
+    if (!state) fail("Ekip bulunamadı.", 404);
+    return json(state);
+  }, false);
+  // What the owner's browser needs to plan or preview: the inventory and, if asked, a stored layout.
+  route("GET", "/owner/village/:groupId/source", async ({ request, ip, params, url }) => {
+    await requireOwner(request, ip);
+    const inv = await inventory(db, params.groupId);
+    if (!inv) fail("Ekip bulunamadı.", 404);
+    // "active": the team's live layout, for a gift or the Anıtkabir planned in the owner's browser.
+    const asked = url.searchParams.get("layout");
+    const id = asked === "active" ? inv.group.active : asked;
+    let layout = null,
+      layoutRev = null;
+    if (id) {
+      const row = await db.get("SELECT id FROM village_layouts WHERE id = ? AND group_id = ? AND kind = 'v2'", [id, params.groupId]);
+      if (!row) fail("Düzen bulunamadı.", 404);
+      const stored = await readLayout(db, id);
+      layout = stored.layout;
+      layoutRev = stored.row.rev;
+    }
+    const members = await db.all("SELECT id, name, color, avatar FROM members WHERE group_id = ?", [params.groupId]);
+    return json({ seed: `group:${params.groupId}`, contentRev: inv.group.rev, items: inv.items, members, layout, layoutId: id || null, layoutRev });
+  }, false);
+  route("POST", "/owner/village/:groupId/layouts", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const role = body.role === "previous" ? "previous" : "draft";
+    const inv = await inventory(db, params.groupId);
+    if (!inv) fail("Ekip bulunamadı.", 404);
+    if (Number(body.contentRev) !== inv.group.rev) switchFailed();
+    let base = null,
+      until = 0;
+    if (body.base) {
+      const row = await db.get("SELECT id, rollback_until AS until FROM village_layouts WHERE id = ? AND group_id = ? AND kind = 'v2' AND status = ?", [String(body.base), params.groupId, role]);
+      if (!row) switchFailed();
+      base = (await readLayout(db, row.id)).layout;
+      until = row.until;
+    } else if (role === "previous") fail("Geri dönüş düzeni yalnız eşitlenebilir.");
+    const problem = await checkLayout(db, params.groupId, body.layout, { base, items: inv.items });
+    if (problem) fail(problem, 422);
+    const id = `v2-${randomHex(8)}`;
+    await switchBatch(storeStatements(id, params.groupId, body.layout, { role, contentRev: inv.group.rev, replaces: base ? String(body.base) : null, until, now: Date.now() }));
+    return json(await switchState(db, params.groupId), 201);
+  }, false, true);
+  // Every rule of a stored layout, a part per request (a whole village at once is more CPU than a free-plan request has).
+  route("POST", "/owner/village/:groupId/layouts/:layoutId/check", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const part = await checkPart(db, params.groupId, params.layoutId, Number(body.from) || 0);
+    if (!part) fail("Düzen bulunamadı.", 404);
+    if (part.problem) fail(part.problem, 422);
+    if (part.statements) await db.batch(part.statements);
+    return json({ checked: part.checked, total: part.total, sound: part.sound });
+  }, false);
+  route("POST", "/owner/village/:groupId/activate", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const state = await switchState(db, params.groupId);
+    if (!state) fail("Ekip bulunamadı.", 404);
+    const draft = state.draft;
+    if (!draft || draft.id !== body.draftId) switchFailed();
+    if ((state.active.id || null) !== (body.active || null) || state.contentRev !== Number(body.contentRev)) switchFailed();
+    if (draft.behind) fail("Taslak geride: önce eşitle.", 409);
+    if (!draft.sound) fail("Taslağın kontrolü bitmedi.", 409);
+    if (draft.coverage.missing || draft.coverage.extra || draft.coverage.twice) fail("Taslakta eksik ya da fazla yapı var; önce eşitle.", 409);
+    await switchBatch([
+      ...activateStatements(params.groupId, { draftId: draft.id, active: state.active.id, contentRev: state.contentRev, now: Date.now() }),
+      bumpVillage(params.groupId),
+      bump(params.groupId),
+    ]);
+    onChange(params.groupId);
+    return json(await switchState(db, params.groupId));
+  }, false);
+  route("POST", "/owner/village/:groupId/rollback", async ({ request, ip, params, body }) => {
+    await requireOwner(request, ip);
+    const state = await switchState(db, params.groupId);
+    if (!state) fail("Ekip bulunamadı.", 404);
+    const back = state.previous;
+    if (!state.active.id || !back) fail("Dönülecek bir önceki köy yok.", 409);
+    if (!back.open) fail("Geri dönüş süresi doldu.", 409);
+    if ((state.active.id || null) !== (body.active || null) || state.contentRev !== Number(body.contentRev)) switchFailed();
+    if (back.kind === "v2" && (back.behind || back.coverage.missing || back.coverage.extra || !back.sound)) fail("Önceki köy geride: önce onu eşitle.", 409);
+    if (back.kind === "legacy" && back.coverage.missing) fail("Bazı binaların eski köyde yeri henüz yok; biraz sonra tekrar dene.", 409);
+    await switchBatch([
+      ...rollbackStatements(params.groupId, { previous: back, active: state.active.id, contentRev: state.contentRev, now: Date.now() }),
+      bumpVillage(params.groupId),
+      bump(params.groupId),
+    ]);
+    onChange(params.groupId);
+    return json(await switchState(db, params.groupId));
+  }, false);
+
   route("POST", "/owner/imece", async ({ request, ip, body, ctx }) => {
     await requireOwner(request, ip);
-    const groupId=await spatialRetry(()=>imece.launch(body.members,Date.now(),body.groupId,imeceSpatial(Date.now())));
+    const groupId=await spatialRetry(()=>imece.launch(body.members,Date.now(),body.groupId,imeceSpatial(Date.now(),body.village)));
     for (const id of body.members) await notifyMember(ctx, id, {
       title: "Kara: Bir Taş da Senden", body: "Ortak Anıtkabir şantiyesi açıldı. Kişisel görevin seni bekliyor; dördümüzün de emeği olmadan açılış yok.", url: "/?tab=focus&imece=1", tag: "imece-launch",
     }).catch(() => {});
@@ -2618,7 +2725,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   }, false);
   route("POST", "/owner/imece/assign", async ({request,ip,body})=>{
     await requireOwner(request,ip);
-    await spatialRetry(()=>imece.assign(body.projectId,body.groupId,body.rev,imeceSpatial(Date.now())));
+    await spatialRetry(()=>imece.assign(body.projectId,body.groupId,body.rev,imeceSpatial(Date.now(),body.village)));
     return json(await imece.view(null,body.groupId));
   },false);
   route("POST", "/owner/imece/crew/:slot", async ({ request, ip, body, params }) => {
@@ -2785,7 +2892,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (!spot) fail("Köyde bu yapıya yer bulunamadı.", 409);
       // n46 D: a v2 village gives the gift its own plot on a street, like any building.
       const active = await activeLayout(db, member.group_id);
-      const placed = active ? placeStatements(active, { subject: { type: "building", id: buildingId }, model: item.id, owner: member.id, created: now }) : null;
+      const placed = active ? placeStatements(active, { subject: { type: "building", id: buildingId }, model: item.id, owner: member.id, created: now }, body.village) : null;
       if (placed?.error) fail("Köyde bu yapıya yer bulunamadı.", 409);
       return [
         ...(placed?.statements || []),
@@ -3033,8 +3140,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       }
       let body = {};
       if (writes) {
-        const raw = await readBody(request);
-        if (raw.length > 12000) fail("İstek çok büyük.", 413);
+        if (match.r.big) await requireOwner(request, ip);
+        const raw = await readBody(request, match.r.big ? BIG_BODY : 16384);
+        if (!match.r.big && raw.length > 12000) fail("İstek çok büyük.", 413);
         if (raw) {
           try {
             body = JSON.parse(raw);

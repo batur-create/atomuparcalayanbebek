@@ -8,6 +8,7 @@ import { Avatar } from "./ui.jsx";
 import { buildWorld, focusing, skyAt, tinter } from "./villageWorld.js";
 import { buildWorld2 } from "./koy2/world2.js";
 import { siteStage } from "./koy2/village2.js";
+import { plannerLayout, runPlan, sendable } from "./koy2/browserPlan.js";
 import { createView } from "./villageView.js";
 import { ConstructionScene } from "./Village.jsx";
 import { useZoom } from "./zoom.js";
@@ -231,7 +232,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   const map = useRef(null);
   const moveTo = async (spot) => {
     try {
-      await api(`/buildings/${moving.building.id}/move`, { x: spot.x, y: spot.y });
+      await api(`/buildings/${moving.building.id}/move`, { x: spot.x, y: spot.y, ...(spot.village ? { village: spot.village } : {}) });
       setMoving(null);
       retry();
       navigator.vibrate?.(30);
@@ -439,11 +440,18 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 }}
                 onMove={async (b) => {
                   try {
-                    const r = await get(`/buildings/${b.id}/spots`);
+                    // n46 G: in a planned village the proposals are worked out here, in this
+                    // browser, and the server checks the one chosen; else the server proposes.
+                    const mine = village?.v2 && village.seq
+                      ? await runPlan({ kind: "move", layout: plannerLayout(village), subject: { type: "building", id: b.id } }, 8000).catch(() => null)
+                      : null;
+                    const r = mine
+                      ? { spots: mine.plans.map((p) => [p.plot.x, p.plot.y, p.plot.facing, { layoutRev: village.layoutRev, plan: sendable(p) }]) }
+                      : await get(`/buildings/${b.id}/spots`);
                     if (!r.spots.length) return notify(village?.v2 ? "Köyde şu an bu yapıya uygun boş arsa yok." : "Mahallende şu an boş arsa yok. Yeni bir bina yeni mahalle açar.");
                     setPicked(null);
                     map.current?.view.select(null);
-                    setMoving({ building: b, spots: r.spots.map(([x, y, facing]) => ({ x, y, facing })) });
+                    setMoving({ building: b, spots: r.spots.map(([x, y, facing, plan]) => ({ x, y, facing, village: plan })) });
                     map.current?.view.flyTo({ x: (b.x - b.y) * 0.866, y: (b.x + b.y) * 0.5, s: 11 }, 500);
                   } catch (e) {
                     notify(e.message);

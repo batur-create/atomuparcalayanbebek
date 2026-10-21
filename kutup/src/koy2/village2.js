@@ -62,6 +62,10 @@ export function mergeVillage2(prev, raw) {
     layoutId: raw.layoutId,
     layoutRev: raw.layoutRev,
     contentRev: raw.contentRev,
+    // What a browser needs to plan its own new plot on this revision (n46 G).
+    seq: raw.seq || null,
+    generatorVersion: raw.generatorVersion,
+    terrainVersion: raw.terrainVersion,
     cursor: raw.cursor,
     serverNow: raw.serverNow,
     rows,

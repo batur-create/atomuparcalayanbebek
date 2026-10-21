@@ -126,7 +126,9 @@ test("n46 D: two people build at once, then one cancels, one finishes, and the b
   t.sqlite.prepare("UPDATE village_plots SET data = json_set(data, '$.x', ?, '$.y', ?, '$.ground', json(?), '$.plot', json(?)) WHERE layout_id = ? AND id = ?").run(
     next[0], next[1], JSON.stringify([next[0] - 4, next[1] - 4, next[0] + 4, next[1] + 4]), JSON.stringify([next[0] - 5, next[1] - 5, next[0] + 5, next[1] + 5]), t.layoutId, taken.id,
   );
+  // Every change to a layout's rows raises its revision (servers keep parsed copies by revision).
   t.sqlite.prepare("UPDATE village_layouts SET rev = rev + 1 WHERE id = ?").run(t.layoutId);
+  t.sqlite.prepare("UPDATE village_plots SET rev = (SELECT rev FROM village_layouts WHERE id = ?) WHERE layout_id = ? AND id = ?").run(t.layoutId, t.layoutId, taken.id);
   const refused = await call(t.app, `/buildings/${built[0].id}/move`, { method: "POST", headers: t.as(t.ada), body: { x: next[0], y: next[1] } });
   assert.equal(refused.status, 409);
   assert.deepEqual((await t.village()).buildings.find((b) => b.id === built[0].id).placement, now.placement);
@@ -142,7 +144,8 @@ test("n46 D: no site without a building; no room means no charge and no session"
   assert.equal(t.one("SELECT count(*) AS n FROM village_placements WHERE subject_type = 'site'").n, 0);
   // No room at all (the whole village under the pond): refused before any charge.
   const before = t.one("SELECT bricks FROM members WHERE id = ?", A).bricks;
-  t.sqlite.prepare("UPDATE village_regions SET terrain = json_set(terrain, '$.lake.poly', json(?)) WHERE layout_id = ?").run(JSON.stringify([[-500, -500], [500, -500], [500, 500], [-500, 500]]), t.layoutId);
+  t.sqlite.prepare("UPDATE village_layouts SET rev = rev + 1 WHERE id = ?").run(t.layoutId);
+  t.sqlite.prepare("UPDATE village_regions SET terrain = json_set(terrain, '$.lake.poly', json(?)), rev = (SELECT rev FROM village_layouts WHERE id = ?) WHERE layout_id = ?").run(JSON.stringify([[-500, -500], [500, -500], [500, 500], [-500, 500]]), t.layoutId, t.layoutId);
   const refused = await call(t.app, "/focus", { method: "POST", headers: t.as(t.ada), body: { action: "start", strict: true, model: "ev", minutes: 50 } });
   assert.equal(refused.status, 409, JSON.stringify(refused.data));
   assert.match(refused.data.error, /uygun yer/);

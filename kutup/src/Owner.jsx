@@ -12,6 +12,7 @@ import {
   KeyRound,
   Lock,
   LogOut,
+  Map as MapIcon,
   Pencil,
   Plus,
   RefreshCw,
@@ -26,6 +27,7 @@ import { Modal } from "./Modal.jsx";
 import { AnnounceModal, GiftModal } from "./OwnerGift.jsx";
 import { OwnerImece } from "./OwnerImece.jsx";
 import { InviteLink, NewTeamModal, RenameTeamModal } from "./OwnerTeams.jsx";
+import { OwnerVillage } from "./OwnerVillage.jsx";
 
 const STAGE_FILTERS = [
   ["open", "Bekleyen", "📮"],
@@ -188,6 +190,7 @@ export function OwnerPage() {
     [announce, setAnnounce] = useState(null),
     [newTeam, setNewTeam] = useState(false),
     [rename, setRename] = useState(null),
+    [village, setVillage] = useState(null),
     [copied, setCopied] = useState(false),
     [pushOn, setPushOn] = useState(!!storage.get("kutup-owner-push"));
   // One browser has one push subscription; it may already serve the member side,
@@ -569,6 +572,14 @@ export function OwnerPage() {
                       <Megaphone size={15} /> Duyuru yaz
                     </button>
                     <button
+                      className="btn"
+                      disabled={!g.members.length}
+                      title={g.members.length ? undefined : "Ekipte henüz kimse yok"}
+                      onClick={() => setVillage(g)}
+                    >
+                      <MapIcon size={15} /> Köy düzeni
+                    </button>
+                    <button
                       className="text-button"
                       onClick={async () => {
                         try {
@@ -612,7 +623,7 @@ export function OwnerPage() {
                           className="icon-button gift-open"
                           aria-label={`${m.name}: yapı ya da plan hediye et, köyünü yönet`}
                           title="Yapı ya da plan hediye et, köyünü yönet"
-                          onClick={() => setGift(m)}
+                          onClick={() => setGift({ ...m, groupId: g.id })}
                         >
                           <Gift size={17} />
                         </button>
@@ -697,6 +708,7 @@ export function OwnerPage() {
       {announce && <AnnounceModal group={announce} close={() => setAnnounce(null)} />}
       {newTeam && <NewTeamModal close={() => setNewTeam(false)} changed={load} />}
       {rename && <RenameTeamModal group={rename} close={() => setRename(null)} changed={load} />}
+      {village && <OwnerVillage group={village} close={() => setVillage(null)} />}
       {recovery && (
         <Modal title={`${recovery.name} için bir anahtar 🔑`} subtitle="24 saat geçerli, yalnızca bir kez kullanılabilir." close={() => setRecovery(null)}>
           <label className="field-label">Giriş / şifre sıfırlama kodu

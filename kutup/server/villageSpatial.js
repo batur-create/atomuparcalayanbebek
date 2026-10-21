@@ -3,8 +3,8 @@
 // changed, guarded by the layout's revision, in the caller's batch. Two writers
 // racing for the same ground: one batch wins, the other fails its guard and
 // plans again from the new layout (or gives up with a clear answer).
-import { applyPlan, movePlans, planPlacement, releaseSubject } from "../shared/koy2/planner.js";
-import { readLayout } from "./villageStore.js";
+import { applyPlan, checkPlan, movePlans, planPlacement, plotOf, releaseSubject } from "../shared/koy2/planner.js";
+import { layoutAt } from "./villageStore.js";
 
 /** The team's active v2 layout, read whole, or null for a V1 team. */
 export async function activeLayout(db, groupId) {
@@ -13,8 +13,8 @@ export async function activeLayout(db, groupId) {
     [groupId],
   );
   if (!head) return null;
-  const stored = await readLayout(db, head.id);
-  return { id: head.id, rev: stored.row.rev, layout: stored.layout };
+  const kept = await layoutAt(db, head.id, head.rev);
+  return kept && { id: head.id, rev: kept.rev, layout: kept.layout };
 }
 
 const layoutGuard = (id, rev) => [
@@ -25,7 +25,13 @@ const keyOf = (s) => `${s.type}:${s.id}`;
 const withoutSubject = ({ subject, ...p }) => p;
 
 // Rows of one collection that are new, changed or gone between two layouts.
-function diff(before, after, shape = (x) => x) {
+// With `only` (the ids a plan touches) nothing else is compared: a plan's
+// changes are known, and comparing every row costs milliseconds per write.
+function diff(before, after, shape = (x) => x, only = null) {
+  if (only) {
+    before = before.filter((x) => only.has(x.id));
+    after = after.filter((x) => only.has(x.id));
+  }
   const old = new Map(before.map((x) => [x.id, JSON.stringify(shape(x))]));
   const now = new Map(after.map((x) => [x.id, x]));
   const added = [],
@@ -44,7 +50,7 @@ function diff(before, after, shape = (x) => x) {
  * then inserts, updates and tombstones per table, the placements, and the
  * layout's new revision. Only non-empty steps are written (D1 query budget).
  */
-export function changeStatements(layoutId, rev, base, next) {
+export function changeStatements(layoutId, rev, base, next, plan = null) {
   const at = rev + 1;
   const ord = at * 10000; // new rows sort after every older one
   const out = [layoutGuard(layoutId, rev)];
@@ -54,8 +60,14 @@ export function changeStatements(layoutId, rev, base, next) {
     ["village_neighborhoods", base.foci, next.foci, ", status", ", json_extract(value, '$.status')", (x) => x],
     ["village_plots", base.plots, next.plots, "", "", withoutSubject],
   ];
+  // The rows a plan can touch: what it adds, opens and drops, the nodes a drop
+  // may leave unused, and the plot a moving building leaves.
+  const only = plan && new Set([
+    plan.plot.id, ...plan.roads.map((r) => r.id), ...plan.nodes.map((x) => x.id), ...plan.foci.map((f) => f.id), ...(plan.open || []), ...(plan.drop || []),
+    ...(plan.drop?.length ? base.nodes.map((x) => x.id) : []), ...(plan.leaves ? [plan.leaves] : []),
+  ]);
   for (const [table, a, b, cols, vals, shape] of tables) {
-    const d = diff(a, b, shape);
+    const d = diff(a, b, shape, only);
     if (d.added.length)
       out.push([
         `INSERT INTO ${table} (layout_id, id, ord, data, rev${cols}) SELECT ?, json_extract(value, '$.id'), ? + key, value, ?${vals} FROM json_each(?)`,
@@ -99,24 +111,42 @@ export function changeStatements(layoutId, rev, base, next) {
  * A plot for `subject` in the active layout: { statements, plot } or
  * { error } when there is no room that fits the model (nothing is written).
  */
-export function placeStatements(active, { subject, model, owner, created }) {
-  const plan = planPlacement(active.layout, { subject, model, owner, created });
+export function placeStatements(active, { subject, model, owner, created }, sent = null) {
+  const req = { subject, model, owner, created };
+  // The plan the member's own browser made on this very revision, checked here;
+  // planning it on the server costs more than a free-plan request may spend.
+  const given = accepted(active, sent, req);
+  const plan = given || planPlacement(active.layout, req);
   if (!plan.ok) return { error: plan.error };
   const next = applyPlan(active.layout, plan);
-  return { statements: changeStatements(active.id, active.rev, active.layout, next), plot: plan.plot };
+  return { statements: changeStatements(active.id, active.rev, active.layout, next, plan), plot: plan.plot, planned: given ? "browser" : "server" };
+}
+/** A browser's plan ({ layoutRev, plan }) for `req`, when it was made on this revision and passes every check. */
+function accepted(active, sent, req) {
+  if (!sent || typeof sent !== "object" || Number(sent.layoutRev) !== active.rev || !sent.plan?.plot) return null;
+  // The subject is the server's (its id is made here); the rest must hold as sent.
+  const plan = { ...sent.plan, plot: { ...sent.plan.plot, subject: { ...req.subject } } };
+  return checkPlan(active.layout, plan, req) ? null : plan;
 }
 
 /** Where a building could move: up to six plans, its own plot ignored. */
 export const moveOptions = (active, buildingId) => movePlans(active.layout, { type: "building", id: buildingId });
 
 /** The move to the plan at (x, y): its old plot is let go, the new one taken. */
-export function moveStatements(active, buildingId, x, y) {
-  const plans = moveOptions(active, buildingId);
-  const plan = plans.find((p) => Math.abs(p.plot.x - x) < 0.01 && Math.abs(p.plot.y - y) < 0.01);
-  if (!plan) return { error: "taken" };
+export function moveStatements(active, buildingId, x, y, sent = null) {
   const subject = { type: "building", id: buildingId };
+  const current = plotOf(active.layout, subject);
+  if (!current) return { error: "taken" };
+  const req = { subject, model: current.model, version: current.gv, owner: current.owner, exclude: current.id };
+  // The browser's choice, checked without the building's own plot; else the server's own proposals.
+  const given = sent && Math.abs(sent.plan?.plot?.x - x) < 0.01 && Math.abs(sent.plan?.plot?.y - y) < 0.01 ? accepted(active, sent, req) : null;
+  // A browser's choice that no longer holds is not re-proposed here (a dozen
+  // searches): the member sees the village has changed and picks again.
+  if (sent && !given) return { error: "taken" };
+  const plan = given || moveOptions(active, buildingId).find((p) => Math.abs(p.plot.x - x) < 0.01 && Math.abs(p.plot.y - y) < 0.01);
+  if (!plan) return { error: "taken" };
   const next = applyPlan(releaseSubject(active.layout, subject), { ...plan, plot: { ...plan.plot, subject } });
-  return { statements: changeStatements(active.id, active.rev, active.layout, next), plot: plan.plot };
+  return { statements: changeStatements(active.id, active.rev, active.layout, next, { ...plan, leaves: current.id }), plot: plan.plot, planned: given ? "browser" : "server" };
 }
 
 /** A site becomes its building on the very same plot, in every layout that holds it. */

@@ -94,6 +94,8 @@ function clientIp(req) {
   if (forwarded) return String(forwarded).split(",").pop().trim();
   return req.socket.remoteAddress || "";
 }
+// A whole village layout from Komuta merkezi (n46 G) is the one big body; the app checks the owner first.
+const bodyLimit = (url) => (/^\/api\/owner\/village\/[^/]+\/layouts$/.test(url.pathname) ? 2_000_000 : 16384);
 async function toRequest(req, url) {
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers))
@@ -104,7 +106,7 @@ async function toRequest(req, url) {
     let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
-      if (size > 16384) return null;
+      if (size > bodyLimit(url)) return null;
       chunks.push(chunk);
     }
     body = Buffer.concat(chunks);
