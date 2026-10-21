@@ -88,9 +88,11 @@ SCENE = '''async ({factor, focus, people}) => {
   const anit = place('anit', 'anitkabir', 0, -front, 0, factor);
   const house = place('ev', 'ev', mk.ground[2] * factor + 6, -3.9, 0);
   const road = {id: 'r0', a: 'n0', b: 'n1', pts: [[-40, 0], [40, 0]], w: 2.4, type: 'omurga', status: 'usable', focus: 'f0'};
-  const approach = {id: 'r1', a: 'n2', b: 'n3', pts: [[0, 0], [0, -front + mk.ground[3] * factor + 0.4]], w: 2.4, type: 'yaklasim', status: 'usable', focus: 'f0'};
+  // The approach meets the Road of Lions at its head (the model's door, east of the centre).
+  const dx = mk.entrances[0].x * factor;
+  const approach = {id: 'r1', a: 'n2', b: 'n3', pts: [[dx, 0], [dx, -front + mk.ground[3] * factor + 0.4]], w: 2.4, type: 'yaklasim', status: 'usable', focus: 'f0'};
   const layout = {seed: 'n46-olcek', terrain: far, nodes: [], roads: [road, approach], foci: [], plots};
-  const references = people.map(([x, y], i) => ({x, y, coat: ['#c98577', '#7f93b8', '#d0a54f'][i % 3]}));
+  const references = people.map(([x, y], i) => ({x: x + (i === 2 ? dx : 0), y: i === 2 ? -front + mk.ground[3] * factor + 1.2 : y, coat: ['#c98577', '#7f93b8', '#d0a54f'][i % 3]}));
   const world = buildWorld2({layout, things: new Map(), members: [], sky, references});
   document.body.innerHTML = '<canvas id="map" style="width:100vw;height:100vh;display:block"></canvas>';
   const view = createView(document.querySelector('#map'), {interactive: false});
@@ -109,7 +111,7 @@ DEPTH = '''async ({mask, frames}) => {
   const {modelSpec, shapeAt} = await import('/shared/koy2/models.js');
   const {useCanvas, useSVG} = await import('/src/iso.js');
   const sky = skyAt(Date.UTC(2026, 9, 20, 9)), tint = tinter(sky);
-  const far = {river: {pts: [[-30, 14], [30, 14]], w: 3.2}, lake: {poly: [[950, 950], [952, 950], [952, 952]], cx: 951, cy: 951}, rail: null};
+  const far = {river: {pts: [[-40, 15], [40, 15]], w: 3.2}, lake: {poly: [[950, 950], [952, 950], [952, 952]], cx: 951, cy: 951}, rail: null};
   const plots = [];
   const place = (id, model, x, y, facing) => {
     const m = modelSpec(model), sh = shapeAt(m, x, y, facing);
@@ -117,16 +119,20 @@ DEPTH = '''async ({mask, frames}) => {
   };
   place('burj', 'burgu', -16, -2, 0);
   place('anit', 'kolezyum', 2, -8, 0);
-  place('kemer', 'kemer', 16, 14, 1);
+  place('kemer', 'kemer', 14, 15, 1);
   const layout = {seed: 'n46-derinlik', terrain: far, nodes: [], roads: [{id: 'r0', a: 'n0', b: 'n1', pts: [[-34, 4], [34, 4]], w: 2.0, type: 'sokak', status: 'usable', focus: 'f0'}], foci: [], plots};
-  const world = buildWorld2({layout, things: new Map(), members: [], sky, references: []});
-  // Twelve walkers: half on a line behind the buildings, half in front, all crossing the tree and the bridge.
-  const walkers = Array.from({length: 12}, (_, i) => ({behind: i % 2 === 0, phase: i / 12}));
+  const extras = [{x: -4, y: 2.4, size: 1.3}, {x: 6, y: 9.2, size: 1.1}];
+  const world = buildWorld2({layout, things: new Map(), members: [], sky, references: [], extras});
+  // Twelve walkers on three lines: behind the tower and the monument (y = -16),
+  // on the street behind the trees (y = 6) and on the near bank, behind the
+  // bridge's landing (y = 10.5).
+  const LINES = [-16, 6, 10.5];
+  const walkers = Array.from({length: 12}, (_, i) => ({line: i % 3, behind: i % 3 === 0, phase: i / 12}));
   const W = innerWidth, H = innerHeight;
   document.body.innerHTML = '<canvas id="c"></canvas>';
   const c = document.querySelector('#c'); c.width = W; c.height = H;
   const ctx = c.getContext('2d');
-  const s = 9, cam = {x: 0, y: -3};
+  const s = 12, cam = {x: 0, y: -3};
   const at = (wx, wy) => (x, y, z) => [((wx + x - wy - y) * 0.866 - cam.x) * s + W / 2, ((wx + x + wy + y) * 0.5 - z - cam.y) * s + H / 2];
   const view = {s, ctx, at, tint, detail: 2};
   const paintWorld = () => {
@@ -137,12 +143,11 @@ DEPTH = '''async ({mask, frames}) => {
   paintWorld();
   const base = ctx.getImageData(0, 0, W, H);
   const posOf = (w, t) => {
-    // Behind: y = -14 (behind the tower and the monument); in front: y = 9 (over the bridge's line).
-    const u = (t + w.phase) % 1, x = -32 + u * 64;
-    return w.behind ? [x, -15 + Math.sin(u * 9) * 0.6] : [x, 13.5 + Math.sin(u * 7) * 0.4];
+    const u = (t + w.phase) % 1, x = -30 + u * 60;
+    return [x, LINES[w.line] + Math.sin(u * 7 + w.line) * 0.3];
   };
   const figure = (x, y, coat) => {
-    const [px, py] = at(x, y)(0, 0, 0), k = s / 9;
+    const [px, py] = at(x, y)(0, 0, 0), k = s / 12;
     ctx.fillStyle = 'rgba(40,50,30,.22)'; ctx.beginPath(); ctx.ellipse(px, py, 4.2 * k, 1.6 * k, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = coat; ctx.beginPath(); ctx.roundRect(px - 3.1 * k, py - 11.6 * k, 6.2 * k, 8 * k, 2.6 * k); ctx.fill();
     ctx.fillStyle = '#e2b48e'; ctx.beginPath(); ctx.arc(px, py - 13.7 * k, 2.5 * k, 0, Math.PI * 2); ctx.fill();
@@ -150,7 +155,7 @@ DEPTH = '''async ({mask, frames}) => {
   // The occluders of a figure: standing art in front of it whose box covers it,
   // redrawn on top, clipped to the figure's own box.
   const cover = (x, y) => {
-    const [px, py] = at(x, y)(0, 0, 0), k = s / 9;
+    const [px, py] = at(x, y)(0, 0, 0), k = s / 12;
     const list = world.occludersAt(x, y, 0.5, 1.7);
     if (!list.length) return 0;
     ctx.save(); ctx.beginPath(); ctx.rect(px - 5 * k, py - 17 * k, 10 * k, 19 * k); ctx.clip();
@@ -204,7 +209,7 @@ def main():
                     page.close()
                 if 'anit' in only:
                     for tag, k in [('A', 1.0), ('B', 1.25), ('C', 1.5)]:
-                        for cam, focus, size, dpr in [('genel', [4, -8, 2, 7], (1440, 900), 1), ('yaklasim', [0, -4, 3, 16], (1440, 900), 1), ('telefon', [2, -8, 3, 6], (390, 844), 2)]:
+                        for cam, focus, size, dpr in [('genel', [3, -9, 3, 13], (1440, 900), 1), ('yaklasim', [3, -4, 2, 24], (1440, 900), 1), ('telefon', [3, -8, 3, 8], (390, 844), 2)]:
                             page, errors = page_for(*size, dpr)
                             people = [[-1.6, 1.2], [1.3, 0.9], [0.4, -2.6 - 2 * k]]
                             info = page.evaluate(SCENE, {'factor': k, 'focus': focus, 'people': people})

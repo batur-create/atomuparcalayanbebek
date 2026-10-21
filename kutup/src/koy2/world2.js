@@ -115,7 +115,7 @@ function figureArt(v, x, y, coat) {
  * world: the same shape buildWorld() returns (items, query, bounds, area, …).
  * layout: a v2 layout; things: Map subjectKey → { kind, seed, model, memberId, site: { shown } }.
  */
-export function buildWorld2({ layout, things = new Map(), members = [], me = null, sky = skyAt(), monument = 0, references = [] }) {
+export function buildWorld2({ layout, things = new Map(), members = [], me = null, sky = skyAt(), monument = 0, references = [], extras = [] }) {
   const season = sky.season;
   const t = layout.terrain;
   const people = new Map(members.map((m) => [m.id, m]));
@@ -321,6 +321,11 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       if (layout.plots.some((q) => pointRect([x, y], q.ground) < 0.3 || (q.door && linePoint(q.door, [x, y]).d < 0.6))) continue;
       add(standing, { type: "lamp", depth: x + y, x, y, bbox: boxOf(x, y, 1, 1, 3, 1), draw: (v) => lampArt(v, x, y, sky.lamps) });
     }
+  }
+  // Hand-placed trees (scale and depth experiments).
+  for (const e of extras) {
+    const size = e.size || 1;
+    add(standing, { type: "tree", depth: e.x + e.y, x: e.x, y: e.y, bbox: boxOf(e.x, e.y, 1.3 * size, 1.3 * size, 2.4 * size, 0.6), draw: (v) => treeArt(v, e.x, e.y, size, 0.5, season) });
   }
   for (const ref of references) add(standing, { type: "figure", depth: ref.x + ref.y, x: ref.x, y: ref.y, bbox: boxOf(ref.x, ref.y, 1, 1, 2, 0.6), draw: (v) => figureArt(v, ref.x, ref.y, ref.coat || "#c98577") });
 

@@ -32,6 +32,9 @@ const FIT = {
   sudegirmeni: { door: { x: 1.45, y: 0.37, dir: [1, 0] }, wet: [[-0.45, 1.48]], dry: [-1.45, -1.2, 1.45, 1.0] },
   istasyon: { door: { x: 0, y: -1.25, dir: [0, -1] }, track: { y: 1.98, x0: -2.5, x1: 2.5 }, dry: [-2.25, -1.25, 2.25, 1.4] },
   yuzenev: { door: { x: 3.0, y: 0.62, dir: [1, 0] } },
+  // The Road of Lions runs along +y from the square to the İstiklal and
+  // Hürriyet towers; the visitors come in at its head, east of the centre.
+  anitkabir: { door: { x: 0.96, y: 1.69, dir: [0, 1] } },
   asmakopru: { span: true },
   kemer: { span: true },
 };
