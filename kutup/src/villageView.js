@@ -7,6 +7,7 @@
 import { useCanvas, useSVG } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
 import { AVATAR_BG, avatarImage, parseAvatar } from "../shared/avatars.js";
+import { HOUSE_SCREEN, lodFor } from "./koy2/life.js";
 
 const TS = 256;
 const MAX_TILES = 40;
@@ -70,7 +71,8 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     liveDue = 0,
     party = null,
     alive = false,
-    wakeIn = 0;
+    wakeIn = 0,
+    lod = null;
   const start = performance.now();
 
   // ---------- tiles ----------
@@ -198,6 +200,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       ctx.globalAlpha = 1;
     }
     const k = Math.max(0.55, Math.min(1.6, s / 9));
+    if (world.life) shared(level, time, k);
     // Neighbours stroll to the square and back, resting a moment at each end.
     for (const v of world.villagers) {
       if (!boxShown(v.box)) continue;
@@ -277,7 +280,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       }
     }
     // A small flock crosses the sky now and then, by day.
-    if (ambient && sky && sky.night < 0.5) {
+    if (ambient && sky && sky.night < 0.5 && !world.life) {
       const clock = time + 12; // the first flock comes a few seconds after the map opens
       const round = Math.floor(clock / FLOCK_EVERY),
         u = clock - round * FLOCK_EVERY;
@@ -287,6 +290,163 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       } else wakeIn = (FLOCK_EVERY - u) * 1000;
     }
     if (party) celebration(now, level);
+  }
+  // ---------- the v2 village's shared life (src/koy2/life.js) ----------
+  // Everything comes from the shared clock, so this only draws: no state is
+  // kept between frames apart from the level of detail and its hysteresis.
+  const lifeAt = (wx, wy) => (x, y, z) => [
+    ((wx + x - wy - y) * 0.866 - cam.x) * cam.s + W / 2,
+    ((wx + x + wy + y) * 0.5 - z - cam.y) * cam.s + H / 2,
+  ];
+  function viewRect(m = 6) {
+    // The screen's corners in world x/y (the inverse of the iso projection).
+    const hw = W / 2 / cam.s + m,
+      hh = H / 2 / cam.s + m;
+    const xs = [],
+      ys = [];
+    for (const [sx, sy] of [[cam.x - hw, cam.y - hh], [cam.x + hw, cam.y - hh], [cam.x - hw, cam.y + hh], [cam.x + hw, cam.y + hh]]) {
+      xs.push(sy + sx / 1.732);
+      ys.push(sy - sx / 1.732);
+    }
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+  function shared(level, time, k) {
+    lod = lodFor(lod, cam.s * HOUSE_SCREEN);
+    const out = world.life.at(Date.now(), viewRect(), { lod, motion: still ? "calm" : level, sky, focus: world.lifeFocus });
+    const moving = level === "full" && !still;
+    const w = out.weather;
+    if (w.puddles > 0 || w.kind === "rain") puddles(w.kind ? w.strength : w.puddles);
+    // People, back to front; whoever is behind a wall or a tree goes behind it.
+    const people = [...out.people].sort((a, b) => a.x + a.y - (b.x + b.y));
+    for (const f of people) {
+      const p = atScreen(f.x, f.y);
+      if (!onScreen(p, 30)) continue;
+      const face = f.face[0] - f.face[1] >= 0 ? 1 : -1;
+      villager(p[0], p[1], k, world.lookOf(f.home), f.walking ? f.step : null, face);
+      cover(f.x, f.y, p, k);
+    }
+    if (out.nature) nature(out.nature, time, k);
+    if (w.kind) weatherLayer(w, time, moving);
+    if (out.moving && moving) alive = true;
+    else if (moving && lod > 0) wakeIn = wakeIn ? Math.min(wakeIn, 2000) : 2000;
+  }
+  // Redraws, clipped to a figure's own small box, whatever stands in front of it (B's depth mask).
+  function cover(x, y, p, k) {
+    if (!world.occludersAt) return;
+    const list = world.occludersAt(x, y, 0.5, 1.7);
+    if (!list.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p[0] - 6 * k, p[1] - 18 * k, 12 * k, 20 * k);
+    ctx.clip();
+    useCanvas(ctx, tint, Math.max(0.35, cam.s / 15));
+    try {
+      const v = { s: cam.s, ctx, at: lifeAt, tint, detail: world.detailFor(cam.s) };
+      for (const it of list) it.draw(v);
+    } finally {
+      useSVG();
+      ctx.restore();
+    }
+  }
+  function puddles(alpha) {
+    for (const q of world.life.puddles) {
+      const p = atScreen(q.x, q.y);
+      if (!onScreen(p)) continue;
+      ctx.fillStyle = `rgba(150,176,196,${0.55 * alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(p[0], p[1], q.size * cam.s * 1.3, q.size * cam.s * 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(235,244,250,${0.35 * alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(p[0] - q.size * cam.s * 0.35, p[1] - q.size * cam.s * 0.12, q.size * cam.s * 0.45, q.size * cam.s * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // Rain or snow over the whole view: a light veil, and (with motion on) the drops themselves.
+  function weatherLayer(w, time, moving) {
+    const snow = w.kind === "snow";
+    ctx.fillStyle = snow ? `rgba(236,240,246,${0.14 * w.strength})` : `rgba(92,104,128,${0.13 * w.strength})`;
+    ctx.fillRect(0, 0, W, H);
+    if (!moving) return;
+    const count = Math.round(Math.min(160, (W * H) / 2600) * w.strength);
+    ctx.strokeStyle = "rgba(214,226,240,.55)";
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < count; i++) {
+      const a = (Math.sin(i * 12.9898) * 43758.5453) % 1,
+        b = (Math.sin(i * 78.233) * 12543.1234) % 1;
+      const fall = snow ? 26 + Math.abs(b) * 12 : 420 + Math.abs(b) * 160;
+      const x = ((Math.abs(a) * W + time * (snow ? 8 : 60) + Math.sin(time + i) * (snow ? 6 : 0)) % (W + 20)) - 10,
+        y = ((Math.abs(b) * H + time * fall) % (H + 20)) - 10;
+      if (snow) {
+        ctx.moveTo(x + 1.4, y);
+        ctx.arc(x, y, 1.4, 0, Math.PI * 2);
+      } else {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 2.5, y + 9);
+      }
+    }
+    if (snow) ctx.fill();
+    else ctx.stroke();
+  }
+  function nature(n, time, k) {
+    if (n.kind === "birds") {
+      // Three small birds on the bank, pecking and hopping.
+      const len = Math.hypot(n.dir[0], n.dir[1]) || 1;
+      for (let i = 0; i < n.count; i++) {
+        const off = (i - 1) * 0.9,
+          hop = Math.max(0, Math.sin(time * 5 + i * 2.1)) * 0.25;
+        const p = atScreen(n.x + (n.dir[0] / len) * off, n.y + (n.dir[1] / len) * off, hop);
+        if (!onScreen(p)) continue;
+        const side = i % 2 ? 1 : -1;
+        ctx.fillStyle = "rgba(40,50,30,.18)";
+        ctx.beginPath();
+        ctx.ellipse(p[0], p[1] + hop * cam.s, 2.4 * k, 0.9 * k, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = tint("#6b5d55");
+        ctx.beginPath();
+        ctx.ellipse(p[0], p[1] - 2 * k, 2.6 * k, 1.6 * k, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p[0] + side * 2.2 * k, p[1] - (3.2 + Math.max(0, Math.sin(time * 3 + i)) * 1.2) * k, 1.2 * k, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+    if (n.kind === "butterflies") {
+      const [x0, y0, x1, y1] = n.box;
+      for (let i = 0; i < n.count; i++) {
+        const u = n.u + i * 3.1;
+        const x = (x0 + x1) / 2 + Math.cos(u * 0.9 + i * 2) * (x1 - x0) * 0.3,
+          y = (y0 + y1) / 2 + Math.sin(u * 1.3 + i) * (y1 - y0) * 0.3;
+        const p = atScreen(x, y, 0.9 + Math.sin(u * 2.3) * 0.3);
+        if (!onScreen(p)) continue;
+        const flap = Math.abs(Math.sin(time * 14 + i)) * 2.2 * k + 0.6 * k;
+        ctx.fillStyle = i % 2 ? "#f29bb8" : "#f7d154";
+        ctx.beginPath();
+        ctx.ellipse(p[0] - 1.3 * k, p[1], flap, 1.6 * k, -0.4, 0, Math.PI * 2);
+        ctx.ellipse(p[0] + 1.3 * k, p[1], flap, 1.6 * k, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+    if (n.kind === "wind") {
+      // A breath of wind: a few leaves leave each tree's crown and drift down.
+      const q = n.u / n.stay;
+      ctx.fillStyle = tint(sky?.season === "autumn" ? "#d98a3a" : "#7fb257");
+      ctx.globalAlpha = Math.max(0, 1 - q);
+      for (const t of n.trees) {
+        for (let i = 0; i < 3; i++) {
+          const p = atScreen(t.x + (i - 1) * 0.5 + q * 1.4, t.y - q * 0.6, 2.2 * t.size - q * 1.6);
+          if (!onScreen(p)) continue;
+          ctx.beginPath();
+          ctx.ellipse(p[0], p[1] + Math.sin(time * 6 + i) * 2, 1.6 * k, 0.8 * k, time * 3 + i, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
   }
   // A neighbour: shadow, legs, coat, face and hat. `step` is the walk cycle
   // (null while standing); `face` is 1 when heading right on screen, -1 left.

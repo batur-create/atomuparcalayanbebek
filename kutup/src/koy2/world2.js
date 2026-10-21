@@ -16,8 +16,9 @@ import { buildingSVG, mirrored, ridgeOf, spec, box, poly, seg, ellipse, WOOD, ST
 import { sitePlan, siteSVG } from "../construction.js";
 import { specialOf } from "../special.js";
 import {
-  COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, plazaArt, rockArt, bushArt, spotArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
+  COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, meadowDetail, plazaArt, rockArt, bushArt, spotArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
 } from "../villageWorld.js";
+import { createLife, lookOf } from "./life.js";
 
 const { ROAD, ROAD_EDGE, WATER, PLAZA_STONE, PLAZA_RING } = PALETTE;
 const BANK = "#b9d08f",
@@ -27,6 +28,27 @@ const BANK = "#b9d08f",
   RAIL = "#6f7378",
   PATH = "#f1e6cc";
 const subjectKey = (s) => `${s.type}:${s.id}`;
+const AUTUMN_FLOWERS = ["#d9a441", "#c8743c"],
+  SPRING_FLOWERS = ["#ffffff", "#f7d154", "#f29bb8", "#b9a3ea"];
+
+// Smooth value noise in [0, 1]: groves, meadows and fields follow it instead
+// of falling evenly everywhere.
+function noise(seed) {
+  const cell = (i, j) => (hash(`${seed}:${i}:${j}`) % 1000) / 1000;
+  return (x, y) => {
+    const i = Math.floor(x),
+      j = Math.floor(y),
+      fx = x - i,
+      fy = y - j,
+      sx = fx * fx * (3 - 2 * fx),
+      sy = fy * fy * (3 - 2 * fy);
+    const a = cell(i, j),
+      b = cell(i + 1, j),
+      c = cell(i, j + 1),
+      d = cell(i + 1, j + 1);
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  };
+}
 
 /** Building drawing parameters of a plot: the model contract's pinned scale. */
 export function plotSpec(plot, thing) {
@@ -276,7 +298,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   grow(14, 14);
   for (const p of layout.plots) grow(p.plot[0], p.plot[1]), grow(p.plot[2], p.plot[3]);
   for (const r of open) for (const q of r.pts) grow(q[0], q[1]);
-  const pad = 16;
+  const pad = 24;
   const H = 8,
     cells = new Map();
   const put = (x0, y0, x1, y1, item) => {
@@ -309,6 +331,12 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   };
   const R = rand(hash(`${layout.seed}:trees`));
   const step = 2.6;
+  // Landscape (plan §3.1): woods gather in groves out in the country and
+  // around the squares where people sit; along the streets they thin out, and
+  // open fields lie between the groves.
+  const grove = noise(`${layout.seed}:grove`);
+  const squares = layout.foci.filter((f) => f.status === "open" && !f.landmark);
+  const lifeTrees = [];
   for (let x = extent[0] - pad; x <= extent[2] + pad; x += step)
     for (let y = extent[1] - pad; y <= extent[3] + pad; y += step) {
       const jx = x + (R() - 0.5) * step,
@@ -318,12 +346,62 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
         tone = R();
       // Thicker towards the fields, sparse among the houses.
       const edge = Math.min(jx - extent[0], extent[2] - jx, jy - extent[1], extent[3] - jy);
-      const keep = edge < 0 ? 0.42 : 0.1;
+      const woods = Math.max(0, Math.min(1, (grove(jx / 22, jy / 22) - 0.48) / 0.22));
+      const bySquare = edge >= 0 && squares.some((f) => Math.hypot(f.x - jx, f.y - jy) < f.r + 4.5);
+      const keep = edge < 0 ? 0.06 + 0.62 * woods : bySquare ? 0.3 : 0.03 + 0.1 * woods;
       if (roll > keep || !clear(jx, jy, 0.5)) continue;
       if (roll < keep * 0.18) add(standing, { type: "rock", depth: jx + jy, x: jx, y: jy, bbox: boxOf(jx, jy, 0.9, 0.9, 0.6, 0.5), draw: (v) => rockArt(v, jx, jy, size) });
       else if (roll < keep * 0.4) add(standing, { type: "bush", depth: jx + jy, x: jx, y: jy, bbox: boxOf(jx, jy, 1, 1, 1, 0.5), draw: (v) => bushArt(v, jx, jy, size, tone, tone < 0.4) });
-      else add(standing, { type: "tree", depth: jx + jy, x: jx, y: jy, bbox: boxOf(jx, jy, 1.3 * size, 1.3 * size, 2.4 * size, 0.6), draw: (v) => treeArt(v, jx, jy, size, tone, season) });
+      else {
+        add(standing, { type: "tree", depth: jx + jy, x: jx, y: jy, bbox: boxOf(jx, jy, 1.3 * size, 1.3 * size, 2.4 * size, 0.6), draw: (v) => treeArt(v, jx, jy, size, tone, season) });
+        lifeTrees.push({ x: jx, y: jy, size });
+      }
     }
+  // Meadows: softer, flowering patches of grass on the open ground (none on streets or plots).
+  const meadow = noise(`${layout.seed}:meadow`);
+  const MR = rand(hash(`${layout.seed}:meadows`));
+  const blooms = season === "winter" ? null : season === "autumn" ? AUTUMN_FLOWERS : SPRING_FLOWERS;
+  for (let x = extent[0] - pad; x <= extent[2] + pad; x += 9)
+    for (let y = extent[1] - pad; y <= extent[3] + pad; y += 9) {
+      const cx = x + (MR() - 0.5) * 6,
+        cy = y + (MR() - 0.5) * 6,
+        rx = 2.4 + MR() * 2.2,
+        ry = 1.6 + MR() * 1.4;
+      if (meadow(cx / 14, cy / 14) < 0.58 || !clear(cx, cy, 1.2)) continue;
+      const spots = [];
+      for (let k = 0; k < 14; k++) {
+        const a = MR() * Math.PI * 2,
+          d = Math.sqrt(MR()),
+          sx = cx + Math.cos(a) * rx * d,
+          sy = cy + Math.sin(a) * ry * d,
+          size = 0.7 + MR() * 0.6,
+          bloom = blooms && MR() < 0.35 ? blooms[Math.floor(MR() * blooms.length)] : null;
+        if (clear(sx, sy, 0.1)) spots.push({ x: sx, y: sy, size, flower: bloom });
+      }
+      add(ground, { pass: 0.4, bbox: boxOf(cx, cy, rx * 2, rx * 2, rx, rx), draw: (v) => {
+        const [px, py] = v.at(cx, cy)(0, 0, 0);
+        ellipse(px, py, rx * v.s * 1.2, ry * v.s * 0.6, PALETTE.MEADOW, 0.4);
+        meadowDetail(v, spots);
+      } });
+    }
+  // Low hills on the horizon, beyond the fields: soft relief only, nothing stands on a slope.
+  const span = Math.max(extent[2] - extent[0], extent[3] - extent[1]) / 2 + pad + 10;
+  const [ox, oy] = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+  const HR = rand(hash(`${layout.seed}:hills`));
+  for (let k = 0; k < 9; k++) {
+    const a = (k / 9) * Math.PI * 2 + HR() * 0.5,
+      d = span + HR() * 12,
+      r = 7 + HR() * 7,
+      hx = ox + Math.cos(a) * d,
+      hy = oy + Math.sin(a) * d;
+    if (!clear(hx, hy, r * 0.4)) continue;
+    add(ground, { pass: 0.3, bbox: boxOf(hx, hy, r * 1.8, r * 1.8, r, r), draw: (v) => {
+      const [px, py] = v.at(hx, hy)(0, 0, 0);
+      // A low mound: its shade on the far side, then lighter rings rising towards the top.
+      ellipse(px + v.s * r * 0.18, py + v.s * r * 0.1, v.s * r * 1.5, v.s * r * 0.7, "#8db866", 0.3);
+      ["#a8cb82", "#b3d38c", "#bedb97"].forEach((c, i) => ellipse(px - v.s * r * 0.08 * i, py - v.s * r * 0.11 * i, v.s * r * 1.45 * (1 - 0.24 * i), v.s * r * 0.68 * (1 - 0.24 * i), c, 0.55));
+    } });
+  }
   // Street lamps every dozen units on alternating sides.
   for (const r of open) {
     const len = lengthOf(r.pts);
@@ -386,19 +464,10 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   }
   for (const r of open) for (const q of r.pts) take(q[0], q[1]);
 
-  // Villagers walk from a few homes along the streets to the square.
-  const villagers = [];
-  const homes = layout.plots.filter((p) => p.subject.type === "building" && p.owner && p.door && !p.jetty);
-  const seen = new Set();
-  for (const p of homes) {
-    if (villagers.length >= 6 || seen.has(p.owner)) continue;
-    const path = pathToSquare(layout, p);
-    if (!path) continue;
-    seen.add(p.owner);
-    const r = rand(hash(`${layout.seed}:${p.id}:walker`));
-    const hat = Math.floor(r() * 3);
-    villagers.push({ id: p.id, path, box: pathBox(path), coat: COATS[Math.floor(r() * COATS.length)], skin: SKINS[Math.floor(r() * SKINS.length)], hat, hatColor: HATS[hat][Math.floor(r() * HATS[hat].length)], speed: 0.95 + r() * 0.35, phase: r(), rest: 0.15 + r() * 0.5 });
-  }
+  // Neighbours' visits, birds, butterflies and weather: the shared life (src/koy2/life.js).
+  const life = createLife({ layout, trees: lifeTrees });
+  const meMember = people.get(me);
+  const looks = new Map();
   // A figure seen behind something taller in front: the standing items that cover a screen box.
   function occludersAt(x, y, w = 0.8, h = 1.4) {
     const [sx, sy] = screenOf(x, y);
@@ -406,7 +475,14 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     return query(sx - w, sy - h, sx + w, sy).filter((it) => it.depth !== undefined && it.depth > d + 0.05 && ["building", "tree", "bridge", "bush", "lamp", "fountain"].includes(it.type));
   }
   return {
-    items, query, bounds, area, districts: [], walkingLinks: [], balloons: [], walkers: [], villagers, glows: [], smoke: [], buildings: layout.plots, lit,
+    items, query, bounds, area, districts: [], walkingLinks: [], balloons: [], walkers: [], villagers: [], glows: [], smoke: [], buildings: layout.plots, lit,
+    life,
+    // While I am focusing the village stays quieter (plan §6.4: at most four people).
+    lifeFocus: !!meMember && focusing(meMember, now),
+    lookOf: (plotId) => {
+      if (!looks.has(plotId)) looks.set(plotId, lookOf(layout.seed, plotId, { COATS, SKINS, HATS }));
+      return looks.get(plotId);
+    },
     farLabels: new Set(),
     lamps: standing.filter((item) => item.type === "lamp"),
     byId: new Map(standing.filter((item) => item.id).map((item) => [item.id, item])),
