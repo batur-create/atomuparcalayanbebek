@@ -124,3 +124,20 @@ test("n46 H: owner deletes reach the draft, the new village and the way back (pl
   assert.ok(back.data.draft);
   assert.equal(placements(t, back.data.draft.id), left);
 });
+
+test("n46 H: the oldest buildings, saved before models existed, get their place as drawn today", async () => {
+  const t = await team();
+  const gifts = [];
+  for (let i = 0; i < 4; i++) gifts.push(await t.gift());
+  // As in a team from the first days: no model, only a kind (the old village draws them by kind).
+  t.sqlite.prepare("UPDATE buildings SET model = NULL, kind = 'house' WHERE id = ?").run(gifts[0]);
+  t.sqlite.prepare("UPDATE buildings SET model = NULL, kind = 'cottage' WHERE id = ?").run(gifts[1]);
+  const source = (await call(t.app, `/owner/village/${t.gid}/source`, { headers: t.owner })).data;
+  assert.equal(planDraft(source).missing.length, 0);
+  const made = await t.draft();
+  assert.equal(made.status, 201, JSON.stringify(made.data));
+  const plots = (await readLayout(t.db, made.data.draft.id)).layout.plots;
+  assert.equal(plots.find((p) => p.subject?.id === gifts[0]).model, "ev");
+  assert.equal(plots.find((p) => p.subject?.id === gifts[1]).model, "kulube");
+  assert.deepEqual([made.data.draft.coverage.missing, made.data.draft.sound], [0, true]);
+});

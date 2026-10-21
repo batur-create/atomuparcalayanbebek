@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { LoaderCircle, Map as MapIcon, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 import { api, get, dateLabel } from "./api.js";
+import { BY_ID } from "../shared/catalog.js";
 import { Modal } from "./Modal.jsx";
 import { runPlan } from "./koy2/browserPlan.js";
 import { buildWorld2 } from "./koy2/world2.js";
@@ -51,6 +52,16 @@ function Preview({ source }) {
 const counted = ({ buildings, sites, projects }) =>
   [`${buildings} bina`, sites ? `${sites} şantiye` : null, projects ? `${projects} Anıtkabir` : null].filter(Boolean).join(" · ");
 
+// Which buildings did not fit, by name ("Ev ×2, Kule"), so it can be told to Claude.
+const missingNames = (missing) => {
+  const n = new Map();
+  for (const m of missing) {
+    const name = BY_ID[m.model]?.name || m.model || "adsız yapı";
+    n.set(name, (n.get(name) || 0) + 1);
+  }
+  return [...n].map(([name, k]) => (k > 1 ? `${name} ×${k}` : name)).join(", ");
+};
+
 export function OwnerVillage({ group, close }) {
   const [state, setState] = useState(null),
     [preview, setPreview] = useState(null),
@@ -88,7 +99,7 @@ export function OwnerVillage({ group, close }) {
     step(layoutId ? "Eşitleniyor…" : "Taslak hazırlanıyor…", async () => {
       const source = await get(`${base}/source${layoutId ? `?layout=${layoutId}` : ""}`);
       const planned = await plan(source, source.layout);
-      if (planned.missing.length) throw new Error(`${planned.missing.length} yapıya yer bulunamadı; taslak kaydedilmedi.`);
+      if (planned.missing.length) throw new Error(`${planned.missing.length} yapıya yer bulunamadı (${missingNames(planned.missing)}); taslak kaydedilmedi, köy olduğu gibi duruyor.`);
       const stored = await api(`${base}/layouts`, { role, layout: planned.layout, base: layoutId, contentRev: source.contentRev });
       setState(stored);
       // Every rule, checked by the server a part at a time.
