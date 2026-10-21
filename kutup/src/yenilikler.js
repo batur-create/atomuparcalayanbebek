@@ -10,6 +10,27 @@
 
 export const YENILIKLER = [
   {
+    surum: 26,
+    tarih: "2026-10-21",
+    vakit: "akşam",
+    baslik: "Aynı hesap, beş cihaz, tek seans",
+    maddeler: [
+      "Ekranı kapatarak çalış anahtarı artık hesabına bağlı: telefonda açtıysan bilgisayarda da açık görünür.",
+      "Seansı hangi cihazda başlattıysan o izler. Aynı hesapla açtığın diğer cihazlar seansı yalnız gösterir; kapansalar ya da kilitlenseler de binan çatlamaz, yıkılmaz.",
+      "Uzun süre açık kalmış eski bir Kütüp sekmesi, yeni sürüm çıkınca kendini yeniler; eski kurallarla çalışmaz.",
+    ],
+  },
+  {
+    surum: 25,
+    tarih: "2026-10-21",
+    vakit: "öğle",
+    baslik: "Hesap değiştirince çökme düzeldi",
+    maddeler: [
+      "Aynı telefonda birden çok hesabı olanlarda, uygulama açılırken “Küçük bir mola verdik” ekranı çıkıp bir türlü geçmeyebiliyordu. Artık telefon hangi hesaptaysan o hesabın ekibini açıyor.",
+      "O ekran yine bir gün çıkarsa “Tekrar aç” uygulamayı sunucudan tertemiz açar; aynı ekrana takılı kalmazsın.",
+    ],
+  },
+  {
     surum: 24,
     tarih: "2026-10-21",
     vakit: "öğle",
