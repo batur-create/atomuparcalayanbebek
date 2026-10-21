@@ -70,8 +70,8 @@ export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
   },[load]);
   useEffect(()=>{load();},[me?.focusEnd]);
   useEffect(()=>{if(signal>0){setOpen(true);consumeSignal?.();}},[signal]);
-  const data=result?.memberId===memberId?result.data:null;
   if(!memberId)return null;
+  const data=result?.memberId===memberId?result.data:null;
   if(!data)return error?<section className="imece-entry"><p>{error}</p><button className="btn outline" onClick={load}>Şantiyeyi yeniden oku</button></section>:result?.memberId===memberId?<section className="imece-entry"><Flag size={24}/><span><strong>Ekibinin Anıtkabir projesi</strong><p>Henüz başlamadı. Batur komuta merkezinde bu ekipten dört kişiyi seçerek şantiyeyi açabilir.</p></span></section>:null;
   const mine=data.slot>=0?data.crew[data.slot]:null;
   const phaseIndex=data.phase<0?IMECE_PHASES.length-1:data.phase;

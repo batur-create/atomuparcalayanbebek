@@ -10,6 +10,16 @@
 
 export const YENILIKLER = [
   {
+    surum: 25,
+    tarih: "2026-10-21",
+    vakit: "öğle",
+    baslik: "Hesap değiştirince çökme düzeldi",
+    maddeler: [
+      "Aynı telefonda birden çok hesabı olanlarda, uygulama açılırken “Küçük bir mola verdik” ekranı çıkıp bir türlü geçmeyebiliyordu. Artık telefon hangi hesaptaysan o hesabın ekibini açıyor.",
+      "O ekran yine bir gün çıkarsa “Tekrar aç” uygulamayı sunucudan tertemiz açar; aynı ekrana takılı kalmazsın.",
+    ],
+  },
+  {
     surum: 24,
     tarih: "2026-10-21",
     vakit: "öğle",
