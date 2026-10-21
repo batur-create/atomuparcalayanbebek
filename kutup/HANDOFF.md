@@ -397,3 +397,7 @@ console.log("saved", file.split("/").pop(), "bytes", text.length, "schema", data
 3. Batur onay vermeden başlama. Onay gelince panodaki sıradaki işe (en düşük `order`'lı `next`) geç, işi `doing` yap. Tanımı eksikse önce Batur'a sor.
 4. Her paketten sonra: `npm run test:all` → `npm run deploy` → canlı duman testi (geçici veriyi sil) → commit ve push → Batur'a kısa özet.
 5. Kalite çıtası: telefonda akıcı ve okunaklı, mevcut sıcak kâğıt-lila tasarım diliyle uyumlu; her şey Türkçe ve samimi. Görsel ayrıntı Batur için çok önemli; aceleye getirme, ama her paketi canlıya almadan sonrakine geçme.
+
+## 9. Dar düzeltme: yüzen pencerenin boş kalması (21 Ekim 2026)
+
+Batur yalnız siyah kalan yüzen pencerenin düzeltilmesini, Claude'un yarım işlerinin korunmasını istedi. Dal `codex/fix-floating-black-window`, taban `5eca87e1`; teslim PR, birleştirme/yayın Batur'da. `FloatPanel`, yalnız presence watcher açıkken değil Document PiP penceresi açıkken çizilir; ekran kapalı ve ortak görev sayaçları görünür. Pencere açılışı React `useSyncExternalStore` ile izlenir; seans başlatma yanıtı beklenirken de boş ekran yok. Sunucu, şema ve odak/ödül hesapları değişmedi. `npm run test:all` **207/207**; yerel veride gerçek Chromium Document PiP ile `python tests/float_browser.py` **24/24**. Claude'un açık #61 değişikliği bu düzeltmenin üstüne `git apply --check` ile çakışmasız uygulanabiliyor; bu kontrol onun dalını değiştirmedi. Ayrıntı: [RAPOR_YUZEN_PENCERE.md](RAPOR_YUZEN_PENCERE.md).
