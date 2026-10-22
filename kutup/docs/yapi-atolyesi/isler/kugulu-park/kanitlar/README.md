@@ -19,7 +19,14 @@ Yalnız geçici yerel veritabanı ve sentetik hesaplar kullanıldı. Canlı köy
 
 İlk su katmanı ölçümünde gereksiz bütün örtücüler çizildiğinden masaüstü medyanı yaklaşık 46 ms idi. Örtücüler yalnız sprite'ın küçük ekran alanını kesiyorsa çizilecek biçimde daraltıldı; son standart masaüstü örneğinde medyan yaklaşık 3,8 ms, p95 32,2 ms. Bunlar diğer doğrulamalar çalışırken alınan, farklı yük altındaki örneklerdir; kesin cihazlar arası hızlanma garantisi değildir.
 
-Tam test paketi ve genel tarayıcı/tema günlükleri son doğrulama tamamlanınca buraya eklenir. Yapı başına son sonuç ve kalan işler bir üst klasörün README dosyasındadır.
+Son doğrulama günlükleri:
+
+- `test-all.txt`: üretim derlemesi ve tam Node/Worker paketi; 273/273 geçti, sıfır atlanan/iptal edilen test.
+- `tarayici-genel.txt`: genel gerçek tarayıcı paketi; 100/100 geçti, JavaScript hatası yok.
+- `tema.txt`: 252/252 renk çifti geçti.
+- `yapi-testleri.txt`: yapıya özgü 5/5 test geçti; bunlar tam paketteki 273 testin içindedir.
+
+Yapı başına son sonuç ve teslim kaydı bir üst klasörün README dosyasındadır. Yalnız son başarılı günlükler eklendi; geliştirme sırasındaki düzeltilmiş hata çıktıları kabul kanıtı sayılmadı.
 
 ## Yeniden üretme
 

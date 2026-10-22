@@ -1,0 +1,13 @@
+✔ Kuğulu Park: approved price, class and permanent plan; existing geometry versions stay readable (2.692254ms)
+✔ Kuğulu Park: sixteen explained, continuous landscape operations; finite drawings, monotone payment, identical delivered architecture (913.796735ms)
+✔ Kuğulu Park: swimming stays in water, off islands; visual motion and night light have no game clock (100.018164ms)
+✔ Kuğulu Park: legacy villages allocate full-size dedicated plots clear of the ring road (9.3691ms)
+✔ Kuğulu Park API: locked plan, one charge, same reserved plot, one permanent result across retries (706.038382ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2126.244322
