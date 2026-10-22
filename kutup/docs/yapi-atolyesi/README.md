@@ -2,6 +2,8 @@
 
 Bu klasör, yeni yapı taleplerini aynı üretim standardında ele alacak sohbetin başlangıç dosyasıdır. Bir bina veya yeni çizim motoru eklemez. İncelenen kaynak: `kutup-platform` / `395c9b11acf5396484280b4bc405948bb484f5c3`, 22 Ekim 2026. Güncel repo uygulama için asıl kaynaktır.
 
+**Mevcut yasalar korunur:** Atölye yeni bir proje anayasası değildir. `kutup/DESIGN.md`, `HANDOFF.md`, `KARARLAR.md` ve ilgili veri/operasyon/devir kuralları güncel asıllarından okunur; atölye belgeleri bunların yerine geçmez. Promptta ayrı koruma bölümü var. Taşınabilir ZIP, bu kaynakların denetim tarihindeki okuma kopyalarını da içerir; güncel repoya geri kopyalanmaz. Kural dosyaları bu paket hazırlanırken değiştirilmedi.
+
 ## Yeni sohbete verilecekler
 
 1. Depo erişimi: https://github.com/batur-create/atomuparcalayanbebek — uygulama `kutup/`, dal `kutup-platform`.

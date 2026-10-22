@@ -7,6 +7,8 @@ Durum: İstek / Araştırma / Tasarım onayı bekliyor / Üretim / Doğrulama / 
 - Kullanıcının açık talebi ve vazgeçilmezleri:
 - Mevcut katalogda benzeri:
 - Esas alınan depo commit'i:
+- Okunan mevcut kural dosyaları/bölümleri ve bu işe etkileri:
+- Kural çelişkileri: Yok / Kaynakları ve kullanıcı kararı bekleyen konu:
 - Kullanıcı onayı: Henüz yok / Onaylanan liste sürümü ve kapsamı
 - Tarih ve kullanıcı onayının kısa alıntısı:
 
@@ -50,6 +52,8 @@ Araştırmanın yeterli sayılma gerekçesi / kullanıcıdan gereken görsel:
 - Ölçüm, geometri sürümü ve eski veriye etkisi:
 - Arazi bağlamı / giriş / yaklaşım / hareket sınırı:
 - Güncellenen testler ve gerçek sonuçlar:
+- Mevcut tasarım/tema, mobil/PWA, veri/yetki ve zorunlu kontrol kurallarına uyum:
+- Merkezi DESIGN/KARARLAR/HANDOFF kayıtlarına gereken ekler:
 - Çalışan uygulama görüntüleri / animasyon kanıtı:
 - Test ortamı ve ölçülemeyenler:
 - PR / commit / kullanıcı tarafından bildirilen yayın:

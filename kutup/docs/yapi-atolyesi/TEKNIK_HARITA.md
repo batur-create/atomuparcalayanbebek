@@ -4,6 +4,8 @@
 
 ## Mevcut parçalar
 
+Kod haritası proje kurallarının yerine geçmez. Önce `DESIGN.md`, `HANDOFF.md`, `KARARLAR.md`; konuya göre `RECOVERY.md` ve geçerli devir talimatları okunur. Asıl dosyalar güncel depoda korunur. Örneğin `DESIGN.md` telefon/tema/önizleme kuralları getirirken `HANDOFF.md` tarihli güncellemelerle eski operasyon talimatlarının kapsamını sınırlar; yalnız tek bir eski paragraf seçilerek yayın yetkisi çıkarılmaz.
+
 | Alan | Dosyalar | Gerçek görevi / eklemede dikkat |
 | --- | --- | --- |
 | Katalog ve ekonomi | `shared/catalog.js` | 48 kayıt; `id`, `kind`, `class`, `cost`, `category`, `look.special`, `rare`, haftalık erişim, bitiş metni. `small/medium/large` süreleri 25/50/75 dk. Kayıt eklemek tek başına çizim üretmez. |
