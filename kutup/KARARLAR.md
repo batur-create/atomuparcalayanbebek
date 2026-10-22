@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| yapi-kugulu | Kuğulu Park: onaylı gerçek park minyatürü, peyzaj yapımı, kuğular ve gece ışıkları | Yapı Atölyesi | 22 Eki | PR #69 |
 | n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
 | n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
 | imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
@@ -98,6 +99,23 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### yapi-kugulu · Kuğulu Park
+Yapı Atölyesi · 22 Ekim 2026 · `codex/kugulu-park` · göç yok
+
+**İstek ve onay:** Kullanıcı “KUĞULU PARK” dedi, dokuz fotoğraf/çizim/uydu referansı verdi. Düşük ayrıntılı gündüz/gece ve mevcut evle ölçek çalışmasını gördükten sonra: “olur, ışık da olsun gece, uygula kapsamı”. 28 × 24 m oyun zemini, 75 dk, 180 tuğla, nadir plan, ek bonus olmaması onaylı. Kaynak/onay geçmişi `docs/yapi-atolyesi/isler/kugulu-park/` altında; gerçek alanın belediye kaydı 7.743 m², oyun alanı bunun birebir mühendislik ölçeği değil.
+
+**Uygulama:** `kuguluPark.js` kendi peyzaj sistemi ve 16 açıklamalı aşama: ağaç koruma/aplikasyon, kontrollü kazı, su hatları, havuz kabuğu, sızdırmazlık, kıyı, yollar, kafe/oyun alanı, ahşap çit, kuğu evleri/bank/heykel, ışık, peyzaj, su denemesi ve teslim. Olgun ağaçlar önceden var; kuğular su hazır olmadan görünmez. İşe uygun ekip ve küçük ekskavatör; tahminî kaplama/ahşap metrajı ve maliyet ağırlıklı hakediş. Tarihî yapım yöntemi veya gerçek parkın kesin metrajı iddiası yok.
+
+**Teknik kararlar:** Katalog/şantiye/teslim/köy ortak geometri. Kuru zeminde kendi havuzu; köyün gölüne bağlı değil. Çizimden ölçülen alan ve +y giriş; iki ayna yönü. Kuğu/fıskiye kendi küçük hareket katmanında, yakın görünümde; görünmez sekme ve hareket ayarları mevcut döngüyle korunuyor. Gece sabit sıcak lamba ışıkları; hareketi kapatmak ışıkları kapatmaz. İlk hareket ölçümündeki gereksiz örtücü çizimleri yalnız sprite'ın küçük alanını kesen nesnelere daraltıldı.
+
+**Uyumluluk:** Eski 48 modelin çizim/alan verisi ve geometri sürümü 2 aynı; yeni model satırı eklendi. Eski köyde park, tam boyunu sığdıran özel mahalle arar (en çok 24 aday); daha küçük yere sıkıştırılmaz. v2 kendi sözleşmesiyle planlanır. Şema, odak/maaş/iade/keşif olasılığı ve Anıtkabir değişmedi. Plan havuzu bir yeni yapı içerir, plan ücretsiz bitmiş park vermez.
+
+**Doğrulamada öğrenilen:** 49 model, büyüme aracının 7'lik adımının bazı modelleri hiç seçmemesine yol açıyordu. Test verisi üreticisi katalog sayısıyla aralarında asal bir adım seçiyor; 48 modelde eski sıra aynı. Tarihî n46 taban manifesti değiştirilmedi; test yeni katalog ekini açıkça ayırıyor. Genel aşama testi parka betonarme temel şartı dayatmıyor; kendi 16 aşamasını kontrol ediyor.
+
+**Teslim ve sınırlar:** [PR #69](https://github.com/batur-create/atomuparcalayanbebek/pull/69) → `kutup-platform`. Son tam test 273/273, genel tarayıcı 100/100, tema 252/252; 49 model taraması sıfır bulgu. Uygulama teslim/köy/gece, 375 px açık/koyu, iki ayna, aşamalar ve hareket/Sakin kanıtları iş kaydında. Yalnız geçici/sentetik veriler; gerçek Android/iPhone, pil veya Cloudflare CPU ölçümü yok. 4× yavaşlatmada yalnız su katmanının p95'i 44,9 ms; tam uygulama kare bütçesi garantisi verilmez. Birleştirme, canlı yayın ve köy etkinleştirme yapılmadı. Mevcut işler ve ana çalışma ağacı korundu.
+
+**Dosyalar:** `src/kuguluPark.js`, özel kayıt/katalog/ölçek/model alanı, dar şantiye/canlı katman bağlantıları, testler, Yenilikler ve atölye iş kaydı. Ürün dışındaki atölye başlangıç klasörü `codex/building-workshop-kit` dalından yalnız kendi klasörü olarak alındı; eski uygulama kaynak kopyaları alınmadı.
 
 ### n46 · Köy yenilemesi (A–H)
 Köy · 21 Ekim 2026 · claude/n46-a-taban → … (PR zinciri)

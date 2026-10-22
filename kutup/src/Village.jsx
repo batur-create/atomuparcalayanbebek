@@ -139,6 +139,7 @@ function specialParts(P, sp, seed, plan, own) {
     { a: plan.find((p) => p.key === own.shadowFrom).a, b: own.frameEnd, kind: "grow", draw: (t) => own.shadow(P, sp, t) },
     { a: 0, b: 1, kind: "site", draw: (shown) => siteSVG(P, sp, plan, shown) },
     { a: 0, b: 1, kind: "grow", lights: true, live: !!own.live, draw: (shown, lit, time) => own.scene(P, sp, plan, shown, lit, time) },
+    ...(own.motion ? [{ a: 0, b: 1, kind: "grow", lights: true, live: true, motion: true, draw: (shown, lit, time) => own.motion(P, sp, plan, shown, lit, document.documentElement.dataset.motion === "calm" ? 0 : time) }] : []),
     ...(own.garden === false ? [] : [{ a: 0.94, b: 0.98, kind: "reveal", fit: true, draw: () => gardenSVG(P, sp, seed) }]),
     ...(!plan.some((p) => p.lift)
       ? []
@@ -482,7 +483,8 @@ export function ConstructionScene({ run, outcome, idle = false }) {
             puff = now;
           }
         } else if (p.kind === "grow") {
-          const key = l.toFixed(3) + (p.lights && lit ? "L" : "") + (p.live && l >= 1 ? Math.floor(time * 15) : "");
+          const motionTime = p.motion && document.documentElement.dataset.motion === "calm" ? 0 : time;
+          const key = l.toFixed(3) + (p.lights && lit ? "L" : "") + (p.live && (p.motion || l >= 1) ? Math.floor(motionTime * 15) : "");
           if (key !== p.key) {
             p.el.innerHTML = l > 0 ? p.draw(l, lit, time) : "";
             p.key = key;

@@ -55,9 +55,10 @@ test("n46 A: /api/village v1 wire format, from the production handler", async ()
   assert.ok(!("layoutId" in answer.data) && !("contractVersion" in answer.data));
 });
 
-test("n46 A: the manifest names every catalogue model and the schema it was taken on", async () => {
+test("n46 A: the historical catalogue stays intact and additions are explicit", async () => {
   const { CATALOG } = await import("../shared/catalog.js");
-  assert.deepEqual(manifest.models.map((m) => m.id), CATALOG.map((i) => i.id));
+  assert.deepEqual(manifest.models.map((m) => m.id), CATALOG.filter(i => i.id !== 'kugulupark').map((i) => i.id));
+  assert.deepEqual(CATALOG.filter(i => !manifest.models.some(m => m.id === i.id)).map(i => i.id), ['kugulupark']);
   assert.equal(manifest.models.length, 48);
   assert.equal(manifest.schemaVersions, 33, "taken on kutup-platform with PR #54 (migration 33)");
 });

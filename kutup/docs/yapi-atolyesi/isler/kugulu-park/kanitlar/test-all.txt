@@ -1,0 +1,368 @@
+
+> kutup@2.0.0 test:all
+> vite build && node --test tests/*.test.js
+
+vite v6.4.4 building for production...
+transforming...
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2134 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                          1.33 kB │ gzip:   0.58 kB
+dist/assets/dm-sans-latin-ext-400-normal-BtiwyxMk.woff2                  7.36 kB
+dist/assets/dm-sans-latin-ext-600-normal-4vooXBpG.woff2                  7.42 kB
+dist/assets/dm-sans-latin-ext-500-normal-BJfUCQsA.woff2                  7.43 kB
+dist/assets/dm-sans-latin-ext-700-normal-CJIcxD6K.woff2                  7.45 kB
+dist/assets/dm-sans-latin-ext-400-normal-BjWJ59Pq.woff                   9.98 kB
+dist/assets/dm-sans-latin-ext-700-normal-BLI3TTWz.woff                  10.01 kB
+dist/assets/dm-sans-latin-ext-600-normal-DRtaDpgU.woff                  10.02 kB
+dist/assets/dm-sans-latin-ext-500-normal-DR84L5F-.woff                  10.07 kB
+dist/assets/bricolage-grotesque-vietnamese-opsz-normal-D9N6E8K1.woff2   12.98 kB
+dist/assets/dm-sans-latin-600-normal-Aqo67rzb.woff2                     14.14 kB
+dist/assets/dm-sans-latin-400-normal-CW0RaeGs.woff2                     14.20 kB
+dist/assets/dm-sans-latin-500-normal-B9HHJjqV.woff2                     14.30 kB
+dist/assets/dm-sans-latin-700-normal-DvUfVpUG.woff2                     14.35 kB
+dist/assets/dm-sans-latin-600-normal-BmdmIIQ2.woff                      18.32 kB
+dist/assets/dm-sans-latin-400-normal-BwCSEQnW.woff                      18.36 kB
+dist/assets/dm-sans-latin-700-normal-CUSSCpQX.woff                      18.50 kB
+dist/assets/dm-sans-latin-500-normal-Dr3UlScf.woff                      18.52 kB
+dist/assets/bricolage-grotesque-latin-ext-opsz-normal-IcJDqblK.woff2    30.74 kB
+dist/assets/planWorker-BZNwQA2p.js                                      55.91 kB
+dist/assets/bricolage-grotesque-latin-opsz-normal-Cre6nC2_.woff2        76.89 kB
+dist/assets/Yenilikler-D-wL1BoL.css                                      1.03 kB │ gzip:   0.48 kB
+dist/assets/BlueprintReveal-DNyxfT9G.css                                 1.60 kB │ gzip:   0.66 kB
+dist/assets/Stats-DRyzUjcO.css                                           2.92 kB │ gzip:   0.93 kB
+dist/assets/Achievements-a6csRwoo.css                                    3.42 kB │ gzip:   1.24 kB
+dist/assets/VillageMap-muYp-b8A.css                                      4.29 kB │ gzip:   1.49 kB
+dist/assets/FocusScreen-Co6CxQ7j.css                                     8.03 kB │ gzip:   2.40 kB
+dist/assets/DeskMap-Du2XtjFl.css                                        10.53 kB │ gzip:   2.78 kB
+dist/assets/Story-DwCKG3sB.css                                          10.81 kB │ gzip:   2.82 kB
+dist/assets/imece-ooYfWg5f.css                                          13.40 kB │ gzip:   2.88 kB
+dist/assets/index-BxeW4hLR.css                                         467.36 kB │ gzip:  84.08 kB
+dist/assets/minus-DBafPUiR.js                                            0.29 kB │ gzip:   0.24 kB
+dist/assets/rotate-ccw-Ddb_HMxu.js                                       0.37 kB │ gzip:   0.29 kB
+dist/assets/fast-forward-BsecAwuA.js                                     0.37 kB │ gzip:   0.28 kB
+dist/assets/shrink-bhhPQTUT.js                                           0.47 kB │ gzip:   0.33 kB
+dist/assets/locate-fixed-CYc9vXh-.js                                     0.57 kB │ gzip:   0.33 kB
+dist/assets/Yenilikler-17dbg3gJ.js                                       0.91 kB │ gzip:   0.53 kB
+dist/assets/zoom-D3MuAHk6.js                                             1.71 kB │ gzip:   0.82 kB
+dist/assets/BuildDelivery-BNktTDkt.js                                    2.42 kB │ gzip:   1.16 kB
+dist/assets/BlueprintReveal-BV-be6_y.js                                  2.49 kB │ gzip:   1.35 kB
+dist/assets/Stats-DGAZbxOQ.js                                            4.14 kB │ gzip:   1.78 kB
+dist/assets/imece-BGX10ckG.js                                            6.34 kB │ gzip:   2.94 kB
+dist/assets/Achievements-DYM2WVnd.js                                     9.10 kB │ gzip:   4.19 kB
+dist/assets/FocusScreen-BL5vCSHS.js                                      9.65 kB │ gzip:   3.98 kB
+dist/assets/DeskMap-HOn7uY3o.js                                         11.46 kB │ gzip:   4.51 kB
+dist/assets/Imece-CDeX3-BN.js                                           15.91 kB │ gzip:   5.91 kB
+dist/assets/yenilikler-D-sUIy5y.js                                      17.47 kB │ gzip:   7.24 kB
+dist/assets/Story-Bwx_i6DF.js                                           17.97 kB │ gzip:   6.68 kB
+dist/assets/VillageMap-CiCS9NMP.js                                      20.76 kB │ gzip:   7.76 kB
+dist/assets/construction-CD_vkXjv.js                                    26.23 kB │ gzip:  11.24 kB
+dist/assets/ImeceScene-DA2x2zYX.js                                      38.77 kB │ gzip:  16.86 kB
+dist/assets/Owner-C5FllAV7.js                                           46.80 kB │ gzip:  15.43 kB
+dist/assets/villageView-CfDlF1r4.js                                     49.15 kB │ gzip:  20.43 kB
+dist/assets/motionFeatures-4WRdu5Lb.js                                  85.78 kB │ gzip:  28.35 kB
+dist/assets/Village-D5H9cAXI.js                                         89.27 kB │ gzip:  36.01 kB
+dist/assets/index-BSD5H8kY.js                                          851.37 kB │ gzip: 303.20 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.24s
+✔ discovery: splitting identical credited work preserves every draw, reward and leftover minute (3.839507ms)
+✔ discovery: 500 minutes forces a missing plan, carries post-award work, never repeats or banks a completed pool (0.390156ms)
+✔ discovery API: only completed credited sessions advance, durable guarantee settles exactly once across concurrent readers (238.844572ms)
+✔ discovery API: first session on a 7-day streak grants a bonus without resetting effort; failure gives no progress (91.749388ms)
+✔ weekly rights: migration and old-backup restore retain completed builds, exclude gifts and late builds (432.127119ms)
+✔ weekly rights: completing the weekly building writes a permanent plan without spending discovery progress (80.159936ms)
+✔ plan reveal: account-scoped durable acknowledgements preserve later finds and all ownership (62.658169ms)
+✔ build notification updates replace one tag silently and never regress after delayed delivery (4.930164ms)
+✔ state never moves backwards when a slow request arrives after a write (1.536638ms)
+✔ a reply for another team never replaces the open one (0.335213ms)
+✔ village deltas keep positions, update likes, discard departures and ignore stale responses (0.734383ms)
+✔ sky follows Ankara time at noon, midnight and seasonal boundaries (2.229739ms)
+✔ auto mode turns dark at the Ankara sunset and light at sunrise; manual modes stay put (0.20622ms)
+✔ dark twins: light surfaces go dark, dark ink goes light, vivid and night colors stay (1.605331ms)
+✔ dark twins sit right after their rule with no extra specificity, and skip keyframes and dark scopes (8.420718ms)
+✔ themes (n23): neutral literals follow the theme, text never goes softer than --muted, colors stay (3.989918ms)
+✔ themes (n23): every package passes its contrast pairs, light and dark (22.218626ms)
+✔ themes (n23): old picks move to a package, and the first paint knows every page color (4.49439ms)
+✔ visible tiles fit the cache on phones, fullscreen displays and distant large villages (0.438639ms)
+✔ every drawn avatar, with any accessories, renders clean markup and round-trips (15.87315ms)
+✔ yenilikler (n41): one entry per version, newest first, plain short lines (2.243244ms)
+✔ a database from the first Kütüp release upgrades in place and keeps its sessions (115.618252ms)
+✔ migration 21 keeps push subscriptions and lets one endpoint carry several accounts (n25) (63.570383ms)
+✔ without ADMIN_KEY, Batur claims the box once with a key of his own (78.786964ms)
+✔ finished Fidan modu sessions turn into village buildings on upgrade (65.417456ms)
+✔ day streaks: one missed day a week is bridged by a freeze (0.72868ms)
+✔ statistics: day streaks, the best day, library visits and the usual arrival (1.435648ms)
+✔ the tuğla economy: wages grow with session length, refunds split 50/30/20 (0.564023ms)
+✔ the shared village gives old buildings a stored spot, in the order they were built (84.286419ms)
+✔ n44: a monument already in the village moves to the centre of a district of its own (49.649091ms)
+✔ district choice: newcomers near the square, full districts grow next door (2.138469ms)
+✔ changing ADMIN_KEY signs every remembered owner device out (96.110836ms)
+✔ days and weeks follow Türkiye time (0.848959ms)
+✔ authentication rate limits survive new application instances (137.969149ms)
+✔ session lifetimes are enforced on the server, even with a copied cookie (72.786589ms)
+✔ the week: Haftanın Ustası is crowned once, and the shared monument pays everyone (67.189808ms)
+✔ sessions that end together get one board line, rewritten as more settle (50.967328ms)
+✔ an expired presence changes the revision seen by idle polling clients (48.834999ms)
+✔ late focus settlement appears in village deltas without moving existing buildings (51.785512ms)
+✔ joining a friend's session needs twenty minutes and cannot grant short-session rewards (83.395867ms)
+✔ parallel joins reclaim distinct plots and cannot duplicate names (92.531031ms)
+✔ two devices cannot replace each other's newly started focus timer (311.990077ms)
+✔ a delayed seen request cannot overwrite a newer feedback stage (51.010252ms)
+✔ oversized streaming requests stop early and invalid origins and paths fail cleanly (55.90234ms)
+✔ upgrading status cooldowns preserves the last known notification time (36.464751ms)
+✔ presence cooldowns expire independently and concurrent arrivals share one activity (75.422811ms)
+✔ a real arrival notifies again after five minutes; a return from a break waits out 45 (92.353401ms)
+✔ migration 11 binds subscriptions saved before devices existed to the latest session (55.556632ms)
+✔ opening the app renews a month-old session; an unused one still expires after a year (52.018195ms)
+✔ a JSON backup restores into an empty database with sign-in and stored spots intact (166.219343ms)
+✔ Batur's dev badge is one per team, visible in state, and the black hole badge is awarded once (63.673993ms)
+✔ the week's story is told from Sunday 18:00, and weeks follow Türkiye time (n28) (2.258158ms)
+✔ the week's story: totals, the people who stood out and a card for me (n28) (2.410196ms)
+✔ the story route answers for the asker's team only, and Sunday 18:00 tells each team once (n28) (94.613481ms)
+✔ study partners: shared days follow the İmece rule, the best pair focuses most per day together (1.281357ms)
+✔ your study partner shows on your own statistics only (66.724177ms)
+✔ the desk map: numbered chairs, typed desks placed, the rest listed (n30) (2.306134ms)
+✔ Adnan's supplied plan retains 425 unique individual seats and source landmarks (1.263079ms)
+✔ achievements are worked out from the logs, with the moment each was earned (n14) (2.502193ms)
+✔ the achievements route answers for the team, and keeps what was earned (n14) (65.564826ms)
+✔ changing a username or password needs the current password; wrong ones are counted (d23) (341.39572ms)
+✔ one person cannot flood the team with board messages or plans (d23) (132.231083ms)
+✔ timer pushes sign with the address the app is served from (d23) (63.14258ms)
+✔ Hesap ve cihazlar signs the account out of its other devices; this one stays (d27) (121.183601ms)
+✔ dürüst dakika: a watched free session loses the time away (n40) (73.611627ms)
+✔ dürüst dakika: five minutes away ends a free session where you left (n40) (91.725712ms)
+✔ dürüst dakika: stopping a free session keeps the minutes seen, if there are 20 (n40) (136.380551ms)
+✔ kurtarma: a cracked build waits for its owner and is saved once (n40) (289.333947ms)
+✔ kurtarma: a site left at the very end is not collapsed while it can still be saved (n40) (70.076726ms)
+✔ telefon sayaç: one countdown on the phone, one alert on the computer, and the server cracks the site once (n40) (82.608068ms)
+✔ kurtarma: a site the server cracked waits five minutes, then falls even if the app came back (n40) (49.469538ms)
+✔ join preview and confirmation enforce duration, price, pauses, mission separation and the quoted session (77.966185ms)
+✔ a strict phone build is watched only by the phone that started it (156.704914ms)
+✔ a session from an older app keeps the old rules on every device (53.93049ms)
+✔ the screen-off switch follows the account and the running mode is the server's (65.774026ms)
+✔ imece film: replay covers every crossed job, stays within credited work and lands exactly (3.288787ms)
+✔ imece film: the crane rigs at stock, lifts clear, sets down and returns empty at every structural job (5.975146ms)
+✔ imece film: all 22 work crews paint finite, nonempty Canvas geometry, including motion extrema (32.828796ms)
+✔ imece: construction budgets, individual gates and shared capacity (1.089645ms)
+✔ imece: all construction boundaries render finite geometry, including concrete and finished detail (461.045504ms)
+✔ imece: owner explicitly selects four people within one team; private state stays separate (207.583172ms)
+✔ imece: relaxed work survives restart and concurrent finish; no private building or duplicate reward (127.65706ms)
+✔ imece: only owner can correct an account; the slot's work and delivery survive without moving private rewards (136.851393ms)
+✔ imece: account correction rejects invalid, duplicate, stale, finished and unsettled work; departed slots remain recoverable (123.396939ms)
+✔ imece: racing a mission start with account correction cannot orphan an active session (308.332515ms)
+✔ imece: acknowledging the displayed delivery cannot swallow a later contribution (120.048412ms)
+✔ imece: a cancelled or interrupted watched session releases its job without damaging shared work (193.466979ms)
+✔ imece: simultaneous reservations within a team cannot consume another person's reserved work (115.293558ms)
+✔ imece: all 2000 minutes, each person's three signatures and backup round-trip (395.251624ms)
+✔ imece teams: projects, reservations and deliveries are isolated; only owner corrects their team without losing work (153.497334ms)
+✔ imece teams: migration and pre-32 backup restore retain every legacy minute and in-flight session until owner assigns a team (183.454888ms)
+✔ n46 A: every scene rebuilds byte for byte, with the same protected rows (385.951593ms)
+✔ n46 A: the legacy problems are reproduced, so the renewal can show them gone (807.050734ms)
+✔ n46 A: /api/village v1 wire format, from the production handler (136.061394ms)
+✔ n46 A: the historical catalogue stays intact and additions are explicit (2.795374ms)
+✔ n46 B: the model contracts are the drawings' own numbers, for all 49 models (402.385386ms)
+✔ n46 B: the same inventory gives the same layout, byte for byte (11819.412858ms)
+✔ n46 B: every scene places everything and breaks no rule (77.785378ms)
+✔ n46 B: growing the village never moves a placed plot or an open street (5344.381757ms)
+✔ n46 B: opening a reserved corridor makes it a street; dropping one removes it (663.721799ms)
+✔ n46 B: the mill, the floating house, the bridges and the station stand on their own ground (44.592842ms)
+✔ n46 B: only a session that builds a model gets a site; it turns into its building in place (0.928704ms)
+✔ n46 C: a start has one stable run; the same key is the same start, a changed one is refused (216.630123ms)
+✔ n46 C: a finished build keeps its run: one building, pointing back once; content changes are in order (105.486754ms)
+Kütüp server error: Error: no such table: no_such_table
+    at prepared (file:///workspace/kutup-yapi-atolyesi/kutup/server/sqlite.js:5:58)
+    at Object.batch (file:///workspace/kutup-yapi-atolyesi/kutup/server/sqlite.js:25:43)
+    at Object.batch (file:///workspace/kutup-yapi-atolyesi/kutup/tests/koy-c.test.js:118:19)
+    at retrying (file:///workspace/kutup-yapi-atolyesi/kutup/server/app.js:549:25)
+    at async Object.handler (file:///workspace/kutup-yapi-atolyesi/kutup/server/app.js:1950:11)
+    at async Object.handle [as fetch] (file:///workspace/kutup-yapi-atolyesi/kutup/server/app.js:3208:24)
+    at async TestContext.<anonymous> (file:///workspace/kutup-yapi-atolyesi/kutup/tests/koy-c.test.js:127:15)
+    at async Test.run (node:internal/test_runner/test:1389:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+  code: 'ERR_SQLITE_ERROR',
+  errcode: 1,
+  errstr: 'SQL logic error'
+}
+✔ n46 C: a start whose batch fails leaves no run, no receipt, no charge and no session (83.074921ms)
+✔ n46 C: a v2 layout is written in a handful of statements and read back exactly (8291.212891ms)
+✔ n46 C: V1 stays the default; a v2 team is served to new apps only, with cursors and tombstones (397.38282ms)
+✔ n46 C: a member who leaves takes their placements, runs and receipts along; nothing is orphaned (129.799009ms)
+✔ n46 C: a backup carries every new record and restores to the same layout (211.536945ms)
+✔ n46 C: an older database and an older backup get the legacy baseline and stable runs once (57.425735ms)
+✔ n46 D: two people build at once, then one cancels, one finishes, and the building moves (plan §11.3) (1065.654486ms)
+✔ n46 D: no site without a building; no room means no charge and no session (272.341384ms)
+✔ n46 D: a site that collapses lets its plot go; the plot is free for the next one (222.423005ms)
+✔ n46 D: the app keeps a v2 village row by row, draws it, and still reads today's village the same (294.328527ms)
+✔ n46 E: geometry version 2 is Anıtkabir at 1.25× and nothing else; version 1 still reads (4.595254ms)
+✔ n46 E: all 49 models find a plot at their own size, with a reachable door (4027.191579ms)
+✔ n46 E: the village keeps growing — 300 buildings, many squares, nothing placed ever moves (30803.255163ms)
+✔ n46 E: the four fixed scenes still place everything; the shared Anıtkabir gets its own big ground (6185.69945ms)
+✔ n46 E: launching the shared Anıtkabir on a v2 team gives it a big plot; minutes, not looks, set its stage (279.597821ms)
+✔ n46 E: growth report helper places 32 and an unbalanced 100 with nothing missing (4984.974948ms)
+✔ n46 F: every street, door path and square crossing the life walks is walkable ground (36861.118953ms)
+✔ n46 F: two hours of village life — real places, nobody in a wall, the budget kept (58961.887687ms)
+✔ n46 F: no kahve, no tea visit; a new kahve brings its visits, along the new streets (1710.808005ms)
+✔ n46 F: the same clock gives the same village on every phone, in any order (4606.225497ms)
+✔ n46 F: a visit's place rests between visits; greetings and markets stay small and rare (37555.785123ms)
+✔ n46 F: calm, still, the whole-village view and my own focus keep the village quiet (5353.168467ms)
+✔ n46 F: shared weather — short showers far apart, snow only in winter, nothing lives in the rain (2966.32298ms)
+✔ n46 F: butterflies only by spring and summer days; birds by day (371.155624ms)
+✔ n46 F: level of detail follows a house's width on screen, with ±15 % hysteresis (0.707837ms)
+✔ n46 F: life is decoration — it imports only plane geometry and reads no rewards (1.764077ms)
+✔ n46 G: the member's browser finds the plot; the server checks it and writes exactly that plot (1508.580211ms)
+✔ n46 G: a tampered or stale plan is never written as sent; the server plans itself (489.462418ms)
+✔ n46 G: a move chosen among the browser's proposals; a choice the village has outgrown is refused (1134.182815ms)
+✔ n46 G: a gift planned in the owner's browser lands on that plot (231.552624ms)
+✔ n46 G: writing a known plan's rows is the same as comparing every row (and much cheaper) (7572.605858ms)
+✔ n46 G: draft, catch up, switch, keep building, go back — nothing earned is lost (plan §8, §11.4) (7215.813984ms)
+✔ n46 G: from one new village to another, and back only once the old one has caught up (412.931648ms)
+✔ n46 G: the server checks what the browser sends, and only the owner may switch (286.025338ms)
+✔ n46 G: the 14-day window closes; an old village is not gone back to after it (92.25238ms)
+✔ n46 H: owner deletes reach the draft, the new village and the way back (plan §11.4) (936.485835ms)
+✔ n46 H: the oldest buildings, saved before models existed, get their place as drawn today (335.068946ms)
+✔ Kuğulu Park: approved price, class and permanent plan; existing geometry versions stay readable (2.921203ms)
+✔ Kuğulu Park: sixteen explained, continuous landscape operations; finite drawings, monotone payment, identical delivered architecture (833.629779ms)
+✔ Kuğulu Park: swimming stays in water, off islands; visual motion and night light have no game clock (51.309034ms)
+✔ Kuğulu Park: legacy villages allocate full-size dedicated plots clear of the ring road (8.09616ms)
+✔ Kuğulu Park API: locked plan, one charge, same reserved plot, one permanent result across retries (438.783615ms)
+✔ neighbours: 47 → 200 → 500 is one world; unequal growth loses nobody and never moves old work (91981.141983ms)
+✔ neighbours: twelve members and a late arrival have stable individual centres, not four fixed parcels (601.695273ms)
+✔ neighbours: terrain is deterministic; a connected outlet and protected nature are real placement constraints (34.3386ms)
+✔ neighbours: sites become one permanent building in place, and moves preserve identity and scale (341.882339ms)
+✔ neighbours: synchronising a stored generator-2 layout retains its geography and never upgrades it in place (43.935792ms)
+✔ neighbours: the Worker's browser-only policy rejects missing/stale plans without charging; a valid retry starts exactly once (229.87357ms)
+✔ [node] authentication is required and writes need the app header (346.974854ms)
+✔ [node] create a group, join with the invitation, reject duplicate names (99.050175ms)
+✔ [node] n46: twin starts with one request key make one run and one charge; a v2 team needs a new app (300.448032ms)
+✔ [node] drawn characters with accessories are kept; unknown or founder-only ones are not (277.938974ms)
+✔ [node] presence and plans are shared inside the group only (174.771646ms)
+✔ [node] one meeting supports personal arrival, stable links and schedule reconfirmation (85.685508ms)
+✔ [node] messages and hearts are group-scoped; bad and cross-origin writes fail (60.55638ms)
+✔ [node] busy activity does not push real messages off the board (135.327226ms)
+✔ [node] polling returns only the revision when nothing changed (33.022286ms)
+✔ [node] SSE pushes new shared state after an action (25.248137ms)
+✔ [node] focus validates duration and lets friends join the same timer (94.555198ms)
+✔ [node] finished focus is credited exactly once, even when its owner is offline (56.893806ms)
+✔ [node] build mode adds a building to the village only if the app stayed open (421.495075ms)
+✔ [node] a team rhythm aligns rounds, and a tea break pauses a build once (85.986163ms)
+✔ [node] a coffee call for one person, its reply, and who has seen the board (64.607865ms)
+✔ [node] web push reaches friends, encrypted and signed, with an arrival cooldown (1180.654753ms)
+✔ [node] a transfer code opens the same profile on a second device (46.781229ms)
+✔ [node] a username and password open the same profile anywhere; Batur can reset it (265.121265ms)
+✔ [node] feedback is private to its sender and Batur (49.386609ms)
+✔ [node] requests move through stages Batur picks, and the sender is told (363.375974ms)
+✔ [node] Batur can rotate an invite and remove someone (74.041026ms)
+✔ [node] Batur opens an empty team once, renames it, and it outlives its last member (n45) (91.116226ms)
+✔ [node] leaving removes the profile and its traces (48.694338ms)
+✔ [node] accounts are required and concurrent recovery codes are single use (413.559308ms)
+✔ [node] revocation closes streams, disables push and cancels issued codes (383.750847ms)
+✔ [node] durable push retries survive restart and concurrent scheduled jobs (1276.897035ms)
+✔ [node] one device keeps several accounts, switches with one tap and gets pushes for each (n25) (1679.355599ms)
+✔ [node] relaxed construction completes without foreground proof and delivery cannot pay twice (116.148863ms)
+✔ [node] blueprint discovery counts minutes, persists a 500-minute guarantee and settles once (281.71869ms)
+✔ [node] one Anıtkabir per team: full 2000 minute project, reservations and all personal signatures (1098.578178ms)
+✔ [node] data survives a restart (246.795875ms)
+✔ outbox retries 500, 429 and network failures with stable payload and remaining TTL (71.570565ms)
+✔ outbox stops after four attempts and drops permanent failures and expired TTLs (59.366792ms)
+✔ two concurrent outbox runners claim a job only once (48.205892ms)
+✔ an abandoned lease recovers and a stale sender cannot erase the next attempt (74.805227ms)
+✔ session expiry, revocation and endpoint rebinding invalidate queued private notifications (74.862549ms)
+✔ 410 removes a dead subscription but never a replacement bound during the send (74.615789ms)
+✔ owner retries respect key rotation, session expiry and legacy key-authorized devices (55.743172ms)
+✔ outbox drains bounded batches using the due index and leaves future jobs untouched (53.672101ms)
+✔ meeting reminders: own arrival, opt-in and parallel ticks enqueue one durable reminder (82.733734ms)
+✔ meeting reminders: withdrawal, changed arrival, retiming, cancellation and expired arrival invalidate queued retries (330.839128ms)
+✔ Batur gives any building: it lands finished, replays as a gift, and says who it is from (n43) (167.296919ms)
+✔ Batur takes a building back; a client holding the village notices and refetches (n43) (153.964621ms)
+✔ Batur gives a blueprint once; only buildings that need one (n43) (76.307762ms)
+✔ an announcement needs Batur's own profile, stands out on the board and is one per send (n43) (93.859138ms)
+✔ anyone can ask for a building; it reaches Batur as its own kind with its own stages (n43) (82.048339ms)
+✔ Batur opens an empty team: owner only, checked on the server, no person and no cookie (n45) (63.369406ms)
+✔ sending the same create again, or twice at once, gives back one team (n45) (74.519569ms)
+✔ a repeat is judged by the name the team was created with, not its current name (n45) (77.278679ms)
+✔ Batur renames a team; members see it on their next read (n45) (96.462534ms)
+✔ an owner-made team keeps its invite, takes members, and stays when the last one leaves (n45) (99.171696ms)
+✔ a new team shows in the Anıtkabir picker but no project starts by itself (n45) (85.80062ms)
+✔ backup and restore keep a team Batur opened (n45) (119.667759ms)
+✔ meeting: different personal arrival joins one meeting, including simultaneous creators and request retries (181.179681ms)
+✔ meeting: explicit answers are idempotent, maybe/clear are distinct and invalid data cannot become a decline (95.81699ms)
+✔ meeting: stable links bypass list pages; cancellation is visible and cannot be answered or edited by others (87.645ms)
+✔ meeting: retiming requires reconfirmation and rejects stale devices; note changes retain attendance (88.000622ms)
+✔ meeting: late arrival remains visible after the old two-hour cutoff (74.798972ms)
+✔ meeting: legacy yes/no rows migrate and older backups restore without losing replies (85.441966ms)
+✔ meeting: strict calendar parsing, absolute sharing and personal calendar export (3.295242ms)
+✔ payload encryption round-trips through the reference aes128gcm decoder (14.3161ms)
+✔ VAPID tokens are valid ES256 JWTs for the push service origin (5.26799ms)
+✔ keys generated by the old web-push package still sign (3.437007ms)
+✔ migration 26 preserves an existing strict session and wallet across repeat startup (48.48817ms)
+✔ relaxed builds survive absence and restart, credit once, and acknowledge only their own delivery (337.055052ms)
+✔ strict defaults stay strict and missing foreground proof still collapses them (58.512913ms)
+✔ relaxed mode validates its start and cancellation preserves material refund rules (61.116253ms)
+✔ milestones persist atomically, catch up without bursts, and do not requeue after delivery (62.940471ms)
+✔ the site plan covers the whole session in order, with beams, waterproofing and the facade layers (129.75705ms)
+✔ each building is built the way its walls say (1.040326ms)
+✔ a wider plan gets beams across the middle too (0.305252ms)
+✔ the mobile crane leaves for every pump pour and is there for the lifting (2.424934ms)
+✔ every drawing stays finite through the whole build (2130.304964ms)
+✔ the inspector checks the rebar before every pour, and every pour starts with a slump test (2.401348ms)
+✔ the progress payment weighs work by cost and the quantities only grow (89.611924ms)
+✔ a concrete tower gets two shear walls; houses only columns (1.697272ms)
+✔ the geodesic dome: a closed hemisphere, struts ring by ring, checked before the tower comes down (4.18464ms)
+✔ the old ways: the keystone goes in last, mouse stones are checked, the domes close without formwork (13.241557ms)
+✔ modern structures: every shell checked before its pour, anchors pulled, the tip of the cantilever measured (24.50796ms)
+✔ the towers: every capsule bolted and torqued, each floor turned 9°, the tank holds its water (6.975488ms)
+✔ the famous ones: the pyramid squared to the north, the Colosseum clamped, Pisa back to 3.97° (16.132422ms)
+✔ Süleymaniye, Galata and Anıtkabir: the dome checked, the cap lost and restored, the lions and towers counted (37.099666ms)
+✔ Eiffel, Sydney and Burj Khalifa: the legs meet, every rib from one sphere, the spire jacked to 828 m (23.873279ms)
+✔ every construction stage of every building has a plain explanation behind its (i) (10.673261ms)
+✔ the scale table: real heights in order, Burj at most five houses, claims capped, small ones as drawn (0.804969ms)
+✔ a building of its own is enlarged by one k: never below its drawing, within its claim, capped by the room around it (139.98497ms)
+✔ the planner gives a landmark the space of its real size, squeezes it in when it must, and never overlaps (236.265327ms)
+✔ buildings placed before n44 grow only into the room around them (1.327731ms)
+✔ a monument gets a district of its own: on its centre, ring road round it, taller than a house (65.972396ms)
+✔ natural village keeps saved homes, hides dormant reservations and makes safe neighbour paths (21.3042ms)
+✔ [worker] authentication is required and writes need the app header (3352.605184ms)
+✔ [worker] create a group, join with the invitation, reject duplicate names (233.411213ms)
+✔ [worker] n46: twin starts with one request key make one run and one charge; a v2 team needs a new app (808.170942ms)
+✔ [worker] drawn characters with accessories are kept; unknown or founder-only ones are not (323.166823ms)
+✔ [worker] presence and plans are shared inside the group only (487.896984ms)
+✔ [worker] one meeting supports personal arrival, stable links and schedule reconfirmation (280.843395ms)
+✔ [worker] messages and hearts are group-scoped; bad and cross-origin writes fail (191.541487ms)
+✔ [worker] busy activity does not push real messages off the board (421.08993ms)
+✔ [worker] polling returns only the revision when nothing changed (72.149058ms)
+✔ [worker] the team's live room rings open phones within a second (170.673992ms)
+✔ [worker] focus validates duration and lets friends join the same timer (249.335166ms)
+✔ [worker] finished focus is credited exactly once, even when its owner is offline (166.140889ms)
+✔ [worker] build mode adds a building to the village only if the app stayed open (1299.44367ms)
+✔ [worker] a team rhythm aligns rounds, and a tea break pauses a build once (329.892789ms)
+✔ [worker] a coffee call for one person, its reply, and who has seen the board (167.905994ms)
+✔ [worker] web push reaches friends, encrypted and signed, with an arrival cooldown (1334.612413ms)
+✔ [worker] a transfer code opens the same profile on a second device (138.933749ms)
+✔ [worker] a username and password open the same profile anywhere; Batur can reset it (695.259425ms)
+✔ [worker] feedback is private to its sender and Batur (143.040747ms)
+✔ [worker] requests move through stages Batur picks, and the sender is told (700.862263ms)
+✔ [worker] Batur can rotate an invite and remove someone (288.768995ms)
+✔ [worker] Batur opens an empty team once, renames it, and it outlives its last member (n45) (419.596468ms)
+✔ [worker] leaving removes the profile and its traces (217.878049ms)
+✔ [worker] accounts are required and concurrent recovery codes are single use (3298.568134ms)
+✔ [worker] revocation closes streams, disables push and cancels issued codes (620.303561ms)
+✔ [worker] durable push retries survive restart and concurrent scheduled jobs (6081.062639ms)
+✔ [worker] one device keeps several accounts, switches with one tap and gets pushes for each (n25) (8359.127002ms)
+✔ [worker] relaxed construction completes without foreground proof and delivery cannot pay twice (434.684195ms)
+✔ [worker] blueprint discovery counts minutes, persists a 500-minute guarantee and settles once (1701.669785ms)
+✔ [worker] one Anıtkabir per team: full 2000 minute project, reservations and all personal signatures (7199.176462ms)
+✔ [worker] data survives a restart (3152.035354ms)
+ℹ tests 273
+ℹ suites 0
+ℹ pass 273
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 412164.368182

@@ -6,4 +6,5 @@ data/
 .env
 *.log
 test-results/
+__pycache__/
 audit/**/*.png

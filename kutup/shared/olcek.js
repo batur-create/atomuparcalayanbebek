@@ -27,6 +27,7 @@ const H0 = 10,
 // plan: the largest span of what is drawn, in metres. Where the catalogue
 // names no real building, a typical one of its kind.
 export const REAL = {
+  kugulupark: { boy: 9.2, plan: 100, not: "Kuğulu Park: belediye kaydı 7.743 m²; boy/plan tipik yaklaşık referans, ölçülü rölöve değil. Onaylı oyun zemini 28 × 24 m, k=1." },
   kapadokya:{boy:8,plan:12,not:"Doğal tüf kütlesi içine uyarlanmış özgün Kütüp kaya evi"},
   yuzenev:{boy:5,plan:12,not:"Özgün ponton üstü yüzen ev ve iskele"},
   asmakopru:{boy:15,plan:70,not:"Özgün iki kuleli yaya asma köprüsü"},
@@ -67,7 +68,7 @@ export const claimUnits = (m) => Math.min(CLAIM_MAX, m <= P0 ? m / 2 / METRE : (
 // The widest landmarks stand alone on the centre of a district of their own
 // (shared/village.js), so they may fill about as much of it as the ring road
 // leaves: up to MONUMENT_ROOM, less where the district's edge comes closer.
-export const MONUMENTS = new Set(["anitkabir", "keops", "kolezyum", "sidney", "suleymaniye"]);
+export const MONUMENTS = new Set(["kugulupark", "anitkabir", "keops", "kolezyum", "sidney", "suleymaniye"]);
 export const MONUMENT_ROOM = 10;
 export const targetHeightOf = (model) => (REAL[model] ? heightUnits(REAL[model].boy) : null);
 /** The space a building of its own claims around its centre, or null for a box building. */

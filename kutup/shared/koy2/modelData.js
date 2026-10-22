@@ -50,5 +50,6 @@ export const MODEL_DATA = {
   kervansaray: { kind: "house", k: 1.45, hw: 3.41, ground: [-3.63, -2.9, 3.63, 2.9], over: [-3.63, -2.9, 3.63, 2.93], h: 3.74 },
   mardinevi: { kind: "house", k: 1.54, hw: 2.54, ground: [-2.84, -2.23, 2.92, 2.69], over: [-2.84, -2.23, 2.92, 2.69], h: 5.51 },
   atakule: { kind: "tower", k: 1.4, hw: 3.01, ground: [-2.52, -2.03, 2.52, 3.54], over: [-2.52, -2.27, 2.52, 3.54], h: 15.13 },
+  kugulupark: { kind: "house", k: 1, hw: 8.75, ground: [-8.81, -7.56, 8.81, 7.56], over: [-8.81, -7.56, 8.81, 7.56], h: 6.03 },
   gozlemevi: { kind: "tower", k: 1, hw: 1.45, ground: [-1.65, -1.65, 2.2, 3.24], over: [-1.65, -1.65, 2.2, 3.24], h: 5.95 },
 };

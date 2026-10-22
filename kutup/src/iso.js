@@ -796,8 +796,8 @@ export function patchSVG(P, sp, seed = 1) {
   );
 }
 /** A finished building. `detail` 2 = full, 1 = simple (far away), 0 = a block. */
-export function buildingSVG(P, sp, seed, { lit = sp.lit, detail = 2, shadowP = P } = {}) {
-  if (sp.roofType === "special") return specialOf(sp).building(P, sp, seed, { lit, detail, shadowP });
+export function buildingSVG(P, sp, seed, { lit = sp.lit, detail = 2, shadowP = P, live = false, winter = false } = {}) {
+  if (sp.roofType === "special") return specialOf(sp).building(P, sp, seed, { lit, detail, shadowP, live, winter });
   if (detail === 0) return box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + roofSVG(P, sp, false);
   if (detail === 1)
     return shadowSVG(shadowP, sp) + box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0, topOf(sp), sp.wall.faces) + windowsSVG(P, sp, lit, 1, false) + wallFittingsSVG(P, sp, 1) + roofSVG(P, sp, false) + frontFittingsSVG(P, sp, 1, seed);

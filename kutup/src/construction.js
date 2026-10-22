@@ -179,6 +179,8 @@ function windrow(P, x0, x1, y0, y1, h) {
 
 /** SVG for everything up to the finished frame, at progress `shown` (0…1): { yard, rest, front }. */
 export function siteSVG(P, sp, plan, shown) {
+  const base = specialOf(sp)?.siteBase;
+  if (base) return base(P, sp, plan, shown);
   const k = {};
   for (const p of plan) k[p.floor >= 0 ? `${p.key}${p.floor}` : p.key] = clamp((shown - p.a) / (p.b - p.a));
   const w = sp.hw,
