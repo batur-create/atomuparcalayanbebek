@@ -123,6 +123,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 ## 9. Onaylananlar ve reddedilenler
 
+- ✔ **Kuğulu Park (22 Eki):** Kullanıcı fotoğrafları/uydu görünümüyle 28 × 24 m oyun ölçeği ve v1 kapsamını onayladı: “olur, ışık da olsun gece, uygula kapsamı”. Kıvrımlı havuz, adacıklar, ahşap kuğu evleri/çit, olgun ağaçlar, yollar, kafe, oyun alanı ve sade heykeller aynı SVG/Canvas modelinde. Gece sıcak park lambaları, kafe pencereleri ve su yansımaları; kuğu/fıskiye hareketi ayrı küçük katmanda, Sakin/Kıpırtısız ve uzak görünümde durur. Üretim kaydı ve uygulama kanıtları `docs/yapi-atolyesi/isler/kugulu-park/`; yayın yok.
+
 - ✔ **n45 Ekipler (21 Eki):** Ekipler’in başında iki sütunu kaplayan “Yeni ekip” kartı; ekip adının yanında ince kalem; kartta “Davet bağlantısı” kutusu (kanvas zemin, 44 px) ve Kopyala/Yenile; telefonda bağlantı tam satır, düğmeler altta yan yana. Boş ekipte soluk not ve pasif Duyuru yaz. Yalnız tema jetonları; 360/390 px, açık/koyu kontrol edildi. Batur “kendin karar ver” yetkisiyle; görsel ön izleme istenmedi.
 
 - ✔ **Tek odak seansı (21 Eki):** Batur benzer adları ve kalabalığı kaldırma yetkisi verdi; binasız odağı inşaatın karşısında büyük bir mod gibi sunmayı sorguladı. İki büyük mod seçicisi kaldırıldı. Seçili bina + küçük binasız çalışma bağlantısı, üç akışta aynı Ekranı kapatarak çalış anahtarı. Maaş/telefon kuralı yalnız seçilen durum için kısa açıklanır. Tema jetonları, 360/390 px ve klavye kontrolü; sunucu ve mevcut tercihler korunur. Rapor `RAPOR_ODAK_SADELESTIRME.md`.

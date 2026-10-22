@@ -91,6 +91,10 @@ test('the site plan covers the whole session in order, with beams, waterproofing
       assert.deepEqual(keys, ['mobilize', 'layout', 'found', 'floors0', 'pause', 'floors1', 'bellChamber', 'bells', 'creep', 'stabilize', 'handover']);
       continue;
     }
+    if (sys === 'landscape') {
+      assert.deepEqual(keys, ['mobilize','layout','earth','drain','basin','seal','rim','paths','cafe','play','boundary','furnish','lights','landscape','water','handover']);
+      continue;
+    }
     assert.ok(keys.indexOf('footWater') > keys.indexOf('lean') && keys.indexOf('footWater') < keys.indexOf('footRebar'));
     const after = keys.slice(keys.indexOf('footPour') + 1);
     if (sys === 'capsule') {

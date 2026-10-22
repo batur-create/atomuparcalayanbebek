@@ -1,0 +1,11 @@
+{
+  "medianMs": 14.099999999627471,
+  "p95Ms": 44.899999998509884,
+  "samples": 40,
+  "cpuThrottle": 4,
+  "viewport": [
+    375,
+    812
+  ],
+  "scope": "Yalnız su hareketi çizim katmanı; bütün uygulama veya fiziksel telefon ölçümü değil"
+}

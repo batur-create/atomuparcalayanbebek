@@ -1,6 +1,6 @@
 # Kuğulu Park — yapı işi
 
-Durum: Düşük ayrıntılı önizleme v1 hazır; kapsam onayı bekleniyor. Ayrıntılı üretim onayı yok.
+Durum: Üretim. Kullanıcı v1 kapsamını onayladı; gece ışıkları açıkça istendi.
 
 - Kimlik önerisi: `kugulupark`; henüz kataloğa eklenmedi.
 - Açık kullanıcı talebi (22 Ekim 2026): “KUĞULU PARK”.
@@ -47,6 +47,7 @@ Belediye ve Bakanlık kaydı ile 2025 tarihli, belediyeden alınmış vaziyet pl
 | 22 Ekim 2026 | Ön öneri v0 hazırlandı | Kullanıcıya ait karar yok |
 | 22 Ekim 2026 | Kullanıcı dokuz görseli gönderdi ve yeterli olup olmadığını sordu | Araştırma boşluğu önizleme için kapandı; üretim onayı yok |
 | 22 Ekim 2026 | Önizleme ve kapsam v1 | 28 × 24 m oyun alanı; onay bekliyor |
+| 22 Ekim 2026 | “olur, ışık da olsun gece, uygula kapsamı” | v1 kapsamı onaylandı; gece park lambaları, kafe ışıkları ve suya yansımalar üretime dahil. Yayın yetkisi yok |
 
 ## Doğrulama ve kalan işler
 

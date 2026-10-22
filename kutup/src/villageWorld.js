@@ -713,7 +713,7 @@ export function buildWorld({ groupKey, village, members, me, sky, spots = [] }) 
       draw: (v) => {
         const base = v.at(b.x, b.y);
         const P = b.facing ? mirrored(base) : base;
-        buildingSVG(P, sp, b.seed, { lit: lit.has(b.id) || (sky.night > 0.5 && sp.lit), detail: v.detail, shadowP: base });
+        buildingSVG(P, sp, b.seed, { lit: lit.has(b.id) || (sky.night > 0.5 && sp.lit), detail: v.detail, shadowP: base, live: b.model === "kugulupark", winter: season === "winter" });
         if (season === "winter" && v.detail >= 1) snowSVG(P, sp);
         // Five days without a finished session and the ivy creeps in; the next one clears it.
         if (v.detail === 2 && owner?.chainEnd && Date.now() - owner.chainEnd > 5 * 86400000) vinesSVG(P, sp, b.seed);

@@ -4,7 +4,8 @@
 // villagers, balloons, window glow, birds, lamp light, a celebration) is painted
 // on a second, transparent canvas on top, so a puff of smoke never repaints
 // the whole map. The loop sleeps whenever nothing that moves is on screen.
-import { useCanvas, useSVG } from "./iso.js";
+import { drawParkMotion, PARK_LAMPS } from "./kuguluPark.js";
+import { useCanvas, useSVG, mirrored } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
 import { AVATAR_BG, avatarImage, parseAvatar } from "../shared/avatars.js";
 import { HOUSE_SCREEN, lodFor } from "./koy2/life.js";
@@ -47,6 +48,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
   layer.style.cssText = "position:absolute;left:0;top:0;pointer-events:none";
   canvas.after(layer);
   const ctx = layer.getContext("2d");
+  let parks = [];
   let world = null,
     sky = null,
     tint = (c) => c,
@@ -198,6 +200,32 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+    }
+    // Kuğulu Park: water life only, on the existing transparent live canvas.
+    for (const park of parks) {
+      const center = atScreen(park.x, park.y);
+      const detail = world.detailFor(s);
+      if (!detail || !onScreen(center, s * 18)) continue;
+      const moving = ambient && detail === 2 && s >= 5;
+      if (moving) alive = true;
+      const base = lifeAt(park.x, park.y);
+      const facing = park.building.facing ?? 0;
+      const P = facing ? mirrored(base) : base;
+      // Emissive light stays warm after the world's night tint. These pools
+      // are still images on the existing live layer, not pulsing animations.
+      if (sky?.night > 0.5) for (const [x,y] of PARK_LAMPS) {
+        const q=P(x,y,.08),head=P(x,y,2.05),r=s*1.15;
+        ctx.save();ctx.translate(q[0],q[1]);ctx.scale(1,.55);
+        const glow=ctx.createRadialGradient(0,0,0,0,0,r);
+        glow.addColorStop(0,'rgba(255,218,139,.36)');glow.addColorStop(1,'rgba(255,218,139,0)');
+        ctx.fillStyle=glow;ctx.fillRect(-r,-r,r*2,r*2);ctx.restore();
+        const halo=ctx.createRadialGradient(head[0],head[1],0,head[0],head[1],s*.4);
+        halo.addColorStop(0,'rgba(255,231,170,.65)');halo.addColorStop(1,'rgba(255,219,140,0)');
+        ctx.fillStyle=halo;ctx.fillRect(head[0]-s*.4,head[1]-s*.4,s*.8,s*.8);
+      }
+      useCanvas(ctx, tint, Math.max(0.35, s / 15));
+      try { drawParkMotion(P, { time: moving ? time : 0, seed: park.building.seed || 0, detail, lit: sky?.night > 0.5, ctx }); }
+      finally { useSVG(); }
     }
     const k = Math.max(0.55, Math.min(1.6, s / 9));
     if (world.life) shared(level, time, k);
@@ -955,6 +983,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     /** A new world (data or time of day changed): tiles are repainted lazily. */
     setWorld(next, nextSky, tintFn) {
       world = next;
+      parks = next.items.filter(i => i.type === "building" && i.building?.model === "kugulupark" && !i.building.site && !i.building.spot);
       sky = nextSky;
       tint = tintFn;
       gen++;

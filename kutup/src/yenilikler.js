@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 28,
+    tarih: "2026-10-22",
+    vakit: "akşam",
+    baslik: "Köyüne bir Kuğulu Park",
+    maddeler: [
+      "Ankara’nın Kuğulu Park minyatürü yeni nadir plan: 75 dakika çalışma ve 180 tuğla malzemeyle kurulur.",
+      "Kıvrımlı havuz, kuğu adaları, ahşap evler, ağaçlar ve oyun alanı aşama aşama hazırlanır; havuz hazır olunca kuğular gelir.",
+      "Geceleri park lambaları ve kafeterya ışıkları yanar. Kuğular ve fıskiyeler hareket ayarına uyar.",
+    ],
+  },
+  {
     surum: 27,
     tarih: "2026-10-21",
     vakit: "gece",

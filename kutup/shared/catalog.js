@@ -73,8 +73,10 @@ CATALOG.push(
   {"id": "kervansaray", "name": "Kervansaray", "emoji": "🧳", "class": "medium", "kind": "house", "category": "fancy", "cost": 150, "rare": true, "done": "kervansarayını", "blurb": "Açık avlu, taş revaklar, taçkapı ve ortada serin bir çeşme.", "look": {"special": "caravanserai"}},
   {"id": "mardinevi", "name": "Mardin Evi", "emoji": "🏛️", "class": "medium", "kind": "house", "category": "famous", "cost": 130, "rare": true, "done": "Mardin evini", "blurb": "Sarı kalker duvarlar, kemerli pencereler, teras ve dış merdiven.", "look": {"special": "mardin"}},
   {"id": "atakule", "name": "Atakule", "emoji": "🗼", "class": "large", "kind": "tower", "category": "famous", "cost": 210, "rare": true, "done": "Atakule yapısını", "blurb": "Ankara’nın ince betonarme gövdesi, cam seyir kuşağı ve geniş restoran başlığı.", "look": {"special": "atakule"}},
+  { id: "kugulupark", name: "Kuğulu Park", emoji: "🦢", class: "large", kind: "house", category: "famous", cost: 180, rare: true, done: "Kuğulu Park minyatürünü", blurb: "Ankara’nın kıvrımlı havuzu, kuğu adaları, ağaçları ve gece lambaları.", look: { special: "kugulupark" } },
   { id: "gozlemevi", name: "Olay Ufku Gözlemevi", emoji: "🔭", class: "large", kind: "tower", category: "fancy", cost: 100, rare: "founder", done: "olay ufku gözlemevini", blurb: "Kubbesinin üstünde minik bir kara delik döner. Yalnız kurucunun.", look: { wall: "stone", dome: true, flag: false } },
 );
+// Catalogue entry below uses the existing permanent discovery/unlock flow.
 export const BY_ID = Object.fromEntries(CATALOG.map((item) => [item.id, item]));
 export const RARE = CATALOG.filter((item) => item.rare === true);
 export const WEEKLY_DAYS = 14;

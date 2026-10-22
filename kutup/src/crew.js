@@ -359,8 +359,8 @@ function crewOf(P, sp, plan, shown, time) {
   const window = (from, to) => (shown > from && shown < to ? (shown - from) / (to - from) : -1);
   const d1 = window(0.055, 0.1),
     d2 = window(0.6, 0.665);
-  if (d1 >= 0) behind.push(flatbed(P, 1.05 + (1 - ease(arrival(d1))) * 4.5, -w - 0.66, "rebar", 1 - clamp((d1 - 0.2) / 0.6), sp));
-  if (d2 >= 0) machines.push(flatbed(P, 1.3 + (1 - ease(arrival(d2))) * 4.5, w + 1.0, "tiles", 1 - clamp((d2 - 0.2) / 0.6), sp));
+  if (d1 >= 0 && own?.system !== "landscape") behind.push(flatbed(P, 1.05 + (1 - ease(arrival(d1))) * 4.5, -w - 0.66, "rebar", 1 - clamp((d1 - 0.2) / 0.6), sp));
+  if (d2 >= 0 && own?.system !== "landscape") machines.push(flatbed(P, 1.3 + (1 - ease(arrival(d2))) * 4.5, w + 1.0, "tiles", 1 - clamp((d2 - 0.2) / 0.6), sp));
   if (p.key === "dig") {
     // The excavator loads the truck: dig, swing over the bed, dump, swing back.
     // Four buckets fill a truck; it drives off and an empty one pulls in.

@@ -1,6 +1,6 @@
 # Kuğulu Park — onay listesi v1
 
-Durum: Kullanıcı referansları incelendi; somut hacim önizlemesi hazır; ayrıntılı üretim onayı bekleniyor.
+Durum: Onaylandı; üretim sürüyor. Kullanıcı (22 Ekim 2026): “olur, ışık da olsun gece, uygula kapsamı”. Gece park lambaları, kafe ışıkları ve suya yansımalar kapsamda.
 
 v0 → v1: Dokuz görsel ile ana karakter netleşti. Beyaz ve siyah kuğular, adacıklar, ahşap kuğu evleri/çit, fıskiyeler ve taş döşeme kapsamda. 28 × 24 m oyun alanı önerisi eklendi. Kullanıcının referans vermesi bu listeye onay sayılmadı.
 
@@ -21,4 +21,4 @@ v0 → v1: Dokuz görsel ile ana karakter netleşti. Beyaz ve siyah kuğular, ad
 | Doğrulama | Aşama sürekliliği ve açıklama; son şantiye/bitmiş model; giriş/ayna/üst izdüşüm; kilit/bedel; yakın/köy/gece/mobil; hareket kaydı ve pil davranışı | Önce ilgili testler; finalde mevcut zorunlu paketler. Fiziksel telefon ve Cloudflare CPU ölçülmediyse açıkça belirtilecek |
 | Teslim | Kod, kaynak/onay kayıtları, çalışan uygulama kanıtları ve PR → `kutup-platform` | Birleştirme, canlı yayın, etkinleştirme veya canlı veri işlemi yok |
 
-Bu tablodaki hiçbir üretim satırı tamamlanmış veya onaylanmış sayılmaz. `onizleme/yakin.png`, `gece.png` ve `olcek.png` izole hacim çalışmasıdır; gerçek uygulama ekranı, nihai doku/derinlik veya animasyon kanıtı değildir. Sonraki adım açık kapsam onayı; değişiklik istenirse v2 olarak farkı kaydedilecek.
+Bu liste kullanıcının “olur, ışık da olsun gece, uygula kapsamı” yanıtıyla onaylandı. `onizleme/` ilk onay öncesi hacim çalışması olarak korunur. Uygulama ve test kanıtları ayrı `kanitlar/` klasöründedir; son doğrulama sonucu README'de tutulur. Anlamlı kapsam değişikliği yapılmadı; gece ışıkları açık kullanıcı talebiyle tamamlanıyor. Canlı yayın ve birleştirme kapsam dışı olmaya devam ediyor.

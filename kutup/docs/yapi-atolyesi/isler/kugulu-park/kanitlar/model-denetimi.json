@@ -1,0 +1,7442 @@
+{
+  "commit": "6fe0302de7aef3f921a155a5375b9c58a3b86c96",
+  "catalogCount": 49,
+  "modelContracts": 49,
+  "rareCount": 15,
+  "specialCount": 32,
+  "geometryVersion": 2,
+  "issues": [],
+  "rows": [
+    {
+      "id": "kulube",
+      "name": "Kulübe",
+      "special": null,
+      "minutes": 25,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 23,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0382,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0382,
+          "to": 0.084,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.084,
+          "to": 0.1681,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1681,
+          "to": 0.2024,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2024,
+          "to": 0.2292,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2292,
+          "to": 0.2903,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2903,
+          "to": 0.3247,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3247,
+          "to": 0.3781,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon donatısı",
+          "from": 0.3781,
+          "to": 0.4087,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon kalıbı",
+          "from": 0.4087,
+          "to": 0.4278,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon betonu ve kalıp söküm",
+          "from": 0.4278,
+          "to": 0.4507,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4507,
+          "to": 0.4851,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.4851,
+          "to": 0.5194,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.5194,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 4.41,
+      "ground": [
+        -1.8,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "bostan",
+      "name": "Bostan Evi",
+      "special": null,
+      "minutes": 25,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 17,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0523,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0523,
+          "to": 0.1151,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.1151,
+          "to": 0.2302,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.2302,
+          "to": 0.2772,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2772,
+          "to": 0.3138,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.3138,
+          "to": 0.3975,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.3975,
+          "to": 0.4446,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.4446,
+          "to": 0.5178,
+          "info": true
+        },
+        {
+          "key": "studs",
+          "label": "1. kat taban ankrajı, dikmeler ve çaprazlar",
+          "from": 0.5178,
+          "to": 0.5806,
+          "info": true
+        },
+        {
+          "key": "joists",
+          "label": "1. kat tavan kirişleri ve OSB",
+          "from": 0.5806,
+          "to": 0.6277,
+          "info": true
+        },
+        {
+          "key": "sheath",
+          "label": "Dış OSB kaplama ve rüzgâr bariyeri",
+          "from": 0.6277,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: ahşap dış kaplama ve vernik",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 4.41,
+      "ground": [
+        -1.85,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "cicekci",
+      "name": "Çiçekçi",
+      "special": null,
+      "minutes": 25,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 23,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0382,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0382,
+          "to": 0.084,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.084,
+          "to": 0.1681,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1681,
+          "to": 0.2024,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2024,
+          "to": 0.2292,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2292,
+          "to": 0.2903,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2903,
+          "to": 0.3247,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3247,
+          "to": 0.3781,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon donatısı",
+          "from": 0.3781,
+          "to": 0.4087,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon kalıbı",
+          "from": 0.4087,
+          "to": 0.4278,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon betonu ve kalıp söküm",
+          "from": 0.4278,
+          "to": 0.4507,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4507,
+          "to": 0.4851,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.4851,
+          "to": 0.5194,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.5194,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 4.41,
+      "ground": [
+        -1.8,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kahve",
+      "name": "Kır Kahvesi",
+      "special": null,
+      "minutes": 25,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 23,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0382,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0382,
+          "to": 0.084,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.084,
+          "to": 0.1681,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1681,
+          "to": 0.2024,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2024,
+          "to": 0.2292,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2292,
+          "to": 0.2903,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2903,
+          "to": 0.3247,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3247,
+          "to": 0.3781,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon donatısı",
+          "from": 0.3781,
+          "to": 0.4087,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon kalıbı",
+          "from": 0.4087,
+          "to": 0.4278,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon betonu ve kalıp söküm",
+          "from": 0.4278,
+          "to": 0.4507,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4507,
+          "to": 0.4851,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.4851,
+          "to": 0.5194,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.5194,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 4.41,
+      "ground": [
+        -1.86,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "ev",
+      "name": "İki Katlı Ev",
+      "special": null,
+      "minutes": 50,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 29,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0291,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0291,
+          "to": 0.064,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.064,
+          "to": 0.128,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.128,
+          "to": 0.1542,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1542,
+          "to": 0.1746,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.1746,
+          "to": 0.2212,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2212,
+          "to": 0.2474,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.2474,
+          "to": 0.2881,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon donatısı",
+          "from": 0.2881,
+          "to": 0.3114,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon kalıbı",
+          "from": 0.3114,
+          "to": 0.3259,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon betonu ve kalıp söküm",
+          "from": 0.3259,
+          "to": 0.3434,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.3434,
+          "to": 0.3696,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.3696,
+          "to": 0.3958,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.3958,
+          "to": 0.419,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "2. kat kolon donatısı",
+          "from": 0.419,
+          "to": 0.4423,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "2. kat kolon kalıbı",
+          "from": 0.4423,
+          "to": 0.4569,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "2. kat kolon betonu ve kalıp söküm",
+          "from": 0.4569,
+          "to": 0.4743,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4743,
+          "to": 0.5005,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat kiriş ve döşeme donatısı",
+          "from": 0.5005,
+          "to": 0.5267,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat kiriş ve döşeme betonu",
+          "from": 0.5267,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 6.25,
+      "ground": [
+        -2.2,
+        -2.2,
+        2.75,
+        3.79
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.79,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "sahaf",
+      "name": "Sahaf",
+      "special": null,
+      "minutes": 50,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 19,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.045,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.045,
+          "to": 0.0991,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0991,
+          "to": 0.1981,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1981,
+          "to": 0.2387,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2387,
+          "to": 0.2702,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2702,
+          "to": 0.3423,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.3423,
+          "to": 0.3828,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3828,
+          "to": 0.4458,
+          "info": true
+        },
+        {
+          "key": "studs",
+          "label": "1. kat taban ankrajı, dikmeler ve çaprazlar",
+          "from": 0.4458,
+          "to": 0.4999,
+          "info": true
+        },
+        {
+          "key": "joists",
+          "label": "1. kat döşeme kirişleri ve OSB",
+          "from": 0.4999,
+          "to": 0.5404,
+          "info": true
+        },
+        {
+          "key": "studs",
+          "label": "2. kat taban ankrajı, dikmeler ve çaprazlar",
+          "from": 0.5404,
+          "to": 0.5944,
+          "info": true
+        },
+        {
+          "key": "joists",
+          "label": "2. kat tavan kirişleri ve OSB",
+          "from": 0.5944,
+          "to": 0.635,
+          "info": true
+        },
+        {
+          "key": "sheath",
+          "label": "Dış OSB kaplama ve rüzgâr bariyeri",
+          "from": 0.635,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: ahşap dış kaplama ve vernik",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 6.25,
+      "ground": [
+        -2.2,
+        -2.2,
+        2.75,
+        3.79
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.79,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "firin",
+      "name": "Fırın",
+      "special": null,
+      "minutes": 50,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 24,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0356,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0356,
+          "to": 0.0783,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0783,
+          "to": 0.1566,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1566,
+          "to": 0.1887,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1887,
+          "to": 0.2136,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2136,
+          "to": 0.2706,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2706,
+          "to": 0.3026,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3026,
+          "to": 0.3525,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "1. kat tuğla duvar örme ve lentolar",
+          "from": 0.3525,
+          "to": 0.413,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "1. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.413,
+          "to": 0.4343,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.4343,
+          "to": 0.4628,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat hatıl ve döşeme donatısı",
+          "from": 0.4628,
+          "to": 0.4913,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat hatıl ve döşeme betonu",
+          "from": 0.4913,
+          "to": 0.5162,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "2. kat tuğla duvar örme ve lentolar",
+          "from": 0.5162,
+          "to": 0.5768,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "2. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.5768,
+          "to": 0.5981,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.5981,
+          "to": 0.6266,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat hatıl ve döşeme donatısı",
+          "from": 0.6266,
+          "to": 0.6551,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat hatıl ve döşeme betonu",
+          "from": 0.6551,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: derz dolgusu, hatıllara tuğla kaplama",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 6.25,
+      "ground": [
+        -2.2,
+        -2.2,
+        2.75,
+        3.79
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.79,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "konak",
+      "name": "Konak",
+      "special": null,
+      "minutes": 50,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 29,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0291,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0291,
+          "to": 0.064,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.064,
+          "to": 0.128,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.128,
+          "to": 0.1542,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1542,
+          "to": 0.1746,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.1746,
+          "to": 0.2212,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2212,
+          "to": 0.2474,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.2474,
+          "to": 0.2881,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon donatısı",
+          "from": 0.2881,
+          "to": 0.3114,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon kalıbı",
+          "from": 0.3114,
+          "to": 0.3259,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon betonu ve kalıp söküm",
+          "from": 0.3259,
+          "to": 0.3434,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.3434,
+          "to": 0.3696,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.3696,
+          "to": 0.3958,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.3958,
+          "to": 0.419,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "2. kat kolon donatısı",
+          "from": 0.419,
+          "to": 0.4423,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "2. kat kolon kalıbı",
+          "from": 0.4423,
+          "to": 0.4569,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "2. kat kolon betonu ve kalıp söküm",
+          "from": 0.4569,
+          "to": 0.4743,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4743,
+          "to": 0.5005,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat kiriş ve döşeme donatısı",
+          "from": 0.5005,
+          "to": 0.5267,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat kiriş ve döşeme betonu",
+          "from": 0.5267,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 6.25,
+      "ground": [
+        -2.2,
+        -2.2,
+        2.75,
+        3.79
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.79,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kubbe",
+      "name": "Jeodezik Kubbe",
+      "special": "geodesic",
+      "minutes": 50,
+      "rare": false,
+      "system": "geodesic",
+      "phaseCount": 22,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.036,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.036,
+          "to": 0.0793,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0793,
+          "to": 0.1586,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1586,
+          "to": 0.191,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.191,
+          "to": 0.2163,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2163,
+          "to": 0.274,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.274,
+          "to": 0.3064,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3064,
+          "to": 0.3569,
+          "info": true
+        },
+        {
+          "key": "ringForm",
+          "label": "Halka kiriş: donatı, kalıp ve ankraj bulonları",
+          "from": 0.3569,
+          "to": 0.4037,
+          "info": true
+        },
+        {
+          "key": "ringPour",
+          "label": "Halka kiriş betonu ve kür",
+          "from": 0.4037,
+          "to": 0.4362,
+          "info": true
+        },
+        {
+          "key": "shore",
+          "label": "Geçici merkez iskele kulesi",
+          "from": 0.4362,
+          "to": 0.4614,
+          "info": true
+        },
+        {
+          "key": "strut",
+          "label": "Kubbe taban halkası: düğümler ve alt çubuklar",
+          "from": 0.4614,
+          "to": 0.4938,
+          "info": true
+        },
+        {
+          "key": "strut",
+          "label": "Kubbe 2. halka çubukları",
+          "from": 0.4938,
+          "to": 0.5263,
+          "info": true
+        },
+        {
+          "key": "strut",
+          "label": "Kubbe 3. halka çubukları",
+          "from": 0.5263,
+          "to": 0.5587,
+          "info": true
+        },
+        {
+          "key": "strut",
+          "label": "Kubbe tepe halkası ve kilit düğümü",
+          "from": 0.5587,
+          "to": 0.5803,
+          "info": true
+        },
+        {
+          "key": "bolts",
+          "label": "Bulon sıkma ve kubbe geometrisi ölçümü",
+          "from": 0.5803,
+          "to": 0.602,
+          "info": true
+        },
+        {
+          "key": "unshore",
+          "label": "Merkez iskele söküm: kubbe kendini taşıyor",
+          "from": 0.602,
+          "to": 0.62,
+          "info": true
+        },
+        {
+          "key": "panels",
+          "label": "Taş yünü dolgulu üçgen sandviç paneller",
+          "from": 0.62,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "glazing",
+          "label": "Lamine cam: beş pencere ve tepe feneri",
+          "from": 0.78,
+          "to": 0.83,
+          "info": true
+        },
+        {
+          "key": "seal",
+          "label": "Derzler: EPDM conta ve kapak profilleri",
+          "from": 0.83,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Giriş tüneli ve cam kapı",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 3.4,
+      "ground": [
+        -2.35,
+        -2.35,
+        2.9,
+        3.94
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.94,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "serender",
+      "name": "Serender",
+      "special": "serender",
+      "minutes": 25,
+      "rare": false,
+      "system": "log",
+      "phaseCount": 13,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0738,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0738,
+          "to": 0.1624,
+          "info": true
+        },
+        {
+          "key": "footing",
+          "label": "Taş kaideler: dört ayağın altına",
+          "from": 0.1624,
+          "to": 0.2362,
+          "info": true
+        },
+        {
+          "key": "posts",
+          "label": "Kestane dikmeler",
+          "from": 0.2362,
+          "to": 0.31,
+          "info": true
+        },
+        {
+          "key": "discs",
+          "label": "Fare taşları: dikmelerin başına yassı taş",
+          "from": 0.31,
+          "to": 0.3543,
+          "info": true
+        },
+        {
+          "key": "sill",
+          "label": "Taban kirişleri: köşelerde boğaz geçme",
+          "from": 0.3543,
+          "to": 0.4355,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Köşe dikmeleri ve kuşaklar",
+          "from": 0.4355,
+          "to": 0.5019,
+          "info": true
+        },
+        {
+          "key": "boards",
+          "label": "Oluklu tahtalar: yukarıdan kaydırılarak",
+          "from": 0.5019,
+          "to": 0.62,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: mertekler ve mahya kirişi",
+          "from": 0.62,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kestane hartama (ahşap pul) kaplama",
+          "from": 0.7,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Oyma kapı ve havalandırma parmaklığı",
+          "from": 0.8,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "ladder",
+          "label": "Seyyar merdiven ve mısır askıları",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 3.68,
+      "ground": [
+        -1.05,
+        -0.85,
+        1.05,
+        2
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kerpic",
+      "name": "Kerpiç Kubbe Evleri",
+      "special": "kerpic",
+      "minutes": 50,
+      "rare": false,
+      "system": "corbel",
+      "phaseCount": 12,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.07,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.07,
+          "to": 0.154,
+          "info": true
+        },
+        {
+          "key": "mudbrick",
+          "label": "Kerpiç kesme: çamur, saman, ahşap kalıp ve güneşte kurutma",
+          "from": 0.154,
+          "to": 0.266,
+          "info": true
+        },
+        {
+          "key": "stoneFoot",
+          "label": "Moloz taş temel ve subasman",
+          "from": 0.266,
+          "to": 0.336,
+          "info": true
+        },
+        {
+          "key": "cellWalls",
+          "label": "Kerpiç duvarlar: çamur harçla şaşırtmalı",
+          "from": 0.336,
+          "to": 0.448,
+          "info": true
+        },
+        {
+          "key": "corbel",
+          "label": "1. kubbe: kalıpsız, her sıra içe bindirmeli",
+          "from": 0.448,
+          "to": 0.532,
+          "info": true
+        },
+        {
+          "key": "corbel",
+          "label": "2. kubbe: kalıpsız, her sıra içe bindirmeli",
+          "from": 0.532,
+          "to": 0.616,
+          "info": true
+        },
+        {
+          "key": "corbel",
+          "label": "3. kubbe: kalıpsız, her sıra içe bindirmeli",
+          "from": 0.616,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "plaster",
+          "label": "Samanlı çamur sıva: iki kat",
+          "from": 0.7,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Alçak kapılar ve küçük pencereler",
+          "from": 0.8,
+          "to": 0.87,
+          "info": true
+        },
+        {
+          "key": "court",
+          "label": "Avlu duvarı, tandır ve asma çardağı",
+          "from": 0.87,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 3.44,
+      "ground": [
+        -2,
+        -2,
+        2.05,
+        2
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kemer",
+      "name": "Taş Kemer Köprü",
+      "special": "kemer",
+      "minutes": 50,
+      "rare": false,
+      "system": "arch",
+      "phaseCount": 16,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0605,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0605,
+          "to": 0.1331,
+          "info": true
+        },
+        {
+          "key": "divert",
+          "label": "Batardo: kum torbalarıyla dere yatağı kurutuluyor",
+          "from": 0.1331,
+          "to": 0.1876,
+          "info": true
+        },
+        {
+          "key": "abutDig",
+          "label": "Ayak temelleri: kazı",
+          "from": 0.1876,
+          "to": 0.236,
+          "info": true
+        },
+        {
+          "key": "abutFoot",
+          "label": "Ayak temelleri: donatı ve beton",
+          "from": 0.236,
+          "to": 0.2965,
+          "info": true
+        },
+        {
+          "key": "abutWall",
+          "label": "Kesme taş ayaklar: üzengi taşına kadar",
+          "from": 0.2965,
+          "to": 0.3691,
+          "info": true
+        },
+        {
+          "key": "centering",
+          "label": "Ahşap kemer iskelesi (merkez kalıbı)",
+          "from": 0.3691,
+          "to": 0.4296,
+          "info": true
+        },
+        {
+          "key": "voussoir",
+          "label": "Kemer taşları: iki üzengiden simetrik",
+          "from": 0.4296,
+          "to": 0.5264,
+          "info": true
+        },
+        {
+          "key": "keystone",
+          "label": "Kilit taşı",
+          "from": 0.5264,
+          "to": 0.5566,
+          "info": true
+        },
+        {
+          "key": "spandrel",
+          "label": "Omuz duvarları: kesme taş",
+          "from": 0.5566,
+          "to": 0.6353,
+          "info": true
+        },
+        {
+          "key": "fill",
+          "label": "Dolgu: kırma taş, drenaj ve su yalıtımı",
+          "from": 0.6353,
+          "to": 0.6837,
+          "info": true
+        },
+        {
+          "key": "strike",
+          "label": "Kemer iskelesi söküm: kemer kendini taşıyor",
+          "from": 0.6837,
+          "to": 0.72,
+          "info": true
+        },
+        {
+          "key": "paving",
+          "label": "Kaldırım taşı döşeme",
+          "from": 0.72,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "parapet",
+          "label": "Korkuluk duvarı ve harpuşta taşları",
+          "from": 0.8,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "water",
+          "label": "Batardo söküm: dere yatağına dönüyor",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Fenerler ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "bridge",
+      "scale": 1.49,
+      "height": 5.18,
+      "ground": [
+        -4.38,
+        -3.57,
+        4.38,
+        3.57
+      ],
+      "entrances": [
+        {
+          "x": -4.38,
+          "y": 0,
+          "dir": [
+            -1,
+            0
+          ],
+          "type": "main"
+        },
+        {
+          "x": 4.38,
+          "y": 0,
+          "dir": [
+            1,
+            0
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "konsol",
+      "name": "Konsol Ev",
+      "special": "konsol",
+      "minutes": 50,
+      "rare": false,
+      "system": "cantilever",
+      "phaseCount": 16,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0582,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0582,
+          "to": 0.128,
+          "info": true
+        },
+        {
+          "key": "pit",
+          "label": "Kazı: çekirdek ve karşı ağırlık radyesi",
+          "from": 0.128,
+          "to": 0.1745,
+          "info": true
+        },
+        {
+          "key": "raftRebar",
+          "label": "Radye donatısı ve çekme ankraj filizleri",
+          "from": 0.1745,
+          "to": 0.2327,
+          "info": true
+        },
+        {
+          "key": "raft",
+          "label": "Karşı ağırlık radyesi: beton",
+          "from": 0.2327,
+          "to": 0.2909,
+          "info": true
+        },
+        {
+          "key": "coreWall",
+          "label": "Çekirdek perdeleri: donatı ve kalıp",
+          "from": 0.2909,
+          "to": 0.3491,
+          "info": true
+        },
+        {
+          "key": "corePour",
+          "label": "Çekirdek perdeleri: beton",
+          "from": 0.3491,
+          "to": 0.4015,
+          "info": true
+        },
+        {
+          "key": "props",
+          "label": "Geçici iskele kuleleri: konsol ucuna kadar",
+          "from": 0.4015,
+          "to": 0.448,
+          "info": true
+        },
+        {
+          "key": "truss",
+          "label": "Kat yüksekliğinde çelik kafes kirişler: arkadan uca",
+          "from": 0.448,
+          "to": 0.5469,
+          "info": true
+        },
+        {
+          "key": "deck",
+          "label": "Trapez sac üstüne döşeme betonu",
+          "from": 0.5469,
+          "to": 0.5993,
+          "info": true
+        },
+        {
+          "key": "release",
+          "label": "İskele indirme: konsol kendini taşıyor",
+          "from": 0.5993,
+          "to": 0.64,
+          "info": true
+        },
+        {
+          "key": "glazing",
+          "label": "Cam giydirme cephe: çekirdekten uca",
+          "from": 0.64,
+          "to": 0.74,
+          "info": true
+        },
+        {
+          "key": "cladding",
+          "label": "Çatı ve döşeme alnı: çinko kaplama",
+          "from": 0.74,
+          "to": 0.82,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Giriş kapısı ve çekirdek penceresi",
+          "from": 0.82,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "swing",
+          "label": "Konsolun altına salıncak",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.51,
+      "height": 4.65,
+      "ground": [
+        -3.09,
+        -1.33,
+        -0.38,
+        1.33
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 1.33,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "pazar",
+      "name": "Kabuk Çatılı Pazar",
+      "special": "kabuk",
+      "minutes": 50,
+      "rare": false,
+      "system": "shell",
+      "phaseCount": 21,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0344,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0344,
+          "to": 0.0756,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0756,
+          "to": 0.1512,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1512,
+          "to": 0.1822,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1822,
+          "to": 0.2062,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2062,
+          "to": 0.2612,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2612,
+          "to": 0.2922,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.2922,
+          "to": 0.3403,
+          "info": true
+        },
+        {
+          "key": "columns",
+          "label": "Kolonlar: içinden yağmur borusu geçen betonarme",
+          "from": 0.3403,
+          "to": 0.385,
+          "info": true
+        },
+        {
+          "key": "shellForm",
+          "label": "1. şemsiye: iskele, düz tahta kalıp ve hasır donatı",
+          "from": 0.385,
+          "to": 0.4194,
+          "info": true
+        },
+        {
+          "key": "shellPour",
+          "label": "1. şemsiye: 4 cm kabuk betonu, kür ve kalıp sökümü",
+          "from": 0.4194,
+          "to": 0.4537,
+          "info": true
+        },
+        {
+          "key": "shellForm",
+          "label": "2. şemsiye: iskele, düz tahta kalıp ve hasır donatı",
+          "from": 0.4537,
+          "to": 0.4881,
+          "info": true
+        },
+        {
+          "key": "shellPour",
+          "label": "2. şemsiye: 4 cm kabuk betonu, kür ve kalıp sökümü",
+          "from": 0.4881,
+          "to": 0.5225,
+          "info": true
+        },
+        {
+          "key": "shellForm",
+          "label": "3. şemsiye: iskele, düz tahta kalıp ve hasır donatı",
+          "from": 0.5225,
+          "to": 0.5569,
+          "info": true
+        },
+        {
+          "key": "shellPour",
+          "label": "3. şemsiye: 4 cm kabuk betonu, kür ve kalıp sökümü",
+          "from": 0.5569,
+          "to": 0.5913,
+          "info": true
+        },
+        {
+          "key": "shellForm",
+          "label": "4. şemsiye: iskele, düz tahta kalıp ve hasır donatı",
+          "from": 0.5913,
+          "to": 0.6256,
+          "info": true
+        },
+        {
+          "key": "shellPour",
+          "label": "4. şemsiye: 4 cm kabuk betonu, kür ve kalıp sökümü",
+          "from": 0.6256,
+          "to": 0.66,
+          "info": true
+        },
+        {
+          "key": "floorFinish",
+          "label": "Zemin: terrazzo ve yer süzgeçleri",
+          "from": 0.66,
+          "to": 0.74,
+          "info": true
+        },
+        {
+          "key": "stalls",
+          "label": "Tezgâhlar ve sebze meyve kasaları",
+          "from": 0.74,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Sarkıt lambalar ve tabela",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.38,
+      "height": 3.18,
+      "ground": [
+        -3.05,
+        -3.05,
+        3.05,
+        3.05
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.05,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kule",
+      "name": "Kule",
+      "special": null,
+      "minutes": 75,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 35,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0235,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0235,
+          "to": 0.0517,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0517,
+          "to": 0.1034,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1034,
+          "to": 0.1246,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1246,
+          "to": 0.141,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.141,
+          "to": 0.1786,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.1786,
+          "to": 0.1998,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.1998,
+          "to": 0.2327,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon ve perde donatısı",
+          "from": 0.2327,
+          "to": 0.2515,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon ve perde kalıbı",
+          "from": 0.2515,
+          "to": 0.2632,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.2632,
+          "to": 0.2774,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.2774,
+          "to": 0.2985,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.2985,
+          "to": 0.3197,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.3197,
+          "to": 0.3385,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "2. kat kolon ve perde donatısı",
+          "from": 0.3385,
+          "to": 0.3573,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "2. kat kolon ve perde kalıbı",
+          "from": 0.3573,
+          "to": 0.369,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "2. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.369,
+          "to": 0.3831,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.3831,
+          "to": 0.4043,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat kiriş ve döşeme donatısı",
+          "from": 0.4043,
+          "to": 0.4254,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat kiriş ve döşeme betonu",
+          "from": 0.4254,
+          "to": 0.4442,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "3. kat kolon ve perde donatısı",
+          "from": 0.4442,
+          "to": 0.463,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "3. kat kolon ve perde kalıbı",
+          "from": 0.463,
+          "to": 0.4748,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "3. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.4748,
+          "to": 0.4889,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "3. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4889,
+          "to": 0.51,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "3. kat kiriş ve döşeme donatısı",
+          "from": 0.51,
+          "to": 0.5312,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "3. kat kiriş ve döşeme betonu",
+          "from": 0.5312,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 9.6,
+      "ground": [
+        -1.65,
+        -1.65,
+        2.2,
+        3.24
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.24,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "degirmen",
+      "name": "Yel Değirmeni",
+      "special": null,
+      "minutes": 75,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 35,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0235,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0235,
+          "to": 0.0517,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0517,
+          "to": 0.1034,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1034,
+          "to": 0.1246,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1246,
+          "to": 0.141,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.141,
+          "to": 0.1786,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.1786,
+          "to": 0.1998,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.1998,
+          "to": 0.2327,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon ve perde donatısı",
+          "from": 0.2327,
+          "to": 0.2515,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon ve perde kalıbı",
+          "from": 0.2515,
+          "to": 0.2632,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.2632,
+          "to": 0.2774,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.2774,
+          "to": 0.2985,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.2985,
+          "to": 0.3197,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.3197,
+          "to": 0.3385,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "2. kat kolon ve perde donatısı",
+          "from": 0.3385,
+          "to": 0.3573,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "2. kat kolon ve perde kalıbı",
+          "from": 0.3573,
+          "to": 0.369,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "2. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.369,
+          "to": 0.3831,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.3831,
+          "to": 0.4043,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat kiriş ve döşeme donatısı",
+          "from": 0.4043,
+          "to": 0.4254,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat kiriş ve döşeme betonu",
+          "from": 0.4254,
+          "to": 0.4442,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "3. kat kolon ve perde donatısı",
+          "from": 0.4442,
+          "to": 0.463,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "3. kat kolon ve perde kalıbı",
+          "from": 0.463,
+          "to": 0.4748,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "3. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.4748,
+          "to": 0.4889,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "3. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4889,
+          "to": 0.51,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "3. kat kiriş ve döşeme donatısı",
+          "from": 0.51,
+          "to": 0.5312,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "3. kat kiriş ve döşeme betonu",
+          "from": 0.5312,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 8.55,
+      "ground": [
+        -1.65,
+        -1.65,
+        2.2,
+        3.24
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.24,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "saat",
+      "name": "Saat Kulesi",
+      "special": null,
+      "minutes": 75,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 29,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0287,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0287,
+          "to": 0.0631,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0631,
+          "to": 0.1262,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1262,
+          "to": 0.1521,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1521,
+          "to": 0.1722,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.1722,
+          "to": 0.2181,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2181,
+          "to": 0.2439,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.2439,
+          "to": 0.2841,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "1. kat taş duvar örme ve lentolar",
+          "from": 0.2841,
+          "to": 0.3328,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "1. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.3328,
+          "to": 0.35,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.35,
+          "to": 0.373,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat hatıl ve döşeme donatısı",
+          "from": 0.373,
+          "to": 0.3959,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat hatıl ve döşeme betonu",
+          "from": 0.3959,
+          "to": 0.416,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "2. kat taş duvar örme ve lentolar",
+          "from": 0.416,
+          "to": 0.4648,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "2. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.4648,
+          "to": 0.482,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.482,
+          "to": 0.505,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat hatıl ve döşeme donatısı",
+          "from": 0.505,
+          "to": 0.5279,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat hatıl ve döşeme betonu",
+          "from": 0.5279,
+          "to": 0.548,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "3. kat taş duvar örme ve lentolar",
+          "from": 0.548,
+          "to": 0.5968,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "3. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.5968,
+          "to": 0.614,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "3. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.614,
+          "to": 0.637,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "3. kat hatıl ve döşeme donatısı",
+          "from": 0.637,
+          "to": 0.6599,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "3. kat hatıl ve döşeme betonu",
+          "from": 0.6599,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: taş derzleri, hatıllara taş kaplama",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 9.6,
+      "ground": [
+        -1.65,
+        -1.65,
+        2.2,
+        3.24
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.24,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "amfi",
+      "name": "Gergi Çadır Amfi",
+      "special": "gergi",
+      "minutes": 75,
+      "rare": false,
+      "system": "tensile",
+      "phaseCount": 13,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0701,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0701,
+          "to": 0.1542,
+          "info": true
+        },
+        {
+          "key": "excavate",
+          "label": "Kazı: oturma kademelerine göre şev",
+          "from": 0.1542,
+          "to": 0.2173,
+          "info": true
+        },
+        {
+          "key": "tiers",
+          "label": "Oturma kademeleri ve sahne: betonarme",
+          "from": 0.2173,
+          "to": 0.3295,
+          "info": true
+        },
+        {
+          "key": "anchors",
+          "label": "Direk temelleri ve zemin ankrajları",
+          "from": 0.3295,
+          "to": 0.3996,
+          "info": true
+        },
+        {
+          "key": "masts",
+          "label": "Çelik direkler: yerde kurulup vinçle dikiliyor",
+          "from": 0.3996,
+          "to": 0.4837,
+          "info": true
+        },
+        {
+          "key": "cables",
+          "label": "Gergi halatları ve kenar kabloları",
+          "from": 0.4837,
+          "to": 0.5468,
+          "info": true
+        },
+        {
+          "key": "membrane",
+          "label": "PTFE membran: paketten açılıp köşelere bağlanıyor",
+          "from": 0.5468,
+          "to": 0.6239,
+          "info": true
+        },
+        {
+          "key": "tension",
+          "label": "Ön germe: köşe plakalarından krikoyla",
+          "from": 0.6239,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "seats",
+          "label": "Ahşap oturma tahtaları",
+          "from": 0.68,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "stage",
+          "label": "Sahne döşemesi",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "lights",
+          "label": "Direk projektörleri ve membranı yıkayan ışıklar",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.31,
+      "height": 4.9,
+      "ground": [
+        -3.69,
+        -3.69,
+        3.65,
+        3.65
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.65,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "sukulesi",
+      "name": "Su Kulesi",
+      "special": "sukulesi",
+      "minutes": 75,
+      "rare": false,
+      "system": "watertower",
+      "phaseCount": 19,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0405,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0405,
+          "to": 0.089,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.089,
+          "to": 0.178,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.178,
+          "to": 0.2145,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2145,
+          "to": 0.2428,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2428,
+          "to": 0.3075,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.3075,
+          "to": 0.3439,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3439,
+          "to": 0.4006,
+          "info": true
+        },
+        {
+          "key": "shaft",
+          "label": "Kolonlar ve kuşak kirişleri 1/3",
+          "from": 0.4006,
+          "to": 0.4451,
+          "info": true
+        },
+        {
+          "key": "shaft",
+          "label": "Kolonlar ve kuşak kirişleri 2/3",
+          "from": 0.4451,
+          "to": 0.4896,
+          "info": true
+        },
+        {
+          "key": "shaft",
+          "label": "Kolonlar ve kuşak kirişleri 3/3",
+          "from": 0.4896,
+          "to": 0.5341,
+          "info": true
+        },
+        {
+          "key": "tankForm",
+          "label": "Hazne kalıbı ve donatısı: konik halka ve silindir",
+          "from": 0.5341,
+          "to": 0.5867,
+          "info": true
+        },
+        {
+          "key": "tankPour",
+          "label": "Hazne betonu: soğuk derz olmasın diye tek seferde",
+          "from": 0.5867,
+          "to": 0.6272,
+          "info": true
+        },
+        {
+          "key": "dome",
+          "label": "Üst kubbe ve havalandırma feneri",
+          "from": 0.6272,
+          "to": 0.6595,
+          "info": true
+        },
+        {
+          "key": "waterTest",
+          "label": "Sızdırmazlık testi: hazne dolduruluyor",
+          "from": 0.6595,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "stair",
+          "label": "Çelik merdiven ve hazne balkonu",
+          "from": 0.7,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Boya: hazne gövdesi mavi",
+          "from": 0.8,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Borular ve uçak uyarı ışığı",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.53,
+      "height": 9.18,
+      "ground": [
+        -1.91,
+        -1.91,
+        1.91,
+        1.91
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 1.91,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kapsul",
+      "name": "Kapsül Kule",
+      "special": "kapsul",
+      "minutes": 75,
+      "rare": false,
+      "system": "capsule",
+      "phaseCount": 20,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0402,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0402,
+          "to": 0.0885,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0885,
+          "to": 0.177,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.177,
+          "to": 0.2132,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2132,
+          "to": 0.2413,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2413,
+          "to": 0.3057,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.3057,
+          "to": 0.3419,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3419,
+          "to": 0.3982,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Çekirdek: tırmanır kalıpla 1/3",
+          "from": 0.3982,
+          "to": 0.4425,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Çekirdek: tırmanır kalıpla 2/3",
+          "from": 0.4425,
+          "to": 0.4867,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Çekirdek: tırmanır kalıpla 3/3",
+          "from": 0.4867,
+          "to": 0.5309,
+          "info": true
+        },
+        {
+          "key": "plates",
+          "label": "Kapsül bağlantı plakaları ve bulon şablonları",
+          "from": 0.5309,
+          "to": 0.5551,
+          "info": true
+        },
+        {
+          "key": "capsules",
+          "label": "Kapsüller 1/3: fabrikadan geliyor, dört bulonla takılıyor",
+          "from": 0.5551,
+          "to": 0.6034,
+          "info": true
+        },
+        {
+          "key": "capsules",
+          "label": "Kapsüller 2/3: fabrikadan geliyor, dört bulonla takılıyor",
+          "from": 0.6034,
+          "to": 0.6516,
+          "info": true
+        },
+        {
+          "key": "capsules",
+          "label": "Kapsüller 3/3: fabrikadan geliyor, dört bulonla takılıyor",
+          "from": 0.6516,
+          "to": 0.6999,
+          "info": true
+        },
+        {
+          "key": "torque",
+          "label": "Bulon sıkma",
+          "from": 0.6999,
+          "to": 0.72,
+          "info": true
+        },
+        {
+          "key": "lobby",
+          "label": "Zemin kat: cam giriş holü",
+          "from": 0.72,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "services",
+          "label": "Kapsüllere su ve elektrik bağlantıları",
+          "from": 0.8,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Çatı: su deposu ve uyarı ışıklı direk",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.54,
+      "height": 11.28,
+      "ground": [
+        -1.93,
+        -1.93,
+        1.93,
+        1.93
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 1.93,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "burgu",
+      "name": "Burgulu Kule",
+      "special": "burgu",
+      "minutes": 75,
+      "rare": false,
+      "system": "twist",
+      "phaseCount": 18,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0391,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0391,
+          "to": 0.0859,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0859,
+          "to": 0.1718,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1718,
+          "to": 0.207,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.207,
+          "to": 0.2343,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2343,
+          "to": 0.2968,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2968,
+          "to": 0.332,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.332,
+          "to": 0.3866,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Çekirdek perdeleri: tırmanır kalıp 1/2",
+          "from": 0.3866,
+          "to": 0.4296,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Çekirdek perdeleri: tırmanır kalıp 2/2",
+          "from": 0.4296,
+          "to": 0.4725,
+          "info": true
+        },
+        {
+          "key": "floors",
+          "label": "Katlar 1/4: masa kalıp, eğik kolonlar, döşeme betonu",
+          "from": 0.4725,
+          "to": 0.5194,
+          "info": true
+        },
+        {
+          "key": "floors",
+          "label": "Katlar 2/4: masa kalıp, eğik kolonlar, döşeme betonu",
+          "from": 0.5194,
+          "to": 0.5663,
+          "info": true
+        },
+        {
+          "key": "floors",
+          "label": "Katlar 3/4: masa kalıp, eğik kolonlar, döşeme betonu",
+          "from": 0.5663,
+          "to": 0.6131,
+          "info": true
+        },
+        {
+          "key": "floors",
+          "label": "Katlar 4/4: masa kalıp, eğik kolonlar, döşeme betonu",
+          "from": 0.6131,
+          "to": 0.66,
+          "info": true
+        },
+        {
+          "key": "glazing",
+          "label": "Cam cephe: kat kat, bükülen yüzeye panel panel",
+          "from": 0.66,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "crown",
+          "label": "Çatı tacı ve uyarı ışığı",
+          "from": 0.8,
+          "to": 0.87,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Giriş ve lobi",
+          "from": 0.87,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.98,
+      "height": 13.49,
+      "ground": [
+        -2.47,
+        -2.47,
+        2.47,
+        2.47
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.47,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "pisa",
+      "name": "Pisa Kulesi",
+      "special": "pisa",
+      "minutes": 75,
+      "rare": false,
+      "system": "leaning",
+      "phaseCount": 11,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0909,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0909,
+          "to": 0.2,
+          "info": true
+        },
+        {
+          "key": "found",
+          "label": "Halka temel (1173): yumuşak kil üstünde yalnızca 3 m",
+          "from": 0.2,
+          "to": 0.2727,
+          "info": true
+        },
+        {
+          "key": "floors0",
+          "label": "Zemin ve ilk iki kat: mermer kaplama, moloz dolgu",
+          "from": 0.2727,
+          "to": 0.4091,
+          "info": true
+        },
+        {
+          "key": "pause",
+          "label": "1178: kule eğildi, savaşlar yüzünden inşaat 94 yıl duruyor",
+          "from": 0.4091,
+          "to": 0.4818,
+          "info": true
+        },
+        {
+          "key": "floors1",
+          "label": "4-7. katlar (1272-1278): alçak yan daha yüksek örülerek düzeltme",
+          "from": 0.4818,
+          "to": 0.6273,
+          "info": true
+        },
+        {
+          "key": "bellChamber",
+          "label": "Çan katı (1372)",
+          "from": 0.6273,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "bells",
+          "label": "Yedi çan asılıyor",
+          "from": 0.7,
+          "to": 0.76,
+          "info": true
+        },
+        {
+          "key": "creep",
+          "label": "Altı yüzyıl: eğim yavaş yavaş 5,5°'ye çıkıyor",
+          "from": 0.76,
+          "to": 0.82,
+          "info": true
+        },
+        {
+          "key": "stabilize",
+          "label": "1999-2001: kuzey yanının altından toprak çekiliyor",
+          "from": 0.82,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Mucizeler Meydanı: çimler ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 2.21,
+      "height": 11.42,
+      "ground": [
+        -1.99,
+        -1.99,
+        1.99,
+        1.99
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 1.99,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kolezyum",
+      "name": "Kolezyum",
+      "special": "kolezyum",
+      "minutes": 75,
+      "rare": false,
+      "system": "amphitheatre",
+      "phaseCount": 15,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0643,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0643,
+          "to": 0.1414,
+          "info": true
+        },
+        {
+          "key": "drain",
+          "label": "Nero'nun yapay gölü boşaltılıyor",
+          "from": 0.1414,
+          "to": 0.1929,
+          "info": true
+        },
+        {
+          "key": "foundation",
+          "label": "Halka temel: 12 m derine Roma betonu, dört ekip dört çeyrekte",
+          "from": 0.1929,
+          "to": 0.27,
+          "info": true
+        },
+        {
+          "key": "piers",
+          "label": "Traverten ayaklar: harçsız, demir kenetlerle",
+          "from": 0.27,
+          "to": 0.3343,
+          "info": true
+        },
+        {
+          "key": "radial",
+          "label": "Işınsal duvarlar ve eğimli tonozlar: tüf ve tuğla kaplı beton",
+          "from": 0.3343,
+          "to": 0.4114,
+          "info": true
+        },
+        {
+          "key": "tiers",
+          "label": "1. kat kemerleri: Toskan düzeni",
+          "from": 0.4114,
+          "to": 0.4757,
+          "info": true
+        },
+        {
+          "key": "tiers",
+          "label": "2. kat kemerleri: İyon düzeni",
+          "from": 0.4757,
+          "to": 0.54,
+          "info": true
+        },
+        {
+          "key": "tiers",
+          "label": "3. kat kemerleri: Korint düzeni",
+          "from": 0.54,
+          "to": 0.6043,
+          "info": true
+        },
+        {
+          "key": "attic",
+          "label": "Çatı katı: velarium direkleri için konsollar",
+          "from": 0.6043,
+          "to": 0.6557,
+          "info": true
+        },
+        {
+          "key": "cavea",
+          "label": "Oturma sıraları: tonozların üstüne mermer",
+          "from": 0.6557,
+          "to": 0.72,
+          "info": true
+        },
+        {
+          "key": "arena",
+          "label": "Arena: ahşap döşeme ve kum",
+          "from": 0.72,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "velarium",
+          "label": "Velarium: 240 direk ve gölgelik",
+          "from": 0.8,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "statues",
+          "label": "Kemerlere heykeller",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Açılış: MS 80",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 4.47,
+      "height": 9.03,
+      "ground": [
+        -10,
+        -8.28,
+        10,
+        8.28
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 8.28,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "keops",
+      "name": "Keops Piramidi",
+      "special": "keops",
+      "minutes": 75,
+      "rare": false,
+      "system": "pyramid",
+      "phaseCount": 13,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0722,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0722,
+          "to": 0.1588,
+          "info": true
+        },
+        {
+          "key": "level",
+          "label": "Kaya taban: su kanallarıyla tesviye",
+          "from": 0.1588,
+          "to": 0.2309,
+          "info": true
+        },
+        {
+          "key": "orient",
+          "label": "Taban karesi yıldızlara göre kuzeye çevriliyor",
+          "from": 0.2309,
+          "to": 0.267,
+          "info": true
+        },
+        {
+          "key": "courses",
+          "label": "Çekirdek taşları: kızakla rampadan çekiliyor 1/4",
+          "from": 0.267,
+          "to": 0.3825,
+          "info": true
+        },
+        {
+          "key": "courses",
+          "label": "Çekirdek taşları 2/4: önde ıslak kum, sürtünme yarıya iniyor",
+          "from": 0.3825,
+          "to": 0.4763,
+          "info": true
+        },
+        {
+          "key": "chamber",
+          "label": "Kral odası: Asvan'dan granit kirişler ve beş boşaltma odası",
+          "from": 0.4763,
+          "to": 0.534,
+          "info": true
+        },
+        {
+          "key": "courses",
+          "label": "Çekirdek taşları 3/4: zikzak rampa",
+          "from": 0.534,
+          "to": 0.6062,
+          "info": true
+        },
+        {
+          "key": "courses",
+          "label": "Çekirdek taşları 4/4",
+          "from": 0.6062,
+          "to": 0.6639,
+          "info": true
+        },
+        {
+          "key": "capstone",
+          "label": "Tepe taşı (piramidion)",
+          "from": 0.6639,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "casing",
+          "label": "Tura kireçtaşı kaplama: tepeden aşağı perdah, rampa sökülüyor",
+          "from": 0.7,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "entrance",
+          "label": "Kuzey yüzünde giriş",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 3.45,
+      "height": 8.62,
+      "ground": [
+        -7.07,
+        -7.07,
+        7.07,
+        7.07
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 7.07,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "galata",
+      "name": "Galata Kulesi",
+      "special": "galata",
+      "minutes": 75,
+      "rare": false,
+      "system": "genoese",
+      "phaseCount": 13,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0824,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0824,
+          "to": 0.1812,
+          "info": true
+        },
+        {
+          "key": "found",
+          "label": "Temel (1348): kayaya oturan moloz taş",
+          "from": 0.1812,
+          "to": 0.2471,
+          "info": true
+        },
+        {
+          "key": "body",
+          "label": "Gövde 1/3: dipte 3,75 m kalın moloz taş duvar",
+          "from": 0.2471,
+          "to": 0.3459,
+          "info": true
+        },
+        {
+          "key": "body",
+          "label": "Gövde 2/3: ahşap kat döşemeleri, mazgal pencereler",
+          "from": 0.3459,
+          "to": 0.4365,
+          "info": true
+        },
+        {
+          "key": "body",
+          "label": "Gövde 3/3: Cenevizlilerin Christea Turris'i",
+          "from": 0.4365,
+          "to": 0.5188,
+          "info": true
+        },
+        {
+          "key": "gallery",
+          "label": "Taş konsollar ve seyir balkonu",
+          "from": 0.5188,
+          "to": 0.5765,
+          "info": true
+        },
+        {
+          "key": "top",
+          "label": "Seyir katı: kemerli pencereler",
+          "from": 0.5765,
+          "to": 0.6424,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Konik külah",
+          "from": 0.6424,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "storm",
+          "label": "1875: fırtına külahı uçuruyor",
+          "from": 0.7,
+          "to": 0.75,
+          "info": true
+        },
+        {
+          "key": "restore",
+          "label": "1965-67 restorasyon: külah betonarme iskeletle yeniden",
+          "from": 0.75,
+          "to": 0.87,
+          "info": true
+        },
+        {
+          "key": "lights",
+          "label": "Gece aydınlatması",
+          "from": 0.87,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 2.71,
+      "height": 12.16,
+      "ground": [
+        -2.71,
+        -2.71,
+        2.71,
+        2.71
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.71,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "suleymaniye",
+      "name": "Süleymaniye Camii",
+      "special": "suleymaniye",
+      "minutes": 75,
+      "rare": false,
+      "system": "mosque",
+      "phaseCount": 14,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0636,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0636,
+          "to": 0.14,
+          "info": true
+        },
+        {
+          "key": "found",
+          "label": "Temel: derin moloz taş, oturması için bekletiliyor",
+          "from": 0.14,
+          "to": 0.2036,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Beden duvarları: küfeki taşı, kurşunla dökülmüş demir kenetler",
+          "from": 0.2036,
+          "to": 0.28,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Beden duvarları 2/2: alt ve üst sıra pencereler",
+          "from": 0.28,
+          "to": 0.3436,
+          "info": true
+        },
+        {
+          "key": "piers",
+          "label": "Dört fil ayağı ve dört büyük kemer",
+          "from": 0.3436,
+          "to": 0.42,
+          "info": true
+        },
+        {
+          "key": "semi",
+          "label": "İki yarım kubbe: mihrap ekseninde",
+          "from": 0.42,
+          "to": 0.4836,
+          "info": true
+        },
+        {
+          "key": "aisles",
+          "label": "Yan sahınlar: küçük kubbeler",
+          "from": 0.4836,
+          "to": 0.5345,
+          "info": true
+        },
+        {
+          "key": "dome",
+          "label": "Ana kubbe: 26,5 m çap, tuğla, ahşap iskele üstünde",
+          "from": 0.5345,
+          "to": 0.6236,
+          "info": true
+        },
+        {
+          "key": "minarets",
+          "label": "Dört minare, on şerefe: Kanuni onuncu padişah",
+          "from": 0.6236,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "lead",
+          "label": "Kurşun kaplama ve alemler",
+          "from": 0.7,
+          "to": 0.77,
+          "info": true
+        },
+        {
+          "key": "court",
+          "label": "Avlu: revaklar ve şadırvan",
+          "from": 0.77,
+          "to": 0.85,
+          "info": true
+        },
+        {
+          "key": "interior",
+          "label": "İznik çinileri; is odası kandil isinden mürekkep yapıyor",
+          "from": 0.85,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Açılış: 1557",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 4.38,
+      "height": 11.91,
+      "ground": [
+        -8.75,
+        -4.82,
+        8.62,
+        4.82
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 4.82,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "anitkabir",
+      "name": "Anıtkabir",
+      "special": "anitkabir",
+      "minutes": 75,
+      "rare": false,
+      "system": "monument",
+      "phaseCount": 15,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0686,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0686,
+          "to": 0.1509,
+          "info": true
+        },
+        {
+          "key": "level",
+          "label": "Rasattepe tesviye: kazıda Frig tümülüsleri çıkıyor, müzeye taşınıyor",
+          "from": 0.1509,
+          "to": 0.2194,
+          "info": true
+        },
+        {
+          "key": "raftRebar",
+          "label": "Radye temel donatısı",
+          "from": 0.2194,
+          "to": 0.2674,
+          "info": true
+        },
+        {
+          "key": "raft",
+          "label": "Radye temel betonu",
+          "from": 0.2674,
+          "to": 0.3223,
+          "info": true
+        },
+        {
+          "key": "podium",
+          "label": "Kaide ve 42 basamak: betonarme, traverten kaplama, ortada hitabet kürsüsü",
+          "from": 0.3223,
+          "to": 0.3909,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Şeref Holü betonarme iskeleti: 44 kolon ve iç hol",
+          "from": 0.3909,
+          "to": 0.4731,
+          "info": true
+        },
+        {
+          "key": "columns",
+          "label": "Kolonlar beyaz Kayseri traverteni; cephede altın varaklı yazılar",
+          "from": 0.4731,
+          "to": 0.5486,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Çatı: betonarme döşeme, Selçuklu testere dişi saçak",
+          "from": 0.5486,
+          "to": 0.6103,
+          "info": true
+        },
+        {
+          "key": "lahit",
+          "label": "Lahit: 40 tonluk tek parça kırmızı mermer",
+          "from": 0.6103,
+          "to": 0.6514,
+          "info": true
+        },
+        {
+          "key": "square",
+          "label": "Tören Meydanı: 373 kilim desenli traverten döşeme",
+          "from": 0.6514,
+          "to": 0.72,
+          "info": true
+        },
+        {
+          "key": "lions",
+          "label": "Aslanlı Yol: 12 çift Hitit üslubu aslan, iki heykel grubu",
+          "from": 0.72,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "towers",
+          "label": "On kule, kabartmalar ve revaklar",
+          "from": 0.8,
+          "to": 0.87,
+          "info": true
+        },
+        {
+          "key": "flag",
+          "label": "33,5 m'lik bayrak direği ve Barış Parkı",
+          "from": 0.87,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "10 Kasım 1953: Anıtkabir açılıyor",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 5.3125,
+      "height": 11.775,
+      "ground": [
+        -8.924999999999999,
+        -8.9625,
+        8.7875,
+        8.975
+      ],
+      "entrances": [
+        {
+          "x": 5.1,
+          "y": 8.978125,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "eyfel",
+      "name": "Eyfel Kulesi",
+      "special": "eyfel",
+      "minutes": 75,
+      "rare": false,
+      "system": "wroughtiron",
+      "phaseCount": 13,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.068,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.068,
+          "to": 0.1495,
+          "info": true
+        },
+        {
+          "key": "found",
+          "label": "Temel: dört ayağa beton bloklar; Seine yanındakiler basınçlı havalı kesonla",
+          "from": 0.1495,
+          "to": 0.2175,
+          "info": true
+        },
+        {
+          "key": "legs",
+          "label": "Ayaklar: fabrikada delinmiş 18.038 parça, sahada perçinleniyor",
+          "from": 0.2175,
+          "to": 0.299,
+          "info": true
+        },
+        {
+          "key": "legs",
+          "label": "Ayaklar dışa eğiliyor: 12 ahşap iskele altta taşıyor",
+          "from": 0.299,
+          "to": 0.3806,
+          "info": true
+        },
+        {
+          "key": "platform1",
+          "label": "1. kat (57 m): kum kutuları ve krikolarla dört ayak birleşiyor",
+          "from": 0.3806,
+          "to": 0.4485,
+          "info": true
+        },
+        {
+          "key": "floor2",
+          "label": "2. kat (115 m): yürüyen vinçler ayaklarla tırmanıyor",
+          "from": 0.4485,
+          "to": 0.5301,
+          "info": true
+        },
+        {
+          "key": "shaft",
+          "label": "Gövde: dört ayak tek kulede birleşiyor",
+          "from": 0.5301,
+          "to": 0.5981,
+          "info": true
+        },
+        {
+          "key": "shaft",
+          "label": "Gövde: 276 m'deki 3. kata",
+          "from": 0.5981,
+          "to": 0.6592,
+          "info": true
+        },
+        {
+          "key": "crown",
+          "label": "Tepe: fener ve bayrak direği, 300 m",
+          "from": 0.6592,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Boya: 60 t, Venedik kırmızısı",
+          "from": 0.7,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "lights",
+          "label": "Asansörler ve ışıklar",
+          "from": 0.8,
+          "to": 0.9,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Açılış: 31 Mart 1889, Dünya Fuarı",
+          "from": 0.9,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 4,
+      "height": 19.47,
+      "ground": [
+        -4.24,
+        -4.24,
+        4.24,
+        4.24
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 4.24,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "sidney",
+      "name": "Sidney Opera Binası",
+      "special": "sidney",
+      "minutes": 75,
+      "rare": false,
+      "system": "shells",
+      "phaseCount": 12,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0795,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0795,
+          "to": 0.175,
+          "info": true
+        },
+        {
+          "key": "piles",
+          "label": "Kazıklar: 580 beton kazık",
+          "from": 0.175,
+          "to": 0.2466,
+          "info": true
+        },
+        {
+          "key": "podium",
+          "label": "Podyum (1959-63): katlanmış plak kirişler",
+          "from": 0.2466,
+          "to": 0.35,
+          "info": true
+        },
+        {
+          "key": "precast",
+          "label": "Küresel çözüm: nervürler sahada prekast dökülüyor",
+          "from": 0.35,
+          "to": 0.4136,
+          "info": true
+        },
+        {
+          "key": "shells",
+          "label": "Kabuklar 1/3: çelik kurulum kemeri, nervür parçaları vinçle",
+          "from": 0.4136,
+          "to": 0.5091,
+          "info": true
+        },
+        {
+          "key": "shells",
+          "label": "Kabuklar 2/3: parçalar ard germe kablolarıyla birleşiyor",
+          "from": 0.5091,
+          "to": 0.6045,
+          "info": true
+        },
+        {
+          "key": "shells",
+          "label": "Kabuklar 3/3: 2.194 parça tamam",
+          "from": 0.6045,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "tiles",
+          "label": "Karo kapakları: 4.253 panel, 1.056.006 İsveç karosu",
+          "from": 0.7,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "glass",
+          "label": "Cam duvarlar",
+          "from": 0.8,
+          "to": 0.88,
+          "info": true
+        },
+        {
+          "key": "stairs",
+          "label": "Anıtsal merdiven, granit kaplama ve salonlar",
+          "from": 0.88,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Açılış: 20 Ekim 1973",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 3.64,
+      "height": 7.76,
+      "ground": [
+        -6.74,
+        -6.92,
+        7.22,
+        6.92
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 6.92,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "burj",
+      "name": "Burj Khalifa",
+      "special": "burj",
+      "minutes": 75,
+      "rare": false,
+      "system": "supertall",
+      "phaseCount": 13,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0625,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0625,
+          "to": 0.1375,
+          "info": true
+        },
+        {
+          "key": "piles",
+          "label": "Fore kazıklar: 192 adet, 1,5 m çap, 50 m derin",
+          "from": 0.1375,
+          "to": 0.2062,
+          "info": true
+        },
+        {
+          "key": "raftRebar",
+          "label": "Radye donatısı",
+          "from": 0.2062,
+          "to": 0.2562,
+          "info": true
+        },
+        {
+          "key": "raft",
+          "label": "Radye: 3,7 m kalın; gece, buzlu suyla dökülüyor",
+          "from": 0.2562,
+          "to": 0.3187,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Gövde 1/4: tırmanır kalıp, Y planlı payandalı çekirdek",
+          "from": 0.3187,
+          "to": 0.4,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Gövde 2/4: kanatlar sarmal kademelerle geri çekiliyor",
+          "from": 0.4,
+          "to": 0.4812,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Gövde 3/4: beton 600 m'ye pompalanıyor",
+          "from": 0.4812,
+          "to": 0.5625,
+          "info": true
+        },
+        {
+          "key": "core",
+          "label": "Gövde 4/4: kanatlar bitiyor, çekirdek yükseliyor",
+          "from": 0.5625,
+          "to": 0.6437,
+          "info": true
+        },
+        {
+          "key": "spire",
+          "label": "Sivri uç: içeride kurulup krikoyla yukarı itiliyor",
+          "from": 0.6437,
+          "to": 0.7,
+          "info": true
+        },
+        {
+          "key": "cladding",
+          "label": "Cephe: 26.000 cam panel",
+          "from": 0.7,
+          "to": 0.84,
+          "info": true
+        },
+        {
+          "key": "lights",
+          "label": "Işıklar ve asansörler",
+          "from": 0.84,
+          "to": 0.92,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Açılış: 4 Ocak 2010",
+          "from": 0.92,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 4.1,
+      "height": 27.05,
+      "ground": [
+        -5.15,
+        -5.94,
+        5.15,
+        5.94
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 5.94,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kutuphane",
+      "name": "Kütüphane",
+      "special": null,
+      "minutes": 75,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 24,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0356,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0356,
+          "to": 0.0783,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0783,
+          "to": 0.1566,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1566,
+          "to": 0.1887,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1887,
+          "to": 0.2136,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2136,
+          "to": 0.2706,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2706,
+          "to": 0.3026,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3026,
+          "to": 0.3525,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "1. kat taş duvar örme ve lentolar",
+          "from": 0.3525,
+          "to": 0.413,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "1. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.413,
+          "to": 0.4343,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.4343,
+          "to": 0.4628,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat hatıl ve döşeme donatısı",
+          "from": 0.4628,
+          "to": 0.4913,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat hatıl ve döşeme betonu",
+          "from": 0.4913,
+          "to": 0.5162,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "2. kat taş duvar örme ve lentolar",
+          "from": 0.5162,
+          "to": 0.5768,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "2. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.5768,
+          "to": 0.5981,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.5981,
+          "to": 0.6266,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat hatıl ve döşeme donatısı",
+          "from": 0.6266,
+          "to": 0.6551,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat hatıl ve döşeme betonu",
+          "from": 0.6551,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: taş derzleri, hatıllara taş kaplama",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 5.7,
+      "ground": [
+        -2.2,
+        -2.2,
+        2.75,
+        3.79
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.79,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "postane",
+      "name": "Köy Postanesi",
+      "special": null,
+      "minutes": 25,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 19,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0469,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0469,
+          "to": 0.1032,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.1032,
+          "to": 0.2063,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.2063,
+          "to": 0.2486,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2486,
+          "to": 0.2814,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.2814,
+          "to": 0.3564,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.3564,
+          "to": 0.3986,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.3986,
+          "to": 0.4643,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "1. kat tuğla duvar örme ve lentolar",
+          "from": 0.4643,
+          "to": 0.544,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "1. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.544,
+          "to": 0.5721,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.5721,
+          "to": 0.6097,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat hatıl ve döşeme donatısı",
+          "from": 0.6097,
+          "to": 0.6472,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat hatıl ve döşeme betonu",
+          "from": 0.6472,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: derz dolgusu, hatıllara tuğla kaplama",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 3.86,
+      "ground": [
+        -1.8,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "cay",
+      "name": "Çay Ocağı",
+      "special": null,
+      "minutes": 25,
+      "rare": false,
+      "system": "generic",
+      "phaseCount": 17,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0523,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0523,
+          "to": 0.1151,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.1151,
+          "to": 0.2302,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.2302,
+          "to": 0.2772,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.2772,
+          "to": 0.3138,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.3138,
+          "to": 0.3975,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.3975,
+          "to": 0.4446,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.4446,
+          "to": 0.5178,
+          "info": true
+        },
+        {
+          "key": "studs",
+          "label": "1. kat taban ankrajı, dikmeler ve çaprazlar",
+          "from": 0.5178,
+          "to": 0.5806,
+          "info": true
+        },
+        {
+          "key": "joists",
+          "label": "1. kat tavan kirişleri ve OSB",
+          "from": 0.5806,
+          "to": 0.6277,
+          "info": true
+        },
+        {
+          "key": "sheath",
+          "label": "Dış OSB kaplama ve rüzgâr bariyeri",
+          "from": 0.6277,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: ahşap dış kaplama ve vernik",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 4.41,
+      "ground": [
+        -1.86,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "fener",
+      "name": "Deniz Feneri",
+      "special": null,
+      "minutes": 75,
+      "rare": true,
+      "system": "generic",
+      "phaseCount": 35,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0235,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0235,
+          "to": 0.0517,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0517,
+          "to": 0.1034,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1034,
+          "to": 0.1246,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1246,
+          "to": 0.141,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.141,
+          "to": 0.1786,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.1786,
+          "to": 0.1998,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.1998,
+          "to": 0.2327,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "1. kat kolon ve perde donatısı",
+          "from": 0.2327,
+          "to": 0.2515,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "1. kat kolon ve perde kalıbı",
+          "from": 0.2515,
+          "to": 0.2632,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "1. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.2632,
+          "to": 0.2774,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.2774,
+          "to": 0.2985,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat kiriş ve döşeme donatısı",
+          "from": 0.2985,
+          "to": 0.3197,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat kiriş ve döşeme betonu",
+          "from": 0.3197,
+          "to": 0.3385,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "2. kat kolon ve perde donatısı",
+          "from": 0.3385,
+          "to": 0.3573,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "2. kat kolon ve perde kalıbı",
+          "from": 0.3573,
+          "to": 0.369,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "2. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.369,
+          "to": 0.3831,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.3831,
+          "to": 0.4043,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat kiriş ve döşeme donatısı",
+          "from": 0.4043,
+          "to": 0.4254,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat kiriş ve döşeme betonu",
+          "from": 0.4254,
+          "to": 0.4442,
+          "info": true
+        },
+        {
+          "key": "colRebar",
+          "label": "3. kat kolon ve perde donatısı",
+          "from": 0.4442,
+          "to": 0.463,
+          "info": true
+        },
+        {
+          "key": "colForm",
+          "label": "3. kat kolon ve perde kalıbı",
+          "from": 0.463,
+          "to": 0.4748,
+          "info": true
+        },
+        {
+          "key": "colPour",
+          "label": "3. kat kolon ve perde betonu ve kalıp söküm",
+          "from": 0.4748,
+          "to": 0.4889,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "3. kat dikmeler, kiriş ve döşeme kalıbı",
+          "from": 0.4889,
+          "to": 0.51,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "3. kat kiriş ve döşeme donatısı",
+          "from": 0.51,
+          "to": 0.5312,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "3. kat kiriş ve döşeme betonu",
+          "from": 0.5312,
+          "to": 0.55,
+          "info": true
+        },
+        {
+          "key": "walls",
+          "label": "Dolgu duvar: gazbeton bloklar ve lentolar",
+          "from": 0.55,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: OSB kaplama ve su yalıtım örtüsü",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: kiremit, saçaktan mahyaya",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "eps",
+          "label": "Mantolama: yalıtım levhaları ve dübeller",
+          "from": 0.86,
+          "to": 0.885,
+          "info": true
+        },
+        {
+          "key": "render",
+          "label": "Sıva: file ve ince sıva",
+          "from": 0.885,
+          "to": 0.905,
+          "info": true
+        },
+        {
+          "key": "paint",
+          "label": "Dış cephe boyası",
+          "from": 0.905,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "shore",
+      "scale": 1,
+      "height": 8.3,
+      "ground": [
+        -1.65,
+        -1.65,
+        2.2,
+        3.24
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.24,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "sera",
+      "name": "Cam Sera",
+      "special": null,
+      "minutes": 25,
+      "rare": true,
+      "system": "generic",
+      "phaseCount": 17,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0576,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0576,
+          "to": 0.1268,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.1268,
+          "to": 0.2536,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.2536,
+          "to": 0.3054,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.3054,
+          "to": 0.3458,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.3458,
+          "to": 0.438,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.438,
+          "to": 0.4898,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.4898,
+          "to": 0.5705,
+          "info": true
+        },
+        {
+          "key": "steelCol",
+          "label": "1. kat çelik kolonlar ve ankraj bulonları",
+          "from": 0.5705,
+          "to": 0.6108,
+          "info": true
+        },
+        {
+          "key": "steelBeam",
+          "label": "1. kat çelik kirişler ve bulonlu birleşimler",
+          "from": 0.6108,
+          "to": 0.6512,
+          "info": true
+        },
+        {
+          "key": "brace",
+          "label": "1. kat çapraz bağlantılar",
+          "from": 0.6512,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Çatı: çelik makaslar ve aşıklar",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Çatı: alüminyum kayıtlar ve contalar",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Çatı: temperli cam paneller",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: alüminyum kayıtlar ve cam paneller",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Kapı ve havalandırma kapakları",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 3.86,
+      "ground": [
+        -1.8,
+        -1.8,
+        2.35,
+        3.39
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.39,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "agacevi",
+      "name": "Ağaç Evi",
+      "special": "treehouse",
+      "minutes": 25,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Köklerden uzakta taş kaideler",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Bağımsız ayaklar, çaprazlar ve balkon tabanı",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Ahşap oda ve pencere doğramaları",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Hafif ahşap çatı ve metal kaplama",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "İp korkuluk, basamaklar ve okuma bankı",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 6.55,
+      "ground": [
+        -1.7,
+        -0.93,
+        1.75,
+        2.44
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.44,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "japoncay",
+      "name": "Japon Çay Evi",
+      "special": "teahouse",
+      "minutes": 25,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Taş kaide ve yükseltilmiş taban",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Ahşap dikmeler ve geçme kirişler",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Shoji çerçeveler ve kâğıt paneller",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Kıvrık saçak, mertek ve kiremitler",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Taş patika, fener ve zen bahçesi",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.02,
+      "height": 3.13,
+      "ground": [
+        -2.04,
+        -1.84,
+        2.14,
+        2.25
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.25,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "sudegirmeni",
+      "name": "Su Değirmeni",
+      "special": "watermill",
+      "minutes": 50,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Dere yatağının korunması ve taş temel",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Ahşap karkas ve çapraz bağlantılar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Dolgu duvarlar ve doğramalar",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Mertekler ve kiremit çatı",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Mil, çark halkaları ve su kanatları",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "bank",
+      "scale": 1.17,
+      "height": 4.36,
+      "ground": [
+        -2.69,
+        -1.4,
+        2.92,
+        2.54
+      ],
+      "entrances": [
+        {
+          "x": 1.6965,
+          "y": 0.43289999999999995,
+          "dir": [
+            1,
+            0
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "istasyon",
+      "name": "Tren İstasyonu",
+      "special": "station",
+      "minutes": 50,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Taş peron ve traversli ray hattı",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "İstasyon taşıyıcıları ve duvar hatılları",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Tuğla dolgu, kapı ve pencereler",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Kiremit çatı, yağmur olukları",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Peron saçağı, saat kulesi ve banklar",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "rail",
+      "scale": 1.17,
+      "height": 4.36,
+      "ground": [
+        -3.04,
+        -1.46,
+        3.04,
+        2.83
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": -1.4625,
+          "dir": [
+            0,
+            -1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "planetaryum",
+      "name": "Planetaryum",
+      "special": "planetarium",
+      "minutes": 75,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Dairesel temel ve taş kaide",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Çevre kolonları ve çelik halka",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Yalıtımlı dış kabuk panelleri",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Kubbe dilimleri ve bakır kuşaklar",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Giriş, takımyıldızlar ve Satürn heykeli",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.79,
+      "height": 6.26,
+      "ground": [
+        -2.15,
+        -2.15,
+        3.4,
+        3.41
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.41,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kristalkutuphane",
+      "name": "Kristal Kütüphane",
+      "special": "crystallibrary",
+      "minutes": 75,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Taş platform ve ankraj yuvaları",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Çelik kolonlar ve çapraz bağlantılar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Kitap rafları, cam cephe ve kayıtlar",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Kristal çatı: katlanmış cam yüzeyler",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Giriş, okuma ışıkları ve saksılar",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.48,
+      "height": 6.66,
+      "ground": [
+        -2.66,
+        -2.07,
+        2.66,
+        2.74
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.74,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kapadokya",
+      "name": "Kapadokya Kaya Evi",
+      "special": "cappadocia",
+      "minutes": 25,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Doğal kaya ve koruma sınırları",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Kontrollü kaya oyma ve odalar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Kemer ağızları ve ahşap doğramalar",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Taş saçak ve suyun uzaklaştırılması",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Terastaki basamaklar ve gece ışıkları",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.12,
+      "height": 4.58,
+      "ground": [
+        -2.9,
+        -1.9,
+        3.01,
+        2.23
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.23,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "yuzenev",
+      "name": "Yüzen Ev",
+      "special": "floating",
+      "minutes": 25,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Yüzer pontonlar ve ahşap platform",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Hafif ahşap taşıyıcılar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Yalıtımlı cephe ve geniş pencereler",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Hafif çatı ve su yalıtımı",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Bağlama halatları, iskele ve güneş paneli",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "lake",
+      "scale": 1.03,
+      "height": 3.13,
+      "ground": [
+        -2.78,
+        -2.17,
+        3.09,
+        2.32
+      ],
+      "entrances": [
+        {
+          "x": 3.09,
+          "y": 0.6386000000000001,
+          "dir": [
+            1,
+            0
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "asmakopru",
+      "name": "Asma Köprü",
+      "special": "suspension",
+      "minutes": 50,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Kule temelleri ve ankraj blokları",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "İki çelik kule ve üst bağlantılar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Ana kablolar ve düşey askılar",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Askılara bağlı ahşap yaya tabliyesi",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Korkuluklar ve yük denemesi",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "bridge",
+      "scale": 1.39,
+      "height": 5.55,
+      "ground": [
+        -5.1,
+        -2.22,
+        5.1,
+        2.22
+      ],
+      "entrances": [
+        {
+          "x": -5.1,
+          "y": 0,
+          "dir": [
+            -1,
+            0
+          ],
+          "type": "main"
+        },
+        {
+          "x": 5.1,
+          "y": 0,
+          "dir": [
+            1,
+            0
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kervansaray",
+      "name": "Kervansaray",
+      "special": "caravanserai",
+      "minutes": 50,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Taş temel ve açık avlu döşemesi",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Avluyu çevreleyen kalın duvarlar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Revaklar ve anıtsal taçkapı",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Tonoz üst örtüleri ve taş saçaklar",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Avlu çeşmesi ve dinlenme sekileri",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.45,
+      "height": 3.74,
+      "ground": [
+        -3.63,
+        -2.9,
+        3.63,
+        2.9
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.9,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "mardinevi",
+      "name": "Mardin Evi",
+      "special": "mardin",
+      "minutes": 50,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Taş temel ve kot farkları",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Alt ve üst kat yığma duvarlar",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Kemerli açıklıklar ve taş derzleri",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Düz dam ve teras korkulukları",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Dış merdiven ve ince taş işçiliği",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.54,
+      "height": 5.51,
+      "ground": [
+        -2.84,
+        -2.23,
+        2.92,
+        2.69
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 2.69,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "atakule",
+      "name": "Atakule",
+      "special": "atakule",
+      "minutes": 75,
+      "rare": true,
+      "system": "discovery",
+      "phaseCount": 8,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0802,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0802,
+          "to": 0.1765,
+          "info": true
+        },
+        {
+          "key": "base",
+          "label": "Derin temel ve giriş platformu",
+          "from": 0.1765,
+          "to": 0.3049,
+          "info": true
+        },
+        {
+          "key": "frame",
+          "label": "Betonarme çekirdeğin yükseltilmesi",
+          "from": 0.3049,
+          "to": 0.4815,
+          "info": true
+        },
+        {
+          "key": "skin",
+          "label": "Çekirdek derzleri ve servis açıklıkları",
+          "from": 0.4815,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "roof",
+          "label": "Seyir katı, cam kuşak ve döner restoran",
+          "from": 0.65,
+          "to": 0.8,
+          "info": true
+        },
+        {
+          "key": "fit",
+          "label": "Üst başlık, anten ve giriş basamakları",
+          "from": 0.8,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Çevre düzeni, son kontrol ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1.4,
+      "height": 15.13,
+      "ground": [
+        -2.52,
+        -2.03,
+        2.52,
+        3.54
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.54,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "kugulupark",
+      "name": "Kuğulu Park",
+      "special": "kugulupark",
+      "minutes": 75,
+      "rare": true,
+      "system": "landscape",
+      "phaseCount": 16,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Ağaç koruma ve şantiye kurulumu",
+          "from": 0,
+          "to": 0.0399,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Havuz ve yolların aplikasyonu",
+          "from": 0.0399,
+          "to": 0.0798,
+          "info": true
+        },
+        {
+          "key": "earth",
+          "label": "Kontrollü havuz kazısı",
+          "from": 0.0798,
+          "to": 0.1654,
+          "info": true
+        },
+        {
+          "key": "drain",
+          "label": "Drenaj ve su devri hatları",
+          "from": 0.1654,
+          "to": 0.2281,
+          "info": true
+        },
+        {
+          "key": "basin",
+          "label": "Havuz tabanı ve kıyı kabuğu",
+          "from": 0.2281,
+          "to": 0.3079,
+          "info": true
+        },
+        {
+          "key": "seal",
+          "label": "Sızdırmazlık ve koruyucu katman",
+          "from": 0.3079,
+          "to": 0.3649,
+          "info": true
+        },
+        {
+          "key": "rim",
+          "label": "Taş kıyı ve adacıklar",
+          "from": 0.3649,
+          "to": 0.439,
+          "info": true
+        },
+        {
+          "key": "paths",
+          "label": "Taş yollar ve açık girişler",
+          "from": 0.439,
+          "to": 0.5189,
+          "info": true
+        },
+        {
+          "key": "cafe",
+          "label": "Kafeterya ve gölgeli teras",
+          "from": 0.5189,
+          "to": 0.593,
+          "info": true
+        },
+        {
+          "key": "play",
+          "label": "Oyun alanı ve kaydırak",
+          "from": 0.593,
+          "to": 0.65,
+          "info": true
+        },
+        {
+          "key": "boundary",
+          "label": "Kıvrımlı ahşap havuz çiti",
+          "from": 0.65,
+          "to": 0.73,
+          "info": true
+        },
+        {
+          "key": "furnish",
+          "label": "Kuğu evleri, banklar ve heykeller",
+          "from": 0.73,
+          "to": 0.79,
+          "info": true
+        },
+        {
+          "key": "lights",
+          "label": "Park lambaları ve gece aydınlatması",
+          "from": 0.79,
+          "to": 0.84,
+          "info": true
+        },
+        {
+          "key": "landscape",
+          "label": "Korunan ağaçlar ve peyzaj",
+          "from": 0.84,
+          "to": 0.9,
+          "info": true
+        },
+        {
+          "key": "water",
+          "label": "Su dolumu ve fıskiye denemesi",
+          "from": 0.9,
+          "to": 0.97,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Son kontrol ve kuğularla teslim",
+          "from": 0.97,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 6.03,
+      "ground": [
+        -8.81,
+        -7.56,
+        8.81,
+        7.56
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 7.5,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    },
+    {
+      "id": "gozlemevi",
+      "name": "Olay Ufku Gözlemevi",
+      "special": null,
+      "minutes": 75,
+      "rare": "founder",
+      "system": "generic",
+      "phaseCount": 29,
+      "phases": [
+        {
+          "key": "mobilize",
+          "label": "Mobilizasyon: çit, konteyner ve ruhsat tabelası",
+          "from": 0,
+          "to": 0.0287,
+          "info": true
+        },
+        {
+          "key": "layout",
+          "label": "Aplikasyon: kazık ve ip iskelesi",
+          "from": 0.0287,
+          "to": 0.0631,
+          "info": true
+        },
+        {
+          "key": "dig",
+          "label": "Hafriyat",
+          "from": 0.0631,
+          "to": 0.1262,
+          "info": true
+        },
+        {
+          "key": "lean",
+          "label": "Grobeton",
+          "from": 0.1262,
+          "to": 0.1521,
+          "info": true
+        },
+        {
+          "key": "footWater",
+          "label": "Temel su yalıtımı",
+          "from": 0.1521,
+          "to": 0.1722,
+          "info": true
+        },
+        {
+          "key": "footRebar",
+          "label": "Temel donatısı",
+          "from": 0.1722,
+          "to": 0.2181,
+          "info": true
+        },
+        {
+          "key": "footForm",
+          "label": "Temel kalıbı",
+          "from": 0.2181,
+          "to": 0.2439,
+          "info": true
+        },
+        {
+          "key": "footPour",
+          "label": "Temel betonu ve kür",
+          "from": 0.2439,
+          "to": 0.2841,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "1. kat taş duvar örme ve lentolar",
+          "from": 0.2841,
+          "to": 0.3328,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "1. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.3328,
+          "to": 0.35,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "1. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.35,
+          "to": 0.373,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "1. kat hatıl ve döşeme donatısı",
+          "from": 0.373,
+          "to": 0.3959,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "1. kat hatıl ve döşeme betonu",
+          "from": 0.3959,
+          "to": 0.416,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "2. kat taş duvar örme ve lentolar",
+          "from": 0.416,
+          "to": 0.4648,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "2. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.4648,
+          "to": 0.482,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "2. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.482,
+          "to": 0.505,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "2. kat hatıl ve döşeme donatısı",
+          "from": 0.505,
+          "to": 0.5279,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "2. kat hatıl ve döşeme betonu",
+          "from": 0.5279,
+          "to": 0.548,
+          "info": true
+        },
+        {
+          "key": "wallLay",
+          "label": "3. kat taş duvar örme ve lentolar",
+          "from": 0.548,
+          "to": 0.5968,
+          "info": true
+        },
+        {
+          "key": "tieCol",
+          "label": "3. kat düşey hatıllar: kalıp ve beton",
+          "from": 0.5968,
+          "to": 0.614,
+          "info": true
+        },
+        {
+          "key": "deckForm",
+          "label": "3. kat yatay hatıl ve döşeme kalıbı",
+          "from": 0.614,
+          "to": 0.637,
+          "info": true
+        },
+        {
+          "key": "deckRebar",
+          "label": "3. kat hatıl ve döşeme donatısı",
+          "from": 0.637,
+          "to": 0.6599,
+          "info": true
+        },
+        {
+          "key": "deckPour",
+          "label": "3. kat hatıl ve döşeme betonu",
+          "from": 0.6599,
+          "to": 0.68,
+          "info": true
+        },
+        {
+          "key": "roofFrame",
+          "label": "Kubbe: taşıyıcı halka",
+          "from": 0.68,
+          "to": 0.715,
+          "info": true
+        },
+        {
+          "key": "roofDeck",
+          "label": "Kubbe: kaplama ve su yalıtımı",
+          "from": 0.715,
+          "to": 0.748,
+          "info": true
+        },
+        {
+          "key": "roofTiles",
+          "label": "Kubbe: metal kaplama",
+          "from": 0.748,
+          "to": 0.78,
+          "info": true
+        },
+        {
+          "key": "openings",
+          "label": "Doğrama ve kapı",
+          "from": 0.78,
+          "to": 0.86,
+          "info": true
+        },
+        {
+          "key": "finish",
+          "label": "Cephe: taş derzleri, hatıllara taş kaplama",
+          "from": 0.86,
+          "to": 0.93,
+          "info": true
+        },
+        {
+          "key": "handover",
+          "label": "Peyzaj ve teslim",
+          "from": 0.93,
+          "to": 1,
+          "info": true
+        }
+      ],
+      "context": "dry",
+      "scale": 1,
+      "height": 5.95,
+      "ground": [
+        -1.65,
+        -1.65,
+        2.2,
+        3.24
+      ],
+      "entrances": [
+        {
+          "x": 0,
+          "y": 3.24,
+          "dir": [
+            0,
+            1
+          ],
+          "type": "main"
+        }
+      ],
+      "hakedisStart": 0,
+      "hakedisEnd": 100
+    }
+  ]
+}

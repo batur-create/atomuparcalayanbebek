@@ -293,7 +293,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     const fenced = site ? plan.find((k) => k.key === "mobilize")?.b ?? 0 : 0;
     const shown = site ? Math.max(fenced, thing?.site?.shown ?? 0.35) : 1;
     add(standing, {
-      type: "building", id: p.subject.id, plotId: p.id, building: { ...thing, id: p.subject.id, model: p.model, memberId: p.owner, site }, owner, sp,
+      type: "building", id: p.subject.id, plotId: p.id, building: { ...thing, id: p.subject.id, model: p.model, memberId: p.owner, facing: p.facing, site }, owner, sp,
       depth: p.x + p.y, x: p.x, y: p.y,
       bbox: [screenOf(p.over[0], p.over[3])[0] - 1, screenOf(p.over[0], p.over[1], Math.max(up, p.height + 1))[1] - 1, screenOf(p.over[2], p.over[1])[0] + 1, screenOf(p.over[2], p.over[3])[1] + 1.5],
       hit: boxOf(p.x, p.y, half * 0.9, half * 0.9, p.height * 0.9, half * 0.5),
@@ -309,7 +309,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
           if (own?.scene) own.scene(P, sp, plan, shown, false, 0);
           else if (shown > 0.25) box(P, -sp.hw, -sp.hw, sp.hw, sp.hw, 0.3, 0.3 + sp.h * Math.min(1, (shown - 0.25) / 0.45), ["#d3cdc1", "#bdb7aa", "#a6a093"]);
         }
-        else buildingSVG(P, sp, seed, { lit: lit.has(p.id) || (sky.night > 0.5 && sp.lit), detail: v.detail, shadowP: base });
+        else buildingSVG(P, sp, seed, { lit: lit.has(p.id) || (sky.night > 0.5 && sp.lit), detail: v.detail, shadowP: base, live: p.model === "kugulupark", winter: season === "winter" });
       },
     });
   }
