@@ -1,0 +1,43 @@
+✔ n46 B: the model contracts are the drawings' own numbers, for all 48 models (205.066813ms)
+✔ n46 B: the same inventory gives the same layout, byte for byte (10055.622118ms)
+✔ n46 B: every scene places everything and breaks no rule (75.617954ms)
+✔ n46 B: growing the village never moves a placed plot or an open street (3160.064452ms)
+✔ n46 B: opening a reserved corridor makes it a street; dropping one removes it (351.08884ms)
+✔ n46 B: the mill, the floating house, the bridges and the station stand on their own ground (31.964679ms)
+✔ n46 B: only a session that builds a model gets a site; it turns into its building in place (0.90818ms)
+✔ n46 E: geometry version 2 is Anıtkabir at 1.25× and nothing else; version 1 still reads (3.546271ms)
+✔ n46 E: all 48 models find a plot at their own size, with a reachable door (2862.392365ms)
+✔ n46 E: the village keeps growing — 300 buildings, many squares, nothing placed ever moves (15622.024946ms)
+✔ n46 E: the four fixed scenes still place everything; the shared Anıtkabir gets its own big ground (4045.598726ms)
+✔ n46 E: launching the shared Anıtkabir on a v2 team gives it a big plot; minutes, not looks, set its stage (145.700801ms)
+✔ n46 E: growth report helper places 32 and an unbalanced 100 with nothing missing (2816.497392ms)
+✔ the site plan covers the whole session in order, with beams, waterproofing and the facade layers (105.313615ms)
+✔ each building is built the way its walls say (0.630121ms)
+✔ a wider plan gets beams across the middle too (0.287894ms)
+✔ the mobile crane leaves for every pump pour and is there for the lifting (2.257867ms)
+✔ every drawing stays finite through the whole build (1852.836144ms)
+✔ the inspector checks the rebar before every pour, and every pour starts with a slump test (1.206601ms)
+✔ the progress payment weighs work by cost and the quantities only grow (57.668036ms)
+✔ a concrete tower gets two shear walls; houses only columns (0.501517ms)
+✔ the geodesic dome: a closed hemisphere, struts ring by ring, checked before the tower comes down (3.319969ms)
+✔ the old ways: the keystone goes in last, mouse stones are checked, the domes close without formwork (10.533392ms)
+✔ modern structures: every shell checked before its pour, anchors pulled, the tip of the cantilever measured (25.680585ms)
+✔ the towers: every capsule bolted and torqued, each floor turned 9°, the tank holds its water (7.629452ms)
+✔ the famous ones: the pyramid squared to the north, the Colosseum clamped, Pisa back to 3.97° (12.084912ms)
+✔ Süleymaniye, Galata and Anıtkabir: the dome checked, the cap lost and restored, the lions and towers counted (27.176272ms)
+✔ Eiffel, Sydney and Burj Khalifa: the legs meet, every rib from one sphere, the spire jacked to 828 m (16.380804ms)
+✔ every construction stage of every building has a plain explanation behind its (i) (11.650678ms)
+✔ the scale table: real heights in order, Burj at most five houses, claims capped, small ones as drawn (1.017385ms)
+✔ a building of its own is enlarged by one k: never below its drawing, within its claim, capped by the room around it (51.612179ms)
+✔ the planner gives a landmark the space of its real size, squeezes it in when it must, and never overlaps (198.96183ms)
+✔ buildings placed before n44 grow only into the room around them (1.607706ms)
+✔ a monument gets a district of its own: on its centre, ring road round it, taller than a house (52.507731ms)
+✔ natural village keeps saved homes, hides dormant reservations and makes safe neighbour paths (16.068493ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 25616.022058
