@@ -211,10 +211,11 @@ export function defineSuite(target) {
     assert.equal(rows.group.village_content_rev, 3);
     // Today's village until a layout is switched on; then only a v2 app sees it.
     assert.equal((await request("/village", { cookie })).data.contractVersion, undefined);
-    const made = await request("/__test/village-v2", { body: { name: "KoyC" } });
+    const made = await request("/__test/village-v2", { body: { name: "KoyC", generator: 2 } });
     assert.equal(made.status, 200);
     assert.equal((await request("/village", { cookie })).status, 426);
-    const v2 = await request("/village", { cookie, headers: { "X-Kutup-Village-Version": "2" } });
+    assert.equal((await request("/village", { cookie, headers: { "X-Kutup-Village-Version": "2" } })).status, 200, "existing generator-2 worlds remain compatible with their original renderer");
+    const v2 = await request("/village", { cookie, headers: { "X-Kutup-Village-Version": "3" } });
     assert.equal(v2.status, 200);
     assert.equal(v2.data.contractVersion, 2);
     assert.equal(v2.data.layoutId, made.data.id);
@@ -223,7 +224,7 @@ export function defineSuite(target) {
     // n46 D: two people start building at the same moment on a v2 team: two sites, two different plots.
     const mate = await request("/join", { body: { invite: solo.data.group.invite, name: "KoyD" } });
     assert.equal(mate.status, 201, JSON.stringify(mate.data));
-    const v2h = { "X-Kutup-Village-Version": "2" };
+    const v2h = { "X-Kutup-Village-Version": "3" };
     const pair = await Promise.all(
       [cookie, mate.cookie].map((c, i) => request("/focus", { cookie: c, headers: v2h, body: { action: "start", strict: true, model: "kulube", minutes: 25, requestKey: `n46d-suite-key-00000${i}` } })),
     );

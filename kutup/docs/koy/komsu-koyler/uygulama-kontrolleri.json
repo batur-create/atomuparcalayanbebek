@@ -1,0 +1,30 @@
+[
+  {
+    "scene": "before-47",
+    "expectedBuildings": 47,
+    "missing": 0,
+    "errors": [],
+    "neighbourButtons": 4
+  },
+  {
+    "scene": "47",
+    "expectedBuildings": 47,
+    "missing": 0,
+    "errors": [],
+    "neighbourButtons": 4
+  },
+  {
+    "scene": "200",
+    "expectedBuildings": 200,
+    "missing": 0,
+    "errors": [],
+    "neighbourButtons": 4
+  },
+  {
+    "scene": "500",
+    "expectedBuildings": 500,
+    "missing": 0,
+    "errors": [],
+    "neighbourButtons": 4
+  }
+]

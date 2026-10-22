@@ -4,13 +4,14 @@
 // to go back to) up to date keeps everything already placed where it is,
 // lets go of what is gone and plans only what is new.
 import { layoutFrom } from "./draft.js";
-import { emptyLayout, releaseSubject } from "./planner.js";
+import { emptyLayout, releaseSubject, seedNeighbourhoods } from "./planner.js";
 
 const keyOf = (s) => `${s.type}:${s.id}`;
 
 /** source: { seed, items } from GET /owner/village/:id/source; base: a stored layout to continue, or null. */
-export function planDraft({ seed, items }, base = null) {
+export function planDraft({ seed, items, members = [] }, base = null) {
   let layout = base || emptyLayout(seed);
+  if (!base) layout = seedNeighbourhoods(layout, [...members.map((m) => m.id), ...items.map((i) => i.owner)]);
   const live = new Set(items.map((i) => keyOf(i.subject)));
   let released = 0;
   for (const p of base ? base.plots : [])

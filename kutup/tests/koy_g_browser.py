@@ -22,7 +22,7 @@ def check(name, ok, info=''):
 FETCH = '''async ([path,body,headers])=>{const r=await fetch('/api'+path,{method:body===null?'GET':'POST',headers:{'Content-Type':'application/json','X-Kutup':'1',...headers},...(body===null?{}:{body:JSON.stringify(body)})});const d=await r.json();if(!r.ok)throw Error(path+': '+r.status+' '+(d.error||''));return d}'''
 def api(page, path, body=None, headers=None):
     return page.evaluate(FETCH, [path, body, headers or {}])
-V2 = {'X-Kutup-Village-Version': '2'}
+V2 = {'X-Kutup-Village-Version': '3'}
 MODELS = ['ev', 'kulube', 'kahve', 'sahaf', 'bostan', 'konak', 'kule', 'cicekci', 'pazar']
 
 with tempfile.TemporaryDirectory(prefix='kutup-koy-g-') as temp:
@@ -142,7 +142,9 @@ with tempfile.TemporaryDirectory(prefix='kutup-koy-g-') as temp:
                     plot = d.execute("SELECT p.plot_id FROM village_placements p JOIN members m ON p.subject_id = m.focus_run_id WHERE p.subject_type = 'site' AND m.name = 'Ada'").fetchone()
                 check('the server wrote the very plot the browser chose', plot and plot[0] == body['village']['plan']['plot']['id'], str(plot))
                 page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click(); page.wait_for_timeout(900)
-                page.locator('.village-map-wrap').screenshot(path=str(out / 'g-uye-santiye-tarayici-plani.png'))
+                # The focus studio is animated while the session starts. Capture
+                # the viewport without scrolling the moving map into position.
+                page.screenshot(path=str(out / 'g-uye-santiye-tarayici-plani.png'))
 
                 # 5. A gift from Komuta merkezi, its plot planned in the owner's browser.
                 gift = own.evaluate('''async ([member, group]) => {

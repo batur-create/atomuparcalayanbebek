@@ -8,7 +8,7 @@
 //
 // Life is decoration: it never reads or writes rewards, minutes, places or
 // members, and no figure carries a name or an online mark.
-import { cmp, hash, inPolygon, lengthOf, linePoint, pointRect, rng } from "../../shared/koy2/geom.js";
+import { along, cmp, hash, inPolygon, lengthOf, linePoint, pointRect, rng } from "../../shared/koy2/geom.js";
 
 export const LIFE = {
   speed: 0.9, // walking pace, world units per second (≈ 1.4 m/s)
@@ -116,7 +116,13 @@ export function walkGraph(layout) {
     if (f.status !== "open" || !f.node || !V.has(`N:${f.node}`)) continue;
     const hub = V.get(`N:${f.node}`);
     const c = vert(`Q:${f.id}`, [f.x, f.y]);
-    if (hub !== c) link(hub, c, [[hub.x, hub.y], [f.x, f.y]]);
+    const forecourt = f.landmark && layout.plots.find((p) => p.id === f.of && p.door && doors.has(p.id));
+    if (forecourt) {
+      // An approach may bend round the building. Follow its real door path
+      // to the court rather than drawing a diagonal from the street node.
+      const on = linePoint(forecourt.door, [f.x, f.y]);
+      link(V.get(doors.get(forecourt.id)), c, [...forecourt.door.slice(0, on.seg), on.point, [f.x, f.y]]);
+    } else if (hub !== c) link(hub, c, [[hub.x, hub.y], [f.x, f.y]]);
     squares.set(f.id, c.key);
   }
   return { V, doors, squares };
@@ -215,8 +221,16 @@ function venuesOf(layout, graph) {
     if (p.model === "sahaf" || p.model === "kutuphane") venues.push({ id: `sahaf:${p.id}`, kind: "sahaf", target: graph.doors.get(p.id), plot: p.id, x: p.x, y: p.y });
   }
   for (const f of layout.foci) {
-    if (f.status !== "open" || f.landmark || !graph.squares.has(f.id)) continue;
+    if (f.status !== "open" || !graph.squares.has(f.id)) continue;
     const target = graph.squares.get(f.id);
+    if (f.landmark) {
+      const pazar = layout.plots.find((p) => p.id === f.of && p.model === "pazar" && p.subject.type === "building");
+      if (pazar) {
+        const spots = [0, 1, 2, 3].map((k) => [f.x + Math.cos(Math.PI / 4 + k * Math.PI / 2) * f.r * .55, f.y + Math.sin(Math.PI / 4 + k * Math.PI / 2) * f.r * .55]);
+        venues.push({ id: `market:${f.id}`, kind: "market", target, spots, x: f.x, y: f.y, plot: pazar.id });
+      }
+      continue;
+    }
     // Benches stand on the squares that are not a fountain's or a garden's (as drawn in world2).
     if (f.id !== "f0" && f.kind !== "cesme" && f.kind !== "bahce") {
       const seats = [[f.x - 1.4, f.y], [f.x + 1.4, f.y], [f.x, f.y - 1.4]];
@@ -233,6 +247,13 @@ function venuesOf(layout, graph) {
     const pazar = layout.plots.find((p) => p.model === "pazar" && p.subject.type === "building" && Math.hypot(p.x - f.x, p.y - f.y) < f.r + 14);
     const busy = sites.some((s) => pointRect([f.x, f.y], s.ground) < f.r + 2);
     if (pazar && !busy && f.id !== "f0") venues.push({ id: `market:${f.id}`, kind: "market", target, spots, x: f.x, y: f.y, plot: pazar.id });
+  }
+  // A market on a street can still receive visitors. Use its actual entrance
+  // path rather than inventing an inaccessible square or walking over walls.
+  for (const p of layout.plots) {
+    if (p.model !== "pazar" || p.subject.type !== "building" || !p.door || !graph.doors.has(p.id) || venues.some((v) => v.kind === "market" && v.plot === p.id)) continue;
+    const len = lengthOf(p.door), spots = [.2, .4, .6, .8].map((t) => along(p.door, len * t).p);
+    venues.push({ id: `market:${p.id}`, kind: "market", target: graph.doors.get(p.id), spots, x: p.door.at(-1)[0], y: p.door.at(-1)[1], plot: p.id });
   }
   return venues;
 }

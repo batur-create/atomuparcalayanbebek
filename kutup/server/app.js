@@ -11,6 +11,7 @@ import { createRelaxedNotices, relaxedTag } from "./relaxed.js";
 import {createBlueprintNotices} from "./blueprintNotices.js";
 import { createImece } from "./imece.js";
 import { layoutFrom } from "../shared/koy2/draft.js";
+import { emptyLayout } from "../shared/koy2/planner.js";
 import { activeLayout, convertStatements, moveOptions, moveStatements, placeStatements } from "./villageSpatial.js";
 import { COMPATIBILITY_VERSION, contentChange, layoutStatements, readLayout, releaseStatements, v2Village } from "./villageStore.js";
 import { activateStatements, checkLayout, checkPart, inventory, rollbackStatements, storeStatements, switchState } from "./villageSwitch.js";
@@ -1963,7 +1964,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
         const active = await activeLayout(db, m.group_id);
         if (active) {
-          const placed = placeStatements(active, { subject: { type: "site", id: runId }, model: item.id, owner: m.id, created: now }, body.village);
+          const placed = placeStatements(active, { subject: { type: "site", id: runId }, model: item.id, owner: m.id, created: now }, body.village, { browserOnly: !!config.browserPlanningOnly });
+          if (placed.error === "replan") fail("Köy değişti veya yer planı hazır değil. Köyü yenileyip çalışmaya başlamayı tekrar dene; tuğlaların harcanmadı.", 409);
           if (placed.error) fail(`Köyde ${item.name} için şu an uygun yer hazırlanamadı. Başka bir yapı seç ya da biraz sonra dene.`, 409);
           site = placed.statements;
         }
@@ -2379,14 +2381,14 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
   route("GET", "/village", async ({ member, url, request }) => {
     const gid = member.group_id,
       now = Date.now();
-    const { rev, layout } = await db.get("SELECT village_rev AS rev, active_layout_id AS layout FROM groups WHERE id = ?", [gid]);
+    const { rev, layout, minimum } = await db.get("SELECT g.village_rev AS rev, g.active_layout_id AS layout, l.compatibility_version AS minimum FROM groups g LEFT JOIN village_layouts l ON l.id = g.active_layout_id WHERE g.id = ?", [gid]);
     // n46 C: a team on a v2 layout is served only to an app that says it
     // understands one (X-Kutup-Village-Version: 2); an older app is asked to
     // update instead of guessing districts from owners. Every other team gets
     // today's answer below, unchanged, whatever the app says.
     if (layout) {
       const version = Number(request.headers.get("x-kutup-village-version") || url.searchParams.get("v") || 1);
-      if (version < COMPATIBILITY_VERSION) return json({ updateRequired: true, contractVersion: 2, error: "Köy yenilendi. Görmek için uygulamayı güncelle." }, 426);
+      if (version < (minimum || COMPATIBILITY_VERSION)) return json({ updateRequired: true, contractVersion: 2, error: "Köy yenilendi. Görmek için uygulamayı güncelle." }, 426);
       const answer = await v2Village(db, { groupId: gid, memberId: member.id, layoutId: layout, cursor: url.searchParams.get("cursor"), now });
       if (!answer) fail("Köy düzeni bulunamadı.", 503);
       return json(answer);
@@ -2466,6 +2468,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (active) {
       const own = await db.get("SELECT id FROM buildings WHERE id = ? AND member_id = ?", [params.id, m.id]);
       if (!own) fail("Bu bina senin değil ya da bulunamadı.", 404);
+      if (config.browserPlanningOnly && active.layout.generator >= 3) return json({ planInBrowser: true, layoutRev: active.rev, spots: [] });
       return json({ spots: moveOptions(active, own.id).map((p) => [p.plot.x, p.plot.y, p.plot.facing]), layoutRev: active.rev });
     }
     const spots = await spotsFor(m, await ownBuilding(m, params.id));
@@ -2479,7 +2482,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if ((await db.get("SELECT active_layout_id AS a FROM groups WHERE id = ?", [m.group_id]))?.a) {
       for (let attempt = 0; ; attempt++) {
         const active = await activeLayout(db, m.group_id);
-        const moved = moveStatements(active, building.id, Number(body.x), Number(body.y), body.village);
+        const moved = moveStatements(active, building.id, Number(body.x), Number(body.y), body.village, { browserOnly: !!config.browserPlanningOnly });
+        if (moved.error === "replan") fail("Taşıma planı yenilenmeli. Köyü yenileyip tekrar yer seç; binan yerinde duruyor.", 409);
         if (moved.error) fail("Bu arsa artık boş değil. Başka birini seç.", 409);
         try {
           await db.batch([...moved.statements, ...contentChange(m.group_id, "building", building.id, "move", moved.plot.id, Date.now()), bumpVillage(m.group_id)]);
@@ -2636,7 +2640,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (from?.group_id && from.group_id !== groupId) out.push(...releaseStatements("imece", "?", [projectId]), ...contentChange(from.group_id, "imece", projectId, "release", null, now), bumpVillage(from.group_id));
     const active = await activeLayout(db, groupId);
     if (!active) return out;
-    const placed = placeStatements(active, { subject: { type: "imece", id: projectId }, model: "anitkabir", owner: null, created: now }, sent);
+    const placed = placeStatements(active, { subject: { type: "imece", id: projectId }, model: "anitkabir", owner: null, created: now }, sent, { browserOnly: !!config.browserPlanningOnly });
+    if (placed.error === "replan") fail("Köy değişti. Komuta merkezini yenileyip projeyi tekrar başlat; katkılar korunuyor.", 409);
     if (placed.error) fail("Köyde ortak Anıtkabir için yeterince büyük bir yer hazırlanamadı. Batur’a haber ver; proje açılmadı.", 409);
     return [...out, ...placed.statements, ...contentChange(groupId, "imece", projectId, "create", null, now), bumpVillage(groupId)];
   };
@@ -2930,7 +2935,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (!spot) fail("Köyde bu yapıya yer bulunamadı.", 409);
       // n46 D: a v2 village gives the gift its own plot on a street, like any building.
       const active = await activeLayout(db, member.group_id);
-      const placed = active ? placeStatements(active, { subject: { type: "building", id: buildingId }, model: item.id, owner: member.id, created: now }, body.village) : null;
+      const placed = active ? placeStatements(active, { subject: { type: "building", id: buildingId }, model: item.id, owner: member.id, created: now }, body.village, { browserOnly: !!config.browserPlanningOnly }) : null;
+      if (placed?.error === "replan") fail("Köy değişti. Komuta merkezini yenileyip hediyeyi tekrar gönder; hiçbir şey harcanmadı.", 409);
       if (placed?.error) fail("Köyde bu yapıya yer bulunamadı.", 409);
       return [
         ...(placed?.statements || []),
@@ -3102,7 +3108,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         ...buildings.map((b) => ({ subject: { type: "building", id: b.id }, model: b.model, owner: b.member_id, created: b.created })),
         ...runs.map((r) => ({ subject: { type: "site", id: r.id }, model: r.model, owner: r.member_id, created: r.started })),
       ];
-      const { layout, missing } = layoutFrom(`group:${who.group_id}`, items);
+      const { layout, missing } = layoutFrom(`group:${who.group_id}`, items, emptyLayout(`group:${who.group_id}`, body.generator === 2 ? 2 : undefined));
       const id = `v2-${randomHex(8)}`;
       await db.batch([
         ...layoutStatements(id, who.group_id, layout, { status: "active", sourceContentRev: group[0].rev }),

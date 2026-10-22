@@ -12,11 +12,12 @@
 import { BY_ID } from "../../shared/catalog.js";
 import { hash, lengthOf, along, linePoint, inPolygon, pointRect, rng as rand, screenOf } from "../../shared/koy2/geom.js";
 import { modelSpec } from "../../shared/koy2/models.js";
+import { watercourses } from "../../shared/koy2/terrain.js";
 import { buildingSVG, mirrored, ridgeOf, spec, box, poly, seg, ellipse, WOOD, STONE } from "../iso.js";
 import { sitePlan, siteSVG } from "../construction.js";
 import { specialOf } from "../special.js";
 import {
-  COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, meadowDetail, plazaArt, rockArt, bushArt, spotArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
+  COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, meadowDetail, plazaArt, rockArt, bushArt, signArt, spotArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
 } from "../villageWorld.js";
 import { createLife, lookOf } from "./life.js";
 
@@ -148,12 +149,13 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   const add = (list, item) => list.push(item);
 
   // ---------- terrain ----------
-  for (const piece of pieces(t.river.pts)) {
-    const bbox = lineBox(piece, t.river.w * 2);
-    add(ground, { pass: 0, bbox, draw: (v) => strokeLine(v, piece, t.river.w + 1.4, BANK, 0.8) });
-    add(ground, { pass: 1, bbox, draw: (v) => strokeLine(v, piece, t.river.w + 0.35, WATER_EDGE) });
-    add(ground, { pass: 1.1, bbox, draw: (v) => strokeLine(v, piece, t.river.w, WATER) });
+  for (const course of watercourses(t)) for (const piece of pieces(course.pts)) {
+    const bbox = lineBox(piece, course.w * 2);
+    add(ground, { pass: 0, bbox, draw: (v) => strokeLine(v, piece, course.w + 1.4, BANK, 0.8) });
+    add(ground, { pass: 1, bbox, draw: (v) => strokeLine(v, piece, course.w + 0.35, WATER_EDGE) });
+    add(ground, { pass: 1.1, bbox, draw: (v) => strokeLine(v, piece, course.w, WATER) });
   }
+  for (const n of t.nature || []) add(ground, { pass: 0.2, bbox: lineBox([...n.poly, n.poly[0]], 2), draw: (v) => fillShape(v, n.poly, n.kind === "grove" ? "#91b878" : "#b7cd91", null, 0, 0.3) });
   const pond = [...t.lake.poly];
   add(ground, { pass: 1, bbox: lineBox(pond, 3), draw: (v) => {
     fillShape(v, pond, BANK);
@@ -180,6 +182,9 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   }
 
   // ---------- squares ----------
+  const districts = [];
+  const ownerCounts = new Map();
+  for (const p of layout.plots) if (p.owner && p.subject.type === "building") ownerCounts.set(p.owner, (ownerCounts.get(p.owner) || 0) + 1);
   for (const f of layout.foci) {
     if (f.status === "reserved") continue;
     if (f.id === "f0") {
@@ -200,6 +205,11 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     const ring = [];
     for (let i = 0; i < 24; i++) ring.push([f.x + Math.cos((i / 24) * Math.PI * 2) * f.r, f.y + Math.sin((i / 24) * Math.PI * 2) * f.r]);
     add(ground, { pass: 2.5, bbox: boxOf(f.x, f.y, f.r * 1.8, f.r * 1.8, f.r, f.r), draw: (v) => fillShape(v, ring, PLAZA_STONE, PLAZA_RING, 0.3) });
+    if (f.personal) {
+      const owner = people.get(f.personal), x = f.x - 1.8, y = f.y + 1.4;
+      districts.push({ id: f.id, memberId: f.personal, personal: true, label: `${owner?.name || "Komşu"} · ${ownerCounts.get(f.personal) || 0}`, layout: { sign: [x, y] } });
+      add(standing, { type: "sign", depth: x + y, x, y, bbox: boxOf(x, y, 2, 2, 2.2, 1), draw: (v) => signArt(v, x, y, owner?.name || "Komşu", false, MEMBER_COLORS[owner?.color] || "#a99be0") });
+    }
     if (f.landmark) continue;
     if (f.kind === "cesme") add(standing, { type: "fountain", depth: f.x + f.y, x: f.x, y: f.y, bbox: boxOf(f.x, f.y, 2, 2, 2, 1.2), draw: (v) => fountainArt(v, f.x, f.y) });
     else if (f.kind === "bahce") add(standing, { type: "tree", depth: f.x + f.y, x: f.x, y: f.y, bbox: boxOf(f.x, f.y, 2, 2, 3.4, 1), draw: (v) => treeArt(v, f.x, f.y, 1.3, (hash(f.id) % 100) / 100, season) });
@@ -218,6 +228,33 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     const bbox = lineBox(r.pts, r.w * 2);
     add(ground, { pass: 2, bbox, draw: (v) => strokeLine(v, r.pts, r.w + 0.25, ROAD_EDGE) });
     add(ground, { pass: 3, bbox, draw: (v) => strokeLine(v, r.pts, r.w, ROAD) });
+    if (r.railCrossing) {
+      const c = r.railCrossing.pts[4], near = linePoint(t.rail.pts, c), len = lengthOf(t.rail.pts);
+      const track = [];
+      for (let s = Math.max(0, near.at - 2.3); s <= Math.min(len, near.at + 2.3); s += 0.35) track.push(along(t.rail.pts, s).p);
+      add(ground, { pass: 3.2, bbox: lineBox(track, 2), draw: (v) => railArt(v, track, t.rail.w, v.detail) });
+    }
+    if (r.crossing) {
+      const deck = r.crossing.pts;
+      const at = deck[Math.floor(deck.length / 2)];
+      add(standing, { type: "bridge", depth: at[0] + at[1], x: at[0], y: at[1], bbox: lineBox(deck, 3), draw: (v) => {
+        strokeLine(v, deck, r.w + 0.35, "#806349");
+        strokeLine(v, deck, r.w, "#bb9165", 1, [0.28, 0.08]);
+        const len = lengthOf(deck);
+        for (const side of [-1, 1]) {
+          const rail = deck.map((p, i) => {
+            const a = deck[Math.max(0, i - 1)], b = deck[Math.min(deck.length - 1, i + 1)], d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+            return [p[0] - (b[1] - a[1]) / d * side * r.w / 2, p[1] + (b[0] - a[0]) / d * side * r.w / 2];
+          });
+          const points = rail.map(([x, y]) => v.at(x, y)(0, 0, 0.6));
+          for (let i = 1; i < points.length; i++) seg(points[i - 1], points[i], "#775b40", Math.max(1, v.s * 0.09));
+          if (v.detail > 0) for (let s = 0; s <= len; s += 1.4) {
+            const { p, dir } = along(deck, s), x = p[0] - dir[1] * side * r.w / 2, y = p[1] + dir[0] * side * r.w / 2;
+            box(v.at(x, y), -0.05, -0.05, 0.05, 0.05, 0, 0.65, WOOD);
+          }
+        }
+      } });
+    }
   }
   for (const p of layout.plots) {
     if (p.door) {
@@ -302,6 +339,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   const H = 8,
     cells = new Map();
   const put = (x0, y0, x1, y1, item) => {
+    if (t.version >= 2) { x0 -= 1; y0 -= 1; x1 += 1; y1 += 1; }
     for (let i = Math.floor(x0 / H); i <= Math.floor(x1 / H); i++)
       for (let j = Math.floor(y0 / H); j <= Math.floor(y1 / H); j++) {
         const k = `${i},${j}`;
@@ -309,7 +347,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
         cells.get(k).push(item);
       }
   };
-  for (const p of layout.plots) put(p.plot[0], p.plot[1], p.plot[2], p.plot[3], { plot: p.plot });
+  for (const p of layout.plots) put(p.plot[0], p.plot[1], p.plot[2], p.plot[3], { plot: p.plot, ground: p.ground });
   for (const r of layout.roads) {
     if (r.status !== "usable") continue;
     let b = [Infinity, Infinity, -Infinity, -Infinity];
@@ -324,7 +362,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       if (it.path && linePoint(it.path, [x, y]).d < gap + 0.4) return false;
     }
     if (layout.foci.some((f) => f.status !== "reserved" && Math.hypot(f.x - x, f.y - y) < f.r + gap + 0.5)) return false;
-    if (linePoint(t.river.pts, [x, y]).d < t.river.w / 2 + 0.9 + gap) return false;
+    if (watercourses(t).some((r) => linePoint(r.pts, [x, y]).d < r.w / 2 + 0.9 + gap)) return false;
     if (inPolygon([x, y], t.lake.poly) || linePoint([...t.lake.poly, t.lake.poly[0]], [x, y]).d < 0.9 + gap) return false;
     if (t.rail && linePoint(t.rail.pts, [x, y]).d < t.rail.w / 2 + 0.8 + gap) return false;
     return true;
@@ -337,18 +375,20 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   const grove = noise(`${layout.seed}:grove`);
   const squares = layout.foci.filter((f) => f.status === "open" && !f.landmark);
   const lifeTrees = [];
-  for (let x = extent[0] - pad; x <= extent[2] + pad; x += step)
-    for (let y = extent[1] - pad; y <= extent[3] + pad; y += step) {
-      const jx = x + (R() - 0.5) * step,
-        jy = y + (R() - 0.5) * step;
-      const roll = R(),
-        size = 0.75 + R() * 0.55,
-        tone = R();
+  for (let x = (t.version >= 2 ? Math.floor((extent[0] - pad) / step) * step : extent[0] - pad); x <= extent[2] + pad; x += step)
+    for (let y = (t.version >= 2 ? Math.floor((extent[1] - pad) / step) * step : extent[1] - pad); y <= extent[3] + pad; y += step) {
+      const cellR = t.version >= 2 ? rand(hash(`${layout.seed}:tree:${Math.round(x / step)}:${Math.round(y / step)}`)) : R;
+      const jx = x + (cellR() - 0.5) * step,
+        jy = y + (cellR() - 0.5) * step;
+      const roll = cellR(),
+        size = 0.75 + cellR() * 0.55,
+        tone = cellR();
       // Thicker towards the fields, sparse among the houses.
       const edge = Math.min(jx - extent[0], extent[2] - jx, jy - extent[1], extent[3] - jy);
       const woods = Math.max(0, Math.min(1, (grove(jx / 22, jy / 22) - 0.48) / 0.22));
       const bySquare = edge >= 0 && squares.some((f) => Math.hypot(f.x - jx, f.y - jy) < f.r + 4.5);
-      const keep = edge < 0 ? 0.06 + 0.62 * woods : bySquare ? 0.3 : 0.03 + 0.1 * woods;
+      const nature = (t.nature || []).find((n) => inPolygon([jx, jy], n.poly));
+      const keep = nature?.kind === "grove" ? 0.75 : nature?.kind === "meadow" ? 0.02 : t.version >= 2 ? (bySquare ? 0.24 : 0.025 + 0.36 * woods) : edge < 0 ? 0.06 + 0.62 * woods : bySquare ? 0.3 : 0.03 + 0.1 * woods;
       if (roll > keep || !clear(jx, jy, 0.5)) continue;
       if (roll < keep * 0.18) add(standing, { type: "rock", depth: jx + jy, x: jx, y: jy, bbox: boxOf(jx, jy, 0.9, 0.9, 0.6, 0.5), draw: (v) => rockArt(v, jx, jy, size) });
       else if (roll < keep * 0.4) add(standing, { type: "bush", depth: jx + jy, x: jx, y: jy, bbox: boxOf(jx, jy, 1, 1, 1, 0.5), draw: (v) => bushArt(v, jx, jy, size, tone, tone < 0.4) });
@@ -361,21 +401,22 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   const meadow = noise(`${layout.seed}:meadow`);
   const MR = rand(hash(`${layout.seed}:meadows`));
   const blooms = season === "winter" ? null : season === "autumn" ? AUTUMN_FLOWERS : SPRING_FLOWERS;
-  for (let x = extent[0] - pad; x <= extent[2] + pad; x += 9)
-    for (let y = extent[1] - pad; y <= extent[3] + pad; y += 9) {
-      const cx = x + (MR() - 0.5) * 6,
-        cy = y + (MR() - 0.5) * 6,
-        rx = 2.4 + MR() * 2.2,
-        ry = 1.6 + MR() * 1.4;
+  for (let x = (t.version >= 2 ? Math.floor((extent[0] - pad) / 9) * 9 : extent[0] - pad); x <= extent[2] + pad; x += 9)
+    for (let y = (t.version >= 2 ? Math.floor((extent[1] - pad) / 9) * 9 : extent[1] - pad); y <= extent[3] + pad; y += 9) {
+      const cellMR = t.version >= 2 ? rand(hash(`${layout.seed}:meadow:${Math.round(x / 9)}:${Math.round(y / 9)}`)) : MR;
+      const cx = x + (cellMR() - 0.5) * 6,
+        cy = y + (cellMR() - 0.5) * 6,
+        rx = 2.4 + cellMR() * 2.2,
+        ry = 1.6 + cellMR() * 1.4;
       if (meadow(cx / 14, cy / 14) < 0.58 || !clear(cx, cy, 1.2)) continue;
       const spots = [];
       for (let k = 0; k < 14; k++) {
-        const a = MR() * Math.PI * 2,
-          d = Math.sqrt(MR()),
+        const a = cellMR() * Math.PI * 2,
+          d = Math.sqrt(cellMR()),
           sx = cx + Math.cos(a) * rx * d,
           sy = cy + Math.sin(a) * ry * d,
-          size = 0.7 + MR() * 0.6,
-          bloom = blooms && MR() < 0.35 ? blooms[Math.floor(MR() * blooms.length)] : null;
+          size = 0.7 + cellMR() * 0.6,
+          bloom = blooms && cellMR() < 0.35 ? blooms[Math.floor(cellMR() * blooms.length)] : null;
         if (clear(sx, sy, 0.1)) spots.push({ x: sx, y: sy, size, flower: bloom });
       }
       add(ground, { pass: 0.4, bbox: boxOf(cx, cy, rx * 2, rx * 2, rx, rx), draw: (v) => {
@@ -385,8 +426,8 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       } });
     }
   // Low hills on the horizon, beyond the fields: soft relief only, nothing stands on a slope.
-  const span = Math.max(extent[2] - extent[0], extent[3] - extent[1]) / 2 + pad + 10;
-  const [ox, oy] = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+  const span = t.version >= 2 ? 150 : Math.max(extent[2] - extent[0], extent[3] - extent[1]) / 2 + pad + 10;
+  const [ox, oy] = t.version >= 2 ? [0, 0] : [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
   const HR = rand(hash(`${layout.seed}:hills`));
   for (let k = 0; k < 9; k++) {
     const a = (k / 9) * Math.PI * 2 + HR() * 0.5,
@@ -410,7 +451,8 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       const side = k % 2 ? 1 : -1;
       const x = p[0] - dir[1] * side * (r.w / 2 + 0.45),
         y = p[1] + dir[0] * side * (r.w / 2 + 0.45);
-      if (layout.plots.some((q) => pointRect([x, y], q.ground) < 0.3 || (q.door && linePoint(q.door, [x, y]).d < 0.6))) continue;
+      const nearby = t.version >= 2 ? cells.get(`${Math.floor(x / H)},${Math.floor(y / H)}`) || [] : null;
+      if (nearby ? nearby.some((q) => q.ground && pointRect([x, y], q.ground) < 0.3 || q.path && linePoint(q.path, [x, y]).d < 0.6) : layout.plots.some((q) => pointRect([x, y], q.ground) < 0.3 || (q.door && linePoint(q.door, [x, y]).d < 0.6))) continue;
       add(standing, { type: "lamp", depth: x + y, x, y, bbox: boxOf(x, y, 1, 1, 3, 1), draw: (v) => lampArt(v, x, y, sky.lamps) });
     }
   }
@@ -467,6 +509,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   // Neighbours' visits, birds, butterflies and weather: the shared life (src/koy2/life.js).
   const life = createLife({ layout, trees: lifeTrees });
   const meMember = people.get(me);
+  const meCentre = layout.foci.find((f) => f.personal === me);
   const looks = new Map();
   // A figure seen behind something taller in front: the standing items that cover a screen box.
   function occludersAt(x, y, w = 0.8, h = 1.4) {
@@ -475,7 +518,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     return query(sx - w, sy - h, sx + w, sy).filter((it) => it.depth !== undefined && it.depth > d + 0.05 && ["building", "tree", "bridge", "bush", "lamp", "fountain"].includes(it.type));
   }
   return {
-    items, query, bounds, area, districts: [], walkingLinks: [], balloons: [], walkers: [], villagers: [], glows: [], smoke: [], buildings: layout.plots, lit,
+    items, query, bounds, area, districts, walkingLinks: [], balloons: [], walkers: [], villagers: [], glows: [], smoke: [], buildings: layout.plots, lit,
     life,
     // While I am focusing the village stays quieter (plan §6.4: at most four people).
     lifeFocus: !!meMember && focusing(meMember, now),
@@ -483,16 +526,18 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       if (!looks.has(plotId)) looks.set(plotId, lookOf(layout.seed, plotId, { COATS, SKINS, HATS }));
       return looks.get(plotId);
     },
-    farLabels: new Set(),
+    farLabels: new Set(districts.map((d) => d.id)),
     lamps: standing.filter((item) => item.type === "lamp"),
     byId: new Map(standing.filter((item) => item.id).map((item) => [item.id, item])),
     names: new Map(members.map((m) => [m.id, m.name])),
     count: layout.plots.length,
     focusOf(memberId) {
+      const home = layout.foci.find((f) => f.personal === memberId);
+      if (home) return screenOf(home.x, home.y);
       const own = layout.plots.filter((p) => p.owner === memberId);
       return own.length ? screenOf(own.at(-1).x, own.at(-1).y) : null;
     },
-    mineFocus: null,
+    mineFocus: meCentre ? screenOf(meCentre.x, meCentre.y) : null,
     activeBounds: () => area,
     detailFor,
     occludersAt,

@@ -1,0 +1,317 @@
+[
+  {
+    "seed": "komsu-1",
+    "count": 47,
+    "placed": 47,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 17,
+        "nearestCentreFraction": 1,
+        "axisRatio": 2.79
+      },
+      {
+        "owner": "m1",
+        "count": 13,
+        "nearestCentreFraction": 0.923,
+        "axisRatio": 1.47
+      },
+      {
+        "owner": "m2",
+        "count": 10,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.1
+      },
+      {
+        "owner": "m3",
+        "count": 7,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.08
+      }
+    ],
+    "planMedianMs": 22.80347699999993,
+    "planP95Ms": 76.385798
+  },
+  {
+    "seed": "komsu-1",
+    "count": 200,
+    "placed": 200,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 65,
+        "nearestCentreFraction": 0.969,
+        "axisRatio": 2.19
+      },
+      {
+        "owner": "m1",
+        "count": 50,
+        "nearestCentreFraction": 0.94,
+        "axisRatio": 1.8
+      },
+      {
+        "owner": "m2",
+        "count": 45,
+        "nearestCentreFraction": 1,
+        "axisRatio": 3.14
+      },
+      {
+        "owner": "m3",
+        "count": 40,
+        "nearestCentreFraction": 0.925,
+        "axisRatio": 1.53
+      }
+    ],
+    "planMedianMs": 31.306417999999667,
+    "planP95Ms": 62.92384399999992
+  },
+  {
+    "seed": "komsu-1",
+    "count": 500,
+    "placed": 500,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 250,
+        "nearestCentreFraction": 0.968,
+        "axisRatio": 1.13
+      },
+      {
+        "owner": "m1",
+        "count": 120,
+        "nearestCentreFraction": 0.958,
+        "axisRatio": 1.44
+      },
+      {
+        "owner": "m2",
+        "count": 80,
+        "nearestCentreFraction": 0.988,
+        "axisRatio": 1.87
+      },
+      {
+        "owner": "m3",
+        "count": 50,
+        "nearestCentreFraction": 0.94,
+        "axisRatio": 1.67
+      }
+    ],
+    "planMedianMs": 69.03167899999971,
+    "planP95Ms": 247.70523999999568
+  },
+  {
+    "seed": "komsu-2",
+    "count": 47,
+    "placed": 47,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 17,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.13
+      },
+      {
+        "owner": "m1",
+        "count": 13,
+        "nearestCentreFraction": 0.846,
+        "axisRatio": 1.01
+      },
+      {
+        "owner": "m2",
+        "count": 10,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.93
+      },
+      {
+        "owner": "m3",
+        "count": 7,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.44
+      }
+    ],
+    "planMedianMs": 11.581596000003628,
+    "planP95Ms": 20.42875500000082
+  },
+  {
+    "seed": "komsu-2",
+    "count": 200,
+    "placed": 200,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 65,
+        "nearestCentreFraction": 0.985,
+        "axisRatio": 1.14
+      },
+      {
+        "owner": "m1",
+        "count": 50,
+        "nearestCentreFraction": 0.96,
+        "axisRatio": 2.62
+      },
+      {
+        "owner": "m2",
+        "count": 45,
+        "nearestCentreFraction": 0.978,
+        "axisRatio": 1.24
+      },
+      {
+        "owner": "m3",
+        "count": 40,
+        "nearestCentreFraction": 0.975,
+        "axisRatio": 1.17
+      }
+    ],
+    "planMedianMs": 30.571899000002304,
+    "planP95Ms": 54.27203200000076
+  },
+  {
+    "seed": "komsu-2",
+    "count": 500,
+    "placed": 500,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 250,
+        "nearestCentreFraction": 0.964,
+        "axisRatio": 1.18
+      },
+      {
+        "owner": "m1",
+        "count": 120,
+        "nearestCentreFraction": 0.942,
+        "axisRatio": 2.33
+      },
+      {
+        "owner": "m2",
+        "count": 80,
+        "nearestCentreFraction": 0.963,
+        "axisRatio": 1.53
+      },
+      {
+        "owner": "m3",
+        "count": 50,
+        "nearestCentreFraction": 0.94,
+        "axisRatio": 1.26
+      }
+    ],
+    "planMedianMs": 64.28834600000118,
+    "planP95Ms": 269.1248349999951
+  },
+  {
+    "seed": "komsu-3",
+    "count": 47,
+    "placed": 47,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 17,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.22
+      },
+      {
+        "owner": "m1",
+        "count": 13,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.27
+      },
+      {
+        "owner": "m2",
+        "count": 10,
+        "nearestCentreFraction": 0.9,
+        "axisRatio": 3.2
+      },
+      {
+        "owner": "m3",
+        "count": 7,
+        "nearestCentreFraction": 1,
+        "axisRatio": 1.25
+      }
+    ],
+    "planMedianMs": 11.629338999991887,
+    "planP95Ms": 24.77098100000876
+  },
+  {
+    "seed": "komsu-3",
+    "count": 200,
+    "placed": 200,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 65,
+        "nearestCentreFraction": 0.969,
+        "axisRatio": 2.56
+      },
+      {
+        "owner": "m1",
+        "count": 50,
+        "nearestCentreFraction": 0.98,
+        "axisRatio": 1.51
+      },
+      {
+        "owner": "m2",
+        "count": 45,
+        "nearestCentreFraction": 0.933,
+        "axisRatio": 1.99
+      },
+      {
+        "owner": "m3",
+        "count": 40,
+        "nearestCentreFraction": 0.9,
+        "axisRatio": 2.05
+      }
+    ],
+    "planMedianMs": 30.655910999994376,
+    "planP95Ms": 68.44443200000387
+  },
+  {
+    "seed": "komsu-3",
+    "count": 500,
+    "placed": 500,
+    "missing": [],
+    "problems": [],
+    "owners": [
+      {
+        "owner": "m0",
+        "count": 250,
+        "nearestCentreFraction": 0.968,
+        "axisRatio": 1.34
+      },
+      {
+        "owner": "m1",
+        "count": 120,
+        "nearestCentreFraction": 0.992,
+        "axisRatio": 2.23
+      },
+      {
+        "owner": "m2",
+        "count": 80,
+        "nearestCentreFraction": 0.912,
+        "axisRatio": 1.72
+      },
+      {
+        "owner": "m3",
+        "count": 50,
+        "nearestCentreFraction": 0.88,
+        "axisRatio": 1.81
+      }
+    ],
+    "planMedianMs": 73.77375200000824,
+    "planP95Ms": 273.3813170000212
+  }
+]

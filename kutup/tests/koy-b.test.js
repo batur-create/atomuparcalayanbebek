@@ -9,7 +9,7 @@ import { measureAll } from "../scripts/koy/measure-models.mjs";
 import { MODEL_DATA } from "../shared/koy2/modelData.js";
 import { CONTEXT, modelSpec } from "../shared/koy2/models.js";
 import { layoutFrom } from "../shared/koy2/draft.js";
-import { applyPlan, convertSubject, emptyLayout, planPlacement, plotOf, releaseSubject, validateLayout } from "../shared/koy2/planner.js";
+import { applyPlan, convertSubject, emptyLayout, planPlacement, plotOf, releaseSubject, seedNeighbourhoods, validateLayout } from "../shared/koy2/planner.js";
 import { makeTerrain } from "../shared/koy2/terrain.js";
 import { lineRect } from "../shared/koy2/geom.js";
 import { CATALOG } from "../shared/catalog.js";
@@ -70,7 +70,7 @@ test("n46 B: every scene places everything and breaks no rule", () => {
 test("n46 B: growing the village never moves a placed plot or an open street", () => {
   const f = makeFixture("baskin100");
   const order = inventoryOf(f).sort((a, b) => a.created - b.created);
-  let layout = emptyLayout(f.groupKey);
+  let layout = seedNeighbourhoods(emptyLayout(f.groupKey), order.map((i) => i.owner));
   for (const item of order) {
     const before = layout;
     const plan = planPlacement(layout, item);

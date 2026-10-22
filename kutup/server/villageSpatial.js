@@ -111,11 +111,15 @@ export function changeStatements(layoutId, rev, base, next, plan = null) {
  * A plot for `subject` in the active layout: { statements, plot } or
  * { error } when there is no room that fits the model (nothing is written).
  */
-export function placeStatements(active, { subject, model, owner, created }, sent = null) {
+export function placeStatements(active, { subject, model, owner, created }, sent = null, { browserOnly = false } = {}) {
   const req = { subject, model, owner, created };
   // The plan the member's own browser made on this very revision, checked here;
   // planning it on the server costs more than a free-plan request may spend.
   const given = accepted(active, sent, req);
+  // A free-plan Worker must never run the expensive search after a stale or
+  // missing proposal. Nothing has been charged/written; the browser can plan
+  // again on the fresh revision with the same idempotency key.
+  if (browserOnly && active.layout.generator >= 3 && !given) return { error: "replan" };
   const plan = given || planPlacement(active.layout, req);
   if (!plan.ok) return { error: plan.error };
   const next = applyPlan(active.layout, plan);
@@ -133,7 +137,7 @@ function accepted(active, sent, req) {
 export const moveOptions = (active, buildingId) => movePlans(active.layout, { type: "building", id: buildingId });
 
 /** The move to the plan at (x, y): its old plot is let go, the new one taken. */
-export function moveStatements(active, buildingId, x, y, sent = null) {
+export function moveStatements(active, buildingId, x, y, sent = null, { browserOnly = false } = {}) {
   const subject = { type: "building", id: buildingId };
   const current = plotOf(active.layout, subject);
   if (!current) return { error: "taken" };
@@ -143,6 +147,7 @@ export function moveStatements(active, buildingId, x, y, sent = null) {
   // A browser's choice that no longer holds is not re-proposed here (a dozen
   // searches): the member sees the village has changed and picks again.
   if (sent && !given) return { error: "taken" };
+  if (browserOnly && active.layout.generator >= 3 && !given) return { error: "replan" };
   const plan = given || moveOptions(active, buildingId).find((p) => Math.abs(p.plot.x - x) < 0.01 && Math.abs(p.plot.y - y) < 0.01);
   if (!plan) return { error: "taken" };
   const next = applyPlan(releaseSubject(active.layout, subject), { ...plan, plot: { ...plan.plot, subject } });

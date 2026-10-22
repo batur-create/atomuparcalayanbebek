@@ -104,7 +104,8 @@ test("n46 E: the four fixed scenes still place everything; the shared Anıtkabir
   // Its forecourt is a public space of its own, reached by an approach road.
   const court = layout.foci.find((x) => x.landmark && x.of === shared.id);
   assert.ok(court);
-  assert.ok(layout.roads.some((r) => r.type === "yaklasim" && r.status === "usable"));
+  assert.ok(layout.roads.some((r) => r.id === shared.road && ["yaklasim", "sokak", "omurga"].includes(r.type) && r.status === "usable"), "the forecourt has a real approach, including a direct connection to an existing street");
+  assert.ok(court.node, "the forecourt joins the walking graph");
 });
 
 // ---------- server: the shared project's place ----------
@@ -133,7 +134,7 @@ test("n46 E: launching the shared Anıtkabir on a v2 team gives it a big plot; m
     people.push(await call(app, "/join", { method: "POST", body: { invite: first.data.group.invite, name, username: `n46e_${i}`, password: "n46e-pass-1" } }));
   const ids = people.map((p) => p.data.memberId);
   await call(app, "/__test/village-v2", { method: "POST", body: { name: "Ada" } });
-  const v2 = { Cookie: first.cookie, "X-Kutup-Village-Version": "2" };
+  const v2 = { Cookie: first.cookie, "X-Kutup-Village-Version": "3" };
   const before = (await call(app, "/village", { headers: v2 })).data;
   const launched = await call(app, "/owner/imece", { method: "POST", headers: owner, body: { members: ids } });
   assert.equal(launched.status, 201, JSON.stringify(launched.data));

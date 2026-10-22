@@ -14,6 +14,7 @@ import { IMECE_TOTAL } from "../shared/imece.js";
 export const CONTRACT_VERSION = 2;
 // The app version that understands a v2 village (X-Kutup-Village-Version).
 export const COMPATIBILITY_VERSION = 2;
+export const compatibilityOf = (generator) => generator >= 3 ? 3 : COMPATIBILITY_VERSION;
 
 /**
  * A change to the village's content, logged in order per team (plan §8.2):
@@ -46,7 +47,7 @@ export function layoutStatements(layoutId, groupId, layout, { status = "draft", 
     [
       `INSERT INTO village_layouts (id, group_id, kind, status, seed, generator_version, terrain_version, compatibility_version, rev, source_content_rev, applied_content_rev, created, meta)
        VALUES (?, ?, 'v2', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [layoutId, groupId, status, layout.seed, layout.generator, layout.terrainVersion, COMPATIBILITY_VERSION, rev, sourceContentRev, sourceContentRev, now, plain(meta)],
+      [layoutId, groupId, status, layout.seed, layout.generator, layout.terrainVersion, compatibilityOf(layout.generator), rev, sourceContentRev, sourceContentRev, now, plain(meta)],
     ],
     ["INSERT INTO village_regions (layout_id, region_key, bounds, terrain, rev) VALUES (?, '*', NULL, ?, ?)", [layoutId, plain(layout.terrain), rev]],
     [

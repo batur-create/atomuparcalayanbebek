@@ -1,0 +1,83 @@
+{
+  "screens": [
+    {
+      "count": 47,
+      "view": "genel",
+      "worldMs": 237.80000001192093,
+      "plots": 47,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 47,
+      "view": "yakin",
+      "worldMs": 151,
+      "plots": 47,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 47,
+      "view": "gece",
+      "worldMs": 135.80000001192093,
+      "plots": 47,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 200,
+      "view": "genel",
+      "worldMs": 187.60000002384186,
+      "plots": 200,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 200,
+      "view": "yakin",
+      "worldMs": 145.19999998807907,
+      "plots": 200,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 200,
+      "view": "gece",
+      "worldMs": 190.89999997615814,
+      "plots": 200,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 500,
+      "view": "genel",
+      "worldMs": 750.9000000357628,
+      "plots": 500,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 500,
+      "view": "yakin",
+      "worldMs": 539.9000000357628,
+      "plots": 500,
+      "centres": 4,
+      "missing": 0
+    },
+    {
+      "count": 500,
+      "view": "gece",
+      "worldMs": 470.80000001192093,
+      "plots": 500,
+      "centres": 4,
+      "missing": 0
+    }
+  ],
+  "desktopChromiumPhoneViewport": {
+    "frames": 45,
+    "medianFrameMs": 16.599999964237213,
+    "p95FrameMs": 26.600000023841858,
+    "elapsedMs": 751.3000000119209
+  },
+  "errors": []
+}

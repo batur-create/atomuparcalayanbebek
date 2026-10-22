@@ -160,6 +160,9 @@ export function OwnerVillage({ group, close }) {
                 </p>
                 {preview && <Preview source={preview} />}
                 <div className="owner-village-actions">
+                  <button className="btn" disabled={!!busy} onClick={() => prepare()}>
+                    <Sparkles size={15} /> Komşu köyler taslağını yeniden hazırla
+                  </button>
                   <button className="btn" disabled={!!busy} onClick={() => prepare("draft", draft.id)}>
                     <RefreshCw size={15} /> Eşitle
                   </button>
@@ -170,6 +173,7 @@ export function OwnerVillage({ group, close }) {
               </>
             )}
           </section>
+          <p>Komşu köyler: herkesin kalıcı merkezi, yakın sokakları ve doğal geçişleri var. Taslağı yeniden hazırlamak canlı köyü taşımaz; yeni düzen yalnız “Yeni köyü aç” ile etkinleşir.</p>
           {previous && (
             <section>
               <h3>{previous.kind === "legacy" ? "Eski köy" : "Önceki köy"}</h3>

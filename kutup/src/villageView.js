@@ -255,15 +255,22 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       bubble(p[0], p[1] - r - 6 + float, b.member, r, true, b.focus && !resting ? "🎧" : resting ? "☕" : null);
     }
     // District names while zoomed out (the signs carry them when close).
-    if (interactive && s < 9 && s > 2)
-      for (const d of world.districts) {
+    const districtLabels = [];
+    if (interactive && s < 9 && s > (world.districts.some((d) => d.personal) ? 0.65 : 2))
+      for (const d of [...world.districts].sort((a, b) => Number(!!b.personal && b.memberId === world.me) - Number(!!a.personal && a.memberId === world.me))) {
         if (!d.memberId) continue;
         if (s < 4.2 && !world.farLabels.has(d.id)) continue;
-        const name = world.names?.get(d.memberId);
+        const name = d.label || world.names?.get(d.memberId);
         if (!name) continue;
         const [x, y] = d.layout.sign;
         const p = atScreen(x, y, 2.2);
         if (!onScreen(p, 100)) continue;
+        if (d.personal) {
+          ctx.font = '700 11px "DM Sans", sans-serif';
+          const w = ctx.measureText(name).width + 20, box = [p[0] - w / 2, p[1] - 22, p[0] + w / 2, p[1] + 6];
+          if (districtLabels.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+          districtLabels.push(box);
+        }
         pill(p[0], p[1] - 8, name);
       }
     if (selected) {
