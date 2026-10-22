@@ -28,10 +28,28 @@ Dosya adındaki tarih içerikteki bütün öğelerin bugünkü durumunu doğrula
 - Ticari gezi sitelerinin çelişen alan/tarih/çevre sokak bilgileri esas alınmadı.
 - Terminalden belediye ve Ankara İl Kültür/Turizm alan adlarına erişim 403 ile engellendi; kısıt aşılmadı. Ayrı kullanılabilir web araştırma aracı metin kaynaklarını okuyabildi.
 
-## Gereken görseller
+## İlk aşamada istenen görseller — kullanıcı ekleriyle tamamlandı
 
 1. Havuz konturu, yollar, kafe ve girişlerin birlikte görüldüğü üstten/genel görünüm veya PDF s.51–52'nin okunaklı görüntüsü.
 2. Havuz kenarı, korkuluk/taş kenar ve kuğuları gösteren yakın görünüm.
 3. Tunalı tarafı giriş, heykel ve kafe çevresini gösteren bir veya iki açı.
 
 Kişisel fotoğraf şart değil; bu bağlantılardaki görsellerin eklenmesi de yeterli olabilir. Amaç görsel boşlukları uydurmadan kapatmak. Çok hassas santimetre ölçüleri veya bütün ağaçların tek tek sayımı bu minyatür için gerekli değil.
+
+## Kullanıcının sunduğu dokuz görsel
+
+Kopyalar `referanslar/`; dosya boyutları ve SHA-256 sağlamaları `referanslar/manifest.json`. Kullanıcı bunları 22 Ekim 2026'da iki grup halinde sundu. Özgün internet bağlantıları ve çekim tarihleri bilinmiyor. Fotoğraflardaki kişiler, işletme adları, ekran üstü işaretler veya haritanın arayüzü modele aktarılmayacak.
+
+| Dosya | Görsel olarak okunan öğeler | Kullanım sınırı |
+| --- | --- | --- |
+| `1000196344.jpg` | El çizimi kuşbakışı anlatı; su, ağaçlar, oyun alanı ve giriş/heykel ilişkileri | Sanatçı yorumu; ölçü/konum için tek başına esas değil |
+| `1000196345.jpg` | Havuzun kıvrımlı kıyısı, ahşap çit, kuğu evleri, taş döşeme, fıskiyeler | Çit ve kıyı malzemesine ana referans; mevsimlik asılı süsler kalıcı detay değil |
+| `1000196346.jpg` | Kış/gece; su kıvrımları, adacık, kuğu evleri, ağaçlar ve çevre ışıkları | Gece atmosferi ve kar; bütün mevsimlere kopyalanmayacak |
+| `1000196347.jpg` | Kışın ada ve kuğu evleri; beyaz kuğular; ağaç-su ilişkisi | Geometriyi diğer mevsim fotoğraflarıyla birlikte okuma |
+| `1000196348.jpg` | Birleştirilmiş görsel: renkli ahşap çitli oyun alanı, kaydırak; siyah kuğu ve yavrular | TV grafik/etiketleri yok; kuğu sayısı sabit gerçek envanter iddiası değil |
+| `1000196349.jpg` | Geniş havuz görünümü; adalar, ağaçlar, çit, kuğu evleri ve fıskiyeler | Havuzun malzeme ve düzen ilişkisine başlıca fotoğraf referansı |
+| `1000196350.jpg` | Daralan su kolu, siyah kuğular, kıyı eğimi, ahşap çit ve yerel tel ayırıcı | Geçici ayırıcıyı her yere yaymama; bütün çit tel sayılmayacak |
+| `1000196351.jpg` | Su içinden açı; adacık/evler, birden çok fıskiye, arka kafe/duvar | Kafe kütlesi için yeterli; iç mekân/ölçülü cephe bilinmiyor |
+| `1000196352.jpg` | Uydu: park, havuz, kafe, yürüyüş ağı ve çevre yolların ilişkisi | Harita kaplaması bazı alanları örtüyor; pikselden santimetre ölçümü yok |
+
+Araştırma yeterliliği: ana yerleşim ve karakter için yeterli; yeni görsel şartı yok. Heykellerin eksiksiz heykeltıraşlık kopyası, bütün ağaçların birebir haritası veya hassas tarihî yapım rekonstrüksiyonu istenirse ayrıca kaynak gerekir. Bu kapsamda heykeller tanınabilir küçük siluetler olarak yorumlanacak.

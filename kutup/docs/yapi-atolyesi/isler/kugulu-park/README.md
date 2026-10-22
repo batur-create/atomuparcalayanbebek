@@ -1,6 +1,6 @@
 # Kuğulu Park — yapı işi
 
-Durum: Araştırma; görsel doğrulama bekleniyor. Ayrıntılı üretim onayı yok.
+Durum: Düşük ayrıntılı önizleme v1 hazır; kapsam onayı bekleniyor. Ayrıntılı üretim onayı yok.
 
 - Kimlik önerisi: `kugulupark`; henüz kataloğa eklenmedi.
 - Açık kullanıcı talebi (22 Ekim 2026): “KUĞULU PARK”.
@@ -28,7 +28,7 @@ Durum: Araştırma; görsel doğrulama bekleniyor. Ayrıntılı üretim onayı y
 
 Kaynaklar `KAYNAKLAR.md`; henüz onaylanmamış plan `ONAY_LISTESI.md`.
 
-Belediye ve Bakanlık kaydı ile 2025 tarihli, belediyeden alınmış vaziyet planını içeren akademik çalışma bulundu. Bununla birlikte kaynak görselleri bu oturuma incelenebilir görüntü verisi olarak aktarılamadı. Görsel dosyalarını gerçekten görmüş gibi davranılmayacak. Havuz konturu, girişlerin birbirine göre konumu, kafe ve heykellerin güncel görünümü görsel doğrulama bekliyor. Kullanıcıdan genel/üstten görünüm ve havuz/giriş fotoğrafları istenecek. 2025 planı 2026'nın ölçülü uygulama projesi sayılmıyor.
+Belediye ve Bakanlık kaydı ile 2025 tarihli, belediyeden alınmış vaziyet planını içeren akademik çalışma bulundu. İlk aşamada web aracı kaynak görsellerini incelenebilir görüntü verisi olarak aktaramadı. Ardından kullanıcı dokuz görsel sundu; çizimli genel harita, farklı havuz açıları, kış/gece, oyun alanı, siyah/beyaz kuğular ve uydu görüntüsü birlikte incelendi. Bu set, minyatürün kütle/ölçek önizlemesi için yeterli. Havuzun kıvrımları, adacıklar, kuğu evleri, ahşap çitler, fıskiyeler, taş yollar ve ana işlev ilişkileri okunabiliyor. 2025 planı ve tarihsiz fotoğraflar 2026'nın ölçülü uygulama projesi sayılmıyor; eksiksiz rölöve iddiası yok. Kullanıcının sorusu “bitti, sence yeterli öi”; referans teslimi tasarım veya üretim onayı sayılmadı.
 
 ## Teknik ön inceleme
 
@@ -45,13 +45,17 @@ Belediye ve Bakanlık kaydı ile 2025 tarihli, belediyeden alınmış vaziyet pl
 | --- | --- | --- |
 | 22 Ekim 2026 | Kullanıcı yapı adını verdi | Araştırma yetkisi; ayrıntılı üretim onayı değil |
 | 22 Ekim 2026 | Ön öneri v0 hazırlandı | Kullanıcıya ait karar yok |
+| 22 Ekim 2026 | Kullanıcı dokuz görseli gönderdi ve yeterli olup olmadığını sordu | Araştırma boşluğu önizleme için kapandı; üretim onayı yok |
+| 22 Ekim 2026 | Önizleme ve kapsam v1 | 28 × 24 m oyun alanı; onay bekliyor |
 
 ## Doğrulama ve kalan işler
 
 - Uzak taban ve katalog tekrar kontrolü tamamlandı.
 - Yalnız araştırma/kayıt yapıldı; model, ekonomi, sunucu veya oyun entegrasyonu değiştirilmedi.
 - Ürün değişikliği olmadığı için test/build yeniden çalıştırılmadı; önceki paket testleri bu işe yeni kanıt sayılmıyor.
-- Önizleme, animasyon kanıtı ve yeni yapı testi henüz yok.
-- Sıradaki: görsel referansları incele; düşük ayrıntılı yakın/ev-insan ölçek önizlemesi hazırla; v1 kapsam listesini sun; açık onaydan sonra üret.
+- Önizleme: `onizleme/` altında mevcut `iso.js` ve `kit.js` ilkelleriyle gündüz/gece ve aynı ölçekte mevcut ev/insan karşılaştırması. Bunlar izole hacim denemesi; çalışan ürün ekranı veya nihai model değil.
+- Önizleme doğrulaması: üç SVG Node ile üretildi, yerel Chromium ile üç PNG alındı ve görsel olarak incelendi. İlk kamera denemesinde üstte kesilen ağaç ve metne taşma düzeltildi; son görüntülerde tamamı kadrajda. SVG içeriğinin XML ve sonlu sayısal değer kontrolü yapıldı. Bunlar ürünün kabul testlerinin yerine geçmez.
+- Gerçek animasyon kanıtı ve yeni yapı testi henüz yok. Önizleme durağan; hareket uygulanmadı.
+- Sıradaki: kullanıcının v1 kapsam/ölçek kararını bekle; açık onaydan sonra ayrıntılı üret.
 - Uygulama tamamlandığında ilgili testler, zorunlu genel paketler, mobil/açık-koyu/gece/ayna kontrolleri; merkezi kayıtlar ve incelemeye hazır PR.
 - Push, PR, birleştirme, canlı yayın, etkinleştirme ve canlı veri işlemi yapılmadı.
