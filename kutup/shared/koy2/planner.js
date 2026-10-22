@@ -25,9 +25,9 @@ import {
   pointRect, q, rect, rectPolygon, rectWithin, rectsHit, rng, screenBox, segRect, lineRectNear, lineLineNear, linePointNear, nearPolygon,
 } from "./geom.js";
 import { GEOMETRY_VERSION, doorsAt, modelSpec, shapeAt, turn, worldRect } from "./models.js";
-import { TERRAIN_VERSION, makeTerrain } from "./terrain.js";
+import { TERRAIN_VERSION, makeTerrain, watercourses } from "./terrain.js";
 
-export const GENERATOR_VERSION = 2; // 2: shore strip, outward growth, final check (n46 E)
+export const GENERATOR_VERSION = 3; // C: permanent personal centres, compact growth; old layouts retain generator 2
 export const PLAZA_R = 6.5;
 export const SQUARE_R = 3.2;
 export const WIDTH = { omurga: 2.4, sokak: 2.0, yaklasim: 2.4, kopru: 1.8, patika: 0.8, iskele: 0.9 };
@@ -45,12 +45,12 @@ const PLAZA_STREET = 22,
   RUN = 16;
 
 // ---------- the layout ----------
-export function emptyLayout(seed) {
+export function emptyLayout(seed, generator = GENERATOR_VERSION) {
   const layout = {
-    generator: GENERATOR_VERSION,
-    terrainVersion: TERRAIN_VERSION,
+    generator,
+    terrainVersion: generator >= 3 ? TERRAIN_VERSION : 1,
     seed,
-    terrain: makeTerrain(seed),
+    terrain: makeTerrain(seed, generator >= 3 ? TERRAIN_VERSION : 1),
     nodes: [{ id: "n0", x: 0, y: 0 }],
     roads: [],
     foci: [{ id: "f0", x: 0, y: 0, r: PLAZA_R, kind: "meydan", node: "n0", parent: null, status: "open" }],
@@ -67,6 +67,107 @@ export function emptyLayout(seed) {
 }
 const subjectKey = (s) => `${s.type}:${s.id}`;
 export const plotOf = (layout, subject) => layout.plots.find((p) => subjectKey(p.subject) === subjectKey(subject)) || null;
+export const personalCentre = (layout, owner) => owner && layout.foci.find((f) => f.personal === owner);
+
+// Centres are ordinary persisted public-space rows, not movable centroids or
+// fixed-size territories. Their surrounding streets remain public. Reserve
+// known members before migration so the earliest/fastest builder cannot take
+// every neighbour's starting point. Later arrivals use the same bounded search.
+export function seedNeighbourhoods(layout, owners) {
+  if (layout.generator < 3) return layout;
+  for (const owner of [...new Set(owners.filter(Boolean))].sort(cmp)) {
+    const delta = neighbourhood(layout, owner);
+    if (delta) layout = infrastructure(layout, delta);
+  }
+  return layout.plots.length ? layout : neighbourLinks(layout);
+}
+function neighbourLinks(layout) {
+  const centres = layout.foci.filter((f) => f.personal), pairs = [];
+  for (let i = 0; i < centres.length; i++) for (let j = i + 1; j < centres.length; j++) {
+    const [a, b] = [centres[i], centres[j]], d = Math.hypot(b.x - a.x, b.y - a.y);
+    if (d < 65) pairs.push({ a, b, d, key: [a.id, b.id].sort(cmp).join(":") });
+  }
+  pairs.sort((a, b) => a.d - b.d || cmp(a.key, b.key));
+  let made = layout.roads.filter((r) => r.neighbours).length;
+  for (const { a, b, d, key } of pairs) {
+    if (made >= Math.min(3, centres.length - 1)) break;
+    if (layout.roads.some((r) => r.neighbours === key)) continue;
+    const dir = [(b.x - a.x) / d, (b.y - a.y) / d];
+    const pts = bend([a.x + dir[0] * (a.r + 0.3), a.y + dir[1] * (a.r + 0.3)], [b.x - dir[0] * (b.r + 0.3), b.y - dir[1] * (b.r + 0.3)], ((hash(key) % 100) / 100 - 0.5) * 4, 12);
+    const soft = new Set();
+    if (roadReason(contextOf(layout), pts, WIDTH.sokak, { skip: new Set([a.id, b.id]), cross: true, soft })) continue;
+    const drop = dropClosure(layout, [...soft]), id = ids(layout);
+    const road = { id: id.road(), a: a.node, b: b.node, pts, w: WIDTH.sokak, type: "sokak", status: "usable", focus: a.id, neighbours: key };
+    const at = along(pts, lengthOf(pts) * 0.5).p;
+    const node = { id: id.node(), x: q(at[0]), y: q(at[1]), on: road.id };
+    const focus = { id: id.focus(), x: node.x, y: node.y, r: 2, kind: "cay", node: node.id, parent: a.id, status: "open", shared: true };
+    layout = { ...layout, roads: [...layout.roads.filter((r) => !drop.has(r.id)), road], foci: [...layout.foci.filter((f) => !drop.has(f.id)), focus], nodes: [...layout.nodes, node], seq: id.seq };
+    made++;
+  }
+  return layout;
+}
+function infrastructure(layout, d) {
+  const open = new Set(d.open || []);
+  return { ...layout, nodes: [...layout.nodes, ...d.nodes],
+    roads: [...layout.roads.map((r) => open.has(r.id) ? { ...r, status: "usable" } : r), ...d.roads],
+    foci: [...layout.foci.map((f) => open.has(f.id) ? { ...f, status: "open" } : f), ...d.foci], seq: d.seq };
+}
+function combinePlan(delta, plan) {
+  const opening = new Set(plan.open), dropping = new Set(plan.drop);
+  const added = new Set([...delta.roads, ...delta.foci].map((x) => x.id));
+  return { ...plan,
+    roads: [...delta.roads.filter((x) => !dropping.has(x.id)).map((x) => opening.has(x.id) ? { ...x, status: "usable" } : x), ...plan.roads],
+    nodes: [...delta.nodes, ...plan.nodes],
+    foci: [...delta.foci.filter((x) => !dropping.has(x.id)).map((x) => opening.has(x.id) ? { ...x, status: "open" } : x), ...plan.foci],
+    open: [...new Set([...delta.open, ...plan.open.filter((x) => !added.has(x))])], drop: plan.drop.filter((x) => !added.has(x)) };
+}
+function neighbourhood(layout, owner) {
+  if (!owner || personalCentre(layout, owner)) return null;
+  const centres = layout.foci.filter((f) => f.personal);
+  const candidates = layout.roads.filter((r) => r.status === "reserved").map((r) => {
+    const end = r.pts.at(-1), prev = r.pts.at(-3) || r.pts[0];
+    const angle = Math.atan2(end[1] - prev[1], end[0] - prev[0]);
+    const c = [q(end[0] + Math.cos(angle) * (SQUARE_R + 0.3)), q(end[1] + Math.sin(angle) * (SQUARE_R + 0.3))];
+    const separation = centres.length ? Math.min(...centres.map((f) => Math.hypot(f.x - c[0], f.y - c[1]))) : 30;
+    return { r, c, angle, separation, cost: Math.hypot(...c) + Math.max(0, 30 - separation) * 4 };
+  }).sort((a, b) => a.cost - b.cost || cmp(a.r.id, b.r.id));
+  for (const { r, c, angle, separation } of candidates.slice(0, 80)) {
+    if (separation < 18 || !squareRoom(contextOf(layout), c, r)) continue;
+    if (contextOf(layout).plotIndex.near(grow([c[0], c[1], c[0], c[1]], SQUARE_R + PLOT_DIAMETER)).some((p) => pointRect(c, p.plot) < SQUARE_R + PLOT_DIAMETER)) continue;
+    // A reserved square at this end already owns its outgoing corridors.
+    if (layout.foci.some((f) => f.node === r.b)) continue;
+    const id = ids(layout), fid = id.focus();
+    const focus = { id: fid, x: c[0], y: c[1], r: SQUARE_R, kind: FOCUS_KINDS[hash(`${layout.seed}:centre:${owner}`) % FOCUS_KINDS.length], personal: owner, node: r.b, parent: r.focus, status: "open" };
+    const R = rng(hash(`${layout.seed}:neighbourhood:${owner}`));
+    const opened = layout.roads.map((x) => x.id === r.id ? { ...x, status: "usable" } : x);
+    const temp = { ...layout, roads: opened, foci: [...layout.foci, focus] };
+    const res = reserveFrom(temp, { ...focus, road: r.id },
+      [angle - 1.1 - R() * 0.3, angle + (R() - 0.5) * 0.25, angle + 1.0 + R() * 0.35], 13 + R() * 3, "sokak", 1, id, []);
+    if (!res.roads.length) continue;
+    const parent = layout.foci.find((f) => f.status === "reserved" && f.node === r.a);
+    return { roads: res.roads, nodes: res.nodes, foci: [focus], open: [r.id, ...(parent ? [parent.id] : [])], seq: id.seq };
+  }
+  return null;
+}
+
+// The whole territory is not coloured or fenced. Most ordinary houses stay
+// on their own centre's side of a soft contact band; special terrain models
+// and large public landmarks can reach the shared bank or a larger forecourt.
+function personalReason(layout, req, spec, x, y) {
+  if (layout.generator < 3 || !req.owner || spec.context !== "dry" || spec.landmark) return null;
+  const home = personalCentre(layout, req.owner);
+  if (!home) return "personal_centre_missing";
+  const own = layout.plots.filter((p) => p.owner === req.owner && p.id !== req.exclude && subjectKey(p.subject) !== subjectKey(req.subject));
+  const gap = Math.min(Math.hypot(home.x - x, home.y - y), ...own.map((p) => pointRect([x, y], p.plot)));
+  const localReach = PLOT_DIAMETER * 4 + Math.hypot(spec.over[2] - spec.over[0], spec.over[3] - spec.over[1]) / 2;
+  if (gap > localReach) return "personal_disconnected";
+  const foreign = layout.foci.filter((f) => f.personal && f.personal !== req.owner);
+  // Only a starter/access apron is hard protected. An infinite Voronoi wall
+  // would trap a neighbour between the river and two other centres forever.
+  if (foreign.some((f) => Math.hypot(f.x - x, f.y - y) < f.r + PLOT_DIAMETER)) return "neighbourhood_conflict";
+  if (req.preferHome && foreign.some((f) => Math.hypot(f.x - x, f.y - y) + 4 < Math.hypot(home.x - x, home.y - y))) return "neighbourhood_contact";
+  return null;
+}
 
 // ---------- context: indexes over what is already there ----------
 // Built once per layout object and reused; a plan's trial additions (an
@@ -78,13 +179,14 @@ function contextOf(layout, { exclude = null } = {}) {
   if (!ctx) {
     const plotIndex = createIndex(16),
       roadIndex = createIndex(16),
-      doorIndex = createIndex(16);
+      doorIndex = createIndex(16), focusIndex = createIndex(16);
     for (const p of layout.plots) {
       plotIndex.add(p.plot, p);
       if (p.door) doorIndex.add(lineBounds(p.door, 1), p);
     }
     for (const r of layout.roads) roadIndex.add(lineBounds(r.pts, r.w), r);
-    ctx = { layout, plots: layout.plots, plotIndex, roadIndex, doorIndex, terrain: layout.terrain };
+    for (const f of layout.foci) focusIndex.add([f.x - f.r, f.y - f.r, f.x + f.r, f.y + f.r], f);
+    ctx = { layout, plots: layout.plots, plotIndex, roadIndex, doorIndex, focusIndex, terrain: layout.terrain };
     CONTEXTS.set(layout, ctx);
   }
   if (!exclude) return ctx;
@@ -114,18 +216,20 @@ function withAdded(layout, { roads = [], foci = [], plots = [] }, exclude = null
   };
   const extraRoads = createIndex(16),
     extraPlots = createIndex(16),
-    extraDoors = createIndex(16);
+    extraDoors = createIndex(16), extraFoci = createIndex(16);
   for (const r of roads) extraRoads.add(lineBounds(r.pts, r.w), r);
   for (const p of plots) {
     extraPlots.add(p.plot, p);
     if (p.door) extraDoors.add(lineBounds(p.door, 1), p);
   }
+  for (const f of foci) extraFoci.add([f.x - f.r, f.y - f.r, f.x + f.r, f.y + f.r], f);
   const ctx = {
     layout: merged,
     plots: [...base.plots, ...plots],
     plotIndex: { near: (r) => [...base.plotIndex.near(r), ...extraPlots.near(r)] },
     roadIndex: { near: (r) => [...base.roadIndex.near(r).filter((x) => !swap.has(x.id)), ...extraRoads.near(r)] },
     doorIndex: { near: (r) => [...base.doorIndex.near(r), ...extraDoors.near(r)] },
+    focusIndex: { near: (r) => [...base.focusIndex.near(r), ...extraFoci.near(r)] },
     terrain: layout.terrain,
   };
   if (!exclude) CONTEXTS.set(merged, ctx);
@@ -148,7 +252,7 @@ function groundReason(ctx, spec, shape, { own = new Set(), allowWater = false, a
     }
   }
   for (const other of ctx.doorIndex.near(grow(plot, 1))) if (lineRect(other.door, plot) < 0.3) return "entrance_blocked";
-  for (const f of ctx.layout.foci) {
+  for (const f of ctx.focusIndex.near(grow(plot, 0.5))) {
     if (self && f.of === self) continue;
     if (pointRect([f.x, f.y], plot) < f.r + 0.5) {
       if (f.status !== "reserved") return "public_space_pressure";
@@ -157,13 +261,14 @@ function groundReason(ctx, spec, shape, { own = new Set(), allowWater = false, a
     }
   }
   const t = ctx.terrain;
+  if ((t.nature || []).some((n) => nearPolygon(plot, n.poly) && rectPolygon(plot, n.poly) < 0.5)) return "protected_nature";
   if (!allowWater) {
     const lakeNear = nearPolygon(plot, t.lake.poly);
-    if (lineRectNear(t.river.pts, ground) < t.river.w / 2 + 1.0) return "wrong_water_context";
+    if (watercourses(t).some((r) => lineRectNear(r.pts, ground) < r.w / 2 + 1.0)) return "wrong_water_context";
     if (lakeNear && rectPolygon(ground, t.lake.poly) < 1.0) return "wrong_water_context";
     // A strip along the bank and the shore stays open to everyone, and to the
     // mills, bridges, jetties and lighthouses that can stand nowhere else.
-    if (lineRectNear(t.river.pts, plot) < t.river.w / 2 + SHORE_KEEP || (lakeNear && rectPolygon(plot, t.lake.poly) < SHORE_KEEP)) return "shore_reserved";
+    if (watercourses(t).some((r) => lineRectNear(r.pts, plot) < r.w / 2 + SHORE_KEEP) || (lakeNear && rectPolygon(plot, t.lake.poly) < (t.version >= 2 ? 7.5 : SHORE_KEEP))) return "shore_reserved";
   }
   if (!allowRail && t.rail && lineRectNear(t.rail.pts, plot) < t.rail.w / 2 + 0.8) return "rail_conflict";
   return null;
@@ -177,9 +282,10 @@ function pathReason(ctx, pts, { ownPlot = null, water = true } = {}) {
     // rounding the stored coordinates can never turn a graze into a crossing).
     if (ownPlot && segRect(a, b, ownPlot) < 0.1) return "entrance_unconnected";
   }
+  if ((ctx.terrain.nature || []).some((n) => pts.some((p) => inPolygon(p, n.poly)) || lineLineNear(pts, [...n.poly, n.poly[0]]) < 0.3)) return "protected_nature";
   if (!water) return null;
   const t = ctx.terrain;
-  if (lineLineNear(pts, t.river.pts) < t.river.w / 2 + 0.3) return "entrance_unconnected";
+  if (watercourses(t).some((r) => lineLineNear(pts, r.pts) < r.w / 2 + 0.3)) return "entrance_unconnected";
   if (nearPolygon(lineBounds(pts), t.lake.poly) && pts.some((p) => inPolygon(p, t.lake.poly))) return "entrance_unconnected";
   if (t.rail && lineLineNear(pts, t.rail.pts) < t.rail.w / 2 + 0.2) return "entrance_unconnected";
   return null;
@@ -200,10 +306,37 @@ function crossAngle(l1, l2) {
     }
   return 0;
 }
+/** A short, deliberate crossing of the main river, with two dry landings.
+ * Side streams, lakes and protected nature are never bridged by this rule.
+ * Drawn and checked from these same points, never a free pass over water. */
+function shortCrossing(terrain, river, pts) {
+  if (terrain.version < 2 || crossAngle(pts, river.pts) < 0.8) return null;
+  if ([pts[0], pts.at(-1)].some((p) => linePoint(river.pts, p).d < river.w / 2 + 1.4)) return null;
+  const len = lengthOf(pts);
+  let best = { d: Infinity, s: 0 };
+  for (let s = 0; s <= len; s += 0.4) {
+    const p = along(pts, s).p, d = linePoint(river.pts, p).d;
+    if (d < best.d) best = { d, s };
+  }
+  if (best.d > 0.5) return null;
+  const half = river.w / 2 / Math.sin(crossAngle(pts, river.pts)) + 1.2;
+  if (best.s < half || len - best.s < half) return null;
+  const deck = [];
+  for (let i = 0; i <= 8; i++) deck.push(along(pts, best.s - half + 2 * half * i / 8).p.map(q));
+  return { pts: deck, w: WIDTH.sokak };
+}
+export function riverCrossing(terrain, pts) {
+  for (const water of watercourses(terrain)) {
+    const crossing = shortCrossing(terrain, water, pts);
+    if (crossing) return { ...crossing, water: water.id || "river" };
+  }
+  return null;
+}
+export const railCrossing = (terrain, pts) => terrain.rail ? shortCrossing(terrain, terrain.rail, pts) : null;
 // A new street: off every plot and door path, clear of water, rail and the
 // other streets. `cross`: it may cross an open street at a fair angle (a
 // crossroads). `soft`: reserved pieces in the way are collected, not refused.
-function roadReason(ctx, pts, w, { skip = new Set(), startOn = null, cross = false, soft = null, extra = [], clear = 0.2 } = {}) {
+function roadReason(ctx, pts, w, { skip = new Set(), startOn = null, cross = false, soft = null, extra = [], clear = 0.2, bridge = false, levelCrossing = false } = {}) {
   const bounds = lineBounds(pts, w + 1 + clear);
   for (const p of ctx.plotIndex.near(bounds)) if (lineRect(pts, p.plot) < w / 2 + clear) return "footprint_conflict";
   for (const p of ctx.doorIndex.near(bounds)) if (lineLine(pts, p.door) < w / 2 + 0.4) return "entrance_blocked";
@@ -219,7 +352,7 @@ function roadReason(ctx, pts, w, { skip = new Set(), startOn = null, cross = fal
     if (cross && r.status === "usable" && r.type !== "kopru" && crossAngle(pts, r.pts) > 0.6) continue;
     return r.status === "reserved" ? "reserved_corridor" : "road_conflict";
   }
-  for (const f of ctx.layout.foci) {
+  for (const f of ctx.focusIndex.near(grow(bounds, 1))) {
     if (skip.has(f.id)) continue;
     if (Math.min(...tail.map((p) => Math.hypot(p[0] - f.x, p[1] - f.y))) < f.r + w / 2 + 0.3) {
       if (f.status === "reserved" && soft) {
@@ -230,9 +363,11 @@ function roadReason(ctx, pts, w, { skip = new Set(), startOn = null, cross = fal
     }
   }
   const t = ctx.terrain;
-  if (lineLineNear(pts, t.river.pts) < t.river.w / 2 + w / 2 + 0.8) return "wrong_water_context";
+  if ((t.nature || []).some((n) => pts.some((p) => inPolygon(p, n.poly)) || lineLineNear(pts, [...n.poly, n.poly[0]]) < w / 2 + 0.4)) return "protected_nature";
+  const bridged = bridge && riverCrossing(t, pts);
+  if (watercourses(t).some((r) => !(bridged && bridged.water === (r.id || "river")) && lineLineNear(pts, r.pts) < r.w / 2 + w / 2 + 0.8)) return "wrong_water_context";
   if (nearPolygon(lineBounds(pts), t.lake.poly) && (pts.some((p) => inPolygon(p, t.lake.poly)) || lineLine(pts, [...t.lake.poly, t.lake.poly[0]]) < w / 2 + 0.6)) return "wrong_water_context";
-  if (t.rail && lineLineNear(pts, t.rail.pts) < t.rail.w / 2 + w / 2 + 0.8) return "rail_conflict";
+  if (t.rail && !(levelCrossing && railCrossing(t, pts)) && lineLineNear(pts, t.rail.pts) < t.rail.w / 2 + w / 2 + 0.8) return "rail_conflict";
   return null;
 }
 
@@ -241,7 +376,26 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 function scoreOf(ctx, cand, req) {
   const [cx, cy] = [cand.x, cand.y];
   const mine = ctx.plots.filter((p) => p.owner && p.owner === req.owner);
-  const owner = mine.length ? 1 - clamp01(Math.min(...mine.map((p) => Math.hypot(p.x - cx, p.y - cy))) / OWNER_SATURATE) : 0.5;
+  let owner = mine.length ? 1 - clamp01(Math.min(...mine.map((p) => Math.hypot(p.x - cx, p.y - cy))) / OWNER_SATURATE) : 0.5;
+  if (ctx.layout.generator >= 3) {
+    const home = personalCentre(ctx.layout, req.owner);
+    if (home) {
+      const area = mine.reduce((t, p) => t + (p.plot[2] - p.plot[0]) * (p.plot[3] - p.plot[1]), 0);
+      const radius = Math.max(16, Math.sqrt(area / (Math.PI * 0.38)));
+      const nearest = mine.length ? Math.min(...mine.map((p) => pointRect([cx, cy], p.plot))) : 0;
+      // Centre distance alone locks growth; nearest neighbour alone makes a
+      // chain. Area-scaled radius + nearby frontage + occupied local quadrants
+      // together prefer infill without consuming protected gardens/meadows.
+      const radial = 1 / (1 + Math.hypot(cx - home.x, cy - home.y) / radius);
+      const local = 1 / (1 + nearest / PLOT_DIAMETER);
+      const neighbours = ctx.plotIndex.near(grow(cand.shape.plot, 10)).filter((p) => p.owner === req.owner).length;
+      owner = 0.55 * radial + 0.3 * local + 0.15 * Math.min(1, neighbours / 4);
+      const d = Math.hypot(cx - home.x, cy - home.y);
+      const foreign = ctx.layout.foci.filter((f) => f.personal && f.personal !== req.owner);
+      const closest = foreign.length ? Math.min(...foreign.map((f) => Math.hypot(cx - f.x, cy - f.y))) : Infinity;
+      owner *= 1 - 0.65 * clamp01((d - closest - 4) / 20);
+    }
+  }
   const doorLen = cand.door ? lengthOf(cand.door) : 0;
   const infra = clamp01(1 - 0.8 * clamp01(cand.newRoad / 40) - 0.3 * clamp01(doorLen / 6));
   // Visual openness: a new building should not hide a neighbour's front, nor hide behind one.
@@ -260,7 +414,8 @@ function scoreOf(ctx, cand, req) {
   const f = ctx.layout.foci.reduce((best, x) => (x.status === "reserved" ? best : Math.min(best, Math.hypot(x.x - cx, x.y - cy) - x.r)), Infinity);
   const focus = 1 - clamp01(f / FOCUS_SATURATE);
   const terms = { owner, infra, view, ground, focus };
-  const total = Object.entries(WEIGHTS).reduce((t, [k, w]) => t + w * terms[k], 0);
+  const weights = ctx.layout.generator >= 3 ? { owner: 0.6, infra: 0.18, view: 0.12, ground: 0.03, focus: 0.07 } : WEIGHTS;
+  const total = Object.entries(weights).reduce((t, [k, w]) => t + w * terms[k], 0);
   return { total: Math.round(total * 1e6) / 1e6, terms: Object.fromEntries(Object.entries(terms).map(([k, v]) => [k, Math.round(v * 1000) / 1000])) };
 }
 // Equal scores: fewer new streets, then a stable hash order.
@@ -293,6 +448,8 @@ function frontCandidates(spec, road, req, extra = {}) {
 // Finishes a candidate: its shape, door path, hard rules, score.
 function judge(ctx, cand, req) {
   const spec = cand.spec;
+  const personal = personalReason(ctx.layout, req, spec, cand.x, cand.y);
+  if (personal) return personal;
   cand.shape = shapeAt(spec, cand.x, cand.y, cand.facing);
   const reason = groundReason(ctx, spec, cand.shape);
   if (reason) return reason;
@@ -316,10 +473,17 @@ function bestOf(ctx, cands, req, budget, rejected) {
     spent = 0;
   for (const c of cands) {
     if (spent >= budget) break;
+    if (req.avoid?.some((p) => Math.hypot(c.x - p[0], c.y - p[1]) < 1.5)) continue;
+    const personal = personalReason(ctx.layout, req, c.spec, c.x, c.y);
+    if (personal) { tally(rejected, personal); continue; }
     const plot = shapeAt(c.spec, c.x, c.y, c.facing).plot;
     if (ctx.plotIndex.near(plot).some((o) => rectsHit(plot, o.plot))) {
       tally(rejected, "footprint_conflict");
       continue;
+    }
+    if (ctx.layout.generator >= 3) {
+      const ground = groundReason(ctx, c.spec, shapeAt(c.spec, c.x, c.y, c.facing));
+      if (ground) { tally(rejected, ground); continue; }
     }
     spent++;
     c.doorPoint = c.door;
@@ -341,9 +505,13 @@ const nearFirst = (anchor) => (a, b) => Math.hypot(a.x - anchor[0], a.y - anchor
 function nearbyRoads(ctx, anchor) {
   const foci = ctx.layout.foci.filter((f) => f.status !== "reserved").sort(nearFirst(anchor)).slice(0, LIMITS.foci);
   const ids = new Set(foci.map((f) => f.id));
-  return { foci, roads: ctx.layout.roads.filter((r) => r.status === "usable" && ["omurga", "sokak", "yaklasim"].includes(r.type) && (ids.has(r.focus) || linePoint(r.pts, anchor).d < 30)) };
+  const roads = ctx.layout.roads.filter((r) => r.status === "usable" && ["omurga", "sokak", "yaklasim"].includes(r.type));
+  if (ctx.layout.generator >= 3) return { foci, roads: roads.sort((a, b) => linePoint(a.pts, anchor).d - linePoint(b.pts, anchor).d || cmp(a.id, b.id)).slice(0, 96) };
+  return { foci, roads: roads.filter((r) => ids.has(r.focus) || linePoint(r.pts, anchor).d < 30) };
 }
 function anchorOf(ctx, owner) {
+  const home = ctx.layout.generator >= 3 && personalCentre(ctx.layout, owner);
+  if (home) return [home.x, home.y];
   const mine = ctx.plots.filter((p) => p.owner && p.owner === owner);
   if (!mine.length) return [0, 0];
   return [mine.reduce((t, p) => t + p.x, 0) / mine.length, mine.reduce((t, p) => t + p.y, 0) / mine.length];
@@ -370,11 +538,22 @@ function reserveFrom(layout, from, dirs, len, type, depth, id, extraPlots) {
       const end = [start[0] + d[0] * len * f, start[1] + d[1] * len * f];
       const pts = bend(start, end, curve * f, 8);
       // A reserved street keeps a house depth clear of the plots beside it, so it can be built on.
-      const why = roadReason(ctx, pts, WIDTH[type], { skip: new Set([from.id, from.road].filter(Boolean)), extra: roads, clear: 2.2 });
+      const options = { skip: new Set([from.id, from.road].filter(Boolean)), extra: roads, clear: 2.2 };
+      let why = roadReason(ctx, pts, WIDTH[type], options), crossing = null, rail = null;
+      if (why === "wrong_water_context" && layout.generator >= 3 && type === "sokak") {
+        crossing = riverCrossing(layout.terrain, pts);
+        const nearby = crossing && layout.roads.some((r) => r.crossing && linePoint(r.crossing.pts, crossing.pts[4]).d < 24);
+        if (crossing && !nearby) why = roadReason(ctx, pts, WIDTH[type], { ...options, bridge: true });
+      }
+      if (why === "rail_conflict" && layout.generator >= 3 && type === "sokak") {
+        rail = railCrossing(layout.terrain, pts);
+        if (rail && !layout.roads.some((r) => r.railCrossing && linePoint(r.railCrossing.pts, rail.pts[4]).d < 18))
+          why = roadReason(ctx, pts, WIDTH[type], { ...options, bridge: !!crossing, levelCrossing: true });
+      }
       if (why) continue;
       const node = { id: id.node(), x: pts.at(-1)[0], y: pts.at(-1)[1] };
       nodes.push(node);
-      roads.push({ id: id.road(), a: from.node, b: node.id, pts, w: WIDTH[type], type, status: "reserved", focus: from.square || from.id, depth });
+      roads.push({ id: id.road(), a: from.node, b: node.id, pts, w: WIDTH[type], type, status: "reserved", focus: from.square || from.id, depth, ...(crossing ? { crossing } : {}), ...(rail ? { railCrossing: rail } : {}) });
       break;
     }
   }
@@ -387,21 +566,23 @@ function reserveAfter(layout, road, id) {
   const a = Math.atan2(end[1] - prev[1], end[0] - prev[0]);
   const d = [Math.cos(a), Math.sin(a)];
   const depth = (road.depth || 0) + 1;
-  const side = (hash(`${layout.seed}:${road.id}:side`) & 1 ? 1 : -1) * 1.1;
-  if (depth % 2 === 1) {
+  const R = rng(hash(`${layout.seed}:${road.id}:growth`)), natural = layout.generator >= 3;
+  const side = (hash(`${layout.seed}:${road.id}:side`) & 1 ? 1 : -1) * (natural ? 0.8 + R() * 0.8 : 1.1);
+  if (natural ? R() < 0.6 : depth % 2 === 1) {
     // A small square at the end of the street, with three streets of its own.
     const c = [q(end[0] + d[0] * (SQUARE_R + 0.3)), q(end[1] + d[1] * (SQUARE_R + 0.3))];
     if (squareRoom(contextOf(layout), c, road)) {
       const seq = { ...id.seq };
       const fid = id.focus();
       const focus = { id: fid, x: c[0], y: c[1], r: SQUARE_R, kind: FOCUS_KINDS[hash(`${layout.seed}:${fid}`) % FOCUS_KINDS.length], node: road.b, parent: road.focus, status: "reserved" };
-      const res = reserveFrom({ ...layout, foci: [...layout.foci, focus] }, { ...focus, road: road.id }, [a - 1.05, a, a + 1.05], SQUARE_STREET, "sokak", depth, id, []);
+      const dirs = natural ? [a - 0.75 - R() * 0.7, a + (R() - 0.5) * 0.5, a + 0.75 + R() * 0.7] : [a - 1.05, a, a + 1.05];
+      const res = reserveFrom({ ...layout, foci: [...layout.foci, focus] }, { ...focus, road: road.id }, dirs, natural ? 12 + R() * 7 : SQUARE_STREET, "sokak", depth, id, []);
       if (res.roads.length) return { roads: res.roads, nodes: res.nodes, foci: [focus] };
       Object.assign(id.seq, seq);
     }
   }
   const node = layout.nodes.find((n) => n.id === road.b);
-  const res = reserveFrom(layout, { x: node.x, y: node.y, r: 0, node: road.b, id: road.id, road: road.id, square: road.focus }, [a, a + side], RUN, "sokak", depth, id, []);
+  const res = reserveFrom(layout, { x: node.x, y: node.y, r: 0, node: road.b, id: road.id, road: road.id, square: road.focus }, [a + (natural ? (R() - 0.5) * 0.55 : 0), a + side], natural ? 11 + R() * 8 : RUN, "sokak", depth, id, []);
   return { roads: res.roads, nodes: res.nodes, foci: [] };
 }
 function squareRoom(ctx, c, road) {
@@ -411,7 +592,8 @@ function squareRoom(ctx, c, road) {
   if (ctx.roadIndex.near(box).some((x) => x.id !== road.id && linePoint(x.pts, c).d < r + x.w / 2 + 0.5)) return false;
   if (ctx.layout.foci.some((f) => Math.hypot(f.x - c[0], f.y - c[1]) < f.r + r + 6)) return false;
   const t = ctx.terrain;
-  if (linePointNear(t.river.pts, c) < r + t.river.w + 1 || inPolygon(c, t.lake.poly) || linePoint([...t.lake.poly, t.lake.poly[0]], c).d < r + 1) return false;
+  if (watercourses(t).some((s) => linePointNear(s.pts, c) < r + s.w + 1) || inPolygon(c, t.lake.poly) || linePoint([...t.lake.poly, t.lake.poly[0]], c).d < r + 1) return false;
+  if ((t.nature || []).some((n) => rectPolygon(box, n.poly) < 1)) return false;
   if (t.rail && linePointNear(t.rail.pts, c) < r + t.rail.w + 1) return false;
   return true;
 }
@@ -466,11 +648,16 @@ function plotRecord(cand, req, id) {
  * `req.exclude`: a plot id to ignore (the building's own plot when moving it).
  */
 export function planPlacement(layout, req) {
-  const plan = planRaw(layout, req);
+  const delta = layout.generator >= 3 && req.owner ? neighbourhood(layout, req.owner) : null;
+  const prepared = delta ? infrastructure(layout, delta) : layout;
+  let plan = planRaw(prepared, layout.generator >= 3 ? { ...req, preferHome: true } : req);
+  if (!plan.ok && layout.generator >= 3) plan = planRaw(prepared, req);
+  if (plan.ok && delta) plan = combinePlan(delta, plan);
   if (!plan.ok) return plan;
   // A building being moved is checked without its old plot (it leaves it).
   const bad = finalCheck(req.exclude ? { ...layout, plots: layout.plots.filter((p) => p.id !== req.exclude) } : layout, plan);
   if (!bad) return plan;
+  if (layout.generator >= 3 && (req.avoid?.length || 0) < 2) return planPlacement(layout, { ...req, avoid: [...(req.avoid || []), [plan.plot.x, plan.plot.y]] });
   return { ok: false, error: "no_plot", tried: plan.tried, rejected: { ...plan.rejected, [`final_${bad}`]: 1 } };
 }
 function planRaw(layout, req) {
@@ -489,13 +676,13 @@ function planRaw(layout, req) {
   const cands = roads.flatMap((r) => frontCandidates(spec, r, req)).sort(byDistance(anchor));
   const first = bestOf(ctx, cands, req, LIMITS.candidates, rejected);
   tried += first.spent;
-  if (first.best) return finish(layout, { how: "front", cand: first.best, id, tried }, rejected, req);
+  if (first.best && layout.generator < 3) return finish(layout, { how: "front", cand: first.best, id, tried }, rejected, req);
   // 2. Open the nearest reserved corridor; it reserves what comes after it.
   const reserved = layout.roads
     .filter((r) => r.status === "reserved")
     .map((r) => ({ r, d: linePoint(r.pts, anchor).d }))
     .sort((a, b) => a.d - b.d || cmp(a.r.id, b.r.id));
-  let best = null,
+  let best = layout.generator >= 3 ? first.best : null,
     expansions = 0;
   for (const { r } of reserved) {
     if (expansions >= LIMITS.expansions || tried >= LIMITS.total) break;
@@ -503,12 +690,12 @@ function planRaw(layout, req) {
     // A corridor whose fronts are all built up already is passed over without
     // counting as an expansion: growth then reaches the village's edge (§5.4).
     const trial = withAdded(layout, { roads: [opened] }, req.exclude);
-    if (!frontCandidates(spec, opened, req).some((c) => !groundReason(trial, spec, shapeAt(spec, c.x, c.y, c.facing)))) {
+    if (!frontCandidates(spec, opened, req).some((c) => !personalReason(layout, req, spec, c.x, c.y) && !groundReason(trial, spec, shapeAt(spec, c.x, c.y, c.facing)))) {
       tally(rejected, "corridor_built_up");
       continue;
     }
     expansions++;
-    const budget = Math.min(32, LIMITS.total - tried);
+    const budget = Math.min(layout.generator >= 3 ? 20 : 32, LIMITS.total - tried);
     const extra = { newRoad: lengthOf(r.pts) * 0.5, how: "open", opened };
     // Judged first with the corridor alone: what opening it reserves beyond only
     // takes candidates away (scores stay the same), so the reservations are
@@ -531,33 +718,78 @@ function planRaw(layout, req) {
     best = found;
   }
   if (best) {
+    if (!best.opened) return finish(layout, { how: "front", cand: best, id, tried }, rejected, req);
     // The reservations were made before the house; it was judged against them, so they stay clear.
     Object.assign(id.seq, best.seq);
     const square = layout.foci.find((f) => f.status === "reserved" && f.node === best.opened.a);
     return finish(layout, { how: "open", cand: best, roads: best.next.roads, nodes: best.next.nodes, foci: best.next.foci, open: [best.opened.id, ...(square ? [square.id] : [])], id, tried }, rejected, req);
   }
+  // A crossing is infrastructure, not a residential frontage. If no house
+  // fits along its deck, open it together with a far-bank continuation, but
+  // only when that continuation actually produces a valid placement.
+  if (layout.generator >= 3 && (req.transitDepth || 0) < 2) {
+    for (const { r } of reserved.filter(({ r }) => r.crossing || r.railCrossing).slice(0, 4)) {
+      const sub = ids(layout), opened = { ...r, status: "usable" };
+      const next = reserveAfter(withAdded(layout, { roads: [opened] }).layout, opened, sub);
+      if (!next.roads.length) continue;
+      const parent = layout.foci.find((f) => f.status === "reserved" && f.node === r.a);
+      const delta = { ...next, open: [r.id, ...(parent ? [parent.id] : [])], seq: sub.seq };
+      const after = planRaw(infrastructure(layout, delta), { ...req, transitDepth: (req.transitDepth || 0) + 1 });
+      if (after.ok) return combinePlan(delta, after);
+    }
+  }
   // 3. Nothing reserved fits: a short street of its own from a nearby open square.
   const fallback = fallbackStreet(ctx, spec, req, anchor, id, rejected, tried);
   if (fallback) return finish(layout, fallback, rejected, req);
+  if (layout.generator >= 3) {
+    const pocket = landmarkPlan(ctx, spec, req, anchor, id, rejected);
+    if (pocket?.cand) return finish(layout, { ...pocket, how: "pocket" }, rejected, req);
+  }
   return { ok: false, error: "no_plot", tried, rejected };
 }
 function fallbackStreet(ctx, spec, req, anchor, id, rejected, tried) {
   const L = ctx.layout;
   // Every open square, nearest first, until the candidate budget is spent.
-  const foci = L.foci.filter((f) => f.status !== "reserved" && !f.landmark).sort(nearFirst(anchor));
-  let best = null;
+  let foci = L.foci.filter((f) => f.status !== "reserved" && !f.landmark);
+  if (L.generator >= 3) {
+    // Infill can enter a real gap from a street's interior. It need not wait
+    // for the furthest cul-de-sac, nor send every journey through the square.
+    for (const r of L.roads) if (r.status === "usable" && ["omurga", "sokak"].includes(r.type)) {
+      const end = r.pts.at(-1);
+      foci.push({ id: r.id, x: end[0], y: end[1], r: 0, node: r.b, road: r.id });
+      for (const portion of [0.38, 0.72]) {
+        const { p } = along(r.pts, lengthOf(r.pts) * portion);
+        foci.push({ id: r.id, x: p[0], y: p[1], r: 0, node: null, road: r.id, junction: true });
+      }
+    }
+  }
+  if (L.generator >= 3) {
+    // A dense centre has hundreds of blocked rays. Spend the bounded search
+    // on connected, less occupied street ends, rather than exhausting it
+    // before reaching the owner's nearby growth front.
+    foci = foci.filter((f) => !personalReason(L, req, spec, f.x, f.y));
+    const cost = new Map(foci.map((f) => {
+      const local = ctx.plotIndex.near(grow([f.x, f.y, f.x, f.y], 7)).filter((p) => pointRect([f.x, f.y], p.plot) < 6).length;
+      return [f, Math.hypot(f.x - anchor[0], f.y - anchor[1]) * 0.25 + local * 9];
+    }));
+    foci.sort((a, b) => cost.get(a) - cost.get(b) || cmp(a.id, b.id));
+  } else foci.sort(nearFirst(anchor));
+  let best = null, attempts = 0;
   for (const f of foci) {
-    if (tried >= LIMITS.total) break;
+    if (tried >= LIMITS.total || L.generator >= 3 && attempts >= 320) break;
     const base = (hash(`${L.seed}:stub:${f.id}`) % 360) * (Math.PI / 180);
     for (let i = 0; i < 12 && tried < LIMITS.total; i++) {
-      const a = base + (i * Math.PI) / 6;
+      if (L.generator >= 3 && attempts++ >= 320) break;
+      const a = base + (i * Math.PI) / 6 + (L.generator >= 3 ? ((hash(`${f.id}:${i}`) % 100) / 100 - 0.5) * 0.3 : 0);
       const sub = ids(L);
       Object.assign(sub.seq, id.seq);
-      const res = reserveFrom(L, { x: f.x, y: f.y, r: f.r, node: f.node, id: f.id }, [a], 12, "sokak", 9, sub, []);
+      const junction = f.junction ? { id: sub.node(), x: q(f.x), y: q(f.y), on: f.road } : null;
+      const res = reserveFrom(L, { x: f.x, y: f.y, r: f.r, node: junction?.id || f.node, id: f.id, road: f.road }, [a], 12, "sokak", 9, sub, []);
       if (!res.roads.length) {
         tally(rejected, "street_no_room");
         continue;
       }
+      if (junction) res.nodes.unshift(junction);
       const road = { ...res.roads[0], status: "usable" };
       const local = withAdded(L, { roads: [road] }, req.exclude);
       const found = bestOf(local, frontCandidates(spec, road, req, { newRoad: lengthOf(road.pts), how: "street", nodes: res.nodes, seq: sub.seq }).sort(byDistance(anchor)), req, 24, rejected);
@@ -568,6 +800,11 @@ function fallbackStreet(ctx, spec, req, anchor, id, rejected, tried) {
   }
   if (!best) return null;
   Object.assign(id.seq, best.seq);
+  if (L.generator >= 3) {
+    const trial = { ...L, roads: [...L.roads, best.road], nodes: [...L.nodes, ...best.nodes], plots: [...ctx.plots, plotRecord(best, req, "pending")] };
+    const next = reserveAfter(trial, best.road, id);
+    return { how: "street", cand: best, roads: [best.road, ...next.roads], nodes: [...best.nodes, ...next.nodes], foci: next.foci, id, tried };
+  }
   return { how: "street", cand: best, roads: [best.road], nodes: best.nodes, foci: [], id, tried };
 }
 
@@ -610,10 +847,13 @@ function landmarkPlan(ctx, spec, req, anchor, id, rejected) {
     if (best && k % 4 === 0) break;
     for (const extra of [8, 14, 22, 32, 44])
       for (let i = 0; i < 12; i++) {
+        if (!spec.landmark && tried >= LIMITS.total) break;
         const a = ((hash(`${L.seed}:mark:${parent.id}`) % 360) * Math.PI) / 180 + (i * Math.PI * 2) / 12;
         const d = [Math.cos(a), Math.sin(a)];
         const dist = parent.r + half + extra;
         const c = [q(parent.x + d[0] * dist), q(parent.y + d[1] * dist)];
+        if (req.avoid?.some((p) => Math.hypot(c[0] - p[0], c[1] - p[1]) < 1.5)) continue;
+        if (personalReason(L, req, spec, c[0], c[1])) continue;
         // The door looks back to where people come from.
         const facing = -d[0] > -d[1] ? 1 : 0;
         const cand = { spec, facing, x: c[0], y: c[1], newRoad: 0, order: `${parent.id}:${extra}:${i}` };
@@ -669,8 +909,11 @@ function landmarkPlan(ctx, spec, req, anchor, id, rejected) {
     best.road = link.road;
     const door = best.door[0];
     const fc = [q((door[0] + best.door[1][0]) / 2), q((door[1] + best.door[1][1]) / 2)];
-    const focus = { id: id.focus(), x: fc[0], y: fc[1], r: Math.max(1.5, spec.front * 0.5), kind: "eser", node: link.roads[0]?.b ?? null, parent: link.road.focus, landmark: true, status: "open" };
-    return { how: "landmark", cand: best, roads: link.roads, nodes: link.nodes, foci: [focus], open: link.open, id, tried, soft: link.soft };
+    // Even a forecourt reached directly from an existing street needs a graph
+    // attachment (otherwise its visitors/pazar can never reach that square).
+    const attached = link.roads.length ? null : { id: id.node(), x: best.door.at(-1)[0], y: best.door.at(-1)[1], on: link.road.id };
+    const focus = { id: id.focus(), x: fc[0], y: fc[1], r: Math.max(1.5, spec.front * 0.5), kind: "eser", node: link.roads[0]?.b ?? attached.id, parent: link.road.focus, landmark: true, status: "open" };
+    return { how: "landmark", cand: best, roads: link.roads, nodes: [...link.nodes, ...(attached ? [attached] : [])], foci: [focus], open: link.open, id, tried, soft: link.soft };
   }
   const node = { id: id.node(), x: best.pts.at(-1)[0], y: best.pts.at(-1)[1] };
   const road = { id: id.road(), a: best.parent.node, b: node.id, pts: best.pts, w: WIDTH.yaklasim, type: "yaklasim", status: "usable", focus: best.parent.id };
@@ -1151,18 +1394,20 @@ function overlayContext(layout, next, plan) {
   const gone = (x) => !open.has(x.id) && !drop.has(x.id);
   const roads = createIndex(16),
     plots = createIndex(16),
-    doors = createIndex(16);
+    doors = createIndex(16), foci = createIndex(16);
   for (const r of next.roads) if (open.has(r.id)) roads.add(lineBounds(r.pts, r.w), r);
   for (const r of plan.roads) roads.add(lineBounds(r.pts, r.w), r);
   const plot = next.plots.at(-1);
   plots.add(plot.plot, plot);
   if (plot.door) doors.add(lineBounds(plot.door, 1), plot);
+  for (const f of next.foci) if (open.has(f.id) || plan.foci.some((x) => x.id === f.id)) foci.add([f.x - f.r, f.y - f.r, f.x + f.r, f.y + f.r], f);
   return {
     layout: next,
     plots: next.plots,
     plotIndex: { near: (r) => [...base.plotIndex.near(r), ...plots.near(r)] },
     roadIndex: { near: (r) => [...base.roadIndex.near(r).filter(gone), ...roads.near(r)] },
     doorIndex: { near: (r) => [...base.doorIndex.near(r), ...doors.near(r)] },
+    focusIndex: { near: (r) => [...base.focusIndex.near(r).filter(gone), ...foci.near(r)] },
     terrain: next.terrain,
   };
 }
@@ -1196,6 +1441,10 @@ function planReason(layout, plan, req) {
   const base = req.exclude ? { ...layout, plots: layout.plots.filter((p) => p.id !== req.exclude) } : layout;
   if (plotOf(base, req.subject)) return "already_placed";
   const p = plan.plot;
+  const homes = plan.foci.filter((f) => f.personal);
+  if (homes.length > 1 || homes.some((f) => f.personal !== req.owner || personalCentre(base, req.owner) || f.r !== SQUARE_R || !plan.nodes.some((n) => n.id === f.node) && !base.nodes.some((n) => n.id === f.node))) return "personal_centre_mismatch";
+  const personal = personalReason(applyPlan(base, plan), req, spec, p.x, p.y);
+  if (personal) return personal;
   if (!finite(p.x) || !finite(p.y) || ![0, 1, 2, 3].includes(p.facing)) return "plan_unreadable";
   if (p.door != null && !(Array.isArray(p.door) && p.door.length >= 2 && p.door.every(point))) return "plan_unreadable";
   // The plot record as the planner itself writes it at that spot.
@@ -1219,11 +1468,16 @@ function planReason(layout, plan, req) {
   for (const r of plan.roads) {
     if (!(r.type in WIDTH) || r.w !== WIDTH[r.type] || !["usable", "reserved"].includes(r.status)) return "plan_mismatch";
     if (!Array.isArray(r.pts) || r.pts.length < 2 || !r.pts.every(point) || !nodes.has(r.a) || !nodes.has(r.b)) return "plan_unreadable";
+    if ((t.nature || []).some((n) => r.pts.some((p) => inPolygon(p, n.poly)) || lineLineNear(r.pts, [...n.poly, n.poly[0]]) < r.w / 2 + 0.4)) return "protected_nature";
     if (r.type === "kopru" || r.type === "iskele") continue;
     // The same water and rail margins a new street is planned with (roadReason).
-    if (lineLineNear(r.pts, t.river.pts) < t.river.w / 2 + r.w / 2 + 0.8) return "wrong_water_context";
+    const crossing = r.crossing && riverCrossing(t, r.pts);
+    if (r.crossing && (!crossing || !same(crossing, r.crossing))) return "wrong_water_context";
+    if (watercourses(t).some((s) => !(crossing && crossing.water === (s.id || "river")) && lineLineNear(r.pts, s.pts) < s.w / 2 + r.w / 2 + 0.8)) return "wrong_water_context";
     if (nearPolygon(lineBounds(r.pts), t.lake.poly) && (r.pts.some((q) => inPolygon(q, t.lake.poly)) || lineLine(r.pts, [...t.lake.poly, t.lake.poly[0]]) < r.w / 2 + 0.6)) return "wrong_water_context";
-    if (t.rail && lineLineNear(r.pts, t.rail.pts) < t.rail.w / 2 + r.w / 2 + 0.8) return "rail_conflict";
+    const rail = r.railCrossing && railCrossing(t, r.pts);
+    if (r.railCrossing && (!rail || !same(rail, r.railCrossing))) return "rail_conflict";
+    if (t.rail && !rail && lineLineNear(r.pts, t.rail.pts) < t.rail.w / 2 + r.w / 2 + 0.8) return "rail_conflict";
   }
   for (const f of plan.foci) if (!finite(f.x) || !finite(f.y) || !finite(f.r) || !["open", "reserved"].includes(f.status)) return "plan_unreadable";
   if (!plan.roads.every((r) => box(lineBounds(r.pts, r.w)))) return "plan_unreadable";

@@ -163,7 +163,7 @@ test("n46 C: V1 stays the default; a v2 team is served to new apps only, with cu
   const gift = await call(t.app, `/owner/members/${id}/gift`, { method: "POST", headers: t.owner, body: { model: "ev" } });
   await call(t.app, `/owner/members/${t.ege.data.memberId}/gift`, { method: "POST", headers: t.owner, body: { model: "kahve" } });
   // Today's answer, whatever the app says, while no layout is active.
-  const v1 = await call(t.app, "/village", { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "2" } });
+  const v1 = await call(t.app, "/village", { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "3" } });
   assert.equal(v1.status, 200);
   assert.equal(v1.data.contractVersion, undefined);
   assert.ok(Array.isArray(v1.data.buildings[0]), "compact V1 rows");
@@ -175,7 +175,7 @@ test("n46 C: V1 stays the default; a v2 team is served to new apps only, with cu
   const old = await call(t.app, "/village", { headers: t.as(t.ada) });
   assert.equal(old.status, 426);
   assert.equal(old.data.updateRequired, true);
-  const v2 = await call(t.app, "/village", { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "2" } });
+  const v2 = await call(t.app, "/village", { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "3" } });
   assert.equal(v2.status, 200);
   assert.equal(v2.data.contractVersion, 2);
   assert.equal(v2.data.full, true);
@@ -187,11 +187,11 @@ test("n46 C: V1 stays the default; a v2 team is served to new apps only, with cu
   assert.equal(v2.data.sites[0].device, undefined);
   assert.equal(v2.data.plots.length, 3);
   // Same cursor: nothing travels. A taken-back building: a delta with a tombstone.
-  const same = await call(t.app, `/village?cursor=${v2.data.cursor}`, { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "2" } });
+  const same = await call(t.app, `/village?cursor=${v2.data.cursor}`, { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "3" } });
   assert.deepEqual(Object.keys(same.data).sort(), ["contractVersion", "cursor", "unchanged"]);
   const plot = v2.data.buildings.find((b) => b.id === gift.data.id).placement.plotId;
   assert.equal((await call(t.app, `/owner/buildings/${gift.data.id}`, { method: "DELETE", headers: t.owner })).status, 200);
-  const delta = await call(t.app, `/village?cursor=${v2.data.cursor}`, { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "2" } });
+  const delta = await call(t.app, `/village?cursor=${v2.data.cursor}`, { headers: { ...t.as(t.ada), "X-Kutup-Village-Version": "3" } });
   assert.equal(delta.data.full, false);
   assert.deepEqual(delta.data.deletes.plots, [plot]);
   assert.equal(delta.data.roads.length, 0, "unchanged streets do not travel again");

@@ -15,13 +15,14 @@ export const ROLLBACK_DAYS = 14;
 export const CHECK_PART = 40;
 // A team's ground, made once per isolate (it costs a few milliseconds and never changes for a seed).
 const GROUNDS = new Map();
-const groundOf = (seed) => {
-  if (!GROUNDS.has(seed)) {
-    const g = emptyLayout(seed);
-    GROUNDS.set(seed, { terrain: JSON.stringify(g.terrain), version: g.terrainVersion });
+const groundOf = (seed, generator) => {
+  const key = `${generator}:${seed}`;
+  if (!GROUNDS.has(key)) {
+    const g = emptyLayout(seed, generator);
+    GROUNDS.set(key, { terrain: JSON.stringify(g.terrain), version: g.terrainVersion });
     if (GROUNDS.size > 32) GROUNDS.delete(GROUNDS.keys().next().value);
   }
-  return GROUNDS.get(seed);
+  return GROUNDS.get(key);
 };
 const DAY = 86400000;
 const keyOf = (s) => `${s.type}:${s.id}`;
@@ -67,7 +68,7 @@ export async function switchState(db, groupId, now = Date.now()) {
   const open = "SELECT id FROM village_layouts WHERE group_id = ? AND kind = 'v2' AND status IN ('draft','active','previous')";
   const [rows, held, plots, unplaced] = await db.read([
     [
-      "SELECT id, kind, status, rev, applied_content_rev AS applied, created, rollback_until AS until, json_extract(meta, '$.checked') AS checked, json_extract(meta, '$.sound') AS sound FROM village_layouts WHERE group_id = ? AND status IN ('draft','active','previous') ORDER BY created",
+      "SELECT id, kind, status, rev, generator_version AS generator, applied_content_rev AS applied, created, rollback_until AS until, json_extract(meta, '$.checked') AS checked, json_extract(meta, '$.sound') AS sound FROM village_layouts WHERE group_id = ? AND status IN ('draft','active','previous') ORDER BY created",
       [groupId],
     ],
     [`SELECT layout_id AS layout, subject_type AS type, subject_id AS id FROM village_placements WHERE layout_id IN (${open})`, [groupId]],
@@ -87,6 +88,7 @@ export async function switchState(db, groupId, now = Date.now()) {
     row && {
       id: row.id,
       kind: row.kind,
+      generatorVersion: row.generator,
       appliedContentRev: row.applied,
       behind: Math.max(0, inv.group.rev - row.applied),
       created: row.created,
@@ -121,7 +123,15 @@ export async function switchState(db, groupId, now = Date.now()) {
  */
 export async function checkLayout(db, groupId, layout, options) {
   try {
-    return check(groupId, layout, options);
+    const problem = check(groupId, layout, options);
+    if (problem) return problem;
+    if (layout.generator >= 3) {
+      const members = new Set((await db.all("SELECT id FROM members WHERE group_id = ?", [groupId])).map((m) => m.id));
+      const previous = new Set((options.base?.foci || []).filter((f) => f.personal).map((f) => f.personal));
+      const homes = layout.foci.filter((f) => f.personal);
+      if (new Set(homes.map((f) => f.personal)).size !== homes.length || homes.some((f) => !members.has(f.personal) && !previous.has(f.personal))) return "Kişisel köy merkezlerinin sahipliği bu ekiple eşleşmiyor.";
+    }
+    return null;
   } catch {
     return "Düzen okunamadı.";
   }
@@ -129,8 +139,9 @@ export async function checkLayout(db, groupId, layout, options) {
 function check(groupId, layout, { base = null, items }) {
   if (!layout || typeof layout !== "object" || !Array.isArray(layout.plots)) return "Düzen okunamadı.";
   if (layout.seed !== `group:${groupId}`) return "Bu düzen bu ekibin tohumuyla planlanmamış.";
-  if (layout.generator !== GENERATOR_VERSION) return "Düzen eski bir planlayıcıyla hazırlanmış; sayfayı yenileyip yeniden hazırla.";
-  const ground = groundOf(layout.seed);
+  if (layout.generator !== GENERATOR_VERSION && !(base?.generator === 2 && layout.generator === 2)) return "Düzen eski bir planlayıcıyla hazırlanmış; sayfayı yenileyip yeniden hazırla.";
+  if (base && layout.generator !== base.generator) return "Eşitleme düzen sürümünü değiştiremez; yeni taslak hazırla.";
+  const ground = groundOf(layout.seed, layout.generator);
   if (ground.terrain !== JSON.stringify(layout.terrain) || layout.terrainVersion !== ground.version) return "Arazi bu ekibin arazisi değil.";
   const c = coverage(items, layout.plots.filter((p) => p.subject).map((p) => p.subject));
   if (c.twice.length) return `Aynı yapı iki kez yerleşmiş (${c.twice.length}).`;
@@ -138,6 +149,10 @@ function check(groupId, layout, { base = null, items }) {
   if (c.missing.length) return `${c.missing.length} yapının yeri yok; taslak eksik.`;
   // Nothing that already stood in the layout this one continues may move.
   if (base) {
+    for (const f of base.foci.filter((x) => x.personal)) {
+      const now = layout.foci.find((x) => x.id === f.id);
+      if (!now || JSON.stringify(now) !== JSON.stringify(f)) return "Kişisel köy merkezi eşitleme sırasında değişmiş.";
+    }
     const before = new Map(base.plots.filter((p) => p.subject).map((p) => [keyOf(p.subject), p]));
     for (const p of layout.plots) {
       if (!p.subject) continue;
@@ -160,9 +175,10 @@ export async function checkPart(db, groupId, layoutId, from) {
   const total = stored.layout.plots.length;
   if (meta.sound) return { checked: total, total, sound: true };
   if ((meta.checked || 0) !== from) return { checked: meta.checked || 0, total, sound: false, moved: true };
-  const problems = validateLayout(stored.layout, { from, count: CHECK_PART });
+  const partSize = stored.layout.generator >= 3 ? 8 : CHECK_PART;
+  const problems = validateLayout(stored.layout, { from, count: partSize });
   if (problems.length) return { problem: `Düzende ${problems.length} kural sorunu var (${problems[0][0]}: ${problems[0][1]}).` };
-  const checked = Math.min(total, from + CHECK_PART);
+  const checked = Math.min(total, from + partSize);
   return { checked, total, sound: checked >= total, statements: [["UPDATE village_layouts SET meta = json_set(COALESCE(meta, '{}'), '$.checked', ?, '$.sound', ?) WHERE id = ? AND json_extract(meta, '$.sound') IS NOT 1", [checked, checked >= total ? 1 : 0, layoutId]]] };
 }
 

@@ -25,7 +25,7 @@ const call = (app, path, { method = "GET", body, headers = {} } = {}) =>
     )
     .then(async (r) => ({ status: r.status, data: await r.json(), cookie: r.headers.get("set-cookie")?.split(";")[0] }));
 const OWNER = "n46g-plan-owner-key-1234";
-const V2 = { "X-Kutup-Village-Version": "2" };
+const V2 = { "X-Kutup-Village-Version": "3" };
 const MODELS = ["ev", "kulube", "kahve", "sahaf", "bostan", "konak", "kule", "cicekci"];
 
 async function v2team(gifts = 12) {

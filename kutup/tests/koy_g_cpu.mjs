@@ -82,7 +82,7 @@ for (let part = { checked: 0, sound: false }; !part.sound; ) part = (await call(
 await call("owner: yeni köyü aç", `/owner/village/${gid}/activate`, { method: "POST", headers: owner, body: { draftId: stored.draft.id, active: null, contentRev: stored.contentRev } });
 
 // Members, from their own copy of the village.
-const V2 = { "X-Kutup-Village-Version": "2" };
+const V2 = { "X-Kutup-Village-Version": "3" };
 const as = (who) => ({ Cookie: who.cookie, ...V2 });
 let browserMs = [];
 for (let i = 0; i < REPEAT; i++) {

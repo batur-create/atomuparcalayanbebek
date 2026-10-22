@@ -6,7 +6,7 @@ import { mergeVillage } from "./villageWorld.js";
 import { placeIn } from "./koy2/browserPlan.js";
 
 // This app can draw a planned (v2) village; a team still on today's village gets today's answer.
-const V2 = { "X-Kutup-Village-Version": "2" };
+const V2 = { "X-Kutup-Village-Version": "3" };
 const get = (path, signal) => api(path, undefined, "GET", V2, signal);
 
 /** The village of my group, kept in sync incrementally (only changed rows travel). */

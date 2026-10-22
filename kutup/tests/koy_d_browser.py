@@ -20,7 +20,7 @@ def check(name, ok):
 FETCH = '''async ([path,body,headers])=>{const r=await fetch('/api'+path,{method:body===null?'GET':'POST',headers:{'Content-Type':'application/json','X-Kutup':'1',...headers},...(body===null?{}:{body:JSON.stringify(body)})});const d=await r.json();if(!r.ok)throw Error(path+': '+r.status+' '+(d.error||''));return d}'''
 def api(page, path, body=None, headers=None):
     return page.evaluate(FETCH, [path, body, headers or {}])
-V2 = {'X-Kutup-Village-Version': '2'}
+V2 = {'X-Kutup-Village-Version': '3'}
 def settle(page):
     # A gift arrives with its delivery sheet first; take it, then look at the village.
     page.wait_for_timeout(600)

@@ -60,7 +60,7 @@ async function team() {
     return { ...stored, data: await state() };
   };
   const village = async (who = "ada", v2 = true) =>
-    call(app, "/village", { headers: { Cookie: people[who], ...(v2 ? { "X-Kutup-Village-Version": "2" } : {}) } });
+    call(app, "/village", { headers: { Cookie: people[who], ...(v2 ? { "X-Kutup-Village-Version": "3" } : {}) } });
   const one = (sql, ...args) => sqlite.prepare(sql).get(...args);
   sqlite.prepare("UPDATE members SET bricks = 2000").run();
   return { sqlite, db, app, gid, ids, people, owner, gift, state, draft, village, one };

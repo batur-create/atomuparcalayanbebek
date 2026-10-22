@@ -405,3 +405,11 @@ Batur yalnız siyah kalan yüzen pencerenin düzeltilmesini, Claude'un yarım i�
 ## 10. Köy yenilemesi n46, A–H (21 Ekim 2026)
 
 Yeni köy (v2) sekiz paket halinde geldi: PR #55 → #56 → #58 → #59 → #60 → #63 → #64 → H, bu sırayla birleştirilmeli. **Göç 34** bu işin; sıradaki göç 35. Yeni köy hiçbir ekipte kendiliğinden açılmaz; Batur Komuta merkezi → Ekipler → Köy düzeni'nden ekip ekip açar ve 14 gün içinde tek dokunuşla geri döner. Ücretsiz Cloudflare planında kalmak için yeni bina yeri işlemi yapanın tarayıcısında planlanır, sunucu yalnız kontrol eder (`checkPlan`). Kod `shared/koy2`, `src/koy2`, `server/village*.js`. Yayın, yedek, açma/geri dönüş, izlenecekler ve açık kalanlar (fiziksel cihaz doğrulaması bekliyor): [docs/koy/H-DEVIR.md](docs/koy/H-DEVIR.md).
+
+## 11. Kompakt kişisel komşu köyler (22 Ekim 2026)
+
+Dal `codex/compact-neighbor-villages`, taban `19bde5aa`. Kullanıcının C referansı, kalıcı kişisel merkezler, yakın ve daha dolgun büyüme, gerçek coğrafya ve sınırlı ortak geçişler olarak uygulandı. Generator 3 / terrain 2; şema değişmedi. Eski generator-2 düzeni eşitlemede yerinde kalır; yeni düzene yalnız Komuta merkezi → Ekipler → Köy düzeni'nde yeni taslak hazırlanıp önizlenerek geçilir. Taslak varsa “Komşu köyler taslağını yeniden hazırla” kullanılır. Mevcut 14 günlük geri dönüş ve arada kazanılan emek korunur. Yeni düzen için istemci yetenek sürümü 3 gerekir; API sözleşmesi yine 2'dir.
+
+48 model ve ölçekleri, Anıtkabir katkıları/2.000 dakika, haftalık anıt, odak/teslimat ve ekonomi korundu. Cloudflare'da generator-3 yer araması tarayıcıda zorunlu: eksik/eski öneride 409 ve harcamadan yeniden deneme, sunucuda pahalı aramaya dönüş yok. Ayrıntılı taslak kontrolü sekizer yapı. Yeni merkez/yol/parsel aynı atomik revizyon korumasını kullanır.
+
+Derleme + Node/Worker testleri 268/268; geçiş tarayıcı akışı 15/15; üç tohumda kesintisiz 47/200/500, her yapının yeri var. Gerçek uygulamadan görüntüler, komutlar, yerel performans ölçümleri ve sınırlar: [komşu köyler teslimi](docs/koy/komsu-koyler/README.md). Fiziksel telefon ve gerçek Cloudflare CPU doğrulaması yapılmadı; özellikle 500 yapıda soğuk istek bütçesi canlıda ayrıca izlenmeli. Yayın/etkinleştirme yapılmadı; Batur'da.

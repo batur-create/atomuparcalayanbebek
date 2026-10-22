@@ -39,7 +39,7 @@ async function v2team() {
   await call(app, `/owner/members/${ada.data.memberId}/gift`, { method: "POST", headers: owner, body: { model: "kahve" } });
   const made = await call(app, "/__test/village-v2", { method: "POST", body: { name: "Ada" } });
   sqlite.prepare("UPDATE members SET bricks = 500").run();
-  const as = (who) => ({ Cookie: who.cookie, "X-Kutup-Village-Version": "2" });
+  const as = (who) => ({ Cookie: who.cookie, "X-Kutup-Village-Version": "3" });
   const village = async (who = ada) => (await call(app, "/village", { headers: as(who) })).data;
   const one = (sql, ...args) => sqlite.prepare(sql).get(...args);
   const all = (sql, ...args) => sqlite.prepare(sql).all(...args).map((r) => ({ ...r }));

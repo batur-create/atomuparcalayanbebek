@@ -19,16 +19,29 @@
 // (z = 0) in version 1; heightAt() is where terraces come in later.
 import { bend, hash, linesCross, q, rng } from "./geom.js";
 
-export const TERRAIN_VERSION = 1;
+export const TERRAIN_VERSION = 2;
 export const RIVER_WIDTH = 3.2; // about 5 m
 export const RAIL_WIDTH = 1.7; // one track and its ballast
 const REACH = 320; // half length of the river and railway
 
-function meander(base, dir, normal, R) {
+function smoothRoute(points) {
+  const out = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const [a, b, c, d] = [points[Math.max(0, i - 1)], points[i], points[i + 1], points[Math.min(points.length - 1, i + 2)]];
+    for (let j = 0; j < 12; j++) {
+      const t = j / 12;
+      out.push([0, 1].map((k) => q(0.5 * (2 * b[k] + (-a[k] + c[k]) * t + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t * t + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * t ** 3))));
+    }
+  }
+  out.push(points.at(-1).map(q));
+  return out;
+}
+
+function meander(base, dir, normal, R, version) {
   const p1 = R() * Math.PI * 2,
     p2 = R() * Math.PI * 2,
-    a1 = 3 + R() * 2.5,
-    a2 = 1 + R() * 1.2;
+    a1 = (version >= 2 ? 8 : 3) + R() * 2.5,
+    a2 = (version >= 2 ? 2.5 : 1) + R() * 1.2;
   const pts = [];
   for (let s = -REACH; s <= REACH; s += 6) {
     const n = a1 * Math.sin(s / 41 + p1) + a2 * Math.sin(s / 17 + p2);
@@ -47,7 +60,7 @@ export function makeTerrain(seed, version = TERRAIN_VERSION) {
   const normal = [rn[0] * Math.cos(tilt) - rn[1] * Math.sin(tilt), rn[0] * Math.sin(tilt) + rn[1] * Math.cos(tilt)];
   const dir = [-normal[1], normal[0]];
   const dist = 44 + R() * 8;
-  const river = meander([normal[0] * dist, normal[1] * dist], dir, normal, R);
+  const river = meander([normal[0] * dist, normal[1] * dist], dir, normal, R, version);
   // The railway along the other front axis, 58–70 units out, gently bent so a
   // station finds a straight run; it crosses the river far from the houses.
   let rail = null;
@@ -79,8 +92,31 @@ export function makeTerrain(seed, version = TERRAIN_VERSION) {
       v = Math.sin(t) * ry * wob;
     lake.push([q(cx - Math.sin(pa) * u + Math.cos(pa) * v), q(cy + Math.cos(pa) * u + Math.sin(pa) * v)]);
   }
-  return { version, seed, river: { pts: river, w: RIVER_WIDTH }, lake: { poly: lake, cx: q(cx), cy: q(cy) }, rail: rail ? { pts: rail, w: RAIL_WIDTH } : null };
+  const terrain = { version, seed, river: { pts: river, w: RIVER_WIDTH }, lake: { poly: lake, cx: q(cx), cy: q(cy) }, rail: rail ? { pts: rail, w: RAIL_WIDTH } : null };
+  if (version >= 2) {
+    // The lake drains around the back of the settlement into the river. Both
+    // ends join real water; it is not a decorative line ending on the lawn.
+    const join = river.reduce((best, p) => Math.hypot(p[0] - (-tn[0] * 65 + normal[0] * dist), p[1] - (-tn[1] * 65 + normal[1] * dist)) < best.d
+      ? { p, d: Math.hypot(p[0] - (-tn[0] * 65 + normal[0] * dist), p[1] - (-tn[1] * 65 + normal[1] * dist)) } : best, { p: river[0], d: Infinity }).p;
+    const elbow = [q(-tn[0] * 65 - normal[0] * 20), q(-tn[1] * 65 - normal[1] * 20)];
+    terrain.streams = [{ id: "lake-outlet", w: 1.5, pts: smoothRoute([[cx, cy], [q(cx - tn[0] * 20), q(cy - tn[1] * 20)], elbow, [q(join[0] - normal[0] * 16), q(join[1] - normal[1] * 16)], join]) }];
+    // A small number of genuine protected patches. They never follow owner
+    // boundaries or change with the building count. Every other empty plot
+    // remains buildable subject to access and spacing.
+    terrain.nature = Array.from({ length: 5 }, (_, i) => {
+      const a = R() * Math.PI * 2, d = 42 + R() * 55;
+      const x = Math.cos(a) * d, y = Math.sin(a) * d, rx = 4 + R() * 4, ry = 3 + R() * 3;
+      const poly = Array.from({ length: 14 }, (_, j) => {
+        const t = j / 14 * Math.PI * 2, wob = 1 + 0.14 * Math.sin(t * 3 + a);
+        return [q(x + Math.cos(t) * rx * wob), q(y + Math.sin(t) * ry * wob)];
+      });
+      return { id: `nature-${i}`, kind: i % 3 === 0 ? "meadow" : "grove", poly };
+    });
+  }
+  return terrain;
 }
+
+export const watercourses = (terrain) => [terrain.river, ...(terrain.streams || [])];
 
 /** Ground height at a point (level ground in version 1). */
 export const heightAt = () => 0;

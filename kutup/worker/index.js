@@ -89,6 +89,7 @@ function getApp(env) {
     live: env.LIVE ? "ws" : "poll",
     onChange: (groupId, extra) => ring(env, groupId, extra),
     config: {
+      browserPlanningOnly: true,
       adminKey: env.ADMIN_KEY,
       publicOrigin: env.PUBLIC_ORIGIN,
       vapidSubject: env.VAPID_SUBJECT,
