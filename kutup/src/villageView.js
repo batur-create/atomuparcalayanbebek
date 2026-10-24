@@ -9,6 +9,7 @@ import { useCanvas, useSVG, mirrored } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
 import { AVATAR_BG, avatarImage, parseAvatar } from "../shared/avatars.js";
 import { HOUSE_SCREEN, lodFor } from "./koy2/life.js";
+import { drawCar, drawCrossing, drawPuffs, drawWhistle, obox } from "./koy2/trainArt.js";
 
 const TS = 256;
 const MAX_TILES = 40;
@@ -360,10 +361,158 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       villager(p[0], p[1], k, world.lookOf(f.home), f.walking ? f.step : null, face);
       cover(f.x, f.y, p, k);
     }
+    if (world.train) trainLayer(level, time, k);
+    if (out.ducks) ducks(out.ducks, time, k);
+    if (out.boat) rowboat(out.boat, time, k);
     if (out.nature) nature(out.nature, time, k);
     if (w.kind) weatherLayer(w, time, moving);
     if (out.moving && moving) alive = true;
     else if (moving && lod > 0) wakeIn = wakeIn ? Math.min(wakeIn, 2000) : 2000;
+  }
+  // ---------- the little train (src/koy2/train.js, n49) ----------
+  // Shown at every level of detail: from far away it is the village's one big
+  // moving thing. With motion off only a train standing at the platform shows.
+  const OCCLUDE = ["building", "tree", "bush", "rock", "lamp", "fountain"];
+  function trainLayer(level, time, k) {
+    const tr = world.train;
+    const motion = still ? "calm" : level;
+    const ambient = motion === "full";
+    const now = Date.now();
+    const out = tr.at(now, { motion });
+    const s = cam.s;
+    const A = (x, y, z = 0) => atScreen(x, y, z);
+    const night = sky?.night || 0;
+    // Passengers stand on the village's side of the track: behind the train.
+    for (const f of out.riders) {
+      const p = atScreen(f.x, f.y);
+      if (!onScreen(p, 30)) continue;
+      const face = f.face[0] - f.face[1] >= 0 ? 1 : -1;
+      villager(p[0], p[1], k, world.lookOf(f.home), f.walking ? f.step : null, face);
+      cover(f.x, f.y, p, k);
+    }
+    useCanvas(ctx, tint, Math.max(0.35, s / 15));
+    let seen = false;
+    try {
+      const blink = ambient ? Math.floor(time * 2.2) % 2 : null;
+      for (const c of out.crossings) {
+        if (!onScreen(atScreen(c.x, c.y), s * 4)) continue;
+        drawCrossing(A, c, c.close, blink, s, ctx, world.railWidth || 1.7);
+        if (ambient && c.close > 0) seen = true;
+      }
+      const cars = [...out.cars].sort((a, b) => a.x + a.y - (b.x + b.y));
+      for (const car of cars) {
+        const p = atScreen(car.x, car.y);
+        if (!onScreen(p, s * car.len)) continue;
+        seen = true;
+        drawCar(A, car, { s, night, ctx });
+        trainCover(car, p);
+      }
+      if (out.puffs.length) drawPuffs(ctx, A, out.puffs, s, tint);
+      const loco = out.cars.find((c) => c.kind === "loco");
+      if (out.whistle !== null && loco) drawWhistle(ctx, A, loco, out.whistle, s);
+    } finally {
+      useSVG();
+    }
+    if (!ambient) return;
+    if (seen && out.moving) alive = true;
+    else {
+      // Off screen: look again soon while a train is on the line, else when the next one is due.
+      const next = out.run ? 1000 : Math.max(500, tr.nextIn(now));
+      wakeIn = wakeIn ? Math.min(wakeIn, next) : next;
+    }
+  }
+  // A mother duck and her ducklings: paddling in a line, or resting by the shore.
+  function ducks(d, time, k) {
+    for (const [i, q] of d.brood.entries()) {
+      const p = atScreen(q.x, q.y);
+      if (!onScreen(p, 20)) continue;
+      const face = q.dx - q.dy >= 0 ? 1 : -1;
+      const r = q.big ? 2.7 * k : 1.6 * k;
+      if (d.moving) {
+        // A small V of ripples behind each one.
+        ctx.strokeStyle = "rgba(235,245,250,.55)";
+        ctx.lineWidth = Math.max(0.6, 0.5 * k);
+        ctx.beginPath();
+        const w = r * (1.6 + 0.25 * Math.sin(time * 3 + i));
+        ctx.moveTo(p[0] - face * r * 0.6, p[1]);
+        ctx.lineTo(p[0] - face * (r + w), p[1] - w * 0.35);
+        ctx.moveTo(p[0] - face * r * 0.6, p[1] + r * 0.3);
+        ctx.lineTo(p[0] - face * (r + w), p[1] + w * 0.45);
+        ctx.stroke();
+      }
+      const bob = d.moving ? Math.sin(time * 4 + i * 1.3) * 0.25 * k : 0;
+      ctx.fillStyle = tint(q.big ? "#8b6d4c" : "#f2d36b");
+      ctx.beginPath();
+      ctx.ellipse(p[0], p[1] - r * 0.45 + bob, r, r * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p[0] + face * r * 0.75, p[1] - r * 1.05 + bob, r * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = tint("#e89a3c");
+      ctx.beginPath();
+      ctx.ellipse(p[0] + face * r * 1.2, p[1] - r * 1.0 + bob, r * 0.24, r * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // A rowing boat with one rower, oars dipping in turn.
+  function rowboat(b, time, k) {
+    const p = atScreen(b.x, b.y);
+    if (!onScreen(p, 40)) return;
+    const len = Math.hypot(b.dx, b.dy) || 1,
+      dx = b.dx / len,
+      dy = b.dy / len;
+    const A = (x, y, z = 0) => atScreen(x, y, z);
+    // The wake: two lines opening behind.
+    ctx.strokeStyle = "rgba(235,245,250,.6)";
+    ctx.lineWidth = Math.max(0.8, 0.6 * k);
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      ctx.moveTo(...A(b.x - dx * 1.1, b.y - dy * 1.1));
+      ctx.lineTo(...A(b.x - dx * 3.2 - dy * side * 0.6, b.y - dy * 3.2 + dx * side * 0.6));
+    }
+    ctx.stroke();
+    useCanvas(ctx, tint, Math.max(0.35, cam.s / 15));
+    try {
+      obox(A, b.x, b.y, dx, dy, -1.1, 1.1, -0.42, 0.42, 0.02, 0.32, ["#7a5434", "#b07a45", "#9a6838"]);
+      obox(A, b.x, b.y, dx, dy, -0.9, 0.9, -0.3, 0.3, 0.2, 0.25, ["#5e4029", "#5e4029", "#5e4029"]);
+    } finally {
+      useSVG();
+    }
+    // Oars sweep back and forth.
+    const stroke = Math.sin(b.u * 2.6);
+    ctx.strokeStyle = tint("#c79a62");
+    ctx.lineWidth = Math.max(1, 0.5 * k);
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      const o = [b.x - dy * side * 0.35, b.y + dx * side * 0.35];
+      const tip = [o[0] + dx * stroke * 0.7 - dy * side * 1.2, o[1] + dy * stroke * 0.7 + dx * side * 1.2];
+      ctx.moveTo(...A(o[0], o[1], 0.45));
+      ctx.lineTo(...A(tip[0], tip[1], 0.05 + Math.max(0, -stroke) * 0.25));
+    }
+    ctx.stroke();
+    const seat = atScreen(b.x - dx * 0.2, b.y - dy * 0.2, 0.25);
+    villager(seat[0], seat[1] + 3.5 * k, k, world.lookOf("boat"), null, dx - dy >= 0 ? -1 : 1);
+    cover(b.x, b.y, p, k * 1.6);
+  }
+  // What stands beyond the track, on the camera's side, is drawn again over a car.
+  function trainCover(car, p) {
+    const [sx, sy] = screen(car.x, car.y);
+    const reach = car.len * 0.6 + 1;
+    let nx = -car.dy,
+      ny = car.dx;
+    if (nx + ny < 0) [nx, ny] = [-nx, -ny];
+    const list = world.query(sx - reach, sy - 2.4, sx + reach, sy + 0.6).filter((it) => it.depth !== undefined && OCCLUDE.includes(it.type) && (it.x - car.x) * nx + (it.y - car.y) * ny > 1.4 && it.depth > car.x + car.y);
+    if (!list.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p[0] - reach * cam.s, p[1] - 2.4 * cam.s, reach * 2 * cam.s, 3 * cam.s);
+    ctx.clip();
+    try {
+      const v = { s: cam.s, ctx, at: lifeAt, tint, detail: world.detailFor(cam.s) };
+      for (const it of list) it.draw(v);
+    } finally {
+      ctx.restore();
+    }
   }
   // Redraws, clipped to a figure's own small box, whatever stands in front of it (B's depth mask).
   function cover(x, y, p, k) {
@@ -463,6 +612,28 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         ctx.ellipse(p[0] - 1.3 * k, p[1], flap, 1.6 * k, -0.4, 0, Math.PI * 2);
         ctx.ellipse(p[0] + 1.3 * k, p[1], flap, 1.6 * k, 0.4, 0, Math.PI * 2);
         ctx.fill();
+      }
+      return;
+    }
+    if (n.kind === "fireflies") {
+      // Little lights drifting low over the grass, each blinking on its own beat.
+      const fade = Math.min(1, n.u / 4, (n.stay - n.u) / 4);
+      for (let i = 0; i < n.count; i++) {
+        const a = i * 2.39996,
+          u = n.u * (0.35 + (i % 3) * 0.08);
+        const x = n.x + Math.cos(a + u) * n.r * (0.4 + 0.6 * ((i * 0.37) % 1)),
+          y = n.y + Math.sin(a * 1.3 + u * 1.2) * n.r * (0.4 + 0.6 * ((i * 0.61) % 1));
+        const p = atScreen(x, y, 0.5 + 0.4 * Math.sin(u * 2 + i));
+        if (!onScreen(p)) continue;
+        const glow = Math.max(0, Math.sin(time * (1.6 + (i % 4) * 0.35) + i * 1.7)) * fade;
+        if (glow < 0.05) continue;
+        const r = 4.5 * k;
+        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+        g.addColorStop(0, `rgba(240,255,170,${glow})`);
+        g.addColorStop(0.25, `rgba(220,255,130,${0.6 * glow})`);
+        g.addColorStop(1, "rgba(200,255,120,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(p[0] - r, p[1] - r, r * 2, r * 2);
       }
       return;
     }

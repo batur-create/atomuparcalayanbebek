@@ -28,7 +28,14 @@ export const EVENTS = {
   birds: { stay: [15, 30], gap: [120, 300] },
   butterflies: { stay: [10, 20], gap: [120, 240] },
   wind: { stay: [2, 4], gap: [20, 40] },
+  // n49: summer nights by the water and in the groves; ducks paddle a lap of the
+  // pond now and then and rest near the shore between; a rowing boat on the river.
+  fireflies: { stay: [40, 70], gap: [60, 150] },
+  ducks: { stay: [0, 0], gap: [150, 330] },
+  boat: { stay: [0, 0], gap: [420, 780] },
 };
+export const DUCKS = { speed: 0.35, inset: 0.55, brood: 3 };
+export const BOAT = { speed: 0.7, reach: 55 };
 // Shared weather: in each 24-minute window it may rain (or snow) once, for 1–3
 // minutes, starting in the window's first 5 minutes, so two showers are always
 // at least 16 minutes apart. Puddles stay 3–6 minutes after the rain.
@@ -129,7 +136,7 @@ export function walkGraph(layout) {
 }
 
 /** Shortest walks from one vertex to every other within `limit` (Dijkstra on a small graph). */
-function walksFrom(graph, from, limit) {
+export function walksFrom(graph, from, limit) {
   const dist = new Map([[from, 0]]),
     prev = new Map();
   const open = [[0, from]];
@@ -149,7 +156,7 @@ function walksFrom(graph, from, limit) {
   return { dist, prev };
 }
 /** The walk from `home` to the venue the tree was grown from, as a polyline with lengths. */
-function routeOf(tree, home) {
+export function routeOf(tree, home) {
   if (!tree.dist.has(home)) return null;
   const parts = [];
   for (let k = home; tree.prev.has(k); k = tree.prev.get(k).from) parts.push([...tree.prev.get(k).e.pts].reverse());
@@ -295,6 +302,23 @@ function natureOf(layout, trees) {
       if (near(x, y) && !layout.plots.some((p) => pointRect([x, y], p.ground) < 1.2)) out.push({ id: `birds:l${i}`, kind: "birds", x, y, dir: [-(py - t.lake.cy), px - t.lake.cx] });
     }
   }
+  // Fireflies on summer nights: over the pond's banks, in the groves, in garden squares.
+  if (t?.lake) {
+    const poly = t.lake.poly;
+    for (let i = 0; i < poly.length; i += Math.max(1, Math.floor(poly.length / 4))) {
+      const [px, py] = poly[i];
+      const x = px + (px - t.lake.cx) * 0.18,
+        y = py + (py - t.lake.cy) * 0.18;
+      if (near(x, y, 30)) out.push({ id: `fireflies:l${i}`, kind: "fireflies", x, y, r: 3 });
+    }
+  }
+  for (const n of t?.nature || []) {
+    if (n.kind !== "grove") continue;
+    const x = n.poly.reduce((a, p) => a + p[0], 0) / n.poly.length,
+      y = n.poly.reduce((a, p) => a + p[1], 0) / n.poly.length;
+    out.push({ id: `fireflies:${n.id}`, kind: "fireflies", x, y, r: 3.5 });
+  }
+  for (const f of layout.foci) if (f.status === "open" && f.kind === "bahce") out.push({ id: `fireflies:${f.id}`, kind: "fireflies", x: f.x, y: f.y, r: f.r * 0.8 });
   // Butterflies over flowering gardens.
   for (const p of layout.plots) if (p.subject.type === "building" && (p.model === "bostan" || p.model === "cicekci")) out.push({ id: `butterflies:${p.id}`, kind: "butterflies", x: (p.plot[0] + p.plot[2]) / 2, y: (p.plot[1] + p.plot[3]) / 2, box: p.plot });
   for (const f of layout.foci) if (f.status === "open" && f.kind === "bahce") out.push({ id: `butterflies:${f.id}`, kind: "butterflies", x: f.x, y: f.y, box: [f.x - f.r, f.y - f.r, f.x + f.r, f.y + f.r] });
@@ -456,6 +480,16 @@ export function createLife({ layout, trees = [] }) {
   function natureAt(t, rect, sky, weather) {
     if (weather.kind) return null;
     const shown = (x, y) => x > rect[0] && x < rect[2] && y > rect[1] && y < rect[3];
+    if (sky.night >= 0.5 && (sky.season === "spring" || sky.season === "summer")) {
+      let best = null;
+      for (const w of wild) {
+        if (w.kind !== "fireflies" || !shown(w.x, w.y)) continue;
+        const ev = eventOf(w.id, EVENTS.fireflies, 0, t);
+        if (ev.u < 0 || ev.u >= ev.stay) continue;
+        if (!best || cmp(w.id, best.w.id) < 0) best = { w, ev };
+      }
+      if (best) return { kind: "fireflies", id: best.w.id, x: best.w.x, y: best.w.y, r: best.w.r, u: best.ev.u, stay: best.ev.stay, count: 8 };
+    }
     if (sky.night < 0.5) {
       for (const kind of ["birds", "butterflies"]) {
         if (kind === "butterflies" && sky.season !== "spring" && sky.season !== "summer") continue;
@@ -492,6 +526,56 @@ export function createLife({ layout, trees = [] }) {
       puddles.push({ x, y, size });
     }
   }
+  // ---------- n49: ducks on the pond, a rowing boat on the river ----------
+  const lake = layout.terrain?.lake;
+  let lap = null,
+    home = 0;
+  if (lake) {
+    const pts = lake.poly.map(([x, y]) => [lake.cx + (x - lake.cx) * DUCKS.inset, lake.cy + (y - lake.cy) * DUCKS.inset]);
+    lap = pathOf([...pts, pts[0]]);
+    // They rest at the point of their lap nearest the village.
+    let best = Infinity;
+    pts.forEach(([x, y], i) => {
+      if (Math.hypot(x, y) < best) [best, home] = [Math.hypot(x, y), lap.lengths[i]];
+    });
+  }
+  // A lap of the pond now and then; in between (and with motion off) a still row by the shore.
+  function ducksAt(t, motion) {
+    if (!lap) return null;
+    const swim = lap.total / DUCKS.speed;
+    const ev = eventOf("ducks", { ...EVENTS.ducks, stay: [swim, swim] }, 0, t);
+    const moving = motion === "full" && ev.u >= 0 && ev.u < swim;
+    const lead = home + (moving ? ev.u * DUCKS.speed : 0);
+    const brood = [];
+    for (let k = 0; k <= DUCKS.brood; k++) {
+      const s = (((lead - k * 0.55 - (k ? 0.25 : 0)) % lap.total) + lap.total) % lap.total;
+      const p = at(lap, s),
+        q = at(lap, Math.min(lap.total, s + 0.3));
+      brood.push({ x: p.x, y: p.y, dx: q.x - p.x, dy: q.y - p.y, big: k === 0 });
+    }
+    return { moving, brood, u: moving ? ev.u : 0 };
+  }
+  const river = layout.terrain?.river;
+  let reachLine = null;
+  if (river) {
+    const near = linePoint(river.pts, [0, 0]),
+      len = lengthOf(river.pts);
+    const pts = [];
+    for (let s = Math.max(0, near.at - BOAT.reach); s <= Math.min(len, near.at + BOAT.reach); s += 2) pts.push(along(river.pts, s).p);
+    if (pts.length > 1) reachLine = pathOf(pts);
+  }
+  // Someone rows past the village by day, up or down the river.
+  function boatAt(t, sky, weather) {
+    if (!reachLine || weather.kind || sky.night >= 0.6) return null;
+    const trip = reachLine.total / BOAT.speed;
+    const ev = eventOf("boat", { ...EVENTS.boat, stay: [trip, trip] }, 0, t);
+    if (ev.u < 0 || ev.u >= trip) return null;
+    const down = ev.r() < 0.5;
+    const s = down ? ev.u * BOAT.speed : reachLine.total - ev.u * BOAT.speed;
+    const p = at(reachLine, s),
+      q = at(reachLine, s + (down ? 0.5 : -0.5));
+    return { id: `boat:${ev.n}`, x: p.x, y: p.y, dx: q.x - p.x, dy: q.y - p.y, u: ev.u };
+  }
   return {
     graph,
     venues,
@@ -505,12 +589,16 @@ export function createLife({ layout, trees = [] }) {
       const t = clockMs / 1000;
       const weather = weatherAt(seed, clockMs, sky.season);
       // Calm and still rest the ambient life; the weather stays as a still state.
-      if (motion !== "full" || lod === 0) return { people: [], nature: null, weather, moving: motion === "full" && !!weather.kind };
+      if (motion !== "full" || lod === 0) return { people: [], nature: null, weather, ducks: lod > 0 ? ducksAt(t, "still") : null, boat: null, moving: motion === "full" && !!weather.kind };
       const cap = Math.min(focus ? LIFE.focusPeople : LIFE.lodPeople[lod], LIFE.people);
       // Rain, and late at night, keeps people off the benches and squares; tea and books carry on.
       const people = peopleAt(t, rect, { cap, wet: !!weather.kind || sky.night >= 0.75, group: !focus });
       const nature = natureAt(t, rect, sky, weather);
-      return { people, nature, weather, moving: !!weather.kind || !!nature || people.some((p) => p.walking) };
+      const inView = ({ x, y }) => x > rect[0] - 2 && x < rect[2] + 2 && y > rect[1] - 2 && y < rect[3] + 2;
+      const ducks = ducksAt(t, motion);
+      const boat = boatAt(t, sky, weather);
+      const shownBoat = boat && inView(boat) ? boat : null;
+      return { people, nature, weather, ducks, boat: shownBoat, moving: !!weather.kind || !!nature || people.some((p) => p.walking) || (!!ducks?.moving && ducks.brood.some(inView)) || !!shownBoat };
     },
   };
 }

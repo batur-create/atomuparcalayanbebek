@@ -45,12 +45,12 @@ const PLAZA_STREET = 22,
   RUN = 16;
 
 // ---------- the layout ----------
-export function emptyLayout(seed, generator = GENERATOR_VERSION) {
+export function emptyLayout(seed, generator = GENERATOR_VERSION, terrainVersion = generator >= 3 ? TERRAIN_VERSION : 1) {
   const layout = {
     generator,
-    terrainVersion: generator >= 3 ? TERRAIN_VERSION : 1,
+    terrainVersion,
     seed,
-    terrain: makeTerrain(seed, generator >= 3 ? TERRAIN_VERSION : 1),
+    terrain: makeTerrain(seed, terrainVersion),
     nodes: [{ id: "n0", x: 0, y: 0 }],
     roads: [],
     foci: [{ id: "f0", x: 0, y: 0, r: PLAZA_R, kind: "meydan", node: "n0", parent: null, status: "open" }],

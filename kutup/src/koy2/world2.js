@@ -20,6 +20,8 @@ import {
   COATS, HATS, PALETTE, SKINS, boxOf, detailFor, fillShape, lampArt, lineBox, meadowDetail, plazaArt, rockArt, bushArt, signArt, spotArt, strokeLine, treeArt, MEMBER_COLORS, focusing, skyAt,
 } from "../villageWorld.js";
 import { createLife, lookOf } from "./life.js";
+import { createTrain } from "./train.js";
+import { drawHalt } from "./trainArt.js";
 
 const { ROAD, ROAD_EDGE, WATER, PLAZA_STONE, PLAZA_RING } = PALETTE;
 const BANK = "#b9d08f",
@@ -179,6 +181,14 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       add(standing, { type: "bridge", depth: at[0] + at[1], x: at[0], y: at[1], bbox: boxOf(at[0], at[1], 6, 6, 3, 3), draw: (v) => railBridgeArt(v, at, dir, t.river.w / 2 + 1.1) });
       break;
     }
+  }
+
+  // The little train (n49): where it stops, and the halt beside the track when the village has no station.
+  const train = createTrain(layout);
+  const halt = train?.stop?.kind === "halt" ? train.stop : null;
+  if (halt) {
+    const [hx, hy] = halt.p;
+    add(standing, { type: "halt", depth: hx + hy - 0.5, x: hx, y: hy, bbox: boxOf(hx, hy, 4, 4, 2.6, 2), draw: (v) => drawHalt(v.at(0, 0), halt, v.detail) });
   }
 
   // ---------- squares ----------
@@ -520,6 +530,8 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   return {
     items, query, bounds, area, districts, walkingLinks: [], balloons: [], walkers: [], villagers: [], glows: [], smoke: [], buildings: layout.plots, lit,
     life,
+    train,
+    railWidth: t.rail?.w || 0,
     // While I am focusing the village stays quieter (plan §6.4: at most four people).
     lifeFocus: !!meMember && focusing(meMember, now),
     lookOf: (plotId) => {
