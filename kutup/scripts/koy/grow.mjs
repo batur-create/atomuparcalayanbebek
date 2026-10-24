@@ -28,7 +28,10 @@ export function growth({ seed, count, unbalanced = false, onStep = null }) {
     near = [],
     times = [];
   for (let i = 0; i < count; i++) {
-    const model = i % 10 === 9 ? MODEL_IDS[(i * stride) % MODEL_IDS.length] : EVERYDAY[i % EVERYDAY.length];
+    // The everyday list is walked by everyday picks, so the slot that every
+    // tenth building takes for the catalogue no longer hides its last entry
+    // (the pazar, which then only came by luck of the stride; n48).
+    const model = i % 10 === 9 ? MODEL_IDS[(i * stride) % MODEL_IDS.length] : EVERYDAY[(i - Math.floor(i / 10)) % EVERYDAY.length];
     // Four people; "unbalanced" is the 76 / 8 / 8 / 8 of the baskin100 scene.
     const owner = unbalanced ? (i % 100 < 76 ? "m0" : `m${1 + (i % 3)}`) : `m${i % 4}`;
     const mine = layout.plots.filter((p) => p.owner === owner);
