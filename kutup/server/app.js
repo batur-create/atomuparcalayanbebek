@@ -22,7 +22,7 @@ import { CAPACITY, cellKey, cellLayout, createPlanner, freeSpots, isMonument, ki
 import { dayStreak, partnersOf, statsOf, storyOf, storyWeek } from "./stats.js";
 import { achievementsOf } from "./achievements.js";
 import { REPORTED, ACHIEVEMENTS } from "../shared/achievements.js";
-import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_STREAKS, WEEKLY_DAYS, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN,CATALOG, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
+import { BEAT_EVERY, BEAT_GAP, BLUEPRINT_STREAKS, weeklyEnd, BUILD_LEAVE, BY_ID, CHAIN_GAP, COUNTDOWN,CATALOG, LEAVE_GRACE, FREE_LEAVE, HONEST_MIN, RESCUE_HOLD, RESCUE_WINDOW, rescueMinutes, seenMinutes, DAILY_BONUS, DEFAULT_MODEL, GRACE, JOIN_LEAD, MASTER_PRIZE, MONUMENT_PRIZE, RHYTHMS, RUIN_DAYS, blueprintPool, fits, imeceBonus, minutesOf, modelOf, monumentGoal, refundLater, refundNow, rhythmAt, rhythmEnd, stateOf, streakBonus, teaBreakFor, wageFor } from "../shared/catalog.js";
 
 export const AVATARS = [
   "🪐", "🌱", "🐈", "🌻", "🧋", "🍒", "🎧", "📚", "🦊", "🪼", "🍄", "🦋",
@@ -750,7 +750,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         const d=discovery.state;
         statements.push([`INSERT INTO blueprint_progress(member_id,carry,dry,draws,seed) SELECT id,?,?,?,? FROM members WHERE id=? AND focus_end=?
           ON CONFLICT(member_id) DO UPDATE SET carry=excluded.carry,dry=excluded.dry,draws=excluded.draws,seed=excluded.seed`,[d.carry,d.dry,d.draws,d.seed,s.id,s.ends]]);
-        if(s.strict&&item.since&&!discovery.owned.includes(item.id)&&s.ends>=item.since&&s.ends<item.since+WEEKLY_DAYS*DAY) {
+        // n48: a build started while the weekly one was open earns its plan, even if it ends after.
+        if(s.strict&&item.since&&!discovery.owned.includes(item.id)&&s.ends>=item.since&&s.ends-s.minutes*60000<weeklyEnd(item)) {
           pay.push([0,"blueprint",`📜 ${item.name}: açık dönemde bitirdin, planı kalıcı senin.`]);
           statements.push(["INSERT OR IGNORE INTO unlocks(member_id,model,source,created) SELECT id,?,'weekly',? FROM members WHERE id=? AND focus_end=?",[item.id,now,s.id,s.ends]]);
         }

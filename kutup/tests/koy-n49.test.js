@@ -155,7 +155,9 @@ test("n49: level crossings close while a train goes over them and stay open for 
 
 test("n49: the halt stands on the free strip by the track, never on a plot, street or door path", () => {
   const layouts = [layoutFrom("group:n49-halt", houses(30)).layout, growth({ seed: "n49-b", count: 300 }).layout, layoutFrom(makeFixture("baskin100").groupKey, inventoryOf(makeFixture("baskin100"))).layout];
-  for (const layout of layouts) {
+  for (const grown of layouts) {
+    // The halt is only for a village without a station (a grown one may have built one).
+    const layout = { ...grown, plots: grown.plots.filter((p) => p.model !== "istasyon") };
     const tr = createTrain(layout);
     assert.equal(tr.stop?.kind, "halt");
     const { p, dir, n } = tr.stop;

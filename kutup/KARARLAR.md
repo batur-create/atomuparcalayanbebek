@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n48 | 25 dakikalık katalog 5 → 12 (7 yeni yapı, hepsi ev değil) ve sonbahar haftalıkları; eski haftalıklar nadir plana | Katalog | 24 Eki | claude/n48 PR |
 | yapi-kugulu | Kuğulu Park: onaylı gerçek park minyatürü, peyzaj yapımı, kuğular ve gece ışıkları | Yapı Atölyesi | 22 Eki | PR #69 |
 | n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
 | n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
@@ -99,6 +100,17 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n48 · 25 dakikalık katalog genişletme
+Katalog · 24 Ekim 2026 · `claude/n48-katalog` · göç yok (şema değişmedi)
+
+**İstek:** Ediz: "kataloğu genişletelim, hepsi birbirine benzemesin, arada yaratıcı şeyler; şimdilik 7 tane ekle, 12'ye çıksın; bu haftanın yapıları yenilensin, eskiler gitsin."
+**Karar:** Yedi küçük (25 dk) yapı, açık katalogda: Taş Çeşme, Asma Çardak, Göletli Köprü, Arılık, Meteoroloji İstasyonu, Bahçe Süsleri (süs paketi), Çoban Kulübesi. Haftalık iki yeni yapı sonbahar temalı: Kestane Kebapçısı, Kuş Gözlem Kulesi (since = 24 Eki 00:00 TR, iki hafta). Hepsi `src/smallBuildings.js` içinde `design()` ile; aynı çizim şantiye, katalog ve iki köyde. Gerçek boyutlar `olcek.js` REAL'de, hepsi k = 1.
+**Eski haftalıklar nereye:** Postane ve Çay Ocağı'na `until` eklendi (24 Eki), sistemin zaten var olan kuralına geçtiler: nadir plan havuzu. Açık dönemde kuranlarda kalıcı açık, kurulmuş binalar yerinde; WEEKLY_LEGACY (göç 31) değişmedi. Normal katalogda sürekli açık tutmak da düşünüldü; uygulamanın "iki hafta sonra keşfedilir" sözünü bozacağı için seçilmedi. Geri almak için `until` satırlarını silmek yeter.
+**Adalet:** Haftalık planı açık dönemde *başlayan* seans kazanır (önceden bitiş zamanına bakılıyordu); yayın anında süren bir Çay Ocağı seansı planını kaybetmez.
+**Mühendislik notları:** çeşmede künk + maslak, sivri kemerin yükü ayaklara aktarması, kurşun örtü; çardakta çelik papuç (ahşap topraktan 10 cm yukarı) ve köşe payandaları; köprüde kil astar ve lamine kavisli kiriş; arılıkta 40 cm altlık ve renkli kovanlar; meteoroloji siperi 1,25–2 m, rüzgâr 10 m'de (WMO), 120° gergiler; güneş saatinde 40° (Ankara enlemi) kuzeye bakan gölge çubuğu; kulübede kavisli oluklu sacın rijitliği; kestanede çentik (buhar basıncı); kuş kulesinde X çapraz ve don derinliği altında tekil temel.
+**Testler:** 273/273 (test:all). Köy testlerindeki 49 sabiti 58 oldu; koy-a'da eklenenler açık liste. `scripts/koy/grow.mjs` her onuncu bina yuvası EVERYDAY'in son öğesini (pazar) hep gölgeliyordu; pazar ancak adım şansıyla geliyordu ve 58 modelle hiç gelmedi. Gündelik liste artık gündelik seçim sayısıyla yürüyor (koy-f pazar testi buna bağlı).
+**Kanıt:** /mnt/project-files/kutup/n48/ (bitmiş hâller, aşamalar, eski köy, Köy v2 gündüz/gece, telefonda katalog açık/koyu).
 
 ### yapi-kugulu · Kuğulu Park
 Yapı Atölyesi · 22 Ekim 2026 · `codex/kugulu-park` · göç yok

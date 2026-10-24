@@ -30,8 +30,8 @@ test("n46 E: geometry version 2 is Anıtkabir at 1.25× and nothing else; versio
   assert.equal(modelSpec("ev", 0), null);
 });
 
-test("n46 E: all 49 models find a plot at their own size, with a reachable door", () => {
-  assert.equal(CATALOG.length, 49);
+test("n46 E: all 58 models find a plot at their own size, with a reachable door", () => {
+  assert.equal(CATALOG.length, 58);
   const f = makeFixture("yapi32");
   const { layout: base } = layoutFrom(f.groupKey, inventoryOf(f));
   const reach = reachableRoads(base);

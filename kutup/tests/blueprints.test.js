@@ -70,7 +70,8 @@ test('discovery API: only completed credited sessions advance, durable guarantee
   state=sql.prepare('SELECT * FROM blueprint_progress WHERE member_id=?').get(id);
   assert.equal(state.dry,0);assert.equal(state.carry,0);
   await as('/focus',{action:'finish'});assert.deepEqual(sql.prepare('SELECT * FROM blueprint_progress WHERE member_id=?').get(id),state);
-  assert.equal((await as('/wallet')).data.discovery.left,RARE.length-2);
+  // The pool also holds weekly buildings whose fortnight is over (n48: Postane, Çay Ocağı).
+  assert.equal((await as('/wallet')).data.discovery.left,blueprintPool(Date.now()).length-2);
 });
 
 test('discovery API: first session on a 7-day streak grants a bonus without resetting effort; failure gives no progress',async t=>{

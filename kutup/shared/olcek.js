@@ -27,6 +27,16 @@ const H0 = 10,
 // plan: the largest span of what is drawn, in metres. Where the catalogue
 // names no real building, a typical one of its kind.
 export const REAL = {
+  // n48 small builds (25 min): typical sizes of their kind, drawn at k = 1.
+  cesme: { boy: 4.3, plan: 6.5, not: "Osmanlı meydan çeşmesi: gövde ~3,5 m eninde, saçak ve kurşun külahla ~4,3 m; önünde döşeme" },
+  cardak: { boy: 3.4, plan: 6.5, not: "4 × 3 m asma çardak, dikme boyu 2,5 m, üstünde asma" },
+  golkopru: { boy: 2, plan: 7.5, not: "6 × 4 m bahçe göleti, 7 m'lik kavisli ahşap yaya köprüsü" },
+  arilik: { boy: 2.8, plan: 6.5, not: "dört Langstroth kovanı ve 1,5 × 1,4 m bal evi" },
+  meteo: { boy: 10.5, plan: 6.5, not: "otomatik meteoroloji istasyonu: rüzgâr 10 m'de ölçülür (WMO), siper 1,25-2 m" },
+  sus: { boy: 2.8, plan: 6.5, not: "güneş saati, 2,2 m direkte kuş evi, taş fener ve bank" },
+  cobankulube: { boy: 4.1, plan: 6, not: "tekerlekli çoban kulübesi: gövde 3,8 × 1,9 m, tekerlek çapı ~0,9 m" },
+  kestane: { boy: 5.6, plan: 6.5, not: "kestane arabası ve arkasındaki genç kestane ağacı" },
+  kusgozlem: { boy: 7.4, plan: 7, not: "3,2 m yüksek platformlu kuş gözlem kulesi, kamış çatı" },
   kugulupark: { boy: 9.2, plan: 100, not: "Kuğulu Park: belediye kaydı 7.743 m²; boy/plan tipik yaklaşık referans, ölçülü rölöve değil. Onaylı oyun zemini 28 × 24 m, k=1." },
   kapadokya:{boy:8,plan:12,not:"Doğal tüf kütlesi içine uyarlanmış özgün Kütüp kaya evi"},
   yuzenev:{boy:5,plan:12,not:"Özgün ponton üstü yüzen ev ve iskele"},

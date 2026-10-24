@@ -10,7 +10,7 @@
 
 export const YENILIKLER = [
   {
-    surum: 29,
+    surum: 30,
     tarih: "2026-10-24",
     vakit: "akşam",
     baslik: "Köye küçük bir tren uğruyor",
@@ -21,6 +21,19 @@ export const YENILIKLER = [
       "Yeni hazırlanan köy taslaklarında ray artık dümdüz değil; virajlarla kıvrılıp köyün önüne kadar sokuluyor.",
       "Göletteki ördek ailesi arada bir tur atıyor, dereden kürek çeken biri geçiyor, yaz gecelerinde ateşböcekleri yanıp sönüyor.",
       "Hepsi yeni köyde ve hareket ayarına uyar: Sakin ve Kıpırtısız'da yalnız istasyonda bekleyen tren durağan bir resim olarak görünür.",
+    ],
+  },
+  {
+    surum: 29,
+    tarih: "2026-10-24",
+    vakit: "akşam",
+    baslik: "25 dakikada kurulacak 7 yeni yapı",
+    maddeler: [
+      "Küçük katalog 5'ten 12 yapıya çıktı ve hepsi ev değil: Taş Çeşme, Asma Çardak, Göletli Köprü, Arılık, Meteoroloji İstasyonu, Bahçe Süsleri ve tekerlekli Çoban Kulübesi.",
+      "Her birinin şantiyesi kendine göre: çeşmede önce künk ve taş temel, çardakta beton ayaklar ve payandalar, kulübede önce şase ve demir tekerlekler.",
+      "Bu haftanın yapıları sonbahardan: kestane ağacının altında Kestane Kebapçısı ve sazlık kıyısında Kuş Gözlem Kulesi. İki hafta herkese açık.",
+      "Köy Postanesi ile Çay Ocağı haftalık vitrinden çıktı, nadir planlara katıldı. Onları kurmuş olanlarda kalıcı açık; kurulmuş binalar yerinde duruyor.",
+      "Haftalık yapıya açık dönemde başladıysan, seans dönem bittikten sonra bitse de planı senin olur.",
     ],
   },
   {
