@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| n50 | Bağlı hesaplar: bir seans aynı cihazdaki diğer hesaplarda da başlar (kendi binası, kendi ekibi), tek seans gibi takip edilir; şimdilik yalnız Batur | Odak | 24 Eki | claude/n50-bagli-hesaplar PR |
 | n48 | 25 dakikalık katalog 5 → 12 (7 yeni yapı, hepsi ev değil) ve sonbahar haftalıkları; eski haftalıklar nadir plana | Katalog | 24 Eki | claude/n48 PR |
 | yapi-kugulu | Kuğulu Park: onaylı gerçek park minyatürü, peyzaj yapımı, kuğular ve gece ışıkları | Yapı Atölyesi | 22 Eki | PR #69 |
 | n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
@@ -100,6 +101,19 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### n50 · Bağlı hesaplar (dört hesapta aynı anda odak)
+Odak · 24 Ekim 2026 · `claude/n50-bagli-hesaplar` · göç 35 (`members.focus_link`)
+
+**İstek:** Batur (Ediz'in hesabından): "4 farklı hesabım var, odaklandığımda sadece birinde sayılıyor. Dördünde de aynı anda çalışıyor gözükmek, belki dördünde ayrı bina kurmak istiyorum. Önce benim için yapın; dört şantiyeyi birden başlatıp tek panelden takip edeyim. Odak süreleri sayımı gibi sıkıntılı detayları da düşün."
+**Neden sekmeler olmadı:** hesap çerezleri tarayıcı başına ortak; ikinci sekmede hesap değişince ilk sekme de o hesaba geçiyor ve "önce mevcut inşaatını bitir" çıkıyor.
+**Karar:** Köy kartında seans başlarken "Diğer hesaplarım da çalışsın" listesi: cihazdaki her diğer hesap için bina (aynı boy sınıfı, o hesabın açık planları, kendi tuğlası), "Binasız odak" ya da "Katılmasın"; seçimler cihazda hatırlanır. Ekrandaki hesap normal başlar, sonra her diğer hesap `/owner/linked/start` ile ayrı istekte başlar (her istek kendi CPU bütçesinde): bitişi ekrandakiyle aynı milisaniye, `focus_link` = başlatan hesabın id'si. Yeni köydeki (v2) hesabın arsası n46 G'deki gibi tarayıcıda Komuta merkezinin kaynağıyla planlanır, sunucu yalnız denetler.
+**Tek seans:** `/focus`'a gelen her izleme işlemi (beat, away, crack, rescue, pause, resume, cancel, wither, finish) aynı bağdaki diğer hesaplara aynı işleyiciyle uygulanır (`followLinked`); kurallar tek yerde kalır. Bağlı kopya anlık görüntü hesaplamaz (yalnız `onChange`). Telefondan çıkınca geri sayım ve bildirim yalnız ekrandaki hesapta; çatlayınca bağın tamamı aynı ayrılma anıyla çatlar. Ekrandaki hesap değişebilir (Hesaplarım): bağdaki hangi hesap açıksa bağı o yaşatır; bağda olmayan bir hesaba geçerken uyarı çıkar.
+**Sayım ve adalet:** Her hesap kendi dakikası, maaşı, serisi, günün ilk seansı bonusu, plan çekilişi ve kendi ekibinin Anıtkabir payını alır (isteğin özü). Aynı ekipte iki hesap bağlanamaz: imece bonusu ve "birlikte çalıştı" satırı kendi kendine şişmesin. Mod başlatanınki: izlenen inşaat → izlenen inşaat ya da izlenen binasız odak (uzakta geçen dakika sayılmaz); rahat inşaat → rahat inşaat ya da düz odak; binasız seans → binasız. Katılma yalnız ilk 2 dakikada; Anıtkabir görevine bağlanılmaz. Rahat inşaatın bitiş bildirimi ve "Ekibi çağır" yalnız başlatan hesapta (bildirim yağmuru olmasın).
+**Kimde:** Yalnız Batur: liste ve başlatma `/owner/*` altında, Komuta merkezine girilmiş cihazda görünür. Herkese açmak = `requireOwner` yerine cihazdaki hesap kontrolü.
+**Bilinen sınır:** Telefonda bağlı olmayan bir hesaba geçip orada kalınırsa izleme durur (uyarı var). Kurtarma ve çay molası bitişleri milisaniye düzeyinde kayabilir; sayıma etkisi yok.
+**Testler:** 290/290 (test:all, yeni `tests/linked.test.js` 8 test); tarayıcı `tests/linked_browser.py` 10/10 (telefon, 3 hesap: seçici, aynı bitiş, kendi tuğlası, hesap değişince beat, pes edince hepsi biter ve iade).
+**Kanıt:** /mnt/project-files/kutup/n50/ (seçici, panel, hesap değişince).
 
 ### n48 · 25 dakikalık katalog genişletme
 Katalog · 24 Ekim 2026 · `claude/n48-katalog` · göç yok (şema değişmedi)

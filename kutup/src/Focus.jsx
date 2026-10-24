@@ -19,6 +19,7 @@ import "./delivery.css";
 import { closeBuildNotice } from "./buildNotices.js";
 import { floatSupported, floatWindow, onFloat, primeFloat } from "./float.js";
 import { deviceId, relaxedChoice } from "./device.js";
+import { LinkedPicker, LinkedSites, linkMembers, linkPlan, linkedAccounts, linkedOutcome, startLinked, useLinkChoice, useLinked } from "./Linked.jsx";
 
 // Each digit is its own element keyed by value, so only the digit that changed
 // re-mounts and rolls in.
@@ -43,7 +44,7 @@ const clockTR = (t) => {
 };
 const mmss = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
 const notificationState = () => (typeof Notification === "undefined" ? "unsupported" : Notification.permission);
-export function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin, askNotifications,catalogSignal=0,consumeCatalogSignal }) {
+export function FocusCard({ me, members, now, requireMember, mutate, compact, onScreen, rhythm = null, outcome = null, onJoin, askNotifications,catalogSignal=0,consumeCatalogSignal, notify }) {
   const [duration, setDuration] = useState(25),
     [busy, setBusy] = useState(false),
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
@@ -86,6 +87,27 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
   // A streak stays open for ten minutes after a finished session.
   const streakLeft = !running && !finishing && me?.chainEnd ? CHAIN_GAP - (now - me.chainEnd) : 0,
     streakNext = streakBonus((me?.chain || 0) + 1);
+  // n50: Batur's other accounts on this device, started and followed together.
+  const { list: linked, reload: reloadLinked } = useLinked(me, now);
+  const [linkChoice, setLinkChoice] = useLinkChoice();
+  const linkRows = !running && !finishing ? linkPlan(linked, me, linkChoice, { build: fidan, model: item.id, minutes: length, now }) : [];
+  const linkCount = running ? linkMembers(linked, me, now).length : 0;
+  const linkEnd = useRef(0);
+  useEffect(() => {
+    if (me?.focusEnd && me.focusLink) {
+      linkEnd.current = me.focusEnd;
+      return;
+    }
+    if (me?.focusEnd || !linkEnd.current) return;
+    // The link ended: once the card's own word has been read, how the others did.
+    const end = linkEnd.current;
+    linkEnd.current = 0;
+    const timer = setTimeout(() => reloadLinked().then(() => {
+      const line = linkedOutcome({ accounts: linkedAccounts() }, end);
+      if (line) notify?.(line, 8000);
+    }), 5000);
+    return () => clearTimeout(timer);
+  }, [me?.focusEnd]);
   const pick = (id) => {
     setModel(id);
     storage.set("kutup-model", id);
@@ -110,8 +132,8 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
         : cost
           ? `Pes edersen ${name} yıkılır ve bu seansın dakikaları yazılmaz.\n\n${refundNow(cost)} 🧱 hemen geri gelir; enkazı bir sonraki seansın kaldırınca ${refundLater(cost)} 🧱 daha. ${cost - refundNow(cost) - refundLater(cost)} 🧱 gider.`
           : `Pes edersen ${name} yıkılır ve bu seansın dakikaları yazılmaz.`;
-      if (!confirm(`${warning}\n\nEmin misin?`)) return;
-    }
+      if (!confirm(`${warning}${linkCount ? `\n\nBağlı ${linkCount} hesaptaki inşaat ve seanslar da aynı şekilde biter.` : ""}\n\nEmin misin?`)) return;
+    } else if (running && linkCount && !confirm(`Seans durursa bağlı ${linkCount} hesaptaki seanslar da durur. Emin misin?`)) return;
     // A phone build starts behind the lock guide (n40, kilit modu).
     if (!running && fidan && !relaxed && !onComputer()) return setLock(true);
     if (running) {
@@ -143,13 +165,18 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     // each asked for inside this tap.
     if (onComputer() && !(fidan && relaxed)) primeFloat();
     setBusy(true);
-    await mutate(
+    const started = await mutate(
       "/focus",
       { action: "start", minutes: length, strict: fidan, relaxed: fidan && relaxed, honest: !fidan, device: onComputer() ? "desk" : "phone", deviceId: deviceId(), rhythm: !!round, invite, ...(fidan ? { model: item.id } : {}) },
       fidan
         ? relaxed ? `İnşaat başladı 🌙 ${item.name} yükseliyor. Ekranı kilitleyebilirsin.` : `Temel atıldı 🏗️ ${item.name} yükseliyor. Uygulamada kal, ekran açık kalacak.`
         : "Dünya biraz beklesin. Şimdi odak zamanı. 🎧 Burada geçen her dakika sayılır.",
     );
+    if (started && linkRows.some((r) => r.pick !== "off")) {
+      const line = await startLinked(linkRows);
+      if (line) notify?.(line, 7000);
+      reloadLinked();
+    }
     setBusy(false);
   };
   return (
@@ -236,6 +263,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
         </button>
         <button type="button" className="text-button focus-no-build" onClick={()=>{setFidan(false);storage.set("kutup-fidan-on","0");}}>Bu seansı binasız yap</button></>
       )}
+      {running && <LinkedSites list={linked} me={me} now={now} />}
       {!running && !finishing && fidan && (
         <div className="build-screen-setting">
           <ScreenOffOption relaxed={relaxed} studio onChange={chooseRelaxed}/>
@@ -338,6 +366,7 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
           }}
         />
       )}
+      <LinkedPicker rows={linkRows} build={fidan} minutes={length} onChange={setLinkChoice} />
       <Busy
         loading={busy || finishing}
         disabled={short > 0 || tooBig}

@@ -385,6 +385,10 @@ export const migrations = [
       PRIMARY KEY(layout_id, subject_type, subject_id), UNIQUE(layout_id, plot_id))`,
     ...VILLAGE_LEGACY_SNAPSHOT,
   ],
+  // 35 — n50: sessions started together in several accounts of one device are
+  // one session. Every member of the link carries the id of the account it was
+  // started from (that one carries its own id); NULL for everyone else.
+  ["ALTER TABLE members ADD COLUMN focus_link TEXT"],
 ];
 
 export const SCHEMA_VERSION = migrations.length;
