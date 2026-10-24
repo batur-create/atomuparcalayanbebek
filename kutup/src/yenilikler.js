@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 31,
+    tarih: "2026-10-24",
+    vakit: "gece",
+    baslik: "Batur'un denemesi: hesaplarında aynı anda inşaat",
+    maddeler: [
+      "Birden çok ekipte hesabı olan biri, bir seansı aynı telefondaki diğer hesaplarında da tek dokunuşla başlatabiliyor. Şimdilik yalnız Batur deniyor; beğenirse herkese açılacak.",
+      "Her hesap kendi binasını kendi tuğlasıyla kurar, dakikası ve maaşı kendi ekibine yazılır. Hepsi aynı anda biter.",
+      "Bağlı hesaplar tek seans gibidir: uygulamadan çıkınca hepsi çatlar, kurtarınca hepsi kurtulur, pes edince hepsi biter.",
+    ],
+  },
+  {
     surum: 30,
     tarih: "2026-10-24",
     vakit: "akşam",

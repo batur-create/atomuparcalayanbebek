@@ -10,7 +10,7 @@
     "dev": "node server/index.js --dev",
     "build": "vite build",
     "start": "node server/index.js",
-    "test": "node --test tests/core.test.js tests/client.test.js tests/site.test.js tests/push.test.js tests/outbox.test.js tests/build-notices.test.js tests/relaxed.test.js tests/devices.test.js tests/imece.test.js tests/plans.test.js tests/blueprints.test.js tests/owner.test.js tests/node.test.js",
+    "test": "node --test tests/core.test.js tests/client.test.js tests/site.test.js tests/push.test.js tests/outbox.test.js tests/build-notices.test.js tests/relaxed.test.js tests/devices.test.js tests/imece.test.js tests/plans.test.js tests/blueprints.test.js tests/owner.test.js tests/node.test.js tests/linked.test.js",
     "test:browser": "python tests/browser_smoke.py",
     "test:browser:plan-reveal": "python tests/blueprint_reveal_browser.py",
     "test:browser:relaxed": "python tests/relaxed_browser.py",
@@ -24,7 +24,8 @@
     "test:browser:focus-join": "python tests/focus_join_browser.py",
     "test:browser:blueprints": "python tests/blueprints_browser.py",
     "test:browser:teams": "python tests/teams_browser.py",
-    "test:browser:devices": "python tests/multi_device_browser.py"
+    "test:browser:devices": "python tests/multi_device_browser.py",
+    "test:browser:linked": "python tests/linked_browser.py"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",
