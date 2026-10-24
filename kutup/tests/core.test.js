@@ -204,10 +204,17 @@ test("the tuğla economy: wages grow with session length, refunds split 50/30/20
   for (const id of ["firin", "sahaf", "kahve", "kutuphane", "degirmen"]) assert.ok(BY_ID[id].effect, id);
   assert.deepEqual(RARE.map((i) => i.id), ["fener", "sera", "agacevi", "japoncay", "sudegirmeni", "istasyon", "planetaryum", "kristalkutuphane", "kapadokya", "yuzenev", "asmakopru", "kervansaray", "mardinevi", "atakule", "kugulupark"]);
   // Weekly buildings: on sale for a fortnight from their Monday, then by blueprint only.
-  const post = BY_ID.postane, DAY = 86400000;
+  const post = BY_ID.kestane, DAY = 86400000;
   assert.deepEqual([post.since - 1, post.since, post.since + 13 * DAY, post.since + 14 * DAY].map((t) => stateOf(post, t)), ["soon", "new", "new", "locked"]);
-  assert.equal(stateOf(post, post.since + 20 * DAY, ["postane"]), "open");
+  assert.equal(stateOf(post, post.since + 20 * DAY, ["kestane"]), "open");
   assert.ok(!blueprintPool(post.since).includes(post) && blueprintPool(post.since + 15 * DAY).includes(post));
+  // n48: `until` ends a fortnight early; Postane and Çay Ocağı made way for the autumn pair.
+  for (const old of [BY_ID.postane, BY_ID.cay]) {
+    assert.equal(stateOf(old, post.since - 1), "new", old.id);
+    assert.equal(stateOf(old, post.since), "locked", old.id);
+    assert.equal(stateOf(old, post.since, [old.id]), "open", old.id);
+    assert.ok(blueprintPool(post.since).includes(old), old.id);
+  }
   assert.equal(stateOf(BY_ID.gozlemevi, 0), "hidden");
   assert.deepEqual([unlocked(BY_ID.sera), unlocked(BY_ID.sera, ["sera"]), unlocked(BY_ID.gozlemevi, ["gozlemevi"]), unlocked(BY_ID.gozlemevi, [], true), unlocked(BY_ID.ev)], [false, true, false, true, true]);
 });
