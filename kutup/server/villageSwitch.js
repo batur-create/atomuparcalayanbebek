@@ -8,7 +8,8 @@
 // 14-day window. Nothing here touches bricks, rewards, minutes or deliveries.
 import { modelOf } from "../shared/catalog.js";
 import { GENERATOR_VERSION, emptyLayout, validateLayout } from "../shared/koy2/planner.js";
-import { TERRAINS } from "../shared/koy2/terrain.js";
+import { RERAIL_TERRAIN } from "../shared/koy2/rerail.js";
+import { TERRAINS, railProblem } from "../shared/koy2/terrain.js";
 import { layoutAt, layoutStatements } from "./villageStore.js";
 
 export const ROLLBACK_DAYS = 14;
@@ -17,12 +18,14 @@ export const CHECK_PART = 40;
 // A team's ground, made once per isolate (it costs a few milliseconds and never changes for a seed).
 const GROUNDS = new Map();
 // A planner generation may stand on more than one terrain version (n49: the
-// winding railway is version 3; layouts made on version 2 keep theirs).
+// winding railway is version 3; layouts made on version 2 keep theirs; version
+// 4 is version 2's ground with the village's own re-laid railway, so only the
+// ground without the railway is compared: `bare`).
 const groundOf = (seed, generator, terrainVersion) => {
   const key = `${generator}:${terrainVersion}:${seed}`;
   if (!GROUNDS.has(key)) {
     const g = emptyLayout(seed, generator, terrainVersion);
-    GROUNDS.set(key, { terrain: JSON.stringify(g.terrain), version: g.terrainVersion });
+    GROUNDS.set(key, { terrain: JSON.stringify(g.terrain), bare: JSON.stringify({ ...g.terrain, rail: null }), version: g.terrainVersion });
     if (GROUNDS.size > 32) GROUNDS.delete(GROUNDS.keys().next().value);
   }
   return GROUNDS.get(key);
@@ -71,7 +74,7 @@ export async function switchState(db, groupId, now = Date.now()) {
   const open = "SELECT id FROM village_layouts WHERE group_id = ? AND kind = 'v2' AND status IN ('draft','active','previous')";
   const [rows, held, plots, unplaced] = await db.read([
     [
-      "SELECT id, kind, status, rev, generator_version AS generator, applied_content_rev AS applied, created, rollback_until AS until, json_extract(meta, '$.checked') AS checked, json_extract(meta, '$.sound') AS sound FROM village_layouts WHERE group_id = ? AND status IN ('draft','active','previous') ORDER BY created",
+      "SELECT id, kind, status, rev, generator_version AS generator, terrain_version AS terrain, applied_content_rev AS applied, created, rollback_until AS until, json_extract(meta, '$.checked') AS checked, json_extract(meta, '$.sound') AS sound FROM village_layouts WHERE group_id = ? AND status IN ('draft','active','previous') ORDER BY created",
       [groupId],
     ],
     [`SELECT layout_id AS layout, subject_type AS type, subject_id AS id FROM village_placements WHERE layout_id IN (${open})`, [groupId]],
@@ -92,6 +95,7 @@ export async function switchState(db, groupId, now = Date.now()) {
       id: row.id,
       kind: row.kind,
       generatorVersion: row.generator,
+      terrainVersion: row.terrain,
       appliedContentRev: row.applied,
       behind: Math.max(0, inv.group.rev - row.applied),
       created: row.created,
@@ -139,15 +143,29 @@ export async function checkLayout(db, groupId, layout, options) {
     return "Düzen okunamadı.";
   }
 }
-function check(groupId, layout, { base = null, items }) {
+// `rerail`: the draft re-lays the railway of `base`, the team's live layout
+// (terrain 2 → 4): only the railway and its level crossings may differ.
+function check(groupId, layout, { base = null, items, rerail = false }) {
   if (!layout || typeof layout !== "object" || !Array.isArray(layout.plots)) return "Düzen okunamadı.";
   if (layout.seed !== `group:${groupId}`) return "Bu düzen bu ekibin tohumuyla planlanmamış.";
   if (layout.generator !== GENERATOR_VERSION && !(base?.generator === 2 && layout.generator === 2)) return "Düzen eski bir planlayıcıyla hazırlanmış; sayfayı yenileyip yeniden hazırla.";
   if (base && layout.generator !== base.generator) return "Eşitleme düzen sürümünü değiştiremez; yeni taslak hazırla.";
   if (!(TERRAINS[layout.generator] || []).includes(layout.terrainVersion)) return "Arazi bu ekibin arazisi değil.";
-  if (base && layout.terrainVersion !== base.terrainVersion) return "Eşitleme araziyi değiştiremez; yeni taslak hazırla.";
+  if (rerail && !(base?.terrainVersion === 2 && layout.terrainVersion === RERAIL_TERRAIN)) return "Rayı yalnız eski düz hatlı yeni köylerde kıvırabilirsin.";
+  if (base && !rerail && layout.terrainVersion !== base.terrainVersion) return "Eşitleme araziyi değiştiremez; yeni taslak hazırla.";
   const ground = groundOf(layout.seed, layout.generator, layout.terrainVersion);
-  if (ground.terrain !== JSON.stringify(layout.terrain) || layout.terrainVersion !== ground.version) return "Arazi bu ekibin arazisi değil.";
+  if (layout.terrainVersion !== ground.version) return "Arazi bu ekibin arazisi değil.";
+  if (layout.terrainVersion === RERAIL_TERRAIN) {
+    if (ground.bare !== JSON.stringify({ ...layout.terrain, rail: null })) return "Arazi bu ekibin arazisi değil.";
+    if (railProblem(layout.terrain)) return "Demiryolu hattı kurala uymuyor.";
+  } else if (ground.terrain !== JSON.stringify(layout.terrain)) return "Arazi bu ekibin arazisi değil.";
+  // Re-laying the railway moves no street: every one of the live layout's streets stays as it was, but for its level crossing
+  // (streets for buildings added meanwhile may join them).
+  if (rerail) {
+    const plain = ({ railCrossing, ...r }) => JSON.stringify(r);
+    const now = new Map(layout.roads.map((r) => [r.id, plain(r)]));
+    if (base.roads.some((r) => now.get(r.id) !== plain(r))) return "Ray kıvrılırken bir sokak değişmiş.";
+  }
   const c = coverage(items, layout.plots.filter((p) => p.subject).map((p) => p.subject));
   if (c.twice.length) return `Aynı yapı iki kez yerleşmiş (${c.twice.length}).`;
   if (c.extra.length) return `Artık köyde olmayan ${c.extra.length} yapı düzende duruyor.`;

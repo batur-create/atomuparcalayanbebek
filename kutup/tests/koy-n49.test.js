@@ -34,7 +34,7 @@ const curvature = (p) => {
 
 test("n49: terrain 3 keeps version 2's ground and lays a winding railway", () => {
   assert.equal(TERRAIN_VERSION, 3);
-  assert.deepEqual(TERRAINS[3], [2, 3]);
+  assert.deepEqual(TERRAINS[3], [2, 3, 4]); // 4: version 2 re-laid for a village (n49-2)
   assert.equal(emptyLayout("group:x").terrainVersion, 3);
   assert.equal(emptyLayout("group:x", 3, 2).terrainVersion, 2, "a layout made on version 2 can be rebuilt on it");
   for (let i = 0; i < 200; i++) {

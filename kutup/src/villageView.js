@@ -74,6 +74,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     liveDue = 0,
     party = null,
     alive = false,
+    smooth = false,
     wakeIn = 0,
     lod = null;
   const start = performance.now();
@@ -146,14 +147,16 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       hh = H / 2 / cam.s + 4;
     return x1 > cam.x - hw && x0 < cam.x + hw && y1 > cam.y - hh && y0 < cam.y + hh;
   };
-  // Paints the live layer. Sets `alive` when something on screen is moving and
-  // `wakeIn` (ms) when nothing moves now but something will later (birds, the
-  // end of a still celebration), so the loop can sleep in between.
+  // Paints the live layer. Sets `alive` when something on screen is moving,
+  // `smooth` when that something needs every display frame (a train crossing
+  // the screen), and `wakeIn` (ms) when nothing moves now but something will
+  // later (birds, the end of a still celebration), so the loop can sleep in between.
   function drawLive(now, level) {
     const time = (now - start) / 1000;
     const s = cam.s,
       ambient = level === "full" && !still;
     alive = false;
+    smooth = false;
     wakeIn = 0;
     // Lamp glow at night.
     if (sky?.lamps)
@@ -383,15 +386,19 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     const A = (x, y, z = 0) => atScreen(x, y, z);
     const night = sky?.night || 0;
     // Passengers stand on the village's side of the track: behind the train.
+    // A materials train's workers wear a hard hat and a high-visibility vest.
     for (const f of out.riders) {
       const p = atScreen(f.x, f.y);
       if (!onScreen(p, 30)) continue;
       const face = f.face[0] - f.face[1] >= 0 ? 1 : -1;
-      villager(p[0], p[1], k, world.lookOf(f.home), f.walking ? f.step : null, face);
+      const look = world.lookOf(f.home);
+      villager(p[0], p[1], k, f.worker ? { ...look, coat: "#ee7a2f", hat: 3, hatColor: "#f4c430" } : look, f.walking ? f.step : null, face);
+      if (f.load) shoulderLoad(p[0], p[1], k, face, f.load, f.walking ? f.step : null);
       cover(f.x, f.y, p, k);
     }
     useCanvas(ctx, tint, Math.max(0.35, s / 15));
-    let seen = false;
+    let seen = false,
+      carSeen = false;
     try {
       const blink = ambient ? Math.floor(time * 2.2) % 2 : null;
       for (const c of out.crossings) {
@@ -403,7 +410,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       for (const car of cars) {
         const p = atScreen(car.x, car.y);
         if (!onScreen(p, s * car.len)) continue;
-        seen = true;
+        seen = carSeen = true;
         drawCar(A, car, { s, night, ctx });
         trainCover(car, p);
       }
@@ -414,8 +421,12 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       useSVG();
     }
     if (!ambient) return;
-    if (seen && out.moving) alive = true;
-    else {
+    // A train sliding across the screen at 24 fps judders (the frames land
+    // 17, 50 or 67 ms apart): while one is seen moving, every display frame.
+    if (seen && out.moving) {
+      alive = true;
+      if (carSeen && out.speed > 0.05) smooth = true;
+    } else {
       // Off screen: look again soon while a train is on the line, else when the next one is due.
       const next = out.run ? 1000 : Math.max(500, tr.nextIn(now));
       wakeIn = wakeIn ? Math.min(wakeIn, next) : next;
@@ -705,12 +716,46 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       ctx.arc(hx, hy - 0.6 * k, 2.65 * k, Math.PI, Math.PI * 2);
       ctx.moveTo(hx + 0.9 * k, hy - 3.6 * k);
       ctx.arc(hx, hy - 3.6 * k, 0.9 * k, 0, Math.PI * 2);
+    } else if (v.hat === 3) {
+      // A builder's hard hat: a dome and a short brim all round.
+      ctx.arc(hx, hy - 0.9 * k, 2.75 * k, Math.PI, Math.PI * 2);
+      ctx.ellipse(hx, hy - 0.85 * k, 3.4 * k, 0.75 * k, 0, 0, Math.PI * 2);
     } else {
       // A flat cap, its peak towards where they are going.
       ctx.arc(hx, hy - 0.8 * k, 2.6 * k, Math.PI, Math.PI * 2);
       ctx.ellipse(hx + face * 2.1 * k, hy - 0.85 * k, 1.9 * k, 0.6 * k, 0, 0, Math.PI * 2);
     }
     ctx.fill();
+  }
+  // A load on a worker's shoulder: bricks, a few planks or a cement sack.
+  const LOAD_ART = { bricks: ["#c8603f", "#9c4630"], logs: ["#c08a55", "#8f6238"], cement: ["#ece3cf", "#b9ad92"] };
+  function shoulderLoad(x, y, k, face, load, step) {
+    const bob = step === null ? 0 : Math.abs(Math.sin(step)) * 0.9 * k;
+    const [fill, edge] = (LOAD_ART[load] || LOAD_ART.bricks).map(tint);
+    const cx = x - face * 1.6 * k,
+      cy = y - bob - 13.4 * k;
+    const [w, h] = load === "logs" ? [9 * k, 1.9 * k] : load === "cement" ? [5.6 * k, 2.8 * k] : [4.8 * k, 3.4 * k];
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = Math.max(0.5, 0.45 * k);
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(cx - w / 2, cy - h / 2, w, h, load === "cement" ? 1.2 * k : 0.4 * k);
+    else ctx.rect(cx - w / 2, cy - h / 2, w, h);
+    ctx.fill();
+    ctx.stroke();
+    if (load === "bricks") {
+      ctx.beginPath();
+      ctx.moveTo(cx - w / 2, cy);
+      ctx.lineTo(cx + w / 2, cy);
+      ctx.stroke();
+    }
+    // The near hand up to hold it.
+    ctx.strokeStyle = tint("#4b4458");
+    ctx.lineWidth = 1.2 * k;
+    ctx.beginPath();
+    ctx.moveTo(cx + face * 1.2 * k, cy + h / 2);
+    ctx.lineTo(x + face * 1.4 * k, y - bob - 8.5 * k);
+    ctx.stroke();
   }
   function birds(round, progress, time) {
     // The same round always flies the same way: alternate sides, a varying height.
@@ -958,6 +1003,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     ctx.clearRect(0, 0, W, H);
     drawLive(now, level);
     if (pending || flight || inertia || gestureActive()) request();
+    else if (animated() && visible && smooth) request();
     else if (animated() && visible) {
       // Live layer at ~24 fps: smoke, strollers and birds need no more, the battery thanks us.
       const wait = Math.max(0, 42 - (now - lastLive));

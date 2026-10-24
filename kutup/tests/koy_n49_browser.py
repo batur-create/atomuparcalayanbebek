@@ -135,7 +135,8 @@ def main():
                 scene(page, m['braking'] - 6000, fixture=station_fx, s=9)
                 f = frames(page)
                 results['frames_moving'] = {'count': len(f), 'median_ms': round(statistics.median(f), 2) if f else None, 'p95_ms': round(sorted(f)[int(len(f) * .95)], 2) if f else None}
-                check('a moving train animates at about 24 fps, not every display frame', 30 <= len(f) <= 110, json.dumps(results['frames_moving']))
+                # n49-2: while a train is seen moving, every display frame (24 fps made it judder).
+                check('a moving train on screen is drawn every display frame', len(f) >= 120, json.dumps(results['frames_moving']))
                 # Hidden tab: nothing.
                 page.evaluate('''() => { Object.defineProperty(document, 'visibilityState', {configurable: true, get: () => 'hidden'}); document.dispatchEvent(new Event('visibilitychange')); window.frames_ = []; }''')
                 page.wait_for_timeout(2500)

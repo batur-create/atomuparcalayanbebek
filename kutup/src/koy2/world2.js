@@ -60,43 +60,49 @@ export function plotSpec(plot, thing) {
   return spec(kind, thing?.seed ?? hash(plot.id) % 9973, plot.model, look?.special ? { scale: plot.scale } : {});
 }
 
-// Splits a long line into pieces with their own boxes, so a tile draws only what it shows.
+// Splits a long line into pieces with their own boxes, so a tile draws only
+// what it shows: [first, last] point indices, each piece sharing its end point
+// with the next.
 function pieces(line, every = 24) {
   const out = [];
-  let cur = [line[0]],
+  let from = 0,
     run = 0;
   for (let i = 1; i < line.length; i++) {
-    cur.push(line[i]);
     run += Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]);
     if (run >= every) {
-      out.push(cur);
-      cur = [line[i]];
+      out.push([from, i]);
+      from = i;
       run = 0;
     }
   }
-  if (cur.length > 1) out.push(cur);
+  if (from < line.length - 1) out.push([from, line.length - 1]);
   return out;
 }
-function railArt(v, line, w, detail) {
-  strokeLine(v, line, w, BALLAST);
+// Rails at the gauge the station drawing uses (0.62 units, about 1 m: a metre-gauge branch line).
+const GAUGE = 0.31,
+  SLEEPER_STEP = 0.62;
+const railsOf = (line) =>
+  [-GAUGE, GAUGE].map((side) =>
+    line.map((p, i) => {
+      const a = line[Math.max(0, i - 1)],
+        b = line[Math.min(line.length - 1, i + 1)];
+      const d = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return [p[0] - ((b[1] - a[1]) / d) * side, p[1] + ((b[0] - a[0]) / d) * side];
+    }),
+  );
+// Sleepers and rails. `s0`: how far along the whole railway the piece starts,
+// so sleepers keep one even step across pieces; `rails`: the piece's share of
+// the whole line's rails, so they meet without a kink.
+function trackArt(v, line, detail, s0 = 0, rails = railsOf(line)) {
   if (detail >= 1) {
     const len = lengthOf(line);
-    for (let s = 0.3; s < len; s += 0.62) {
+    for (let s = (((0.3 - s0) % SLEEPER_STEP) + SLEEPER_STEP) % SLEEPER_STEP; s < len; s += SLEEPER_STEP) {
       const { p, dir } = along(line, s);
       const n = [-dir[1], dir[0]];
       strokeLine(v, [[p[0] - n[0] * 0.55, p[1] - n[1] * 0.55], [p[0] + n[0] * 0.55, p[1] + n[1] * 0.55]], 0.16, SLEEPER);
     }
   }
-  // Rails at the gauge the station drawing uses (0.62 units, about 1 m: a metre-gauge branch line).
-  for (const side of [-0.31, 0.31]) {
-    const off = line.map((p, i) => {
-      const a = line[Math.max(0, i - 1)],
-        b = line[Math.min(line.length - 1, i + 1)];
-      const d = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
-      return [p[0] - ((b[1] - a[1]) / d) * side, p[1] + ((b[0] - a[0]) / d) * side];
-    });
-    strokeLine(v, off, 0.09, RAIL);
-  }
+  for (const off of rails) strokeLine(v, off, 0.09, RAIL);
 }
 // A steel girder bridge carries the railway over the river.
 function railBridgeArt(v, at, dir, span) {
@@ -151,7 +157,8 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   const add = (list, item) => list.push(item);
 
   // ---------- terrain ----------
-  for (const course of watercourses(t)) for (const piece of pieces(course.pts)) {
+  for (const course of watercourses(t)) for (const [i0, i1] of pieces(course.pts)) {
+    const piece = course.pts.slice(i0, i1 + 1);
     const bbox = lineBox(piece, course.w * 2);
     add(ground, { pass: 0, bbox, draw: (v) => strokeLine(v, piece, course.w + 1.4, BANK, 0.8) });
     add(ground, { pass: 1, bbox, draw: (v) => strokeLine(v, piece, course.w + 0.35, WATER_EDGE) });
@@ -164,8 +171,17 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     fillShape(v, pond.map(([x, y]) => [t.lake.cx + (x - t.lake.cx) * 0.97, t.lake.cy + (y - t.lake.cy) * 0.97]), WATER, WATER_EDGE, 0.25);
   } });
   if (t.rail) {
-    for (const piece of pieces(t.rail.pts)) {
-      add(ground, { pass: 1.2, bbox: lineBox(piece, 3), draw: (v) => railArt(v, piece, t.rail.w, v.detail) });
+    // All the ballast first, then all the track: a piece's rounded ballast end
+    // would otherwise paint over the first sleepers and rails of the piece before.
+    const line = t.rail.pts,
+      rails = railsOf(line),
+      run = [0];
+    for (let i = 1; i < line.length; i++) run.push(run[i - 1] + Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]));
+    for (const [i0, i1] of pieces(line)) {
+      const piece = line.slice(i0, i1 + 1),
+        bbox = lineBox(piece, 3);
+      add(ground, { pass: 1.15, bbox, draw: (v) => strokeLine(v, piece, t.rail.w, BALLAST) });
+      add(ground, { pass: 1.2, bbox, draw: (v) => trackArt(v, piece, v.detail, run[i0], rails.map((r) => r.slice(i0, i1 + 1))) });
     }
     // Where the railway meets the river: a girder bridge.
     for (let i = 1; i < t.rail.pts.length; i++) {
@@ -242,7 +258,15 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       const c = r.railCrossing.pts[4], near = linePoint(t.rail.pts, c), len = lengthOf(t.rail.pts);
       const track = [];
       for (let s = Math.max(0, near.at - 2.3); s <= Math.min(len, near.at + 2.3); s += 0.35) track.push(along(t.rail.pts, s).p);
-      add(ground, { pass: 3.2, bbox: lineBox(track, 2), draw: (v) => railArt(v, track, t.rail.w, v.detail) });
+      // The track runs on past the ballast's rounded ends (0.85), in step with
+      // the sleepers of the line beneath, so the crossing leaves no gap.
+      const from = Math.max(0, near.at - 3.4),
+        rails = [];
+      for (let s = from; s <= Math.min(len, near.at + 3.4); s += 0.35) rails.push(along(t.rail.pts, s).p);
+      add(ground, { pass: 3.2, bbox: lineBox(rails, 2), draw: (v) => {
+        strokeLine(v, track, t.rail.w, BALLAST);
+        trackArt(v, rails, v.detail, from);
+      } });
     }
     if (r.crossing) {
       const deck = r.crossing.pts;
