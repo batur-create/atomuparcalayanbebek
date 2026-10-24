@@ -10,6 +10,20 @@
 
 export const YENILIKLER = [
   {
+    surum: 29,
+    tarih: "2026-10-24",
+    vakit: "akşam",
+    baslik: "Köye küçük bir tren uğruyor",
+    maddeler: [
+      "Yeni köyün demiryolundan arada bir küçük bir buharlı tren geçiyor. Yolcu treni köyün istasyonunda, istasyon yoksa ray kenarındaki küçük durakta durur.",
+      "Peronda bekleyenler trene biner, inenler istasyondan çıkıp köye yürür. Tren kalkarken düdük çalar; yük treni köyün önünden yavaşlayarak geçer.",
+      "Sokağın rayı kestiği yerde hemzemin geçit var: tren yaklaşınca bariyer iner, kırmızı lambalar yanıp söner.",
+      "Yeni hazırlanan köy taslaklarında ray artık dümdüz değil; virajlarla kıvrılıp köyün önüne kadar sokuluyor.",
+      "Göletteki ördek ailesi arada bir tur atıyor, dereden kürek çeken biri geçiyor, yaz gecelerinde ateşböcekleri yanıp sönüyor.",
+      "Hepsi yeni köyde ve hareket ayarına uyar: Sakin ve Kıpırtısız'da yalnız istasyonda bekleyen tren durağan bir resim olarak görünür.",
+    ],
+  },
+  {
     surum: 28,
     tarih: "2026-10-22",
     vakit: "akşam",

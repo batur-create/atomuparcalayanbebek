@@ -8,6 +8,7 @@
 // 14-day window. Nothing here touches bricks, rewards, minutes or deliveries.
 import { modelOf } from "../shared/catalog.js";
 import { GENERATOR_VERSION, emptyLayout, validateLayout } from "../shared/koy2/planner.js";
+import { TERRAINS } from "../shared/koy2/terrain.js";
 import { layoutAt, layoutStatements } from "./villageStore.js";
 
 export const ROLLBACK_DAYS = 14;
@@ -15,10 +16,12 @@ export const ROLLBACK_DAYS = 14;
 export const CHECK_PART = 40;
 // A team's ground, made once per isolate (it costs a few milliseconds and never changes for a seed).
 const GROUNDS = new Map();
-const groundOf = (seed, generator) => {
-  const key = `${generator}:${seed}`;
+// A planner generation may stand on more than one terrain version (n49: the
+// winding railway is version 3; layouts made on version 2 keep theirs).
+const groundOf = (seed, generator, terrainVersion) => {
+  const key = `${generator}:${terrainVersion}:${seed}`;
   if (!GROUNDS.has(key)) {
-    const g = emptyLayout(seed, generator);
+    const g = emptyLayout(seed, generator, terrainVersion);
     GROUNDS.set(key, { terrain: JSON.stringify(g.terrain), version: g.terrainVersion });
     if (GROUNDS.size > 32) GROUNDS.delete(GROUNDS.keys().next().value);
   }
@@ -141,7 +144,9 @@ function check(groupId, layout, { base = null, items }) {
   if (layout.seed !== `group:${groupId}`) return "Bu düzen bu ekibin tohumuyla planlanmamış.";
   if (layout.generator !== GENERATOR_VERSION && !(base?.generator === 2 && layout.generator === 2)) return "Düzen eski bir planlayıcıyla hazırlanmış; sayfayı yenileyip yeniden hazırla.";
   if (base && layout.generator !== base.generator) return "Eşitleme düzen sürümünü değiştiremez; yeni taslak hazırla.";
-  const ground = groundOf(layout.seed, layout.generator);
+  if (!(TERRAINS[layout.generator] || []).includes(layout.terrainVersion)) return "Arazi bu ekibin arazisi değil.";
+  if (base && layout.terrainVersion !== base.terrainVersion) return "Eşitleme araziyi değiştiremez; yeni taslak hazırla.";
+  const ground = groundOf(layout.seed, layout.generator, layout.terrainVersion);
   if (ground.terrain !== JSON.stringify(layout.terrain) || layout.terrainVersion !== ground.version) return "Arazi bu ekibin arazisi değil.";
   const c = coverage(items, layout.plots.filter((p) => p.subject).map((p) => p.subject));
   if (c.twice.length) return `Aynı yapı iki kez yerleşmiş (${c.twice.length}).`;
