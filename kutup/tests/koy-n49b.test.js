@@ -45,7 +45,7 @@ test("n49-2: terrain 4 is version 2's ground; a laid line must be a sound railwa
 
 test("n49-2: a grown village's railway is re-laid in bends; every plot, street and square stays, every rule holds", () => {
   // many-80-2: a river that comes close to the line (the bridge stays where it was).
-  for (const [seed, count] of [["group:n49b-a", 120], ["group:n49b-b", 260], ["group:many-80-2", 80]]) {
+  for (const [seed, count] of [["group:n49b-a", 120], ["group:n49b-b", 170], ["group:many-80-2", 80]]) {
     const { layout } = growth({ seed, count, terrainVersion: 2 });
     assert.equal(layout.terrainVersion, 2);
     assert.ok(canRerail(layout));

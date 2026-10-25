@@ -426,7 +426,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // ---------- state ----------
   const memberColumns =
-    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_imece AS focusImece, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, board_seen AS boardSeen, updated, badge, " +
+    "id, name, avatar, color, note, status, location, desk, arrival, since, status_until, focus_end AS focusEnd, focus_minutes AS focusMinutes, focus_strict AS focusStrict, focus_relaxed AS focusRelaxed, focus_imece AS focusImece, focus_seed AS focusSeed, focus_model AS focusModel, focus_cost AS focusCost, bricks, ruin_until AS ruinUntil, ruin_refund AS ruinRefund, chain, chain_end AS chainEnd, focus_paused_at AS focusPausedAt, focus_pause_used AS focusPauseUsed, focus_beat AS focusBeat, focus_honest AS focusHonest, focus_away AS focusAway, focus_rescued AS focusRescued, focus_left_at AS focusLeftAt, focus_device AS focusDevice, focus_cracked_at AS focusCrackedAt, focus_link AS focusLink, board_seen AS boardSeen, updated, badge, " +
     // n47: which device of the account watches the running session, and the
     // account's screen-off choice for the next build (kept in settings, per member).
     "(SELECT value FROM settings WHERE key = 'focus-watch:' || members.id) AS focusWatch, (SELECT value FROM settings WHERE key = 'build-mode:' || members.id) AS buildMode";
@@ -1657,7 +1657,10 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     const models=CATALOG.filter(item=>item.id!=="anitkabir"&&fits(item,minutes)&&item.cost<=member.bricks&&["open","new"].includes(stateOf(item,Date.now(),plans,member.badge==="dev"))).map(({id,name,emoji,cost,class:kind})=>({id,name,emoji,cost,minutes:minutesOf({class:kind})}));
     return json({friend:{id:friend.id,name:friend.name,end:friend.focus_end},minutes,paused:!!friend.focus_paused_at,imece:!!friend.focus_imece,canFree:minutes>=HONEST_MIN,models});
   });
-  route("POST", "/focus", async ({ member: m, body, ctx }) => {
+  // n50: the handler of one account's focus action. `reply` answers like
+  // `changed` (a linked account's copy answers without a snapshot); `opts.link`
+  // is the account a linked start follows, `opts.follower` marks a copy.
+  async function focusAction(m, body, ctx, reply = changed, opts = {}) {
     const action = body.action,
       now = Date.now();
     if (action === "finish") {
@@ -1667,11 +1670,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       );
       // A cracked site that can still be saved waits for its owner (n40).
       if (before && rescuable({ focusStrict: before.strict, focusRelaxed: before.relaxed, focusRescued: before.rescued, focusBeat: before.beat, focusEnd: before.ends, focusCrackedAt: before.cracked }, now))
-        return changed(m, { credited: 0, withered: false, cracked: true });
+        return reply(m, { credited: 0, withered: false, cracked: true });
       if (before) await retrying(() => settleFocus(m.group_id, now, m.id), m.group_id);
       const withered = !!before?.strict && !before?.relaxed && (before.beat < before.ends - BEAT_GRACE || before.cracked > 0);
       const seen = before && !before.strict && before.honest ? seenMinutes({ start: before.ends - before.minutes * 60000, ends: before.ends, beat: before.beat, away: before.away }) : before?.minutes || 0;
-      return changed(m, { credited: withered || (before?.imece && seen!==before.minutes) || seen < (before?.honest ? HONEST_MIN : 0) ? 0 : seen, withered });
+      return reply(m, { credited: withered || (before?.imece && seen!==before.minutes) || seen < (before?.honest ? HONEST_MIN : 0) ? 0 : seen, withered });
     }
     // Kurtarma (n40): a build-mode site that cracked while you were away is saved
     // once. The time away does not count, and a fifth of the session is added.
@@ -1691,7 +1694,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         ["UPDATE members SET focus_end = ?, focus_beat = ?, focus_rescued = 1, focus_left_at = 0, focus_cracked_at = 0 WHERE id = ? AND focus_end = ? AND focus_rescued = 0", [end, now, m.id, current.focus_end]],
         bump(m.group_id),
       ]);
-      return changed(m, { rescued: true, extra });
+      return reply(m, { rescued: true, extra });
     }
     // The phone left the app (n40). Five quiet seconds, then one countdown: the
     // phone gets a single notification that counts 10 … 1 (its service worker
@@ -1708,6 +1711,9 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if (current.focus_left_at > 0 || current.focus_cracked_at > 0) return json({ ok: true });
       const left = await db.run("UPDATE members SET focus_left_at = ? WHERE id = ? AND focus_end = ? AND focus_left_at = 0 AND focus_cracked_at = 0", [now, m.id, current.focus_end]);
       if (!left.changes) return json({ ok: true });
+      // n50: a linked account only notes the absence; the account the phone
+      // was on runs the one countdown, and its crack cracks the whole link.
+      if (opts.follower) return json({ ok: true });
       const send = (message, on, ttl = 60) => notifyMember(ctx, m.id, { tag: "kutup-build", url: "/", sticky: true, ...message }, { urgency: "high", ttl }, on).catch(() => {});
       const still = async () =>
         !!(await db.get("SELECT 1 FROM members WHERE id = ? AND focus_left_at = ? AND focus_end = ? AND focus_cracked_at = 0", [m.id, now, current.focus_end]));
@@ -1726,6 +1732,11 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           await send({ title: "📱 Telefonuna bak!", body: `Kütüp'e hemen dön, ${COUNTDOWN} saniye içinde binan çatlayacak.`, tag: "kutup-phone" }, "desk", 15);
           await wait(COUNTDOWN * 1000);
           if (!(await crack(m, current.focus_end, now))) return;
+          // n50: the link cracks as one, with the same moment of leaving.
+          for (const f of await linkedOf(m)) {
+            await db.run("UPDATE members SET focus_left_at = ? WHERE id = ? AND focus_end = ? AND focus_left_at = 0", [now, f.id, f.focus_end]).catch(() => {});
+            await crack(f, f.focus_end, now).catch(() => {});
+          }
           await send(
             current.focus_rescued
               ? { title: "🧱 Binan çöktü", body: "Bu inşaatın kurtarma hakkı kullanılmıştı.", session: now, crack: true }
@@ -1746,7 +1757,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         if (!current.focus_left_at) await db.run("UPDATE members SET focus_left_at = ? WHERE id = ? AND focus_end = ? AND focus_left_at = 0", [now - away, m.id, current.focus_end]);
         await crack(m, current.focus_end, now);
       }
-      return changed(m);
+      return reply(m);
     }
     // Çay molası: a build-mode session stops for a few minutes, once; the end
     // moves on by the time taken (and the session's ledger rows follow it).
@@ -1762,7 +1773,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           ["UPDATE members SET focus_paused_at = ?, focus_pause_used = 1 WHERE id = ? AND focus_end = ?", [now, m.id, current.focus_end]],
           bump(m.group_id),
         ]);
-        return changed(m, { paused: true });
+        return reply(m, { paused: true });
       }
       if (!current.focus_paused_at) fail("Şu an mola yok.");
       const taken = Math.min(now - current.focus_paused_at, teaBreakFor(current.focus_minutes)),
@@ -1773,7 +1784,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         ["UPDATE members SET focus_end = ?, focus_paused_at = 0, focus_beat = ? WHERE id = ? AND focus_paused_at > 0", [end, now, m.id]],
         bump(m.group_id),
       ]);
-      return changed(m, { resumed: true });
+      return reply(m, { resumed: true });
     }
     // Build mode: the app reports it is still on screen.
     if (action === "beat") {
@@ -1795,7 +1806,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       // than five minutes ends it where you left.
       const gap = now - current.focus_beat;
       if (gap > FREE_LEAVE) {
-        return changed(m, { stopped: true, ...(await endFree(m, current, current.focus_beat)) });
+        return reply(m, { stopped: true, ...(await endFree(m, current, current.focus_beat)) });
       }
       await db.batch([
         ["UPDATE members SET focus_away = focus_away + ?, focus_beat = ?, focus_left_at = 0 WHERE id = ? AND focus_end = ?", [gap > BEAT_GAP ? gap - BEAT_EVERY : 0, now, m.id, current.focus_end]],
@@ -1820,7 +1831,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       if(m.focus_imece && m.focus_end>0 && m.focus_end<=now){
         await retrying(()=>settleFocus(m.group_id,now,m.id),m.group_id);
         const done=await db.get("SELECT minutes FROM imece_work WHERE id=?",[m.focus_imece_ref]);
-        return changed(m,{stopped:true,credited:done?.minutes||0,withered:false});
+        return reply(m,{stopped:true,credited:done?.minutes||0,withered:false});
       }
       // A watched free session that is stopped keeps the minutes it was seen (n40).
       if (action === "cancel") {
@@ -1829,7 +1840,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           const gap = now - current.focus_beat;
           if (gap > BEAT_GAP && gap <= FREE_LEAVE) await db.run("UPDATE members SET focus_away = focus_away + ?, focus_beat = ? WHERE id = ? AND focus_end = ?", [gap - BEAT_EVERY, now, m.id, current.focus_end]);
           const ended = await endFree(m, current, gap > FREE_LEAVE ? current.focus_beat : now);
-          return changed(m, { withered: false, refunded: 0, pending: 0, stopped: true, ...ended });
+          return reply(m, { withered: false, refunded: 0, pending: 0, stopped: true, ...ended });
         }
       }
       let outcome = { withered: false, refunded: 0, pending: 0 };
@@ -1869,7 +1880,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
           bump(m.group_id),
         ];
       }, m.group_id);
-      return changed(m, outcome);
+      return reply(m, outcome);
     }
     if (action !== "start") fail("Geçersiz odak işlemi.");
     // n46 C: a start may carry the app's request key. The same key with the
@@ -1884,7 +1895,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       const seen = await db.get("SELECT payload_hash AS hash, result_ref AS run FROM request_receipts WHERE scope = 'focus-start' AND actor = ? AND key = ?", [m.id, requestKey]);
       if (!seen) return null;
       if (seen.hash !== requestHash) fail("Bu istek başka seçimlerle zaten gönderildi. Sayfayı yenile.", 409);
-      return changed(m, { replayed: true, run: seen.run });
+      return reply(m, { replayed: true, run: seen.run });
     };
     const again = await replay();
     if (again) return again;
@@ -1907,7 +1918,13 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     let minutes = item && body.minutes == null && !body.joinMember ? minutesOf(item) : Number(body.minutes),
       end;
     const rhythm = body.rhythm === true && !body.joinMember ? (await db.get("SELECT rhythm FROM groups WHERE id = ?", [m.group_id]))?.rhythm : null;
-    if (rhythm && RHYTHMS[rhythm]) {
+    if (opts.link) {
+      // n50: a linked account ends with the session it follows, to the millisecond.
+      end = opts.link.focus_end;
+      minutes = opts.link.focus_minutes;
+      if (strict && item && !fits(item, minutes)) fail(`${item.name} bu seansın süresine sığmaz.`);
+      if (strict && !item) item = BY_ID[DEFAULT_MODEL[kindFor(minutes)]];
+    } else if (rhythm && RHYTHMS[rhythm]) {
       // The team's rhythm: this round ends at its shared break.
       end = rhythmEnd(rhythm, now);
       minutes = Math.floor((end - now) / 60000);
@@ -1978,8 +1995,8 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       ...(reservation?.statements || []),
       ["UPDATE members SET focus_imece=?, focus_imece_phase=?, focus_imece_personal=?, focus_imece_ref=?,focus_imece_project=? WHERE id=?", [project ? 1 : 0, reservation?.phase || 0, reservation?.personal || 0, project ? crypto.randomUUID() : null,reservation?.projectId||null, m.id]],
       [
-        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_relaxed = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ?, focus_honest = ?, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = ?, focus_cracked_at = 0 WHERE id = ?",
-        [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && (body.joinMember || body.honest === true) ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, m.id],
+        "UPDATE members SET focus_end = ?, focus_minutes = ?, focus_strict = ?, focus_relaxed = ?, focus_beat = ?, focus_seed = ?, focus_model = ?, focus_cost = ?, bricks = bricks - ?, focus_honest = ?, focus_away = 0, focus_rescued = 0, focus_left_at = 0, focus_device = ?, focus_cracked_at = 0, focus_link = ? WHERE id = ?",
+        [end, minutes, strict ? 1 : 0, relaxed ? 1 : 0, now, seed, item?.id ?? null, cost, cost, project ? (relaxed ? 0 : 1) : !strict && (body.joinMember || body.honest === true) ? 1 : 0, ["phone", "desk"].includes(body.device) ? body.device : null, opts.link?.id ?? null, m.id],
       ],
       ...(cost ? [ledgerRow(m.id, -cost, "cost", sessionRef(m.id, end), `${item.name} malzemesi`, now)] : []),
       // n46 C: the session's stable run. Nothing else is open for this member
@@ -2003,7 +2020,7 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
       throw error;
     }
     // "Ekibi çağır": everyone gets a tap-to-join for the same end time.
-    if (body.invite === true && minutes*60000 >= JOIN_LEAD) {
+    if (body.invite === true && !opts.link && minutes*60000 >= JOIN_LEAD) {
       try {
         limit(`${m.id}:invite`, 3);
         await notify(
@@ -2015,9 +2032,128 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
         );
       } catch {}
     }
-    if (relaxed && !project) await relaxedNotices(ctx, m.id).catch(() => {});
-    return changed(m, { run: runId });
+    // A linked account's screen-off build is announced by the one it follows.
+    if (relaxed && !project && !opts.link) await relaxedNotices(ctx, m.id).catch(() => {});
+    return reply(m, { run: runId });
+  }
+
+  // ---------- linked accounts (n50) ----------
+  // Batur keeps several accounts (one per team) on one device. A session can be
+  // started in all of them at once: each account gets its own session (its own
+  // building, bricks, minutes, team) ending at the same millisecond, and from
+  // then on they are one session. Whatever happens to the one on screen (a
+  // beat, leaving the app, a crack, a rescue, a tea break, giving up, the
+  // finish) happens to each of the others too, through the same handler, so
+  // every rule stays the one rule. Starting a link is Batur's for now (his
+  // panel key on this device); following one needs nothing more.
+  const LINKED_ACTIONS = new Set(["finish", "rescue", "away", "crack", "pause", "resume", "beat", "cancel", "wither"]);
+  const LINK_WINDOW = GRACE; // other accounts join within the first two minutes
+  // The other running members of `m`'s link.
+  const linkedOf = async (m) =>
+    m.focus_link
+      ? db.all("SELECT m.*, g.rev AS group_rev FROM members m JOIN groups g ON g.id = m.group_id WHERE m.focus_link = ? AND m.id <> ? AND m.focus_end > 0", [m.focus_link, m.id])
+      : [];
+  // A linked copy answers without the (costly) snapshot; its team still hears of it.
+  const quietly = async (member, extra = {}) => {
+    onChange(member.group_id);
+    return json({ ok: true, ...extra });
+  };
+  async function followLinked(m, body, ctx) {
+    if (!LINKED_ACTIONS.has(body.action)) return;
+    for (const f of await linkedOf(m)) {
+      // Each copy names its own session, so "this changed elsewhere" checks hold.
+      const copy = body.action === "cancel" ? { ...body, end: f.focus_end, relaxed: !!f.focus_relaxed } : body;
+      try {
+        await focusAction(f, copy, ctx, quietly, { follower: true });
+      } catch {
+        // A copy that does not apply (a free session has no tea break) is skipped.
+      }
+    }
+  }
+  route("POST", "/focus", async ({ member: m, body, ctx }) => {
+    const response = await focusAction(m, body, ctx);
+    await followLinked(m, body, ctx);
+    return response;
   });
+  // The accounts this device holds, with their sessions, for the picker and
+  // the one panel. Batur's only, for now.
+  route("GET", "/owner/linked", async ({ request, ip }) => {
+    await requireOwner(request, ip);
+    const held = await deviceAccounts(request);
+    if (!held.length) return json({ accounts: [] });
+    const ids = held.map((a) => a.id),
+      marks = ids.map(() => "?").join(", ");
+    const [rows, plans, runs] = await db.read([
+      [`SELECT m.id, m.group_id AS groupId, m.bricks, m.badge, m.focus_end AS focusEnd, m.focus_minutes AS focusMinutes, m.focus_strict AS focusStrict,
+          m.focus_relaxed AS focusRelaxed, m.focus_honest AS focusHonest, m.focus_imece AS focusImece, m.focus_model AS focusModel, m.focus_link AS focusLink,
+          m.focus_paused_at AS focusPausedAt, m.focus_cracked_at AS focusCrackedAt, m.focus_rescued AS focusRescued, m.focus_left_at AS focusLeftAt,
+          g.active_layout_id IS NOT NULL AS v2
+        FROM members m JOIN groups g ON g.id = m.group_id WHERE m.id IN (${marks})`, ids],
+      [`SELECT member_id AS id, model FROM unlocks WHERE member_id IN (${marks})`, ids],
+      // The newest run of each, to say how a link that just ended went.
+      [`SELECT r.member_id AS id, r.mode, r.model, r.minutes, r.ends, r.status, r.result FROM focus_runs r
+        WHERE r.member_id IN (${marks}) AND r.started = (SELECT MAX(started) FROM focus_runs x WHERE x.member_id = r.member_id)`, ids],
+    ]);
+    return json({
+      accounts: held.map((a) => {
+        const row = rows.find((r) => r.id === a.id) || {};
+        return {
+          id: a.id, name: a.name, avatar: a.avatar, color: a.color, team: a.team, current: a.active,
+          ...row, v2: !!row.v2,
+          plans: plans.filter((p) => p.id === a.id).map((p) => p.model),
+          last: runs.find((r) => r.id === a.id) || null,
+        };
+      }),
+    });
+  }, false);
+  // Another account of this device joins the session just started on screen.
+  // It builds its own choice with its own bricks (or focuses without a
+  // building), in its own team; it cannot be in the same team as any account
+  // of the link (that would count as friends working together).
+  route("POST", "/owner/linked/start", async ({ request, ip, body, ctx }) => {
+    await requireOwner(request, ip);
+    const held = await deviceAccounts(request);
+    const lead = held.find((a) => a.active),
+      other = held.find((a) => !a.active && a.id === String(body.memberId || ""));
+    if (!lead || !other) fail("Bu hesap bu cihazda açık değil. Hesaplarım listesini yenile.", 403);
+    const [leader, f] = await Promise.all([memberFor(lead.token), memberFor(other.token)]);
+    if (!leader || !f) fail("Bu hesap bu cihazda açık değil. Hesaplarım listesini yenile.", 403);
+    const now = Date.now();
+    if (!(leader.focus_end > now) || leader.focus_imece) fail("Önce bu hesapta bir seans başlat.", 409);
+    if (leader.focus_link && leader.focus_link !== leader.id) fail("Bu seans başka bir hesabın bağlı seansı. O hesaptan başlat.", 409);
+    if (now - (leader.focus_end - leader.focus_minutes * 60000) > LINK_WINDOW) fail("Diğer hesaplar seansın ilk 2 dakikasında katılabilir.", 409);
+    if (f.focus_end > now) fail(`${f.name} hesabında zaten süren bir seans var.`, 409);
+    const link = [leader, ...(await linkedOf({ id: leader.id, focus_link: leader.id }))];
+    if (link.some((x) => x.group_id === f.group_id)) fail("Aynı ekipteki iki hesap birlikte çalışamaz; her biri ayrı ekipte olmalı.", 409);
+    // The mode is the leader's: a watched build is followed by watched builds
+    // (or watched focus where none is chosen), a screen-off build by screen-off
+    // ones (or plain focus), a watched free session by watched free sessions.
+    const build = !!leader.focus_strict && body.model != null;
+    if (!leader.focus_strict && body.model != null) fail("Binasız seansa bağlı hesaplar da binasız katılır.");
+    const watched = !leader.focus_relaxed && (!!leader.focus_strict || !!leader.focus_honest);
+    const started = await focusAction(
+      f,
+      {
+        action: "start",
+        strict: build,
+        relaxed: build && !!leader.focus_relaxed,
+        honest: !build && watched,
+        ...(build ? { model: body.model } : {}),
+        minutes: leader.focus_minutes,
+        device: leader.focus_device || undefined,
+        deviceId: body.deviceId,
+        requestKey: body.requestKey,
+        village: body.village,
+      },
+      ctx,
+      quietly,
+      { link: leader },
+    );
+    // The leader becomes a member of its own link (once a first account joins).
+    await db.run("UPDATE members SET focus_link = id WHERE id = ? AND focus_end = ? AND focus_link IS NULL", [leader.id, leader.focus_end]);
+    onChange(leader.group_id);
+    return started;
+  }, false);
 
   // Acceptance acknowledges an already-credited building, never creates rewards.
   route("GET", "/build-deliveries", async ({ member }) => {

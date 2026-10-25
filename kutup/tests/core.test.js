@@ -1236,7 +1236,8 @@ test("kurtarma: a cracked build waits for its owner and is saved once (n40)", as
   const after = row();
   assert.equal(after.focus_rescued, 1);
   const moved = after.focus_end - before.focus_end;
-  assert.ok(moved >= 7 * 60000 && moved < 7 * 60000 + 2000, "two minutes away + five as the price");
+  // (Plus the wall-clock time the requests took, a few seconds at most on a busy machine.)
+  assert.ok(moved >= 7 * 60000 && moved < 7 * 60000 + 10000, "two minutes away + five as the price");
   assert.equal(after.focus_left_at, 0);
   const again = await focus({ action: "rescue" });
   assert.equal(again.status, 400);

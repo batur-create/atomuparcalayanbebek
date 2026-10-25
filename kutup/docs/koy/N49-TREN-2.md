@@ -19,7 +19,7 @@
 | Sunucu | `POST /owner/village/:id/layouts` için `rerail: true`: canlı düzene karşı kontrol edilir. Terrain 2 → 4 dışında geçiş yok; zemin rayı hariç aynı olmalı; `railProblem` (nokta aralığı, ≥14 birim yarıçap, meydana ≥38 birim, köprü uzakta); daha önce yerleşmiş hiçbir şey yer değiştirmemiş olmalı; canlı düzenin bütün sokakları aynı kalmalı (yalnız hemzemin geçit bayrağı değişebilir); kurallar parça parça kontrol edilir. Açma ve geri dönüş mevcut düzen değişimiyle aynı | `koy-n49b.test.js` (taşınmış ev, başka zemin, kırık hat reddediliyor, açılıyor, geri dönülüyor) |
 | Panel | Komuta merkezi → Ekipler → Köy düzeni: canlı köy terrain 2 olan yeni köyse "Demiryolu" bölümü ve **Rayı kıvır** düğmesi. Taslak hazırlanır ve önizlenir; "Yeni köyü aç" ile gelir, 14 gün içinde "Önceki köye dön" | Derleme; düğme tarayıcıda tıklanmadı (sunucu akışı testte) |
 
-Yeni taslaklar zaten terrain 3 (n49) alıyor, değişmedi. Şema ya da göç yok. Yenilikler 31.
+Yeni taslaklar zaten terrain 3 (n49) alıyor, değişmedi. Şema ya da göç yok. Yenilikler 32 (31 = n50, PR #72).
 
 ## Testler
 

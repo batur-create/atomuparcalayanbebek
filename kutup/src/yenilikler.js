@@ -10,7 +10,7 @@
 
 export const YENILIKLER = [
   {
-    surum: 31,
+    surum: 32,
     tarih: "2026-10-25",
     vakit: "gece",
     baslik: "Tren akıcı, raylar kıvrımlı, malzeme geliyor",
@@ -20,6 +20,17 @@ export const YENILIKLER = [
       "Yeni köydeki düz hat da kıvrılabiliyor: Komuta merkezi → Ekipler → Köy düzeni → “Rayı kıvır”. Binalar, sokaklar ve meydanlar yerinde kalır; “Yeni köyü aç” ile gelir, 14 gün içinde geri dönülebilir.",
       "Yeni tren: malzeme treni. Tuğla paletleri, kereste ve çimento çuvallarıyla gelip durakta bekler.",
       "Baretli üç işçi vagonlardan birer yük alıp sırtında sokaklardan şantiyeye, şantiye yoksa meydana taşır; vagonlar boşaldıkça yük azalır.",
+    ],
+  },
+  {
+    surum: 31,
+    tarih: "2026-10-24",
+    vakit: "gece",
+    baslik: "Batur'un denemesi: hesaplarında aynı anda inşaat",
+    maddeler: [
+      "Birden çok ekipte hesabı olan biri, bir seansı aynı telefondaki diğer hesaplarında da tek dokunuşla başlatabiliyor. Şimdilik yalnız Batur deniyor; beğenirse herkese açılacak.",
+      "Her hesap kendi binasını kendi tuğlasıyla kurar, dakikası ve maaşı kendi ekibine yazılır. Hepsi aynı anda biter.",
+      "Bağlı hesaplar tek seans gibidir: uygulamadan çıkınca hepsi çatlar, kurtarınca hepsi kurtulur, pes edince hepsi biter.",
     ],
   },
   {
