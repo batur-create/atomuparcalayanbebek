@@ -2836,17 +2836,23 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
     if (!inv) fail("Ekip bulunamadı.", 404);
     if (Number(body.contentRev) !== inv.group.rev) switchFailed();
     let base = null,
-      until = 0;
-    if (body.base) {
+      until = 0,
+      rerail = false;
+    if (body.rerail && role === "draft") {
+      // n49-2: the live layout with its railway re-laid; checked against the live layout itself.
+      if (!inv.group.active) fail("Bu ekip henüz yeni köyde değil.");
+      base = (await readLayout(db, inv.group.active)).layout;
+      rerail = true;
+    } else if (body.base) {
       const row = await db.get("SELECT id, rollback_until AS until FROM village_layouts WHERE id = ? AND group_id = ? AND kind = 'v2' AND status = ?", [String(body.base), params.groupId, role]);
       if (!row) switchFailed();
       base = (await readLayout(db, row.id)).layout;
       until = row.until;
     } else if (role === "previous") fail("Geri dönüş düzeni yalnız eşitlenebilir.");
-    const problem = await checkLayout(db, params.groupId, body.layout, { base, items: inv.items });
+    const problem = await checkLayout(db, params.groupId, body.layout, { base, items: inv.items, rerail });
     if (problem) fail(problem, 422);
     const id = `v2-${randomHex(8)}`;
-    await switchBatch(storeStatements(id, params.groupId, body.layout, { role, contentRev: inv.group.rev, replaces: base ? String(body.base) : null, until, now: Date.now() }));
+    await switchBatch(storeStatements(id, params.groupId, body.layout, { role, contentRev: inv.group.rev, replaces: base && !rerail ? String(body.base) : null, until, now: Date.now() }));
     return json(await switchState(db, params.groupId), 201);
   }, false, true);
   // Every rule of a stored layout, a part per request (a whole village at once is more CPU than a free-plan request has).

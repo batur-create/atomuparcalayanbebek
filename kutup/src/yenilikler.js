@@ -10,6 +10,19 @@
 
 export const YENILIKLER = [
   {
+    surum: 32,
+    tarih: "2026-10-25",
+    vakit: "gece",
+    baslik: "Tren akıcı, raylar kıvrımlı, malzeme geliyor",
+    maddeler: [
+      "Tren artık titremeden, akıcı kayıyor: ekranda tren varken harita her kareyi çiziyor.",
+      "Raylardaki boşluklar kapandı; raylar ve traversler baştan sona kesintisiz uzanıyor.",
+      "Yeni köydeki düz hat da kıvrılabiliyor: Komuta merkezi → Ekipler → Köy düzeni → “Rayı kıvır”. Binalar, sokaklar ve meydanlar yerinde kalır; “Yeni köyü aç” ile gelir, 14 gün içinde geri dönülebilir.",
+      "Yeni tren: malzeme treni. Tuğla paletleri, kereste ve çimento çuvallarıyla gelip durakta bekler.",
+      "Baretli üç işçi vagonlardan birer yük alıp sırtında sokaklardan şantiyeye, şantiye yoksa meydana taşır; vagonlar boşaldıkça yük azalır.",
+    ],
+  },
+  {
     surum: 31,
     tarih: "2026-10-24",
     vakit: "gece",

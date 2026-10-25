@@ -20,13 +20,19 @@
 // seen arriving; layouts made before keep the line they were made with (their
 // terrain is stored with them).
 //
+// Version 4 (n49-2) is version 2's ground with a railway re-laid in bends
+// around a village that already stands (shared/koy2/rerail.js); that line is
+// the village's own and is stored with its layout. makeTerrain(seed, 4) gives
+// the ground with version 2's line; railProblem() says whether a stored line
+// is a sound railway.
+//
 // Same seed + version → the same numbers on every host. Ground is level
 // (z = 0) in version 1; heightAt() is where terraces come in later.
 import { bend, hash, linesCross, q, rng } from "./geom.js";
 
 export const TERRAIN_VERSION = 3;
 /** The terrain versions a layout of each planner generation may stand on. */
-export const TERRAINS = { 2: [1], 3: [2, 3] };
+export const TERRAINS = { 2: [1], 3: [2, 3, 4] };
 export const RIVER_WIDTH = 3.2; // about 5 m
 export const RAIL_WIDTH = 1.7; // one track and its ballast
 const REACH = 320; // half length of the river and railway
@@ -140,7 +146,7 @@ export function makeTerrain(seed, version = TERRAIN_VERSION) {
   }
   // Version 3 lays its own winding line from its own numbers; the river, pond
   // and meadows stay exactly those of version 2.
-  if (version >= 3) rail = windingRail(seed, version, tn, river);
+  if (version === 3) rail = windingRail(seed, version, tn, river);
   // The pond behind the village, opposite the railway, 30–38 units out.
   const pa = Math.atan2(-tn[1], -tn[0]) + (R() * 2 - 1) * 0.5;
   const pd = 30 + R() * 8;
@@ -182,6 +188,36 @@ export function makeTerrain(seed, version = TERRAIN_VERSION) {
 }
 
 export const watercourses = (terrain) => [terrain.river, ...(terrain.streams || [])];
+
+/**
+ * Whether a terrain's railway is a sound one (for a line laid for a village,
+ * terrain version 4): a few hundred points a few units apart, end to end
+ * across the map, no bend sharper than a branch line takes (about 14 units of
+ * radius), nowhere nearer than 38 units to the square, over the river only
+ * far out (62 units or more). Returns the problem, or null.
+ */
+export function railProblem(terrain) {
+  const rail = terrain?.rail;
+  if (!rail || rail.w !== RAIL_WIDTH || !Array.isArray(rail.pts) || rail.pts.length < 40 || rail.pts.length > 600) return "rail_shape";
+  const pts = rail.pts;
+  if (!pts.every((p) => Array.isArray(p) && p.length === 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0]) < 600 && Math.abs(p[1]) < 600)) return "rail_shape";
+  for (let i = 1; i < pts.length; i++) {
+    const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    if (d < 0.2 || d > 9) return "rail_shape";
+    if (i >= 2) {
+      const a = Math.atan2(pts[i - 1][1] - pts[i - 2][1], pts[i - 1][0] - pts[i - 2][0]),
+        b = Math.atan2(pts[i][1] - pts[i - 1][1], pts[i][0] - pts[i - 1][0]);
+      const turn = Math.abs(((b - a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+      if (turn > Math.max(0.05, d / 14)) return "rail_bend";
+    }
+  }
+  if ([pts[0], pts.at(-1)].some((p) => Math.hypot(p[0], p[1]) < 200)) return "rail_shape";
+  if (pts.some(([x, y]) => Math.hypot(x, y) < 38)) return "rail_near_square";
+  // (Version 2 lines were checked at their 8-unit points against 70; a line
+  // re-laid along one keeps its bridge where it was, at points 2.5 apart.)
+  if (terrain.river && crossesNear(pts, terrain.river.pts, 62)) return "rail_bridge_near";
+  return null;
+}
 
 /** Ground height at a point (level ground in version 1). */
 export const heightAt = () => 0;

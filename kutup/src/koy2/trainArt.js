@@ -18,6 +18,9 @@ const DARK = ["#4a4a52", "#3a3a41", "#2c2c32"],
   STEEL = ["#d4d8db", "#b9bdc1", "#9ea2a6"],
   RUST = ["#bf6c4e", "#a35a40", "#874a35"],
   STONE = ["#dcd5c7", "#c3bba9", "#a9a08e"],
+  BRICK = ["#d5704f", "#b55a40", "#944834"],
+  PALLET = ["#c9a274", "#ab8558", "#8e6c45"],
+  SACK = ["#eee6d3", "#d8ceb6", "#bfb398"],
   GLASS = "#3f4d69",
   LIT = "rgba(255,214,128,.95)";
 
@@ -124,10 +127,33 @@ export function drawCar(A, car, { s, night = 0, ctx = null } = {}) {
     return;
   }
   const h = car.len / 2;
+  // What is left of a materials wagon's load once a worker has taken theirs (1 = full).
+  const full = (car.left ?? 1) >= 1;
+  // Loads along the wagon, the ones farther from the camera first.
+  const along = (list) => [...list].sort((a, b) => (a - b) * (dx + dy));
   if (car.kind === "logs") {
     B(-h, h, 0.48, 0.16, 0.42, WOOD);
     for (const b of [-0.27, 0, 0.27]) obox(A, x - dy * b, y + dx * b, dx, dy, -h + 0.15, h - 0.15, -0.12, 0.12, 0.42, 0.66, LOGS);
-    for (const b of [-0.14, 0.14]) obox(A, x - dy * b, y + dx * b, dx, dy, -h + 0.25, h - 0.25, -0.12, 0.12, 0.66, 0.9, LOGS);
+    if (full) for (const b of [-0.14, 0.14]) obox(A, x - dy * b, y + dx * b, dx, dy, -h + 0.25, h - 0.25, -0.12, 0.12, 0.66, 0.9, LOGS);
+    wheels(A, car, [-h + 0.5, h - 0.5], 0.48, s);
+    return;
+  }
+  if (car.kind === "bricks") {
+    // A flat wagon with brick pallets: three full, one once a load is off.
+    B(-h, h, 0.48, 0.16, 0.42, DARK);
+    for (const a of along(full ? [-0.85, 0, 0.85] : [0])) {
+      B(a - 0.38, a + 0.38, 0.4, 0.42, 0.5, PALLET);
+      B(a - 0.34, a + 0.34, 0.36, 0.5, 0.98, BRICK);
+    }
+    wheels(A, car, [-h + 0.5, h - 0.5], 0.48, s);
+    return;
+  }
+  if (car.kind === "cement") {
+    // Cement sacks, two layers; the top one goes first.
+    B(-h, h, 0.48, 0.16, 0.42, DARK);
+    const sacks = [-0.9, -0.3, 0.3, 0.9].flatMap((a) => [-0.2, 0.2].map((b) => [a, b])).sort((p, q) => p[0] * (dx + dy) + p[1] * (dx - dy) - (q[0] * (dx + dy) + q[1] * (dx - dy)));
+    for (const layer of full ? [0, 1] : [0])
+      for (const [a, b] of sacks) obox(A, x - dy * b, y + dx * b, dx, dy, a - 0.27, a + 0.27, -0.17, 0.17, 0.42 + layer * 0.2, 0.6 + layer * 0.2, SACK);
     wheels(A, car, [-h + 0.5, h - 0.5], 0.48, s);
     return;
   }

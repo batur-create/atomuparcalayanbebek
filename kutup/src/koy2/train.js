@@ -5,12 +5,15 @@
 // where it should be. Now and then a train runs the whole line; a passenger
 // train slows down and stops at the village's station (or, with no station,
 // at a small halt beside the track), people get off and on, and it pulls out
-// again. A goods train slows through the village and passes. Level crossings
-// close their barriers while it goes by.
+// again. A goods train slows through the village and passes. A materials train
+// (n49-2) brings bricks, timber and cement: it stands at the stop while three
+// workers each shoulder a load and carry it along the streets to a building
+// site (or, with none, to the square). Level crossings close their barriers
+// while a train goes by.
 //
 // Decoration only: it never reads or writes rewards, minutes, places or
 // members, and costs the server nothing (all of it runs in the browser).
-import { cmp, hash, lengthOf, linePoint, rng } from "../../shared/koy2/geom.js";
+import { cmp, hash, lengthOf, linePoint, rng, segRect } from "../../shared/koy2/geom.js";
 import { LIFE, routeOf, walkGraph, walksFrom } from "./life.js";
 
 export const TRAIN = {
@@ -21,18 +24,24 @@ export const TRAIN = {
   brake: 0.5, // u/s²
   accel: 0.35,
   dwell: [24, 40], // seconds at the platform
+  unload: [46, 60], // a materials train waits for its loads to be taken off
+  carry: 0.75, // a worker with a load walks at three quarters of the usual pace
   zone: 28, // half the stretch a goods train takes slowly
   puffEvery: 0.5,
   puffLife: 4,
 };
 // What a train is made of, front to back (lengths in world units; a person is 1.09 tall).
-export const CARS = { loco: 2.8, coach: 3.2, logs: 2.8, tank: 2.8, box: 3 };
+export const CARS = { loco: 2.8, coach: 3.2, logs: 2.8, tank: 2.8, box: 3, bricks: 2.8, cement: 2.8 };
 const GAP = 0.3;
 const KINDS = [
-  { id: "yolcu", stops: true, cars: ["loco", "coach", "coach"], p: 0.6 },
-  { id: "kisa", stops: true, cars: ["loco", "coach"], p: 0.15 },
-  { id: "yuk", stops: false, cars: ["loco", "logs", "tank", "box"], p: 0.25 },
+  { id: "yolcu", stops: true, cars: ["loco", "coach", "coach"], p: 0.5 },
+  { id: "kisa", stops: true, cars: ["loco", "coach"], p: 0.12 },
+  { id: "yuk", stops: false, cars: ["loco", "logs", "tank", "box"], p: 0.16 },
+  // Each wagon behind the engine is unloaded by one worker.
+  { id: "malzeme", stops: true, cars: ["loco", "bricks", "logs", "cement"], p: 0.22 },
 ];
+/** What a worker carries off each wagon of a materials train. */
+export const LOADS = { bricks: "tuğla", logs: "kereste", cement: "çimento" };
 
 /** Cumulative lengths of a polyline, for fast lookups by distance. */
 function measured(pts) {
@@ -216,6 +225,46 @@ export function createTrain(layout, graph = null) {
     else if (door) walkIn = { pts: [[graph.V.get(door).x, graph.V.get(door).y]], total: 0 };
   }
 
+  // Where a materials train's loads go: along the streets to the door of the
+  // nearest building site (or, with none, the nearest square). From a station
+  // the workers carry them through the building and out of its front door;
+  // from a halt they step to the nearest street they can reach in a straight
+  // line. Found once, the first time a materials train stands.
+  let haul;
+  function haulOf() {
+    if (haul !== undefined) return haul;
+    haul = null;
+    if (!stop) return haul;
+    graph = graph || walkGraph(layout);
+    let gate = null,
+      from = null;
+    if (stop.kind === "station") gate = graph.doors.get(stop.plot) || null;
+    else {
+      from = [stop.p[0] + stop.n[0] * WAIT, stop.p[1] + stop.n[1] * WAIT];
+      const grounds = layout.plots.map((p) => p.ground).filter(Boolean);
+      let best = Infinity;
+      for (const v of graph.V.values()) {
+        const d = Math.hypot(v.x - from[0], v.y - from[1]);
+        if (d > 30 || d >= best || grounds.some((g) => segRect(from, [v.x, v.y], g) < 0.3)) continue;
+        [gate, best] = [v.key, d];
+      }
+    }
+    if (!gate) return haul;
+    const tree = walksFrom(graph, gate, 260);
+    const sites = layout.plots.filter((p) => p.subject?.type === "site" && graph.doors.has(p.id));
+    const goals = sites.length ? sites.map((p) => [p.id, graph.doors.get(p.id)]) : [...graph.squares];
+    let goal = null;
+    for (const [id, key] of goals) {
+      const d = tree.dist.get(key);
+      if (d !== undefined && (!goal || d < goal.d || (d === goal.d && cmp(id, goal.id) < 0))) goal = { id, key, d };
+    }
+    if (!goal) return haul;
+    // routeOf runs from the goal back to the gate.
+    const route = [...routeOf(tree, goal.key).pts].reverse();
+    haul = { to: goal.id, site: sites.length > 0, through: stop.kind === "station", pts: from ? [from, ...route] : route };
+    return haul;
+  }
+
   const lengthOf_ = (cars) => cars.reduce((t, c) => t + CARS[c], 0) + GAP * (cars.length - 1);
   // A standing train keeps the level crossings open: it pulls up a little short
   // of one, or a little past it (at most 7 units off the platform's middle).
@@ -246,8 +295,9 @@ export function createTrain(layout, graph = null) {
         }
         k -= x.p;
       }
+      const span = kind.id === "malzeme" ? TRAIN.unload : TRAIN.dwell;
       const dir = r() < 0.5 ? 1 : -1,
-        dwell = TRAIN.dwell[0] + r() * (TRAIN.dwell[1] - TRAIN.dwell[0]);
+        dwell = span[0] + r() * (span[1] - span[0]);
       const length = lengthOf_(kind.cars);
       // Where the stop is, measured from the end the train comes in at.
       const stops = kind.stops && !!stop;
@@ -323,9 +373,73 @@ export function createTrain(layout, graph = null) {
     }
     return out;
   }
+  // A materials train's workers: waiting by the track as it comes in, then one
+  // by one up to a wagon, a load onto the shoulder, and off to the site.
+  // Across from the track's middle: where a worker waits (on the halt's
+  // gravel or the platform, inside the free strip the planner keeps) and where
+  // they stand to lift a load off a wagon.
+  const WAIT = 1.5,
+    SIDE = 0.8,
+    LIFT = 1.5;
+  const upTime = (WAIT - SIDE) / LIFE.speed;
+  const pickOf = (run, k) => run.arrive + 5 + k * 4.5;
+  // When the k-th wagon's load leaves it (its worker has lifted it).
+  const liftedAt = (run, k) => pickOf(run, k) + upTime + LIFT * 0.55;
+  function wagonsOf(run) {
+    const head = run.at + run.length / 2; // where the head stands (profile)
+    let back = 0;
+    const out = [];
+    run.cars.forEach((kind) => {
+      const centre = head - back - CARS[kind] / 2;
+      back += CARS[kind] + GAP;
+      if (LOADS[kind]) out.push({ kind, centre });
+    });
+    return out;
+  }
+  function workersAt(run, t) {
+    if (t < run.arrive - 40) return [];
+    const h = haulOf();
+    const toward = [-stop.n[0], -stop.n[1]];
+    const out = [];
+    wagonsOf(run).forEach(({ kind, centre }, k) => {
+      const car = carAt(run, centre, CARS[kind]);
+      const off = (d) => [car.x + stop.n[0] * d, car.y + stop.n[1] * d];
+      const wait = off(WAIT),
+        side = off(SIDE);
+      const id = `train:${run.n}:m${k}`;
+      const one = (p, extra) => out.push({ id, home: id, x: p[0], y: p[1], walking: false, face: toward, step: null, worker: true, load: null, ...extra });
+      let u = t - pickOf(run, k);
+      if (u < 0) return one(wait);
+      if (u < upTime) {
+        const f = u / upTime;
+        return one([wait[0] + (side[0] - wait[0]) * f, wait[1] + (side[1] - wait[1]) * f], { walking: true, step: u * 7 });
+      }
+      u -= upTime;
+      if (u < LIFT) return one(side, { load: t >= liftedAt(run, k) ? kind : null });
+      u -= LIFT;
+      const carry = LIFE.speed * TRAIN.carry;
+      let pts;
+      if (h?.through) {
+        // Into the station with it, and out of the front door a few seconds later.
+        const inside = [side, off(stop.edge + 0.45)];
+        const first = measured(inside).total / carry;
+        if (u < first) pts = inside;
+        else if (u < first + 5) return;
+        else [pts, u] = [h.pts, u - first - 5];
+      } else pts = h ? [side, ...h.pts] : [side, wait];
+      const path = measured(pts),
+        d = u * carry;
+      if (d >= path.total) return; // delivered
+      const p = pointAt(path, d),
+        q = pointAt(path, d + 0.3);
+      out.push({ id, home: id, x: p[0], y: p[1], walking: true, face: [q[0] - p[0], q[1] - p[1]], step: u * 6, worker: true, load: kind });
+    });
+    return out;
+  }
   // People at the platform: some wait and board, some get off and walk away.
   function ridersAt(run, t) {
     if (!run.stops) return [];
+    if (run.kind === "malzeme") return workersAt(run, t);
     const out = [];
     const spot = (along, off = stop.edge) => [stop.p[0] + stop.dir[0] * along + stop.n[0] * off, stop.p[1] + stop.dir[1] * along + stop.n[1] * off];
     const facing = [-stop.n[0], -stop.n[1]];
@@ -398,10 +512,16 @@ export function createTrain(layout, graph = null) {
       let whistle = null;
       if (full && run.stops && t >= run.depart - 1.2 && t < run.depart + 0.6) whistle = (t - run.depart + 1.2) / 1.8;
       else if (full && !run.stops && run.phases[1] && tau >= run.phases[1].t0 && tau < run.phases[1].t0 + 1.8) whistle = (tau - run.phases[1].t0) / 1.8;
+      let cars = carsAt(run, h.u);
+      // A wagon whose load has been lifted off shows what is left of it.
+      if (run.kind === "malzeme" && run.stops) {
+        const wagon = (i) => run.cars.slice(0, i).filter((x) => LOADS[x]).length;
+        cars = cars.map((c) => (LOADS[c.kind] ? { ...c, left: t >= liftedAt(run, wagon(c.i)) ? 0.35 : 1 } : c));
+      }
       return {
         run,
         state,
-        cars: carsAt(run, h.u),
+        cars,
         puffs: full ? puffsAt(run, tau) : [],
         whistle,
         riders: full ? ridersAt(run, t) : [],

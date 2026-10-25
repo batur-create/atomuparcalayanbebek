@@ -17,13 +17,13 @@ const groupOf = (model) => {
   return spec.context !== "dry" ? "water" : spec.landmark ? "dry-landmark" : "ordinary";
 };
 
-export function growth({ seed, count, unbalanced = false, onStep = null }) {
+export function growth({ seed, count, unbalanced = false, onStep = null, terrainVersion }) {
   // A stride sharing a factor with the catalogue size silently omits models
   // (7 with 49 entries never reaches the pazar). Keep the old stride for 48.
   const gcd = (a,b) => b ? gcd(b,a%b) : a;
   let stride = 7;
   while (gcd(stride, MODEL_IDS.length) !== 1) stride++;
-  let layout = emptyLayout(seed);
+  let layout = terrainVersion ? emptyLayout(seed, undefined, terrainVersion) : emptyLayout(seed);
   const missed = [],
     near = [],
     times = [];
