@@ -28,7 +28,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-routes-') as data:
             with sync_playwright() as p:
                 browser = p.chromium.launch(executable_path=shutil.which('chromium'), headless=True, args=['--no-sandbox'])
                 ctx = browser.new_context(viewport={'width':1280,'height':900}, reduced_motion='reduce')
-                ctx.add_init_script("localStorage.setItem('kutup-tur','done');localStorage.setItem('kutup-motion','still');localStorage.setItem('kutup-mode','light');")
+                ctx.add_init_script("localStorage.setItem('kutup-tur','done');localStorage.setItem('kutup-motion','still');if(!localStorage.getItem('kutup-mode'))localStorage.setItem('kutup-mode','light');")
                 def call(context, path, body=None):
                     r = context.request.fetch(base+'/api'+path, method='GET' if body is None else 'POST', headers={'X-Kutup':'1'}, data=body)
                     assert r.ok, (path, r.status, r.text()[:150])
@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-routes-') as data:
                     for width in [360,375,390]:
                         page.set_viewport_size({'width':width,'height':844})
                         page.goto(base+'/ben/profil'); expect(page.get_by_role('dialog')).to_be_visible()
-                        check(not page.evaluate('document.documentElement.scrollWidth > innerWidth+1'), f'{width}px {mode}: no page overflow')
+                        check(page.locator('html').get_attribute('data-mode')==mode and not page.evaluate('document.documentElement.scrollWidth > innerWidth+1'), f'{width}px {mode}: requested mode and no page overflow')
                         links=page.get_by_role('dialog').locator('.breadcrumbs a').all()
                         check(all(a.bounding_box()['height']>=44 for a in links), f'{width}px {mode}: breadcrumb targets are at least 44px')
                         if width==375: page.screenshot(path=str(out/f'telefon-{mode}.png'))

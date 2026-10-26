@@ -1,6 +1,6 @@
 # Kütüp — yapısal kalite checklist’i
 
-26 Ekim 2026 · Son durum: **274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme, 23/23 odak/teslim, 22/22 buluşma, 252/252 tema**. Uygulama ve doğrulama tamam; PR teslimi hazırlanıyor.
+26 Ekim 2026 · Son durum: **274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme, 23/23 odak/teslim, 22/22 buluşma, 252/252 tema**. Uygulama tamam; koyu tercihi sıfırlayan deneme betiği düzeltildi, gerçek açık/koyu görünüm yeniden doğrulanıyor. PR teslimi hazırlanıyor.
 
 Dal: `codex/kutup-breadcrumb-urls` · Canlıya yayın yok.
 
@@ -20,7 +20,7 @@ Bu dosya çalışma boyunca güncellenir. İşaret yalnız ilgili uygulama ve do
 - [x] 12. Tembel yüklenen ekranlarda görünür yüklenme, yerel hata sınırı ve yeniden deneme.
 - [x] 13. Bağlantı kesilmesi/yeniden bağlanma için anlaşılır durum ve güvenli yeniden deneme.
 - [x] 14. Eksik/boş içerik durumları ve mevcut form/işlem korumalarının doğrulanması.
-- [x] 15. 360/375/390 px açık-koyu görünüm, 44 px hedefler ve hareket azaltma.
+- [ ] 15. 360/375/390 px açık-koyu görünüm, 44 px hedefler ve hareket azaltma.
 - [x] 16. Yönetim alt ekranlarının ayrı URL ve mevcut yetki sınırları.
 - [x] 17. Gerçek üretim sunucusunda doğrudan URL, yenileme ve eski bağlantı testleri.
 - [ ] 18. Tam test paketi, genel tarayıcı, tema kontrolü, kalıcı kanıtlar ve incelemeye hazır PR.
