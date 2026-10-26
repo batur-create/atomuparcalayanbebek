@@ -24,7 +24,8 @@
     "test:browser:focus-join": "python tests/focus_join_browser.py",
     "test:browser:blueprints": "python tests/blueprints_browser.py",
     "test:browser:teams": "python tests/teams_browser.py",
-    "test:browser:devices": "python tests/multi_device_browser.py"
+    "test:browser:devices": "python tests/multi_device_browser.py",
+    "test:browser:routes": "python tests/routes_browser.py"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "5.3.0",

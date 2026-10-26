@@ -1,3 +1,4 @@
+import { useScreenState, useEntityScreen, useNavigation, Breadcrumbs } from "./Navigation.jsx";
 // Batur’s panel at /batur: requests with one-tap stages, teams and members.
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -175,22 +176,23 @@ function RequestRow({ item, open, toggle, update, throwAway, falling }) {
 }
 
 export function OwnerPage() {
+  const navigation = useNavigation();
   const [key, setKey] = useState(""),
     [confirmKey, setConfirmKey] = useState(""),
     [status, setStatus] = useState(null),
     [items, setItems] = useState(null),
     [groups, setGroups] = useState([]),
-    [view, setView] = useState("requests"),
-    [filter, setFilter] = useState("open"),
-    [openId, setOpenId] = useState(null),
+    [view, setView] = useScreenState("ownerView", "requests"),
+    [filter, setFilter] = useScreenState("ownerFilter", items && !items.some(x => x.status === "new") ? "all" : "open"),
+    [openId, setOpenId] = useScreenState("ownerOpenId", null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [recovery, setRecovery] = useState(null),
-    [gift, setGift] = useState(null),
-    [announce, setAnnounce] = useState(null),
-    [newTeam, setNewTeam] = useState(false),
-    [rename, setRename] = useState(null),
-    [village, setVillage] = useState(null),
+    [gift, setGift] = useEntityScreen("ownerGiftId", groups.flatMap(g => g.members.map(m => ({ ...m, groupId: g.id })))),
+    [announce, setAnnounce] = useEntityScreen("ownerAnnounceId", groups),
+    [newTeam, setNewTeam] = useScreenState("ownerNewTeam", false),
+    [rename, setRename] = useEntityScreen("ownerRenameId", groups),
+    [village, setVillage] = useEntityScreen("ownerVillageId", groups),
     [copied, setCopied] = useState(false),
     [pushOn, setPushOn] = useState(!!storage.get("kutup-owner-push"));
   // One browser has one push subscription; it may already serve the member side,
@@ -237,7 +239,6 @@ export function OwnerPage() {
       ]);
       setItems(requests);
       setGroups(teams);
-      if (!requests.some((x) => x.status === "new")) setFilter("all");
     } catch (e) {
       if (e.status === 401) setItems(null);
       setError(e.message);
@@ -367,7 +368,7 @@ export function OwnerPage() {
       row.scrollLeft += b.left - a.left - parseFloat(getComputedStyle(row).paddingLeft);
   }, [filter, view, items]);
   return (
-    <main className="owner-page">
+    <main className="owner-page" data-route-main="" tabIndex={-1}>
       <div className="owner-top">
         <a className="brand" href="/">
           kütüp<span>✳</span>
@@ -376,6 +377,7 @@ export function OwnerPage() {
           <ArrowLeft size={15} /> Uygulamaya dön
         </a>
       </div>
+      <Breadcrumbs />
       <div className="owner-heading">
         <span className="eyebrow">BATUR’A ÖZEL</span>
         <h1>Tayfadan sana. 💌</h1>
@@ -704,6 +706,8 @@ export function OwnerPage() {
           )}
         </>
       )}
+      {items && ((navigation?.route.ownerGiftId && !gift) || (navigation?.route.ownerAnnounceId && !announce) || (navigation?.route.ownerRenameId && !rename) || (navigation?.route.ownerVillageId && !village)) && <Modal title="Kayıt bulunamadı" close={() => navigation.go("/batur/ekipler", { replace: true })}><p>Bu ekip veya kişi artık mevcut değil. Ekipler bölümünden devam edebilirsin.</p></Modal>}
+      {items && openId && !items.some(x => x.id === openId) && <p role="status">İstek bulunamadı. Başka bir istek seçebilirsin.</p>}
       {gift && <GiftModal member={gift} close={() => setGift(null)} changed={load} />}
       {announce && <AnnounceModal group={announce} close={() => setAnnounce(null)} />}
       {newTeam && <NewTeamModal close={() => setNewTeam(false)} changed={load} />}

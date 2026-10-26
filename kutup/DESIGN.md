@@ -123,6 +123,8 @@ Batur'un isteği (16 Ekim, n18): "vay be her şey nasıl da canlı ve dinamik" d
 
 ## 9. Onaylananlar ve reddedilenler
 
+- ✔ **Adresler ve yapısal kalite (26 Eki):** Batur breadcrumb, her ekran/detay için URL ve hikâyenin dahil olmasını istedi; ardından kaynak araştırmasıyla checklist hazırlanıp uygun maddelerin uygulanmasını onayladı. Dört ana bölüm korunur; küçük, tema jetonlu, 44 px bağlantılı sayfa yolu ve bağlantı kopyalama. Hikâye/odak ekranının kendi adresi ve klavye odağı; gerçek linkler, içerik atlama, hata/yeniden deneme ve bağlantı durumları. Yerel/sentetik 360/375/390 px açık-koyu kontroller; fiziksel telefon doğrulaması iddia edilmez. İlerleme ve kanıt `docs/yapisal-kalite/`; teslim PR, yayın yok.
+
 - ✔ **n45 Ekipler (21 Eki):** Ekipler’in başında iki sütunu kaplayan “Yeni ekip” kartı; ekip adının yanında ince kalem; kartta “Davet bağlantısı” kutusu (kanvas zemin, 44 px) ve Kopyala/Yenile; telefonda bağlantı tam satır, düğmeler altta yan yana. Boş ekipte soluk not ve pasif Duyuru yaz. Yalnız tema jetonları; 360/390 px, açık/koyu kontrol edildi. Batur “kendin karar ver” yetkisiyle; görsel ön izleme istenmedi.
 
 - ✔ **Tek odak seansı (21 Eki):** Batur benzer adları ve kalabalığı kaldırma yetkisi verdi; binasız odağı inşaatın karşısında büyük bir mod gibi sunmayı sorguladı. İki büyük mod seçicisi kaldırıldı. Seçili bina + küçük binasız çalışma bağlantısı, üç akışta aynı Ekranı kapatarak çalış anahtarı. Maaş/telefon kuralı yalnız seçilen durum için kısa açıklanır. Tema jetonları, 360/390 px ve klavye kontrolü; sunucu ve mevcut tercihler korunur. Rapor `RAPOR_ODAK_SADELESTIRME.md`.

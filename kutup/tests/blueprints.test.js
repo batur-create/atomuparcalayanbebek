@@ -6,7 +6,7 @@ import {sqliteAdapter} from '../server/sqlite.js';
 import {migrate,migrations} from '../server/schema.js';
 import {restoreBackup} from '../server/restore.js';
 import {advanceDiscovery,discoveryStatus,DISCOVERY_GUARANTEE,WEEKLY_LEGACY} from '../shared/blueprints.js';
-import {BY_ID,RARE,blueprintPool,stateOf} from '../shared/catalog.js';
+import {BY_ID,blueprintPool,stateOf} from '../shared/catalog.js';
 const pool=Array.from({length:100},(_,i)=>({id:String(i)}));
 const seed={carry:0,dry:0,draws:0};
 
@@ -51,7 +51,8 @@ async function fixture(t){
 
 test('discovery API: only completed credited sessions advance, durable guarantee settles exactly once across concurrent readers',async t=>{
   const {sql,id,as,call,finish}=await fixture(t);
-  assert.equal((await as('/wallet')).data.discovery.remaining,500);
+  const initialDiscovery=(await as('/wallet')).data.discovery;
+  assert.equal(initialDiscovery.remaining,500);
   await as('/focus',{action:'start',minutes:25});await as('/focus',{action:'cancel'});
   assert.equal(sql.prepare('SELECT count(*) n FROM blueprint_progress').get().n,0);
   await finish(25);let state=sql.prepare('SELECT * FROM blueprint_progress WHERE member_id=?').get(id);
@@ -70,7 +71,8 @@ test('discovery API: only completed credited sessions advance, durable guarantee
   state=sql.prepare('SELECT * FROM blueprint_progress WHERE member_id=?').get(id);
   assert.equal(state.dry,0);assert.equal(state.carry,0);
   await as('/focus',{action:'finish'});assert.deepEqual(sql.prepare('SELECT * FROM blueprint_progress WHERE member_id=?').get(id),state);
-  assert.equal((await as('/wallet')).data.discovery.left,RARE.length-2);
+  // Expired weekly plans also enter discovery; the live pool grows with the calendar.
+  assert.equal((await as('/wallet')).data.discovery.left,initialDiscovery.left-2);
 });
 
 test('discovery API: first session on a 7-day streak grants a bonus without resetting effort; failure gives no progress',async t=>{

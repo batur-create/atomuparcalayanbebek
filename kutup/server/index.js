@@ -1,3 +1,4 @@
+import { readRoute } from "../shared/routes.js";
 // Node host for Kütüp: node:sqlite storage, Server-Sent Events for instant updates,
 // static files from dist/ (or Vite in --dev). Used for local development, Docker,
 // Render, Railway or any VPS. The Cloudflare / ChatGPT Sites build lives in worker/.
@@ -196,11 +197,12 @@ function serveStatic(req, res, pathname) {
     : ["index.html", "sw.js", "manifest.webmanifest"].includes(name)
       ? "no-cache"
       : "public, max-age=3600";
-  res.writeHead(200, {
+  const status = name === "index.html" && !readRoute(pathname).found ? 404 : 200;
+  res.writeHead(status, {
     "Content-Type": types[extname(file)] || "application/octet-stream",
     "Cache-Control": cache,
     ...SECURITY_HEADERS,
-    ...(name === "index.html" ? { "Content-Security-Policy": CSP } : {}),
+    ...(name === "index.html" ? { "Content-Security-Policy": CSP, ...(pathname !== "/" ? { "X-Robots-Tag": "noindex, nofollow" } : {}) } : {}),
   });
   if (req.method === "HEAD") return res.end();
   createReadStream(file).pipe(res);

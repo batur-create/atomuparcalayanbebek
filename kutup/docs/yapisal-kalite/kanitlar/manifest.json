@@ -1,0 +1,22 @@
+{
+  "clientDate": "2026-10-26",
+  "base": "395c9b11acf5396484280b4bc405948bb484f5c3",
+  "branch": "codex/kutup-breadcrumb-urls",
+  "testAll": {
+    "passed": 274,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "general": 100,
+    "navigationDev": 62,
+    "navigationProductionNode": 66,
+    "focusDelivery": 23,
+    "meetups": 22
+  },
+  "themePairs": 252,
+  "data": "temporary local databases and synthetic accounts",
+  "physicalPhoneTested": false,
+  "liveCloudflareCPUMeasured": false,
+  "deployed": false
+}

@@ -1,3 +1,4 @@
+import { useNavigation, RouteLink } from "./Navigation.jsx";
 // "Batur’a ilet": ideas, bugs and small talk that travel through stages Batur
 // sets in his panel, shown to the sender as a cargo-style tracker.
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -182,6 +183,8 @@ function RequestCard({ item, fresh }) {
 }
 
 export function FeedbackPage({ me, requireMember, notify, onSeen, startKind = "idea" }) {
+  const detailId = useNavigation()?.route.feedbackRequest;
+  const [loaded, setLoaded] = useState(false);
   const [kind, setKind] = useState(FEEDBACK[startKind] ? startKind : "idea"),
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
@@ -199,7 +202,8 @@ export function FeedbackPage({ me, requireMember, notify, onSeen, startKind = "i
         setMine(items);
         onSeen?.();
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, [me?.id]);
   const chooseKind = (id) => {
     setKind(id);
@@ -231,6 +235,11 @@ export function FeedbackPage({ me, requireMember, notify, onSeen, startKind = "i
   return (
     <div className="feedback-layout">
       <div>
+        {detailId && <section className="panel">
+          <h2>İstek takibi</h2>
+          {mine.find(item => item.id === detailId) ? <RequestCard item={mine.find(item => item.id === detailId)} /> : <p>{loaded ? "Bu istek açık hesabında bulunamadı." : "İstek yükleniyor…"}</p>}
+          <RouteLink className="text-button" href="/ben/batura-ilet">Bütün isteklerim</RouteLink>
+        </section>}
         <section className={`feedback-card ${phase}`}>
           <div className="feedback-intro">
             <span className="feedback-stamp">
@@ -354,7 +363,7 @@ export function FeedbackPage({ me, requireMember, notify, onSeen, startKind = "i
           <section className="panel my-requests">
             <h3>Gönderdiklerin</h3>
             {mine.map((item) => (
-              <RequestCard key={item.id} item={item} fresh={fresh.includes(item.id)} />
+              <div key={item.id}><RequestCard item={item} fresh={fresh.includes(item.id)} /><RouteLink className="catalog-inspect" href={`/ben/batura-ilet/istekler/${encodeURIComponent(item.id)}`}>Bu isteği aç →</RouteLink></div>
             ))}
           </section>
         )}

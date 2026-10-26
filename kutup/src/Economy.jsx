@@ -1,3 +1,4 @@
+import { useScreenState, useNavigation, RouteLink, Breadcrumbs } from "./Navigation.jsx";
 // Tuğla in the app: the catalogue you pick a building from, the little
 // building portraits, and the receipt that comes after every session.
 import React, { useEffect, useMemo, useState } from "react";
@@ -103,8 +104,10 @@ function WalletView({ wallet, bricks, back }) {
 export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, start = "shop", founder = false, show }) {
   const [wallet, setWallet] = useState(null),
     [imece,setImece] = useState(null),
-    [view, setView] = useState(start),
+    [view, setView] = useScreenState("catalogView", start),
     [hint, setHint] = useState(null);
+  const detailId = useNavigation()?.route.catalogModel;
+  const detail = detailId && BY_ID[detailId];
   const discovery = wallet?.discovery;
   const planHow = `Tamamlanan her ${DISCOVERY_STEP} dk için %${DISCOVERY_CHANCE*100} şans. Plan çıkmadan ${DISCOVERY_GUARANTEE} dk emekte bir rastgele eksik plan garanti; belirli bir yapı değil. 7/14/30 günlük seri ödülleri ayrıca var. Gün kaçırmak ilerlemeni silmez.`;
   const collection = view === "collection",
@@ -222,6 +225,23 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
       </button>
     );
   };
+  const inspectable = item => <div className="catalog-entry" key={item.id}>{card(item)}<RouteLink className="catalog-inspect" href={`/koy/katalog/${encodeURIComponent(item.id)}`} aria-label={`${item.name} ayrıntıları`}>Yapıyı incele →</RouteLink></div>;
+  if (detailId) {
+    const available = detail && ["open", "new"].includes(state(detail)) && detail.cost <= bricks && (!maxMinutes || minutesOf(detail) <= maxMinutes);
+    return <Modal title={detail?.name || "Yapı bulunamadı"} close={close}>
+      {detail ? <div className="catalog-detail">
+        <BuildingThumb id={detail.id} size={260} />
+        <p>{detail.blurb}</p>
+        <strong>{CLASSES[detail.class].label} · {minutesOf(detail)} dk · {detail.cost} tuğla</strong>
+        {detail.effect && <p>{detail.effect}</p>}
+        {detail.rare === true && <p>Bu yapının kalıcı planını keşfettikten sonra inşa edebilirsin.</p>}
+        {detail.id === "anitkabir" && imece ? <RouteLink className="btn primary" href="/koy/imece">Ortak şantiyeye git</RouteLink> :
+          <button type="button" className="btn primary" disabled={!available} onClick={() => { pick(detail.id); close(); }}>Bu yapıyı seç</button>}
+        {!available && <p>Plan, malzeme veya seans süresi koşulları henüz uygun değil.</p>}
+        <RouteLink className="btn outline" href="/koy/katalog">Kataloğa dön</RouteLink>
+      </div> : <p>Bu yapı katalogda bulunmuyor. <RouteLink href="/koy/katalog">Kataloğa dön</RouteLink></p>}
+    </Modal>;
+  }
   if (walletView)
     return (
       <Modal title="Tuğla kasan" subtitle="Seans bitince maaş yatar; inşaata başlarken malzeme ödenir." close={close}>
@@ -273,7 +293,7 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
           <h3>
             🗓️ Bu haftanın yapısı <small>her pazartesi yeni bir yapı</small>
           </h3>
-          <div className="catalog-grid">{weekly.map(card)}</div>
+          <div className="catalog-grid">{weekly.map(inspectable)}</div>
         </section>
       )}
       {Object.entries(CLASSES).map(([key, cls]) => (
@@ -281,14 +301,14 @@ export function CatalogModal({ bricks, selected, pick, close, maxMinutes = 0, st
           <h3>
             {cls.label} · {cls.minutes} dk <small>maaş {wageFor(cls.minutes)} 🧱</small>
           </h3>
-          <div className="catalog-grid">{shown.filter((item) => item.class === key && !item.rare && !item.since).map(card)}</div>
+          <div className="catalog-grid">{shown.filter((item) => item.class === key && !item.rare && !item.since).map(inspectable)}</div>
         </section>
       ))}
       <section className="catalog-class rare">
         <h3>
           ✨ Nadir yapılar <small>plan bulunca açılır</small>
         </h3>
-        <div className="catalog-grid">{shown.filter((item) => item.rare || (item.since && (collection || state(item) !== "new"))).map(card)}</div>
+        <div className="catalog-grid">{shown.filter((item) => item.rare || (item.since && (collection || state(item) !== "new"))).map(inspectable)}</div>
       </section>
       <p className="catalog-rules">
         İşlevsel yapılar köyünde durdukça her seansına yardım eder. Yarıda bırakırsan malzemenin yarısı hemen, %30'u enkazı bir sonraki seansın kaldırınca geri gelir; %20 gider.

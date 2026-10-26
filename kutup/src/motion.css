@@ -679,7 +679,7 @@ h3,
   background: var(--accent);
   color: var(--on-accent);
 }
-.mobile-bottom button {
+.mobile-bottom :is(button, a) {
   position: relative;
 }
 .nav-badge {

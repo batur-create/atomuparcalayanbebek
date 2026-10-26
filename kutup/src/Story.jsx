@@ -1,3 +1,6 @@
+import { createPortal } from "react-dom";
+import { Breadcrumbs, useNavigation } from "./Navigation.jsx";
+import { useDialogFocus } from "./Modal.jsx";
 // "Haftanın hikâyesi" (n28): the team's week as full-screen story cards, the
 // way phones tell stories. A tap on the right goes on, on the left goes back,
 // holding pauses, a swipe down closes. Numbers slam in, lines follow beat by
@@ -556,8 +559,12 @@ async function share(blob, name) {
 
 /** The story itself, over everything. */
 export function WeekStory({ data, me, close, week }) {
+  const navigation = useNavigation();
+  const dialog = useRef(null);
+  useDialogFocus(dialog, close);
   const [story, setStory] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, retry] = useState(0);
   const [at, setAt] = useState(0);
   const [held, setHeld] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -568,14 +575,16 @@ export function WeekStory({ data, me, close, week }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    setFailed(false);
     get(`/story${week ? `?week=${week}` : ""}`, controller.signal)
       .then((s) => {
         setStory(s);
         markStorySeen(s.week.start);
+        if (navigation && !week) navigation.go(`/haftanin-hikayesi/${s.week.start}${navigation.route.search}`, { replace: true });
       })
       .catch((e) => e?.name !== "AbortError" && setFailed(true));
     return () => controller.abort();
-  }, [week]);
+  }, [week, attempt]);
 
   const cards = useMemo(() => (story ? cardsOf(story, members) : []), [story, members]);
   const kind = cards[at];
@@ -584,8 +593,8 @@ export function WeekStory({ data, me, close, week }) {
 
   useEffect(() => {
     const key = (e) => {
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowRight" || e.key === " ") next();
+      if (e.defaultPrevented || e.target.closest?.("button, a, input, textarea, select")) return;
+      if (e.key === "ArrowRight" || e.key === " ") next();
       else if (e.key === "ArrowLeft") back();
     };
     addEventListener("keydown", key);
@@ -642,8 +651,8 @@ export function WeekStory({ data, me, close, week }) {
   const paused = held || busy;
   // The bar at the top reads on light cards too.
   const tone = kind === "village" || (kind === "clock" && story?.lark && who(story.lark.id)) ? "on-sky" : ["master", "regular", "quiet", "me"].includes(kind) ? "on-paper" : "";
-  return (
-    <div className={`week-story ${tone}`} role="dialog" aria-modal="true" aria-label="Haftanın hikâyesi">
+  return createPortal(
+    <div ref={dialog} tabIndex={-1} className={`week-story ${tone}`} role="dialog" aria-modal="true" aria-label="Haftanın hikâyesi">
       <div className="st-top">
         <div className="st-progress" aria-hidden="true">
           {cards.map((c, i) => (
@@ -659,7 +668,7 @@ export function WeekStory({ data, me, close, week }) {
           ))}
         </div>
         <div className="st-head">
-          <span className="st-team">{data.group.name}</span>
+          <Breadcrumbs className="story-breadcrumbs" />
           <button type="button" className="st-close" aria-label="Hikâyeyi kapat" onClick={close}>
             <X size={22} />
           </button>
@@ -676,7 +685,7 @@ export function WeekStory({ data, me, close, week }) {
         {!story && !failed && <div className="st-card st-night st-wait">Hikâye hazırlanıyor…</div>}
         {failed && (
           <div className="st-card st-paper">
-            <p className="st-lead">Hikâyeye ulaşılamadı. Bağlantın gelince yeniden aç.</p>
+            <p className="st-lead">Hikâyeye ulaşılamadı. Bağlantını kontrol edip yeniden deneyebilirsin.</p><button type="button" className="btn primary" onClick={() => retry(n => n + 1)}>Tekrar dene</button>
           </div>
         )}
         {story && kind && <Card key={kind} kind={kind} story={story} who={who} group={data.group} me={me} />}
@@ -697,6 +706,6 @@ export function WeekStory({ data, me, close, week }) {
           {toast}
         </div>
       )}
-    </div>
+    </div>, document.body
   );
 }

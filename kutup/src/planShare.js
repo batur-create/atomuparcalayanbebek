@@ -4,7 +4,7 @@
 // read it without opening anything.
 import { planWhen } from "../shared/plans.js";
 
-export const planLink = (plan) => `${location.origin}/?plan=${encodeURIComponent(plan.id)}`;
+export const planLink = (plan) => `${location.origin}/bulusmalar/${encodeURIComponent(plan.id)}`;
 
 export function planText(plan, owner) {
   const when = planWhen(plan.starts);

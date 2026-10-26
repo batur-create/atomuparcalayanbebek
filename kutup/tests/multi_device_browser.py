@@ -67,7 +67,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-multi-device-') as temp:
                 others=[device(n,k,cookies) for n,k in [('laptop',DESK),('tablet',PHONE),('ikinci-laptop',DESK),('eski-telefon',PHONE)]]
                 # The laptop already has its own saved choice: "screen on".
                 laptop=others[0][1];laptop.goto(base);laptop.evaluate("localStorage.setItem('kutup-build-mode','strict')")
-                phone.locator('.mobile-bottom').get_by_role('button',name='Köy',exact=True).click()
+                phone.locator('.mobile-bottom').get_by_role('link',name='Köy',exact=True).click()
                 mode=phone.get_by_role('switch',name='Ekranı kapatarak çalış',exact=True)
                 mode.check();expect(mode).to_be_checked()
                 # The switch follows the account: the laptop's own "screen on" gives way.
@@ -81,7 +81,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-multi-device-') as temp:
                 phone.evaluate(HIDE)
                 for name,(ctx,page) in zip(['laptop','tablet','ikinci-laptop','eski-telefon'],others):
                     page.goto(base);expect(page.locator('.app-shell')).to_be_visible()
-                    if name in ('tablet','eski-telefon'):page.locator('.mobile-bottom').get_by_role('button',name='Köy',exact=True).click()
+                    if name in ('tablet','eski-telefon'):page.locator('.mobile-bottom').get_by_role('link',name='Köy',exact=True).click()
                     else:page.get_by_role('button',name='Köy',exact=True).first.click()
                     card=page.locator('.focus-card')
                     expect(card).to_contain_text('ekranı kilitleyebilirsin')

@@ -196,12 +196,12 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 check('Mobile account creation', session['username']=='audit_ada')
                 check('A new profile starts with a drawn character', page.locator('.member-card .avatar svg.av-art').count()>=1)
                 # n17: four tabs, no hamburger, the home page leads with "Bugün geliyor musun?".
-                tabs = [b.inner_text().strip() for b in page.locator('.mobile-bottom button').all()]
+                tabs = [b.inner_text().strip() for b in page.locator('.mobile-bottom [data-tab]').all()]
                 check('Phone tab bar: Kütüp, Köy, Pano, Ben and no hamburger', tabs == ['Kütüp','Köy','Pano','Ben'] and page.locator('.mobile-menu').count()==0)
                 check('Home leads with the living sky and one main action', page.locator('.home-sky').count()==1
                     and page.get_by_role('button', name='Geldim', exact=True).is_visible()
                     and page.evaluate("document.querySelector('.home-status').getBoundingClientRect().top < document.querySelector('.home-people').getBoundingClientRect().top"))
-                page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Ben', exact=True).click()
                 page.locator('.me-page').wait_for()
                 check('Ben gathers profile, look, invite, Batur and account', all(page.locator('.home-door', has_text=t).count()==1 for t in ['Profilim','Görünüm','İstatistiklerim','Arkadaşını ekibe ekle','Batur’a ilet','Hesap ve cihazlar','Ekipten ayrıl']))
                 # n42: Kara'ya sor opens on the screen you are on; every answer opens on a tap.
@@ -250,7 +250,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                     and page.locator('.device-sessions', has_text='yalnız bu cihazda açık').count() == 1)
                 page.keyboard.press('Escape')
                 # Kara lives on the library roof (n06): asleep while nobody is at the library; a tap wakes it and it says something useful.
-                page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Kütüp', exact=True).click()
                 cat = page.locator('.kara-home .kara-button')
                 cat.wait_for()
                 rig = cat.locator('svg.kara')
@@ -270,12 +270,12 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.evaluate('document.documentElement.dataset.theme="teal"')
                 check('Kara\'s collar follows the theme',rig.locator('.k-collar>path').first.evaluate('(e)=>getComputedStyle(e).fill')=='rgb(2, 113, 122)')
                 page.evaluate('delete document.documentElement.dataset.theme')
-                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Köy', exact=True).click()
                 buddy = page.locator('.kara-buddy svg.kara')
                 buddy.wait_for()
                 check('Kara keeps you company beside the focus timer', buddy.get_attribute('data-pose')=='idle')
                 page.emulate_media(reduced_motion='no-preference')
-                page.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Kütüp', exact=True).click()
                 rig = page.locator('.kara-home svg.kara'); rig.wait_for()
                 page.wait_for_function("document.querySelector('.kara-home svg.kara')?.dataset.act", timeout=10000)
                 check('With motion on, Kara does small things on its own', rig.evaluate('(e)=>e.getAnimations({ subtree: true }).length')>0)
@@ -333,7 +333,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 check('Character with accessories is saved', any(m['avatar']=='k:tekir+gozluk+atki' for m in json_call(friend, '/state')['members']))
                 lone = []
                 for name in ['Köy','Pano','Ben','Kütüp']:
-                    page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
+                    page.locator('.mobile-bottom').get_by_role('link',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     lone += page.evaluate(LONE_LAST)
                 if lone: print('Heading with a lone last word:', lone, flush=True)
@@ -352,7 +352,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 check('Presence reaches a second browser through SSE', True)
                 fakes, short = [], []
                 for name in ['Kütüp','Köy','Pano','Ben']:
-                    page.locator('.mobile-bottom').get_by_role('button',name=name,exact=True).click()
+                    page.locator('.mobile-bottom').get_by_role('link',name=name,exact=True).click()
                     page.wait_for_timeout(100)
                     # let the tab's slide-in (and a screen loaded on demand) settle before measuring
                     page.evaluate('''() => new Promise((done) => {
@@ -382,7 +382,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 page.locator('.sky-live').click()
                 expect(page.locator('.filter-chip.selected', has_text='Kütüpte')).to_be_visible()
                 check('The live line on the sky shows who it is about', True)
-                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Köy', exact=True).click()
                 page.locator('.brick-chip').click()
                 expect(page.get_by_role('dialog', name='Tuğla kasan')).to_be_visible()
                 page.get_by_role('button', name='Kataloğa bak').click()
@@ -391,7 +391,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(page.locator('.catalog-hint')).to_be_visible()
                 check('The brick chip opens the wallet; a card out of reach says why', True)
                 page.keyboard.press('Escape')
-                page.locator('.mobile-bottom').get_by_role('button', name='Pano', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Pano', exact=True).click()
                 page.locator('.board .scribble').click()
                 check('The pencil on the board opens the note field', page.evaluate("!!document.activeElement?.matches('.message-form input')"))
                 page.locator('.board .private-label').click()
@@ -401,7 +401,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 check('“Sadece bizim ekip” opens the team; a person in it opens their card', True)
                 page.keyboard.press('Escape')
                 context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=base)
-                page.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Ben', exact=True).click()
                 page.locator('.home-door', has_text='Arkadaşını ekibe ekle').click()
                 page.locator('.invite-illustration > button').click()
                 expect(page.locator('.invite-illustration > button')).to_contain_text('Kopyalandı')
@@ -455,7 +455,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 expect(menu).to_have_count(0)
                 check('Look menu closes with Escape and with a tap outside', True)
                 # Ben → Görünüm: theme packages (n23) and the motion setting.
-                friend.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                friend.locator('.mobile-bottom').get_by_role('link', name='Ben', exact=True).click()
                 friend.locator('.home-door', has_text='Görünüm').click()
                 paint = '''()=>{const bg=(e)=>getComputedStyle(e).backgroundColor;
                     return [bg(document.documentElement), bg(document.querySelector('.modal')), getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()]}'''
@@ -724,7 +724,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 two.locator('[role=dialog] button[type=submit]').click()
                 expect(two.locator('.app-shell')).to_be_visible()
                 first_id = json_call(two, '/session')['memberId']
-                two.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                two.locator('.mobile-bottom').get_by_role('link', name='Ben', exact=True).click()
                 two.locator('.home-door', has_text='Hesap ekle').click()
                 expect(two.locator('.entry-sheet')).to_be_visible()
                 back = two.get_by_role('button', name='Hesabıma dön')
@@ -742,7 +742,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 second_id = json_call(two, '/session')['memberId']
                 check('A second account opens in its own team, nothing mixed', second_id != first_id
                     and json_call(two, '/session')['group']['name']=='İkinci ekip' and two.locator('.member-card').filter(has=two.get_by_text('Ada', exact=True)).count()==0)
-                two.locator('.mobile-bottom').get_by_role('button', name='Ben', exact=True).click()
+                two.locator('.mobile-bottom').get_by_role('link', name='Ben', exact=True).click()
                 rows = two.locator('.account-row')
                 expect(rows).to_have_count(2)
                 check('Hesaplarım lists both accounts with their teams, current first, 44px rows, no overflow at 375px', rows.nth(0).inner_text().startswith('Ece 2')
@@ -756,7 +756,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-browser-') as directory:
                 two.screenshot(path=str(artifacts/'n25-hesaplarim-light.jpg'), type='jpeg', quality=82)
                 rows.nth(1).click()
                 expect(two.locator('.me-card', has_text='Ece')).to_be_visible()
-                two.locator('.mobile-bottom').get_by_role('button', name='Kütüp', exact=True).click()
+                two.locator('.mobile-bottom').get_by_role('link', name='Kütüp', exact=True).click()
                 expect(two.locator('.member-card').filter(has=two.get_by_text('Ada', exact=True))).to_be_visible()
                 check('One tap switches to the other account and shows its team (Ada in Denetim tayfası)', json_call(two, '/session')['memberId']==first_id
                     and json_call(two, '/state')['group']['name']=='Denetim tayfası')

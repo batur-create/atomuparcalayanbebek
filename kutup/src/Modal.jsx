@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { Breadcrumbs } from "./Navigation.jsx";
 import { X } from "lucide-react";
 
 // Whether the last thing the person did was a tap or a key press: focus goes back
@@ -11,8 +12,7 @@ if (typeof document !== "undefined") {
   document.addEventListener("keydown", () => (lastKey = performance.now()), true);
 }
 
-export function Modal({ title, subtitle, children, close, wide = false, className = "" }) {
-  const ref = useRef(null);
+export function useDialogFocus(ref, close, { escape = true } = {}) {
   const closeRef = useRef(close);
   closeRef.current = close;
   // Whatever opened the window, read before a field inside it takes focus
@@ -22,14 +22,14 @@ export function Modal({ title, subtitle, children, close, wide = false, classNam
   useEffect(() => {
     const previous = opener.current;
     const overflow = document.body.style.overflow;
-    const backdrop = ref.current.closest(".modal-backdrop");
+    const backdrop = ref.current.closest(".modal-backdrop") || ref.current;
     const siblings = [...document.body.children].filter((el) => el !== backdrop);
     const inert = siblings.map((el) => el.inert);
     siblings.forEach((el) => { el.inert = true; });
     document.body.style.overflow = "hidden";
     if (!ref.current.contains(document.activeElement)) ref.current.focus();
     const key = (e) => {
-      if (e.key === "Escape") {
+      if (escape && e.key === "Escape") {
         e.preventDefault();
         closeRef.current();
       }
@@ -62,10 +62,16 @@ export function Modal({ title, subtitle, children, close, wide = false, classNam
       }
     };
   }, []);
+}
+
+export function Modal({ title, subtitle, children, close, wide = false, className = "" }) {
+  const ref = useRef(null);
+  useDialogFocus(ref, close);
   return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <section ref={ref} tabIndex={-1} className={`modal ${wide ? "wide" : ""} ${className}`} role="dialog" aria-modal="true" aria-label={title}>
         <button className="icon-button modal-close" aria-label="Kapat" onClick={close}><X size={21} /></button>
+        <Breadcrumbs />
         <h2>{title}</h2>
         {subtitle && <p className="modal-subtitle">{subtitle}</p>}
         {children}

@@ -1,3 +1,4 @@
+import { RouteLink, useScreenState } from "./Navigation.jsx";
 // The shared Kütüp köyü on screen: the canvas map with its building card, the
 // Köy tab panel and the home screen's "şu an" card. Loaded on demand (n29);
 // the data hook lives in villageData.js so the app shell can fetch early.
@@ -224,9 +225,9 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   const { world, sky, tint } = useVillageWorld({ village, members, me: me?.id, groupId, spots: moving?.spots });
   // The site zooms like the focus screen's: pinch, double tap or the buttons.
   const zoom = useZoom({ wheel: false });
-  const [picked, setPicked] = useState(null),
-    [full, setFull] = useState(false),
-    [listOpen, setListOpen] = useState(false),
+  const [picked, setPicked] = useScreenState("villagePicked", null),
+    [full, setFull] = useScreenState("villageFull", false),
+    [listOpen, setListOpen] = useScreenState("buildingList", false),
     [buildingPage, setBuildingPage] = useState(0),
     [, tick] = useState(0);
   const map = useRef(null);
@@ -282,6 +283,12 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
     }
   }, [showScene, outcome?.at, village]);
   const building = picked && village?.buildings.find((b) => b.id === picked);
+  useEffect(() => {
+    if (!picked || !world || !map.current) return;
+    map.current.view.select(picked);
+    const b = village?.buildings.find(x => x.id === picked);
+    if (b && b.x !== null) map.current.view.flyTo({ x: (b.x - b.y) * .866, y: (b.x + b.y) * .5, s: 14 }, 500);
+  }, [picked, !!world]);
   const owner = building && members.find((m) => m.id === building.memberId);
   // n46: on a planned village a site can be picked too.
   const site = picked && !building && village?.v2 ? village.sites.find((s) => s.focusRunId === picked) : null;
@@ -407,6 +414,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 })}
               </div>
             )}
+            {picked && village && !building && !site && <p className="village-caption" role="status">Bu yapı açık hesabının köyünde bulunamadı. <RouteLink href="/koy">Köye dön</RouteLink></p>}
             {full && <span className="village-full-title">Kütüp köyü · {count} bina</span>}
             {moving && (
               <div className="move-banner" role="status">
@@ -477,7 +485,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 : "Mahallen hazır, tabelan dikili. İnşaat modunda bir seans bitir, ilk kulüben yükselsin."}
           </p>
           {!!count && (
-            <details className="village-building-list" onToggle={(e) => setListOpen(e.currentTarget.open)}>
+            <details className="village-building-list" open={listOpen} onToggle={(e) => setListOpen(e.currentTarget.open)}>
               <summary>Binalara göz at</summary>
               {listOpen && <>
                 <label className="field-label">Bir eser seç
@@ -588,7 +596,7 @@ function MonumentSheet({ week, members, me, stages }) {
 
 // Two tiles under the map: the shared monument and the week's table; each opens its sheet.
 function KoyTiles({ week, members, me, stages }) {
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useScreenState("koyTile", null);
   const total = members.reduce((t, m) => t + (m.focusWeek || 0), 0),
     goal = week.goal;
   const ranked = members.filter((m) => m.focusWeek > 0).sort((a, b) => b.focusWeek - a.focusWeek);

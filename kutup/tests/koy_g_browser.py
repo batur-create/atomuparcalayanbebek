@@ -115,7 +115,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-koy-g-') as temp:
                     take = page.get_by_role('button', name='Teslim aldım', exact=False)
                     if not take.count(): break
                     take.first.click(); page.wait_for_timeout(300)
-                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Köy', exact=True).click()
                 expect(page.locator('.village-map-wrap canvas').first).to_be_visible(); page.wait_for_timeout(900)
                 page.locator('.village-map-wrap').screenshot(path=str(out / 'g-uye-yeni-koy.png'))
                 check('a member draws the new village without an error', not errors, str(errors[:2]))
@@ -124,7 +124,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-koy-g-') as temp:
                 # (a real module worker) and the server writes exactly that plot.
                 sent = []
                 page.on('request', lambda r: sent.append(r.post_data_json) if r.url.endswith('/api/focus') and r.method == 'POST' else None)
-                page.locator('.mobile-bottom button').first.click()
+                page.locator('.mobile-bottom [data-tab]').first.click()
                 # The card's timer keeps re-rendering the button; a plain tap event is what a finger sends.
                 start = page.locator('.focus-start'); expect(start).to_be_visible(); page.wait_for_timeout(500); start.dispatch_event('click')
                 lock = page.locator('.lock-sheet')
@@ -141,7 +141,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-koy-g-') as temp:
                 with db() as d:
                     plot = d.execute("SELECT p.plot_id FROM village_placements p JOIN members m ON p.subject_id = m.focus_run_id WHERE p.subject_type = 'site' AND m.name = 'Ada'").fetchone()
                 check('the server wrote the very plot the browser chose', plot and plot[0] == body['village']['plan']['plot']['id'], str(plot))
-                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click(); page.wait_for_timeout(900)
+                page.locator('.mobile-bottom').get_by_role('link', name='Köy', exact=True).click(); page.wait_for_timeout(900)
                 # The focus studio is animated while the session starts. Capture
                 # the viewport without scrolling the moving map into position.
                 page.screenshot(path=str(out / 'g-uye-santiye-tarayici-plani.png'))

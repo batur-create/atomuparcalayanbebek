@@ -85,7 +85,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-koy-d-') as temp:
                 plots = {s['focusRunId']: s['placement']['plotId'] for s in v['sites']}
                 check('Two simultaneous sites hold two different plots', len(set(plots.values())) == 2)
                 page.reload(); expect(page.locator('.app-shell')).to_be_visible(); settle(page)
-                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click()
+                page.locator('.mobile-bottom').get_by_role('link', name='Köy', exact=True).click()
                 canvas = page.locator('.village-map-wrap canvas').first
                 expect(canvas).to_be_visible(); page.wait_for_timeout(900)
                 check('The v2 village draws without a page error', not errors)
@@ -108,7 +108,7 @@ with tempfile.TemporaryDirectory(prefix='kutup-koy-d-') as temp:
                 ev = [b for b in v['buildings'] if b['memberId'] == ids['Ege'] and b['model'] == 'ev']
                 check('The finished building stands on its site\'s plot', len(ev) == 1 and ev[0]['placement']['plotId'] == plots[runs['Ege']])
                 page.reload(); expect(page.locator('.app-shell')).to_be_visible(); settle(page)
-                page.locator('.mobile-bottom').get_by_role('button', name='Köy', exact=True).click(); page.wait_for_timeout(900)
+                page.locator('.mobile-bottom').get_by_role('link', name='Köy', exact=True).click(); page.wait_for_timeout(900)
                 page.get_by_role('button', name='Ege mahallesi').click(); page.wait_for_timeout(900)
                 page.locator('.village-map-wrap').screenshot(path=str(artifacts / 'D-ayni-parselde-bina.png'))
                 # Can's mansion has only just started: a fenced, staked site, no building yet.

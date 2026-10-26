@@ -3352,7 +3352,7 @@ button:active {
     justify-content: space-around;
     gap: 5px;
   }
-  .mobile-bottom button {
+  .mobile-bottom :is(button, a) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3364,15 +3364,15 @@ button:active {
     color: #aaa08a;
     padding: 7px 8px;
   }
-  .mobile-bottom button span {
+  .mobile-bottom :is(button, a) span {
     font-size: 11px;
     white-space: nowrap;
   }
-  .mobile-bottom button.active {
+  .mobile-bottom :is(button, a).active {
     color: var(--accent);
     background: var(--accent-soft);
   }
-  .mobile-bottom button svg {
+  .mobile-bottom :is(button, a) svg {
     width: 19px;
     height: 19px;
   }
@@ -4357,11 +4357,11 @@ button:active {
     padding-left: 6px;
     padding-right: 6px;
   }
-  .mobile-bottom button {
+  .mobile-bottom :is(button, a) {
     min-width: 65px;
     padding: 7px;
   }
-  .mobile-bottom button span {
+  .mobile-bottom :is(button, a) span {
     font-size: 10.5px;
   }
 }
@@ -4633,13 +4633,13 @@ input.code-input {
     padding-left: 6px;
     padding-right: 6px;
   }
-  .mobile-bottom button {
+  .mobile-bottom :is(button, a) {
     flex: 1 1 0;
     min-width: 0;
     padding: 7px 2px;
     color: #847c6b;
   }
-  .mobile-bottom button span {
+  .mobile-bottom :is(button, a) span {
     font-size: 10.5px;
   }
 }

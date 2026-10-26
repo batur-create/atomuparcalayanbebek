@@ -7,8 +7,16 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    // The Worker supplies the SPA shell for known document routes and a real
+    // 404 shell for unknown ones. Missing scripts/images must remain 404.
+    "not_found_handling": "none",
+    // HTML routes need the shared route contract (404 and private-page noindex).
+    // Scripts, fonts and images stay on the asset path without Worker execution.
+    "run_worker_first": [
+      "/*", "!/assets/*", "!/icon.svg", "!/icon-*.png",
+      "!/apple-touch-icon.png", "!/badge-96.png", "!/mode.js",
+      "!/sw.js", "!/manifest.webmanifest"
+    ]
   },
   // No database_id: `wrangler deploy` creates the D1 database on first deploy
   // and `wrangler dev` creates a local one automatically.

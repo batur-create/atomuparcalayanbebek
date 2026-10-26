@@ -23,6 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
+| gezinme | Ayrı ekran URL’leri, breadcrumb, hikâye ve kaynaklı yapısal kalite checklist’i | Uygulama | 26 Eki | codex/kutup-breadcrumb-urls PR |
 | n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
 | n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
 | imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
@@ -98,6 +99,22 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | d01 | Astra denetimini inceleme ve yayın | Denetim | 14 Eki 17:00 | 84f7f0fd |
 
 ## Kayıtlar (yeniden eskiye)
+
+### gezinme · Adresler, breadcrumb ve yapısal kalite
+Uygulama · 26 Ekim 2026 · `codex/kutup-breadcrumb-urls` · göç yok
+
+**Batur’un sözleri:** “aga bizim kütüpe breadcrumbs ekle, her eleman için ayrı url.” Ardından “hikaye ekranının bile olsun” dedi; kaliteli sitelerin yapısal gerekliliklerini araştırıp Kütüp’e uygun olanları checklist ile uygulamamızı istedi.
+
+**Ne yapıldı:** Dört bölüm, pencere ve kayıt ayrıntıları ortak URL sözleşmesiyle açılır; geri/ileri, yenileme, eski bildirimler ve giriş sonrası hedef korunur. Hikâyenin haftaya özel adresi, üst sayfa bağlantıları ve klavye odağı var. Gerçek link/yeni sekme, bağlantı kopyalama, içerik atlama, güncel başlık/açıklama, özel sayfa indeksleme tercihi, anlaşılır eksik içerik ve 404; yüklenme, yerel hata sınırı/yeniden deneme, çevrimdışı/yeniden bağlantı durumları eklendi veya mevcut karşılığı doğrulandı. Liste ve kanıt `docs/yapisal-kalite/`.
+
+**Kararlar ve nedenleri:** URL ekranı/kaydı temsil eder; form alanı, ödeme, seans başlatma ve teslim kabulü URL’ye taşınmaz. Pencere açılış bağlamı gerektiğinde `kaynak` ile saklanır. Kaydırma, geç yüklenen içerik büyüdüğünde de korunur ve kullanıcı girdisi geri yüklemeyi durdurur. Eski hesap yenileme/yetki sınırları aynıdır. Yeni bağımlılık, veritabanı şeması veya oyun kuralı yok.
+
+**Sunucu ayrıntısı:** Node/Worker ortak rota manifesti kullanır. Cloudflare’ın SPA varsayılanı olmayan dosyaya 200 döndürdüğünden belge kabuğu Worker’da seçilir; `not_found_handling=none`, HTML’de gerçek 404/noindex, `/assets/` ve mevcut statik dosyalar negatif kalıplarla doğrudan varlıklarda kalır. HTML isteği D1 sorgusu yapmaz; canlı CPU ölçülmedi. Standartlar araştırması ve seçim gerekçeleri checklist’te.
+
+**Doğrulamada öğrenilen:** Plan keşfi testinin sabit nadir sayısı 26 Ekim’de havuza katılan süresi dolmuş haftalık planı saymıyordu. Test, başlangıçtaki gerçek havuzdan iki kazanımı düşürür; keşif/ekonomi kodu değişmedi. Üretim derlemesindeki geri kaydırma, sonradan büyüyen içeriğin tarayıcı kaydırma sabitlemesine karşı ayrıca doğrulandı.
+
+**Teslim sınırı:** Ayrı dal ve PR → `kutup-platform`; Kuğulu Park dalı ve orijinal işler korundu. Yalnız geçici yerel veritabanı/sentetik hesaplar. Birleştirme, canlı yayın ve gerçek veri işlemi yapılmadı. Sonuçlar: 274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme; odak/teslim 23/23, buluşma 22/22, tema 252/252. Günlükler ve gerçek yerel uygulama görselleri iş raporunda.
+
 
 ### n46 · Köy yenilemesi (A–H)
 Köy · 21 Ekim 2026 · claude/n46-a-taban → … (PR zinciri)
