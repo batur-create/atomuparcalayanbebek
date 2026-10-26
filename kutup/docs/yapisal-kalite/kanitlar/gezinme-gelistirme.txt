@@ -27,17 +27,17 @@ PASS Own request has a reloadable tracker URL
 PASS Help sections update their URLs
 PASS Individual help topics have separate URLs
 PASS Unknown routes offer a recovery link
-PASS 360px light: no page overflow
+PASS 360px light: requested mode and no page overflow
 PASS 360px light: breadcrumb targets are at least 44px
-PASS 375px light: no page overflow
+PASS 375px light: requested mode and no page overflow
 PASS 375px light: breadcrumb targets are at least 44px
-PASS 390px light: no page overflow
+PASS 390px light: requested mode and no page overflow
 PASS 390px light: breadcrumb targets are at least 44px
-PASS 360px dark: no page overflow
+PASS 360px dark: requested mode and no page overflow
 PASS 360px dark: breadcrumb targets are at least 44px
-PASS 375px dark: no page overflow
+PASS 375px dark: requested mode and no page overflow
 PASS 375px dark: breadcrumb targets are at least 44px
-PASS 390px dark: no page overflow
+PASS 390px dark: requested mode and no page overflow
 PASS 390px dark: breadcrumb targets are at least 44px
 PASS Signing in returns to the originally requested detail
 PASS Member session does not unlock the owner panel

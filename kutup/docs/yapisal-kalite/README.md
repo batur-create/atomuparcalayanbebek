@@ -2,6 +2,8 @@
 
 26 Ekim 2026 · `codex/kutup-breadcrumb-urls` → `kutup-platform` · Taban `395c9b11`.
 
+[PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74): son devir kaydı hazırlanırken taslak.
+
 Kullanıcı: “aga bizim kütüpe breadcrumbs ekle, her eleman için ayrı url.” Ardından hikâye ekranını özellikle dahil etti; kaliteli sitelerin yapısal özelliklerinin araştırılıp Kütüp’e uygun olanların checklist ile uygulanmasını istedi.
 
 Güncel ilerleme: [CHECKLIST.md](CHECKLIST.md). Yayın/birleştirme yapılmaz. Kuğulu Park’ın ayrı `codex/kugulu-park` çalışması ve orijinal çalışma ağacı korunur; bu iş güncel `kutup-platform` tabanından ayrı çalışma ağacındadır.
@@ -62,7 +64,7 @@ Geliştirme ve üretim gezinme testleri büyük ölçüde aynı davranışları 
 
 [Gündüz telefon](kanitlar/telefon-light.png) · [Koyu telefon](kanitlar/telefon-dark.png) · [Hikâye](kanitlar/hikaye-telefon.png) · [Odak](kanitlar/odak-telefon.png) · [Yapı ayrıntısı](kanitlar/katalog-detay.png) · [Masaüstü Pano](kanitlar/masaustu-pano.png). Bunlar gerçek uygulamada geçici yerel verilerle alındı. Hata sınırı denemesi ayrı bir bileşen fixture’ıdır; gerçek kullanıcı kaydı veya canlı arıza değildir.
 
-Üretim kaydırma regresyonu ayrıca geciken içerikle ölçüldü: 600 px’ten ayrılan sayfa geri dönüş ve yeniden yerleşimden sonra 600 px kaldı. Kullanıcı girişi geri yükleme gözlemcisini durdurur. Ekran görüntüleri video veya fiziksel telefon kanıtı sayılmaz.
+Üretim kaydırma regresyonu ayrıca geciken içerikle ölçüldü: 600 px’ten ayrılan sayfa geri dönüş ve yeniden yerleşimden sonra 600 px kaldı. Kullanıcı girişi geri yükleme gözlemcisini durdurur. Açık/koyu kontrolü yalnız kaydedilen tercihe bakmaz; her genişlikte gerçek `html[data-mode]` değeri de doğrulanır. Ekran görüntüleri video veya fiziksel telefon kanıtı sayılmaz.
 
 Yeniden üretme (`kutup/`):
 

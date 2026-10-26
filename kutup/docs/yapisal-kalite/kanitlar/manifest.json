@@ -18,5 +18,6 @@
   "data": "temporary local databases and synthetic accounts",
   "physicalPhoneTested": false,
   "liveCloudflareCPUMeasured": false,
-  "deployed": false
+  "deployed": false,
+  "requestedLightDarkModesAssertedInDOM": true
 }
