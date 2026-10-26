@@ -1,0 +1,157 @@
+### Lavanta (`lilac`)
+
+| Çift | Jetonlar | En az | Açık | Koyu |
+|---|---|---|---|---|
+| Yazı / kart | `ink` / `paper` | 4.5:1 | 12.96 ✔ | 13.12 ✔ |
+| Yazı / zemin | `ink` / `canvas` | 4.5:1 | 11.98 ✔ | 14.65 ✔ |
+| Soluk yazı / kart | `muted` / `paper` | 4.5:1 | 5.78 ✔ | 6.43 ✔ |
+| Soluk yazı / zemin | `muted` / `canvas` | 4.5:1 | 5.34 ✔ | 7.17 ✔ |
+| Soluk yazı / vurgu zemini | `muted` / `accent-soft` | 4.5:1 | 4.98 ✔ | 5.68 ✔ |
+| Soluk yazı / kahraman alanı | `muted` / `hero` | 4.5:1 | 4.65 ✔ | 5.77 ✔ |
+| Soluk yazı / çizgi tonu | `muted` / `border` | 4.5:1 | 4.70 ✔ | 4.74 ✔ |
+| Yazı / kahraman alanı | `ink` / `hero` | 4.5:1 | 10.43 ✔ | 11.77 ✔ |
+| Vurgu yazısı / vurgu zemini | `accent-deep` / `accent-soft` | 4.5:1 | 5.82 ✔ | 7.72 ✔ |
+| Vurgu rengi yazı / kart | `accent` / `paper` | 4.5:1 | 4.81 ✔ | 5.02 ✔ |
+| Düğme yazısı / vurgu | `on-accent` / `accent` | 4.5:1 | 4.85 ✔ | 5.78 ✔ |
+| Stüdyo yazısı / stüdyo kartı | `studio-ink` / `studio` | 4.5:1 | 10.43 ✔ | 10.43 ✔ |
+| Stüdyo ikincil / stüdyo kartı | `studio-soft` / `studio` | 4.5:1 | 7.14 ✔ | 7.14 ✔ |
+| Stüdyo soluk / stüdyo kartı | `studio-faint` / `studio` | 4.5:1 | 5.99 ✔ | 5.99 ✔ |
+| Stüdyo soluk / stüdyo düğmesi | `studio-faint` / `studio+8%` | 4.5:1 | 4.67 ✔ | 4.67 ✔ |
+| Pop üstü yazı / pop | `pop-ink` / `pop` | 4.5:1 | 11.04 ✔ | 11.04 ✔ |
+| Pop üstü ikincil / pop | `pop-ink-soft` / `pop` | 4.5:1 | 5.92 ✔ | 5.92 ✔ |
+| Uyarı yazısı / kart | `danger` / `paper` | 4.5:1 | 5.76 ✔ | 6.55 ✔ |
+| Uyarı yazısı / zemin | `danger` / `canvas` | 4.5:1 | 5.32 ✔ | 7.32 ✔ |
+| Vurgu parçası / zemin | `accent` / `canvas` | 3:1 | 4.44 ✔ | 5.61 ✔ |
+| Pop parçası / stüdyo kartı | `pop` / `studio` | 3:1 | 9.29 ✔ | 9.29 ✔ |
+
+### Lacivert (`navy`)
+
+| Çift | Jetonlar | En az | Açık | Koyu |
+|---|---|---|---|---|
+| Yazı / kart | `ink` / `paper` | 4.5:1 | 13.51 ✔ | 13.23 ✔ |
+| Yazı / zemin | `ink` / `canvas` | 4.5:1 | 12.21 ✔ | 14.87 ✔ |
+| Soluk yazı / kart | `muted` / `paper` | 4.5:1 | 5.89 ✔ | 6.57 ✔ |
+| Soluk yazı / zemin | `muted` / `canvas` | 4.5:1 | 5.32 ✔ | 7.39 ✔ |
+| Soluk yazı / vurgu zemini | `muted` / `accent-soft` | 4.5:1 | 5.05 ✔ | 5.62 ✔ |
+| Soluk yazı / kahraman alanı | `muted` / `hero` | 4.5:1 | 4.65 ✔ | 5.70 ✔ |
+| Soluk yazı / çizgi tonu | `muted` / `border` | 4.5:1 | 4.63 ✔ | 4.94 ✔ |
+| Yazı / kahraman alanı | `ink` / `hero` | 4.5:1 | 10.66 ✔ | 11.48 ✔ |
+| Vurgu yazısı / vurgu zemini | `accent-deep` / `accent-soft` | 4.5:1 | 9.75 ✔ | 9.22 ✔ |
+| Vurgu rengi yazı / kart | `accent` / `paper` | 4.5:1 | 8.12 ✔ | 6.41 ✔ |
+| Düğme yazısı / vurgu | `on-accent` / `accent` | 4.5:1 | 8.26 ✔ | 7.28 ✔ |
+| Stüdyo yazısı / stüdyo kartı | `studio-ink` / `studio` | 4.5:1 | 12.61 ✔ | 10.90 ✔ |
+| Stüdyo ikincil / stüdyo kartı | `studio-soft` / `studio` | 4.5:1 | 8.09 ✔ | 6.99 ✔ |
+| Stüdyo soluk / stüdyo kartı | `studio-faint` / `studio` | 4.5:1 | 6.80 ✔ | 5.87 ✔ |
+| Stüdyo soluk / stüdyo düğmesi | `studio-faint` / `studio+8%` | 4.5:1 | 5.32 ✔ | 4.61 ✔ |
+| Pop üstü yazı / pop | `pop-ink` / `pop` | 4.5:1 | 9.54 ✔ | 9.54 ✔ |
+| Pop üstü ikincil / pop | `pop-ink-soft` / `pop` | 4.5:1 | 5.55 ✔ | 5.55 ✔ |
+| Uyarı yazısı / kart | `danger` / `paper` | 4.5:1 | 5.71 ✔ | 6.64 ✔ |
+| Uyarı yazısı / zemin | `danger` / `canvas` | 4.5:1 | 5.16 ✔ | 7.46 ✔ |
+| Vurgu parçası / zemin | `accent` / `canvas` | 3:1 | 7.34 ✔ | 7.21 ✔ |
+| Pop parçası / stüdyo kartı | `pop` / `studio` | 3:1 | 9.23 ✔ | 7.97 ✔ |
+
+### Petrol (`teal`)
+
+| Çift | Jetonlar | En az | Açık | Koyu |
+|---|---|---|---|---|
+| Yazı / kart | `ink` / `paper` | 4.5:1 | 13.26 ✔ | 13.21 ✔ |
+| Yazı / zemin | `ink` / `canvas` | 4.5:1 | 12.04 ✔ | 14.83 ✔ |
+| Soluk yazı / kart | `muted` / `paper` | 4.5:1 | 5.98 ✔ | 6.58 ✔ |
+| Soluk yazı / zemin | `muted` / `canvas` | 4.5:1 | 5.44 ✔ | 7.39 ✔ |
+| Soluk yazı / vurgu zemini | `muted` / `accent-soft` | 4.5:1 | 5.17 ✔ | 5.55 ✔ |
+| Soluk yazı / kahraman alanı | `muted` / `hero` | 4.5:1 | 4.69 ✔ | 5.39 ✔ |
+| Soluk yazı / çizgi tonu | `muted` / `border` | 4.5:1 | 4.72 ✔ | 4.90 ✔ |
+| Yazı / kahraman alanı | `ink` / `hero` | 4.5:1 | 10.39 ✔ | 10.82 ✔ |
+| Vurgu yazısı / vurgu zemini | `accent-deep` / `accent-soft` | 4.5:1 | 7.28 ✔ | 9.20 ✔ |
+| Vurgu rengi yazı / kart | `accent` / `paper` | 4.5:1 | 5.67 ✔ | 6.62 ✔ |
+| Düğme yazısı / vurgu | `on-accent` / `accent` | 4.5:1 | 5.76 ✔ | 7.47 ✔ |
+| Stüdyo yazısı / stüdyo kartı | `studio-ink` / `studio` | 4.5:1 | 11.49 ✔ | 11.49 ✔ |
+| Stüdyo ikincil / stüdyo kartı | `studio-soft` / `studio` | 4.5:1 | 7.41 ✔ | 7.41 ✔ |
+| Stüdyo soluk / stüdyo kartı | `studio-faint` / `studio` | 4.5:1 | 5.85 ✔ | 5.85 ✔ |
+| Stüdyo soluk / stüdyo düğmesi | `studio-faint` / `studio+8%` | 4.5:1 | 4.61 ✔ | 4.61 ✔ |
+| Pop üstü yazı / pop | `pop-ink` / `pop` | 4.5:1 | 8.21 ✔ | 8.21 ✔ |
+| Pop üstü ikincil / pop | `pop-ink-soft` / `pop` | 4.5:1 | 4.80 ✔ | 4.80 ✔ |
+| Uyarı yazısı / kart | `danger` / `paper` | 4.5:1 | 5.72 ✔ | 6.59 ✔ |
+| Uyarı yazısı / zemin | `danger` / `canvas` | 4.5:1 | 5.19 ✔ | 7.40 ✔ |
+| Vurgu parçası / zemin | `accent` / `canvas` | 3:1 | 5.15 ✔ | 7.43 ✔ |
+| Pop parçası / stüdyo kartı | `pop` / `studio` | 3:1 | 7.16 ✔ | 7.16 ✔ |
+
+### Kiremit (`clay`)
+
+| Çift | Jetonlar | En az | Açık | Koyu |
+|---|---|---|---|---|
+| Yazı / kart | `ink` / `paper` | 4.5:1 | 13.37 ✔ | 13.33 ✔ |
+| Yazı / zemin | `ink` / `canvas` | 4.5:1 | 12.12 ✔ | 14.84 ✔ |
+| Soluk yazı / kart | `muted` / `paper` | 4.5:1 | 6.06 ✔ | 6.64 ✔ |
+| Soluk yazı / zemin | `muted` / `canvas` | 4.5:1 | 5.49 ✔ | 7.39 ✔ |
+| Soluk yazı / vurgu zemini | `muted` / `accent-soft` | 4.5:1 | 5.22 ✔ | 5.69 ✔ |
+| Soluk yazı / kahraman alanı | `muted` / `hero` | 4.5:1 | 4.73 ✔ | 5.66 ✔ |
+| Soluk yazı / çizgi tonu | `muted` / `border` | 4.5:1 | 4.77 ✔ | 4.95 ✔ |
+| Yazı / kahraman alanı | `ink` / `hero` | 4.5:1 | 10.44 ✔ | 11.37 ✔ |
+| Vurgu yazısı / vurgu zemini | `accent-deep` / `accent-soft` | 4.5:1 | 6.97 ✔ | 9.21 ✔ |
+| Vurgu rengi yazı / kart | `accent` / `paper` | 4.5:1 | 5.47 ✔ | 6.28 ✔ |
+| Düğme yazısı / vurgu | `on-accent` / `accent` | 4.5:1 | 5.59 ✔ | 7.07 ✔ |
+| Stüdyo yazısı / stüdyo kartı | `studio-ink` / `studio` | 4.5:1 | 12.20 ✔ | 12.20 ✔ |
+| Stüdyo ikincil / stüdyo kartı | `studio-soft` / `studio` | 4.5:1 | 7.80 ✔ | 7.80 ✔ |
+| Stüdyo soluk / stüdyo kartı | `studio-faint` / `studio` | 4.5:1 | 5.93 ✔ | 5.93 ✔ |
+| Stüdyo soluk / stüdyo düğmesi | `studio-faint` / `studio+8%` | 4.5:1 | 4.62 ✔ | 4.62 ✔ |
+| Pop üstü yazı / pop | `pop-ink` / `pop` | 4.5:1 | 9.19 ✔ | 9.19 ✔ |
+| Pop üstü ikincil / pop | `pop-ink-soft` / `pop` | 4.5:1 | 5.33 ✔ | 5.33 ✔ |
+| Uyarı yazısı / kart | `danger` / `paper` | 4.5:1 | 5.68 ✔ | 6.72 ✔ |
+| Uyarı yazısı / zemin | `danger` / `canvas` | 4.5:1 | 5.15 ✔ | 7.48 ✔ |
+| Vurgu parçası / zemin | `accent` / `canvas` | 3:1 | 4.95 ✔ | 6.99 ✔ |
+| Pop parçası / stüdyo kartı | `pop` / `studio` | 3:1 | 8.53 ✔ | 8.53 ✔ |
+
+### Gül (`pink`)
+
+| Çift | Jetonlar | En az | Açık | Koyu |
+|---|---|---|---|---|
+| Yazı / kart | `ink` / `paper` | 4.5:1 | 13.59 ✔ | 13.36 ✔ |
+| Yazı / zemin | `ink` / `canvas` | 4.5:1 | 12.41 ✔ | 14.89 ✔ |
+| Soluk yazı / kart | `muted` / `paper` | 4.5:1 | 6.04 ✔ | 6.57 ✔ |
+| Soluk yazı / zemin | `muted` / `canvas` | 4.5:1 | 5.51 ✔ | 7.32 ✔ |
+| Soluk yazı / vurgu zemini | `muted` / `accent-soft` | 4.5:1 | 5.19 ✔ | 5.74 ✔ |
+| Soluk yazı / kahraman alanı | `muted` / `hero` | 4.5:1 | 4.67 ✔ | 5.66 ✔ |
+| Soluk yazı / çizgi tonu | `muted` / `border` | 4.5:1 | 4.80 ✔ | 4.89 ✔ |
+| Yazı / kahraman alanı | `ink` / `hero` | 4.5:1 | 10.50 ✔ | 11.50 ✔ |
+| Vurgu yazısı / vurgu zemini | `accent-deep` / `accent-soft` | 4.5:1 | 7.49 ✔ | 9.25 ✔ |
+| Vurgu rengi yazı / kart | `accent` / `paper` | 4.5:1 | 5.94 ✔ | 6.14 ✔ |
+| Düğme yazısı / vurgu | `on-accent` / `accent` | 4.5:1 | 6.02 ✔ | 6.89 ✔ |
+| Stüdyo yazısı / stüdyo kartı | `studio-ink` / `studio` | 4.5:1 | 12.44 ✔ | 12.44 ✔ |
+| Stüdyo ikincil / stüdyo kartı | `studio-soft` / `studio` | 4.5:1 | 7.97 ✔ | 7.97 ✔ |
+| Stüdyo soluk / stüdyo kartı | `studio-faint` / `studio` | 4.5:1 | 5.93 ✔ | 5.93 ✔ |
+| Stüdyo soluk / stüdyo düğmesi | `studio-faint` / `studio+8%` | 4.5:1 | 4.64 ✔ | 4.64 ✔ |
+| Pop üstü yazı / pop | `pop-ink` / `pop` | 4.5:1 | 8.80 ✔ | 8.80 ✔ |
+| Pop üstü ikincil / pop | `pop-ink-soft` / `pop` | 4.5:1 | 5.12 ✔ | 5.12 ✔ |
+| Uyarı yazısı / kart | `danger` / `paper` | 4.5:1 | 5.73 ✔ | 6.73 ✔ |
+| Uyarı yazısı / zemin | `danger` / `canvas` | 4.5:1 | 5.23 ✔ | 7.50 ✔ |
+| Vurgu parçası / zemin | `accent` / `canvas` | 3:1 | 5.42 ✔ | 6.84 ✔ |
+| Pop parçası / stüdyo kartı | `pop` / `studio` | 3:1 | 8.28 ✔ | 8.28 ✔ |
+
+### Grafit (`graphite`)
+
+| Çift | Jetonlar | En az | Açık | Koyu |
+|---|---|---|---|---|
+| Yazı / kart | `ink` / `paper` | 4.5:1 | 13.77 ✔ | 13.30 ✔ |
+| Yazı / zemin | `ink` / `canvas` | 4.5:1 | 12.50 ✔ | 14.90 ✔ |
+| Soluk yazı / kart | `muted` / `paper` | 4.5:1 | 6.13 ✔ | 6.61 ✔ |
+| Soluk yazı / zemin | `muted` / `canvas` | 4.5:1 | 5.56 ✔ | 7.41 ✔ |
+| Soluk yazı / vurgu zemini | `muted` / `accent-soft` | 4.5:1 | 5.07 ✔ | 5.42 ✔ |
+| Soluk yazı / kahraman alanı | `muted` / `hero` | 4.5:1 | 4.66 ✔ | 5.58 ✔ |
+| Soluk yazı / çizgi tonu | `muted` / `border` | 4.5:1 | 4.85 ✔ | 4.89 ✔ |
+| Yazı / kahraman alanı | `ink` / `hero` | 4.5:1 | 10.47 ✔ | 11.21 ✔ |
+| Vurgu yazısı / vurgu zemini | `accent-deep` / `accent-soft` | 4.5:1 | 13.03 ✔ | 10.11 ✔ |
+| Vurgu rengi yazı / kart | `accent` / `paper` | 4.5:1 | 11.95 ✔ | 8.19 ✔ |
+| Düğme yazısı / vurgu | `on-accent` / `accent` | 4.5:1 | 12.15 ✔ | 9.17 ✔ |
+| Stüdyo yazısı / stüdyo kartı | `studio-ink` / `studio` | 4.5:1 | 14.21 ✔ | 11.28 ✔ |
+| Stüdyo ikincil / stüdyo kartı | `studio-soft` / `studio` | 4.5:1 | 9.16 ✔ | 7.27 ✔ |
+| Stüdyo soluk / stüdyo kartı | `studio-faint` / `studio` | 4.5:1 | 7.45 ✔ | 5.92 ✔ |
+| Stüdyo soluk / stüdyo düğmesi | `studio-faint` / `studio+8%` | 4.5:1 | 5.85 ✔ | 4.62 ✔ |
+| Pop üstü yazı / pop | `pop-ink` / `pop` | 4.5:1 | 6.58 ✔ | 6.58 ✔ |
+| Pop üstü ikincil / pop | `pop-ink-soft` / `pop` | 4.5:1 | 5.10 ✔ | 5.10 ✔ |
+| Uyarı yazısı / kart | `danger` / `paper` | 4.5:1 | 5.71 ✔ | 6.70 ✔ |
+| Uyarı yazısı / zemin | `danger` / `canvas` | 4.5:1 | 5.19 ✔ | 7.50 ✔ |
+| Vurgu parçası / zemin | `accent` / `canvas` | 3:1 | 10.85 ✔ | 9.17 ✔ |
+| Pop parçası / stüdyo kartı | `pop` / `studio` | 3:1 | 7.09 ✔ | 5.63 ✔ |
+
+OK: 252 pairs pass

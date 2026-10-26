@@ -149,6 +149,20 @@ export function defineSuite(target) {
       }
   });
 
+  test(`[${target}] direct screen URLs serve HTML, private screens are noindex and unknown screens return 404`, async () => {
+    for (const path of ["/ben/profil", "/koy/katalog/ev", "/haftanin-hikayesi", "/salonlar/mujgan", "/batur/ekipler"]) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 200, path);
+      assert.match(response.headers.get("content-type"), /text\/html/, path);
+      assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow", path);
+      assert.match(await response.text(), /id="root"/, path);
+    }
+    const missing = await fetch(base + "/this-screen-does-not-exist");
+    assert.equal(missing.status, 404);
+    assert.match(missing.headers.get("content-type"), /text\/html/);
+    assert.equal((await fetch(base + "/assets/not-a-real-file.js")).status, 404);
+  });
+
   test(`[${target}] authentication is required and writes need the app header`, async () => {
     assert.equal((await request("/state")).status, 401);
     const denied = await request("/groups", {

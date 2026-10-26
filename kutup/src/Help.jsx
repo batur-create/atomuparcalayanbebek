@@ -1,3 +1,4 @@
+import { useScreenState } from "./Navigation.jsx";
 // n42, Kara'ya sor: help that only shows when someone asks for it.
 //  - HelpButton: Kara's face in the top bar, on every screen. A tap opens the
 //    sheet for the screen you are on.
@@ -61,10 +62,10 @@ export function Ask({ tab, topic, label }) {
 }
 
 export function HelpSheet({ tab, topic, close, startTour, ask, news }) {
-  const [at, setAt] = useState(HELP_TABS.includes(tab) ? tab : tab === "feedback" ? "me" : "home"),
-    [open, setOpen] = useState(topic || null);
+  const [at, setAt] = useScreenState("helpAt", HELP_TABS.includes(tab) ? tab : tab === "feedback" ? "me" : "home"),
+    [open, setOpen] = useScreenState("helpTopic", topic || null);
   const list = useRef(null);
-  const section = HELP[at];
+  const section = HELP[at] || HELP.home;
   useEffect(() => {
     if (!topic) return;
     const row = list.current?.querySelector(`[data-topic="${topic}"]`);

@@ -1,0 +1,15 @@
+
+> kutup@2.0.0 test:browser:linked
+> python tests/linked_browser.py --artifacts /tmp/kutup-navigation-linked
+
+PASS Without the panel key there is no picker
+PASS The picker lists the two other accounts
+PASS All three end at the same moment
+PASS Each has its own choice
+PASS All three are one link
+PASS B paid for its own building
+PASS A beat from B keeps all three seen
+PASS Giving up ends every account
+PASS B got its bricks back
+PASS No page errors
+{"passed": 10}

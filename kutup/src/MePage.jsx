@@ -1,3 +1,4 @@
+import { useScreenState } from "./Navigation.jsx";
 // The "Ben" tab (n17): everything about me in one place, so nothing hides behind
 // a menu. Profile, look and stats; inviting a friend and writing to Batur;
 // what changed in each version (n41); account.
@@ -31,7 +32,7 @@ function Row({ icon: Icon, title, sub, onClick, href, danger, count, open }) {
 }
 
 export function MePage({ me, group, size, requests, yenilik, setModal, navigate, leave, openStory, accounts: actions }) {
-  const [stats, setStats] = useState(false);
+  const [stats, setStats] = useScreenState("stats", false);
   // n25: with more than one account on this device, they come first.
   const accounts = useAccounts(me?.id);
   const several = accounts?.accounts.length > 1;

@@ -5,6 +5,7 @@
 // room and every open phone refetches at once (n29). The sockets hibernate, so
 // a quiet room costs nothing. Clients keep polling /api/state?rev=… slowly as a
 // safety net, and at the old 5 s pace whenever the socket is down.
+import { readRoute } from "../shared/routes.js";
 import { DurableObject } from "cloudflare:workers";
 import { createApp } from "../server/app.js";
 
@@ -106,8 +107,20 @@ export default {
   },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.pathname !== "/api" && !url.pathname.startsWith("/api/"))
-      return env.ASSETS.fetch(request);
+    if (url.pathname !== "/api" && !url.pathname.startsWith("/api/")) {
+      const route = readRoute(url.href);
+      if (!route.found && /\.[^/]+$/.test(url.pathname)) return env.ASSETS.fetch(request);
+      // ASSETS normalizes /index.html to / with a redirect; ask for the root
+      // asset directly so a document route never redirects back to itself.
+      const shell = new Request(new URL("/", url), request);
+      if (!route.found) { shell.headers.delete("If-None-Match"); shell.headers.delete("If-Modified-Since"); }
+      const asset = await env.ASSETS.fetch(shell);
+      if (!asset.ok && asset.status !== 304) return asset;
+      const response = new Response(asset.body, { status: route.found ? asset.status : 404, headers: asset.headers });
+      response.headers.set("Cache-Control", "no-cache");
+      if (url.pathname !== "/") response.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return response;
+    }
     if (url.pathname === "/api/live" && env.LIVE && env.DB) {
       if (request.headers.get("upgrade")?.toLowerCase() !== "websocket")
         return new Response(JSON.stringify({ error: "WebSocket bekleniyor." }), { status: 426, headers: { "Content-Type": "application/json" } });

@@ -1,3 +1,6 @@
+import { createPortal } from "react-dom";
+import { Breadcrumbs } from "./Navigation.jsx";
+import { useDialogFocus } from "./Modal.jsx";
 // Odak ekranı: the phone (or laptop) becomes a desk timer. Full screen, dark and
 // quiet: a big countdown or count-up (or the time) in portrait, a flip clock in
 // landscape, the construction site hidden, beside the clock or filling the
@@ -133,19 +136,17 @@ export function FocusScreen({ me, members = [], now, run, outcome, close,onVilla
     document.addEventListener("keydown", onKey);
     // Nudge everything a few pixels every minute so an OLED screen keeps no ghost.
     const nudge = setInterval(() => setDrift([Math.round(Math.random() * 12 - 6), Math.round(Math.random() * 12 - 6)]), 60000);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       clearTimeout(hide.current);
       clearInterval(nudge);
       orient.removeEventListener?.("change", onOrient);
       document.removeEventListener("fullscreenchange", onFull);
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = overflow;
       // A build-mode session keeps its own hold on the screen.
       if (!(me?.focusStrict && !me?.focusRelaxed && me.focusEnd > Date.now())) releaseScreen();
     };
   }, []);
+  useDialogFocus(screen, close, { escape: false });
   const exit = () => {
     leaveFullscreen();
     close();
@@ -211,11 +212,14 @@ export function FocusScreen({ me, members = [], now, run, outcome, close,onVilla
   }, [pref.scene, showScene, flipUnits, parts.join(':').length]);
 
 
-  return (
+  return createPortal(
     <div
       ref={screen}
       className={`focus-screen ${landscape ? "landscape" : "portrait"} scene-${showScene ? pref.scene : "hidden"} ${controls ? "show-controls" : ""}`}
       role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      onFocusCapture={wake}
       aria-label="Odak ekranı"
       onPointerDown={wake}
     >
@@ -249,6 +253,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close,onVilla
       </div>
 
       <div className="fs-controls" aria-hidden={!controls}>
+        <Breadcrumbs className="focus-breadcrumbs" />
         <div className="fs-bar">
           <button type="button" className="fs-village btn outline" onClick={()=>{leaveFullscreen();(onVillage||close)();}}><MapPinned size={17}/>Köye bak · seans sürsün</button>
           <button className="fs-icon" aria-label="Odak ekranını kapat" onClick={exit}>
@@ -318,6 +323,6 @@ export function FocusScreen({ me, members = [], now, run, outcome, close,onVilla
           <SoundPanel dark />
         </div>
       )}
-    </div>
+    </div>, document.body
   );
 }

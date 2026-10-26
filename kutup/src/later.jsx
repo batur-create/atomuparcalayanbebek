@@ -4,18 +4,23 @@
 // read as before. Once the app has painted and the phone is idle, they are
 // fetched quietly in the background, so a tab switch later is as instant as
 // before (not the owner panel).
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { Loading } from "./Illustrations.jsx";
+import { ScreenBoundary } from "./ScreenBoundary.jsx";
 
 const loaders = [];
 function later(load, name, fallback = null, { prefetch = true } = {}) {
   if (prefetch) loaders.push(load);
-  const Screen = lazy(() => load().then((m) => ({ default: m[name] })));
-  const Later = (props) => (
-    <Suspense fallback={fallback}>
-      <Screen {...props} />
-    </Suspense>
-  );
+  const createScreen = () => lazy(() => load().then((m) => ({ default: m[name] })));
+  const First = createScreen();
+  const Later = (props) => {
+    const [Screen, setScreen] = useState(() => First);
+    return <ScreenBoundary retry={() => setScreen(() => createScreen())}>
+      <Suspense fallback={fallback || <Loading text="Ekran açılıyor…" />}>
+        <Screen {...props} />
+      </Suspense>
+    </ScreenBoundary>;
+  };
   Later.displayName = name;
   return Later;
 }

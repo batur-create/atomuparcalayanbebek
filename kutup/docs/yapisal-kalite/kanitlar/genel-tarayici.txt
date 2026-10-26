@@ -1,0 +1,106 @@
+
+> kutup@2.0.0 test:browser
+> python tests/browser_smoke.py --artifacts /tmp/kutup-navigation-general
+
+PASS Welcome: the living sky with Kara and two ways in
+PASS Welcome: no horizontal overflow at 375 and 360
+PASS Home screen icons: 180px opaque square for iPhone, maskable mark inside the safe circle, status-bar badge (d26)
+PASS Modal traps keyboard focus
+PASS Modal restores focus and background
+PASS Founding: the team sign goes up by the path
+PASS Mobile account creation
+PASS A new profile starts with a drawn character
+PASS Phone tab bar: Kütüp, Köy, Pano, Ben and no hamburger
+PASS Home leads with the living sky and one main action
+PASS Ben gathers profile, look, invite, Batur and account
+PASS Kara'ya sor: Ben first, Köy on a tap, answers from the rules
+PASS A new password asks whether the other devices go too; "no" keeps them (anket)
+PASS Changing the account asks for the current password
+PASS Open devices are listed by name (anket)
+PASS Hesap ve cihazlar signs the other devices out; this one stays (d27)
+PASS Kara is a vector rig without bitmap assets
+PASS Kara sleeps while nobody is at the library
+PASS A tap wakes Kara and it says something
+PASS Holding Kara makes it purr
+PASS Reduced motion keeps Kara still
+PASS Kara's collar follows the theme
+PASS Kara keeps you company beside the focus timer
+PASS With motion on, Kara does small things on its own
+PASS Kara's eyes follow the pointer
+PASS Kara v2 has no endless animation
+PASS Seven quick taps: Kara swallows a star
+PASS The "ders arası" sticker makes Kara say its motto
+PASS Instant opening: the last state shows without the server
+PASS Invite: names and faces, no presence (API and screen)
+PASS Avatar picker: 44px touch targets, no overflow at 375px
+PASS Character with accessories is saved
+PASS Headings on the four tabs never leave a word or emoji alone on the last line (d25)
+PASS A window title keeps its emoji next to a word: “Yolun kütübe mi düşüyor? 🛵” (d25)
+PASS Presence reaches a second browser through SSE
+PASS 375px: Kütüp has no horizontal overflow
+PASS 375px: Köy has no horizontal overflow
+PASS 375px: Pano has no horizontal overflow
+PASS 375px: Ben has no horizontal overflow
+PASS No fake tappables on the four tabs (pointer, hover, arrow, idle button)
+PASS Small controls on the four tabs: 40px+ to the finger, look unchanged (d24)
+PASS Top-left page name goes home, and back to the top
+PASS The live line on the sky shows who it is about
+PASS The brick chip opens the wallet; a card out of reach says why
+PASS The pencil on the board opens the note field
+PASS “Sadece bizim ekip” opens the team; a person in it opens their card
+PASS The “+” in the invite drawing copies the link
+PASS Dark mode keeps the drawn characters
+PASS Dark mode darkens the page, the cards and the status bar
+PASS Home keeps its own look: team card, look button, filter pill, cards in a row line up
+PASS Top-bar look button: 44px to the finger, no overflow at 375px
+PASS Look menu: three choices, 44px rows, inside the screen, current one ticked
+PASS Picking Açık turns the page light, remembers it and returns focus
+PASS Look menu closes with Escape and with a tap outside
+PASS A theme changes the page and the cards, not only the accent
+PASS Look: Lacivert theme and Kıpırtısız motion are picked and remembered
+PASS Team card shows the full team name and everyone
+PASS Batur’a ilet: the envelope sits beside the words, not on them (d24)
+PASS Feedback is sent and tracked
+PASS Replying quotes the message
+PASS Double tap leaves a heart
+PASS Village recovers after a failed fetch
+PASS Focus creates a building and keyboard list opens its card
+PASS With motion on, the village map keeps moving
+PASS Kıpırtısız keeps the village map still
+Sound levels (RMS): {"Yağmur": 0.0323, "Kütüphane": 0.0375, "Şömine": 0.0394, "Orman": 0.0194, "Dalgalar": 0.0368, "Kafe": 0.0372, "Odak gürültüsü": 0.0425, "Kara delik": 0.054}
+PASS Every ambient sound plays on its own (n24)
+PASS The week's story: tap on, tap back, hold pauses, Escape closes, 44px close, no overflow (n28)
+PASS Badge case: all 16 badges, no overflow at 375 px (n14)
+PASS Yenilikler: every version, one marked new, folded ones open on tap, dot gone after reading (n41)
+PASS Desk map: 425 seats in the overview, no premature tiny controls
+PASS Desk map: tapping the overview opens individual seats
+PASS Desk map: unknown numbers do not select or save a seat
+PASS Desk map: find the last seat, all 425 touch-sized controls
+PASS Desk map: directional keyboard navigation reaches the correct neighbours
+PASS Desk map: keyboard focus stays trapped with roving seat controls
+PASS Desk map: selecting a seat saves existing presence fields without overflow
+PASS Desk map: saved people appear in overview
+PASS Desk map: repeated search recenters after dragging
+PASS Desk map: zoom stays bounded
+PASS Desk map: Mujgan keeps its representative 36 seats
+PASS Desk map: desktop overview fits the whole room in both axes
+PASS Desk map: desktop and dark mode stay within the modal
+PASS Desk map: closing and reopening preserves saved presence
+PASS Owner desk on a phone: Yenile and the bell share one full row, stages on one sliding line (d24)
+PASS Owner desk: Kara delik never sits on the empty note (d24)
+PASS Owner recovery uses an accessible modal
+PASS Password recovery retains the existing profile
+PASS Hesabıma dön: 44px, inside the screen, over nothing else
+PASS Hesap ekle opens the welcome over the open account; Hesabıma dön goes back
+PASS A second account opens in its own team, nothing mixed
+PASS Hesaplarım lists both accounts with their teams, current first, 44px rows, no overflow at 375px
+PASS Hesaplarım: everything that looks tappable does something
+PASS One tap switches to the other account and shows its team (Ada in Denetim tayfası)
+PASS A notification for the other account (?as=) opens that account
+PASS Desktop: the side bar profile row opens the same switcher
+PASS Hesaplarım in dark mode: dark cards, no overflow
+PASS All twelve construction stages render
+PASS Reduced-motion collapse immediately shows rubble
+PASS A 1,000-building village paints in a real browser
+PASS No browser JavaScript errors
+{"buildings": 1000, "districts": 122, "worldMs": 125.59999999962747, "items": 4939, "nearbyItems": 149}

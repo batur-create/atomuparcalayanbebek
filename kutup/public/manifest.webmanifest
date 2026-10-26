@@ -33,19 +33,19 @@
     {
       "name": "Ben geldim!",
       "short_name": "Geldim",
-      "url": "/?action=here",
+      "url": "/durum",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Odak odası",
       "short_name": "Odak",
-      "url": "/?tab=focus",
+      "url": "/koy",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Bizim pano",
       "short_name": "Pano",
-      "url": "/?tab=board",
+      "url": "/pano",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]

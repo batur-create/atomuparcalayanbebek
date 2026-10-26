@@ -25,6 +25,7 @@
     "test:browser:blueprints": "python tests/blueprints_browser.py",
     "test:browser:teams": "python tests/teams_browser.py",
     "test:browser:devices": "python tests/multi_device_browser.py",
+    "test:browser:routes": "python tests/routes_browser.py",
     "test:browser:linked": "python tests/linked_browser.py"
   },
   "dependencies": {

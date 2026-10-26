@@ -1,3 +1,4 @@
+import { useScreenState } from "./Navigation.jsx";
 // The focus card of the Köy tab (timer, build or free mode, the team rhythm)
 // and the coffee card. Split out of App.jsx (n29).
 import React, { useEffect, useRef, useState } from "react";
@@ -50,8 +51,8 @@ export function FocusCard({ me, members, now, requireMember, mutate, compact, on
     [fidan, setFidan] = useState(() => storage.get("kutup-fidan-on") !== "0"),
     [relaxed, setRelaxed] = useState(() => relaxedChoice(me)),
     [model, setModel] = useState(pickedModel),
-    [picking, setPicking] = useState(false),
-    [mixer, setMixer] = useState(false),
+    [picking, setPicking] = useScreenState("picking", false),
+    [mixer, setMixer] = useScreenState("mixer", false),
     [invite, setInvite] = useState(() => storage.get("kutup-invite") === "1"),
     [lock, setLock] = useState(false),
     [floating, setFloating] = useState(() => !!floatWindow());

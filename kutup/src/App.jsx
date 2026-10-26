@@ -1,3 +1,5 @@
+import { NavigationProvider, Breadcrumbs, ConnectionStatus, RouteLink, useNavigation, useScreenState } from "./Navigation.jsx";
+import { TAB_PATHS } from "./routes.js";
 import {useBlueprintRewards} from "./useBlueprintRewards.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, LazyMotion, MotionConfig, m as M } from "motion/react";
@@ -53,6 +55,7 @@ import { shouting, teaCall } from "../shared/pano.js";
 import { useAchievementWatch } from "./achievementWatch.js";
 import { CoffeeCard, FocusCard, onComputer, pickedModel } from "./Focus.jsx";
 import { Board } from "./Board.jsx";
+import { Modal } from "./Modal.jsx";
 import { CoffeeModal, InviteModal, MemberModal, PlanCardModal, PlanModal, PresenceModal } from "./Modals.jsx";
 import { SignIn, ProfileModal, LookModal, AccountModal, ModeButton, leaveTeam } from "./Account.jsx";
 import { Entry } from "./Entry.jsx";
@@ -78,7 +81,6 @@ const nav = [
   { id: "board", label: "Pano", icon: MessageCircle },
   { id: "me", label: "Ben", icon: CircleUserRound },
 ];
-const TABS = ["home", "focus", "board", "me", "feedback"];
 // n42: what each page is for lives in Kara'ya sor now (src/helpTopics.js); the
 // heading keeps its name, and a line under it only where it is an instruction.
 const PAGE = {
@@ -88,9 +90,7 @@ const PAGE = {
   feedback: ["BU PLATFORM BİRAZ DA SENİN", "Söz sende.", "Fikirler, takılan şeyler, güzel iki kelime. Hepsi Batur’a."],
 };
 const startParams = new URLSearchParams(location.search);
-// n34: a shared plan link (/?plan=…) opens that plan's card once someone is
-// signed in, even if signing in comes first (the app may mount afresh for it).
-let sharedPlan = startParams.get("plan");
+// Legacy notification parameters are consumed once; routes remain in the address.
 let introPlayed = false;
 // n42: someone who just made or joined a team on this device is offered the tour.
 let joinedNow = false;
@@ -117,24 +117,25 @@ function Icon({ name: Component, ...props }) {
 export default function App() {
   const [mount, setMount] = useState({ key: 0, initial: null });
   const restart = (initial) => setMount((x) => ({ key: x.key + 1, initial }));
-  return <KutupApp key={mount.key} initial={mount.initial} restart={restart} />;
+  return <NavigationProvider><KutupApp key={mount.key} initial={mount.initial} restart={restart} /></NavigationProvider>;
 }
 function KutupApp({ initial, restart }) {
+  const navigation = useNavigation();
+  const route = navigation.route;
+  const pendingRoute = useRef(route.found && route.path !== "/" && route.path !== "/giris" && !route.invite && !route.ownerPage ? route.path + route.search : null);
   // n29: open at once with the last state this device saw; the fresh one follows.
   const [cached] = useState(() =>
     // Not for the owner panel, an invitation, or a notification meant for another account (?as=).
-    initial || location.pathname === "/batur" || location.pathname.startsWith("/join/") || startParams.has("as") ? null : readLast(),
+    initial || route.ownerPage || location.pathname.startsWith("/join/") || startParams.has("as") ? null : readLast(),
   );
   const [session, setSession] = useState(cached?.session ?? null),
     [data, setData] = useState(cached?.data ?? EMPTY),
     [loading, setLoading] = useState(!cached);
   const sessionEpoch = useRef(0);
   const updateData = (incoming) => setData((previous) => mergeState(previous, incoming));
-  // The address (a notification's ?tab=…) only counts on the first opening.
-  const [tab, setTab] = useState(
-      initial ? initial.tab || "home" : TABS.includes(startParams.get("tab")) ? startParams.get("tab") : "home",
-    ),
-    [modal, setModal] = useState(null),
+  // The URL is the source of truth, including browser back/forward.
+  const [tab, setTab] = useScreenState("tab", "home"),
+    [modal, setModal] = useScreenState("modal", null),
     [imeceSignal,setImeceSignal] = useState(0),
     [toast, setToast] = useState(""),
     [connected, setConnected] = useState(true);
@@ -153,7 +154,7 @@ function KutupApp({ initial, restart }) {
     [notificationWorking, setNotificationWorking] = useState(false),
     [now, setNow] = useState(Date.now());
   const notificationBusy = useRef(false);
-  const ownerPage = location.pathname === "/batur";
+  const ownerPage = route.ownerPage;
   const requestUpdates = useRequestUpdates(session, tab);
   const yenilik = useYenilik();
   // The opening sequence plays once per visit, never when switching tabs.
@@ -223,13 +224,13 @@ function KutupApp({ initial, restart }) {
   const [receipt, setReceipt] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
   const [catalogSignal,setCatalogSignal]=useState(0);
-  const [focusScreen, setFocusScreen] = useState(false);
+  const [focusScreen, setFocusScreen] = useScreenState("focusScreen", false);
   // n28: the week's story, opened from the home card, the Ben tab or Sunday's notification.
-  const [story, setStory] = useState(false);
+  const [story, setStory] = useScreenState("story", false);
   // An invite notification opens "/?join=<friend>": offer to join their session.
   const [joinAsk, setJoinAsk] = useState(() => (initial ? null : startParams.get("join")));
   // "Hesap ekle": the welcome screen over the open account, which stays signed in.
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useScreenState("adding", false);
   const togetherRef = useRef(false),
     seenSent = useRef(0),
     friendsBefore = useRef(new Map());
@@ -287,7 +288,7 @@ function KutupApp({ initial, restart }) {
   // saved on this device opens if there is one, otherwise the device is signed out.
   const ended = (message, next = "Bu hesabın oturumu kapandı; cihazdaki diğer hesabın açıldı.") =>
     get("/session")
-      .then((d) => restart({ data: d, tab: "home", message: next }))
+      .then((d) => { navigation.go("/", { replace: true }); restart({ data: d, tab: "home", message: next }); })
       .catch(() => signedOut(message));
   const switchAccount = async (account) => {
     // n50: a link is kept alive by whichever of its accounts is open here.
@@ -295,6 +296,7 @@ function KutupApp({ initial, restart }) {
     if (watching && !linkedAccounts().some((a) => a.id === account.id && a.focusLink === me.focusLink) && !confirm(`${account.name} bağlı seansta değil. Ona geçersen bağlı şantiyelerin takibi durur ve binalar çatlayabilir. Yine de geçilsin mi?`)) return;
     try {
       const d = await api("/accounts/switch", { memberId: account.id });
+      navigation.go(TAB_PATHS[tab], { replace: true });
       restart({ data: d, tab, message: `Şimdi bu hesaptasın: ${account.name} · ${account.team}` });
     } catch (e) {
       notify(e.status === 403 ? "Bu hesabın oturumu kapanmış. “Hesap ekle” ile yeniden gir." : e.message);
@@ -354,7 +356,6 @@ function KutupApp({ initial, restart }) {
         if (initial?.message) notify(initial.message);
         else if (!initial && startParams.get("action") === "here") setModal("presence");
         if (!initial && startParams.has("story")) setStory(true);
-        openSharedPlan(d);
       })
       .catch((e) => {
         if (e.status === 401 && cached) signedOut();
@@ -365,8 +366,10 @@ function KutupApp({ initial, restart }) {
       })
       .finally(() => {
         setLoading(false);
-        if (!initial && (startParams.has("tab") || startParams.has("action") || startParams.has("as") || startParams.has("story") || startParams.has("plan")))
-          history.replaceState({}, "", location.pathname);
+        if (startParams.has("as")) {
+          const q = new URLSearchParams(location.search); q.delete("as");
+          navigation.go(location.pathname + (q.size ? `?${q}` : ""), { replace: true });
+        }
       });
     if ("serviceWorker" in navigator)
       navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -378,7 +381,7 @@ function KutupApp({ initial, restart }) {
         .catch((e) => {
           notify(e.message);
           setInvite("");
-          history.replaceState({}, "", "/");
+          navigation.go("/", { replace: true });
         });
     return () => clearTimeout(toastTimer.current);
   }, []);
@@ -1023,7 +1026,7 @@ function KutupApp({ initial, restart }) {
     return () => window.removeEventListener("kutup:ask", ask);
   }, []);
   // n42, Kara'ya sor: any screen opens help with openHelp({ tab, topic }).
-  const [help, setHelp] = useState(null),
+  const [help, setHelp] = useScreenState("help", null),
     [tour, setTour] = useState(null);
   const tabRef = useRef(tab);
   tabRef.current = tab;
@@ -1050,10 +1053,10 @@ function KutupApp({ initial, restart }) {
   };
   // A plan notification ("?tab=plans") lands on the plans part of the home page.
   useEffect(() => {
-    if (initial || startParams.get("tab") !== "plans" || !session) return;
+    if (route.section !== "plans" || !session) return;
     const timer = setTimeout(() => document.getElementById("plans")?.scrollIntoView({ behavior: "smooth", block: "center" }), 700);
     return () => clearTimeout(timer);
-  }, [!!session]);
+  }, [!!session, route.section]);
   const dark = darkAt(mode, now);
   // The clock re-draws the whole app, so it ticks every second only while a
   // second can show (a running timer, the village tab, the focus screen) and
@@ -1118,7 +1121,7 @@ function KutupApp({ initial, restart }) {
     if (!welcome.startsWith("Tekrar")) joinedNow = true;
     // Added next to the open account: start afresh in the new one.
     if (session) {
-      history.replaceState({}, "", "/");
+      navigation.go("/", { replace: true });
       return restart({ data: d, tab: "home", message: welcome });
     }
     sessionEpoch.current++;
@@ -1133,15 +1136,10 @@ function KutupApp({ initial, restart }) {
     setModal(null);
     setInvite("");
     setInviteInfo(null);
-    history.replaceState({}, "", "/");
+    navigation.go(pendingRoute.current || "/", { replace: true });
+    pendingRoute.current = null;
     notify(welcome);
-    openSharedPlan(d);
   };
-  function openSharedPlan(d) {
-    if (!sharedPlan || !d?.memberId) return;
-    setModal({ plan: sharedPlan });
-    sharedPlan = null;
-  }
   useEffect(()=>{
     const show=e=>setModal(e.detail?.coming?"coming":"presence");
     window.addEventListener("kutup:presence",show);return()=>window.removeEventListener("kutup:presence",show);
@@ -1303,6 +1301,7 @@ function KutupApp({ initial, restart }) {
           : ""
       }`}
     >
+      <a className="skip-link" href="#ana-icerik" onClick={e => { e.preventDefault(); document.getElementById("ana-icerik")?.focus(); }}>Ana içeriğe geç</a>
       <aside className="sidebar">
         <button
           className="brand"
@@ -1323,13 +1322,14 @@ function KutupApp({ initial, restart }) {
           </div>
         </M.button>
         <span className="nav-caption">BİZİM ALAN</span>
-        <nav>
+        <nav aria-label="Ana bölümler">
           {nav.map((item) => (
-            <button
+            <RouteLink
               key={item.id}
               data-tab={item.id}
               className={`nav-item ${tab === item.id || (item.id === "me" && tab === "feedback") ? "active" : ""}`}
-              onClick={() => navigate(item.id)}
+              aria-current={tab === item.id || (item.id === "me" && tab === "feedback") ? "page" : undefined}
+              href={TAB_PATHS[item.id]}
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
@@ -1339,7 +1339,7 @@ function KutupApp({ initial, restart }) {
               {item.id === "focus" && focusMembers.length > 0 && (
                 <span className="nav-dot" />
               )}
-            </button>
+            </RouteLink>
           ))}
         </nav>
         <div className="sidebar-bottom">
@@ -1374,7 +1374,7 @@ function KutupApp({ initial, restart }) {
           </button>
         </div>
       </aside>
-      <main className="main-shell">
+      <main className="main-shell" id="ana-icerik" tabIndex={-1} data-route-main="">
         <header className="topbar">
           <div className="topbar-left">
             {/* n27: the page's name with the mark; a tap goes back to the top,
@@ -1411,16 +1411,14 @@ function KutupApp({ initial, restart }) {
             </button>
           </div>
         </header>
-        {session && !connected && (
-          <div className="connection-banner">
-            <LoaderCircle size={14} className="spin" /> Canlı bağlantı
-            yenileniyor. Durumlar yeniden eşitlenecek.
-          </div>
-        )}
+        {session && <ConnectionStatus connected={connected} retry={async () => { const fresh = await get("/state"); updateData(fresh); setConnected(true); }} />}
         <div className="page-content">
-          <AnimatePresence mode="wait" initial={false} custom={slide.current}>
+          <Breadcrumbs />
+          {!route.found && <section className="route-not-found"><h1>Bu sayfa bulunamadı.</h1><p>Bağlantı değişmiş veya eksik olabilir.</p><RouteLink className="btn primary" href="/">Kütüp’e dön</RouteLink></section>}
+          {route.found && <AnimatePresence mode="wait" initial={false} custom={slide.current}>
           <M.div
             className="tab-stage"
+            data-route-tab={tab}
             key={tab}
             custom={slide.current}
             variants={{
@@ -1581,7 +1579,7 @@ function KutupApp({ initial, restart }) {
             />
           )}
           </M.div>
-          </AnimatePresence>
+          </AnimatePresence>}
           <footer className="page-footer">
             <span>
               Biraz çalışma, biraz muhabbet. <span data-door="">kütüp ✳</span>
@@ -1594,12 +1592,12 @@ function KutupApp({ initial, restart }) {
         {nav.map((item) => {
           const active = tab === item.id || (item.id === "me" && tab === "feedback");
           return (
-            <button
+            <RouteLink
               key={item.id}
               data-tab={item.id}
               className={active ? "active" : ""}
               aria-current={active ? "page" : undefined}
-              onClick={() => navigate(item.id)}
+              href={TAB_PATHS[item.id]}
             >
               {active && <M.span layoutId="tab-pill" className="tab-pill" transition={{ type: "spring", stiffness: 420, damping: 32 }} />}
               <M.span key={active ? "on" : "off"} className="tab-icon" initial={active ? { y: -4, scale: 1.12 } : false} animate={{ y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 380, damping: 14 }}>
@@ -1608,7 +1606,7 @@ function KutupApp({ initial, restart }) {
               <span>{item.label}</span>
               {item.id === "board" && unread > 0 && <i className="nav-badge" aria-hidden="true" />}
               {item.id === "me" && (requestUpdates.count > 0 || (session && yenilik.yeni)) && <i className="nav-badge" aria-hidden="true" />}
-            </button>
+            </RouteLink>
           );
         })}
       </nav>
@@ -1681,7 +1679,7 @@ function KutupApp({ initial, restart }) {
       {modal === "coffee" && (
         <CoffeeModal close={() => setModal(null)} mutate={mutate} />
       )}
-      {modal?.member && (
+      {modal?.member && data.members.some(m => m.id === modal.member.id) && (
         <MemberModal
           member={
             data.members.find((m) => m.id === modal.member.id) || modal.member
@@ -1691,6 +1689,7 @@ function KutupApp({ initial, restart }) {
           mutate={mutate}
         />
       )}
+      {modal?.member && !data.members.some(m => m.id === modal.member.id) && <Modal title="Kişi bulunamadı" close={() => setModal(null)}><p>Bu kişi açık hesabının ekibinde bulunmuyor.</p></Modal>}
       {modal?.map && (
         <DeskMap
           data={data}
@@ -1715,7 +1714,7 @@ function KutupApp({ initial, restart }) {
           }}
         />
       )}
-      {story && session && <WeekStory data={data} me={me} close={() => setStory(false)} />}
+      {story && session && <WeekStory data={data} me={me} week={route.storyWeek} close={() => setStory(false)} />}
       {focusScreen && <FocusScreen me={me} members={data.members} now={now} run={buildRun} outcome={buildOutcome} close={() => setFocusScreen(false)} onVillage={()=>{setFocusScreen(false);navigate("focus");setTimeout(()=>document.querySelector(".village-map-wrap")?.scrollIntoView({behavior:"smooth",block:"center"}),150);}} />}
       {crack && <RescueCard crack={crack} rescue={rescue} letGo={letGo} />}
       {!crack && asking !== 0 && <HereCard asking={asking} now={now} strict={watchStrict} here={() => hereRef.current()} />}
@@ -1728,7 +1727,7 @@ function KutupApp({ initial, restart }) {
         onImece={()=>{setJoinAsk(null);navigate("focus");setImeceSignal(n=>n+1);}}
         close={() => {
           setJoinAsk(null);
-          history.replaceState(null, "", location.pathname);
+          navigation.go(location.pathname, { replace: true });
         }}
       />
       <CallOverlay data={data} me={me} reply={(call, text) => mutate("/messages", { text, replyTo: call.id }, "Cevabın gitti ☕")} seen={(at) => api("/seen", { at }).catch(() => {})} />

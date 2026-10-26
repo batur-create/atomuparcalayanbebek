@@ -1,3 +1,4 @@
+import { useScreenState } from "./Navigation.jsx";
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {deviceId} from "./device.js";
 import { ArrowRight, Check, Flag, Hammer, Users } from "lucide-react";
@@ -44,7 +45,7 @@ function ContributionCard({person,current,self}){
 }
 
 export function ImeceEntry({me,now,mutate,signal=0,consumeSignal}){
-  const [result,setResult]=useState(null),[error,setError]=useState(""),[open,setOpen]=useState(()=>signal>0||new URLSearchParams(location.search).has("imece"));
+  const [result,setResult]=useState(null),[error,setError]=useState(""),[open,setOpen]=useScreenState("imeceOpen",()=>signal>0||new URLSearchParams(location.search).has("imece"));
   const [busy,setBusy]=useState(false),[duration,setDuration]=useState(25),[relaxed,setRelaxed]=useState(true),[intro,setIntro]=useState(true);
   const [replay,setReplay]=useState(null);
   const replayDone=useCallback(()=>setReplay(r=>r?{...r,done:true}:r),[]);

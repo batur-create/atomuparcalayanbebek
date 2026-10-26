@@ -1,3 +1,4 @@
+import { useScreenState } from "./Navigation.jsx";
 // Masa haritası (n30): "Kim nerede?" at its most concrete. A bird's-eye sketch
 // of each reading room with friends on their chairs; tap a free chair and
 // "Geldim" is said with that desk. The plans live in shared/rooms.js.
@@ -62,7 +63,7 @@ function Chip({ member, me, line, openMember }) {
 
 export function DeskMap({ data, me, start, close, mutate, requireMember, openMember }) {
   const members = data.members;
-  const [name, setName] = useState(() => {
+  const [name, setName] = useScreenState("room", () => {
     if (roomOf(start)) return start;
     if (me && roomOf(me.location) && (me.status === "here" || me.status === "break")) return me.location;
     const busiest = [...ROOMS].sort((a, b) => headcount(members, b) - headcount(members, a))[0];
@@ -70,7 +71,7 @@ export function DeskMap({ data, me, start, close, mutate, requireMember, openMem
   });
   const [picked, setPicked] = useState(null),
     [busy, setBusy] = useState(false);
-  const room = roomOf(name);
+  const room = roomOf(name) || ROOMS[0];
   const { desks, loose } = useMemo(() => seating(members, room), [members, room]);
   const away = useMemo(() => elsewhere(members), [members]);
   const inside = me && (me.status === "here" || me.status === "break");

@@ -48,8 +48,11 @@ with tempfile.TemporaryDirectory(prefix='kutup-park-') as data:
             page.screenshot(path=str(out/'uygulama-koy.png'))
             page.evaluate("localStorage.setItem('park-night','1');localStorage.setItem('kutup-mode','dark')")
             page.reload();expect(page.locator('.app-shell')).to_be_visible(timeout=30000)
-            page.locator('.sidebar').get_by_role('button',name='Köy',exact=True).click()
-            wrap.get_by_role('button',name='Tam ekran',exact=True).click();page.wait_for_timeout(500)
+            # The map now has a durable URL; reloading restores fullscreen directly.
+            expect(wrap.get_by_role('button',name='Tam ekrandan çık',exact=True)).to_be_visible()
+            assert page.url.split('?')[0].endswith('/koy/harita')
+            results['fullscreenReload']=True
+            page.wait_for_timeout(500)
             wrap.get_by_role('button',name='Mahalleme git',exact=True).click();page.wait_for_timeout(500)
             page.screenshot(path=str(out/'uygulama-gece.png'))
             results['actualApp']={'delivery':True,'village':True,'night':True,'syntheticBuildings':2}

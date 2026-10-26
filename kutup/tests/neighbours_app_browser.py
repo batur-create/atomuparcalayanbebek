@@ -30,7 +30,7 @@ try:
    ctx.add_init_script("const RealDate=Date;const hour=localStorage.getItem('kutup-visual-night')==='1'?21:9;window.Date=class extends RealDate{constructor(...a){super(...(a.length?a:[RealDate.UTC(2026,9,22,hour)]));}static now(){return RealDate.UTC(2026,9,22,hour)}}")
    page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
    page.goto(base);expect(page.locator('.app-shell')).to_be_visible(timeout=20000)
-   page.locator('.sidebar').get_by_role('button',name='Köy',exact=True).click()
+   page.locator('.sidebar').get_by_role('link',name='Köy',exact=True).click()
    wrap=page.locator('.village-map-wrap');expect(wrap.locator('canvas').first).to_be_visible(timeout=20000)
    wrap.get_by_role('button',name='Tam ekran',exact=True).click();page.wait_for_timeout(1200)
    expect(wrap).to_have_class('village-map-wrap village-full')
@@ -50,7 +50,7 @@ try:
     page.evaluate("() => localStorage.setItem('kutup-visual-night','1')")
     # A reload creates the night scene through the application's normal hook.
     page.reload();expect(page.locator('.app-shell')).to_be_visible()
-    page.locator('.sidebar').get_by_role('button',name='Köy',exact=True).click()
+    page.locator('.sidebar').get_by_role('link',name='Köy',exact=True).click()
     wrap.get_by_role('button',name='Tam ekran',exact=True).click();page.wait_for_timeout(900)
     wrap.get_by_role('button',name='Mahalleme git',exact=True).click();page.wait_for_timeout(900)
     page.screenshot(path=str(out/'app-47-gece.png'))

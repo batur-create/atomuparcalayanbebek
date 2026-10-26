@@ -1,0 +1,27 @@
+
+> kutup@2.0.0 test:browser:relaxed
+> python tests/relaxed_browser.py --artifacts /tmp/kutup-navigation-relaxed
+
+PASS Sıkı remains the default
+PASS No duplicate top-level mode selector
+PASS Focus alone has no screen-off switch or building picker
+PASS The shared screen-off switch works with the keyboard
+PASS Simplified choices fit 360px
+PASS Simplified choices fit 390px
+PASS Rahat starts without the strict lock guide or wake lock
+PASS Mode cannot change during a session
+PASS Rahat has no away/beat/crack/wither watcher
+PASS iPhone-size focus fits 390x844
+PASS iPhone-size focus fits 844x390
+PASS iPhone-size focus fits 667x375
+PASS iPhone-size focus fits 375x667
+PASS Rotating resets scene zoom
+PASS Full scene remains inside landscape viewport
+PASS Full-scene caption clears the focus toolbar
+PASS Opening focus still does not hold the screen awake in Rahat
+PASS Reduced motion shows the finished building directly
+PASS Acceptance does not duplicate rewards
+PASS Accepted delivery does not return on reload
+PASS Timelapse advances the actual construction scene
+PASS Timelapse can be skipped safely
+PASS No browser errors

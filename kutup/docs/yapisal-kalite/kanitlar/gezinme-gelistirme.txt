@@ -1,0 +1,63 @@
+PASS Old focus notification becomes /koy
+PASS Main sections have normal links and URLs
+PASS Profile has a separate URL
+PASS Dialog breadcrumbs show real hierarchy
+PASS Back closes the sheet
+PASS Forward restores the sheet
+PASS Navigation keeps the document and active session mounted
+PASS Reload restores the exact screen
+PASS Breadcrumb links navigate to their parent
+PASS Statistics can be opened directly
+PASS /ben/gorunum opens its sheet and breadcrumbs
+PASS /ben/hesaplar opens its sheet and breadcrumbs
+PASS /ben/hesap opens its sheet and breadcrumbs
+PASS /ben/basarimlar opens its sheet and breadcrumbs
+PASS /yenilikler opens its sheet and breadcrumbs
+PASS /ekip/davet opens its sheet and breadcrumbs
+PASS /koy/sesler opens its sheet and breadcrumbs
+PASS Each catalogue model has a normal detail link
+PASS Catalogue model detail survives reload without starting a build
+PASS Wallet has its own catalogue child URL
+PASS Unknown model is handled without a crash
+PASS Member detail resolves within the signed-in team
+PASS A missing or other-team member cannot expose private details
+PASS Meeting URL restores the correct meeting
+PASS Old shared meeting links remain supported
+PASS Own request has a reloadable tracker URL
+PASS Help sections update their URLs
+PASS Individual help topics have separate URLs
+PASS Unknown routes offer a recovery link
+PASS 360px light: requested mode and no page overflow
+PASS 360px light: breadcrumb targets are at least 44px
+PASS 375px light: requested mode and no page overflow
+PASS 375px light: breadcrumb targets are at least 44px
+PASS 390px light: requested mode and no page overflow
+PASS 390px light: breadcrumb targets are at least 44px
+PASS 360px dark: requested mode and no page overflow
+PASS 360px dark: breadcrumb targets are at least 44px
+PASS 375px dark: requested mode and no page overflow
+PASS 375px dark: breadcrumb targets are at least 44px
+PASS 390px dark: requested mode and no page overflow
+PASS 390px dark: breadcrumb targets are at least 44px
+PASS Signing in returns to the originally requested detail
+PASS Member session does not unlock the owner panel
+PASS Owner team screen survives auth and reload
+PASS New-team form has its own URL without creating anything
+PASS Owner member gift URL resolves its recipient after reload
+PASS Document title follows navigation
+PASS Private screen has a noindex preference
+PASS Keyboard skip link reaches the main content
+PASS Copy-link control copies the exact screen URL
+PASS Closing the routed dialog restores focus to its opener
+PASS Normal modifier-click opens a section in a new tab
+PASS Back restores the previous page scroll position after lazy layout settles
+PASS Story has a shareable week URL, breadcrumbs and reload support
+PASS Story traps keyboard focus and makes the background inert
+PASS Story breadcrumbs are clickable over the immersive screen
+PASS Focus URL opens an isolated screen without starting a session
+PASS Room slugs restore the correct room on a direct URL
+PASS Offline status is visible without replacing the current screen
+PASS Reconnect can safely restore fresh data
+PASS Local screen boundary offers a working retry (isolated component fixture)
+PASS No browser JavaScript errors
+62 checks passed
