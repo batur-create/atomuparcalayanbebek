@@ -1,6 +1,6 @@
 # Kütüp — yapısal kalite checklist’i
 
-26 Ekim 2026 · Son durum: **274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme, 23/23 odak/teslim, 22/22 buluşma, 252/252 tema**. Uygulama ve gerçek açık/koyu doğrulama tamam. [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) son devir kaydı için taslak; kalan teslim maddesi aşağıda.
+26 Ekim 2026 · Son durum: **274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme, 23/23 odak/teslim, 22/22 buluşma, 252/252 tema**. **18/18 tamamlandı.** [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır. Canlıya yayın veya birleştirme yapılmadı.
 
 Dal: `codex/kutup-breadcrumb-urls` · Canlıya yayın yok.
 
@@ -23,7 +23,7 @@ Bu dosya çalışma boyunca güncellenir. İşaret yalnız ilgili uygulama ve do
 - [x] 15. 360/375/390 px açık-koyu görünüm, 44 px hedefler ve hareket azaltma.
 - [x] 16. Yönetim alt ekranlarının ayrı URL ve mevcut yetki sınırları.
 - [x] 17. Gerçek üretim sunucusunda doğrudan URL, yenileme ve eski bağlantı testleri.
-- [ ] 18. Tam test paketi, genel tarayıcı, tema kontrolü, kalıcı kanıtlar ve incelemeye hazır PR.
+- [x] 18. Tam test paketi, genel tarayıcı, tema kontrolü, kalıcı kanıtlar ve incelemeye hazır PR.
 
 ## Araştırma dayanağı
 

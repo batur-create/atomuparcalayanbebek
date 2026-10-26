@@ -23,7 +23,7 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
-| gezinme | Ayrı ekran URL’leri, breadcrumb, hikâye ve kaynaklı yapısal kalite checklist’i | Uygulama | 26 Eki | codex/kutup-breadcrumb-urls PR |
+| gezinme | Ayrı ekran URL’leri, breadcrumb, hikâye ve kaynaklı yapısal kalite checklist’i | Uygulama | 26 Eki | PR #74 |
 | n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
 | n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
 | imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
@@ -113,7 +113,7 @@ Uygulama · 26 Ekim 2026 · `codex/kutup-breadcrumb-urls` · göç yok
 
 **Doğrulamada öğrenilen:** Plan keşfi testinin sabit nadir sayısı 26 Ekim’de havuza katılan süresi dolmuş haftalık planı saymıyordu. Test, başlangıçtaki gerçek havuzdan iki kazanımı düşürür; keşif/ekonomi kodu değişmedi. Üretim derlemesindeki geri kaydırma, sonradan büyüyen içeriğin tarayıcı kaydırma sabitlemesine karşı ayrıca doğrulandı.
 
-**Teslim sınırı:** Ayrı dal ve PR → `kutup-platform`; Kuğulu Park dalı ve orijinal işler korundu. Yalnız geçici yerel veritabanı/sentetik hesaplar. Birleştirme, canlı yayın ve gerçek veri işlemi yapılmadı. Sonuçlar: 274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme; odak/teslim 23/23, buluşma 22/22, tema 252/252. Günlükler ve gerçek yerel uygulama görselleri iş raporunda.
+**Teslim sınırı:** [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır, checklist 18/18; ayrı dal → `kutup-platform`; Kuğulu Park dalı ve orijinal işler korundu. Yalnız geçici yerel veritabanı/sentetik hesaplar. Birleştirme, canlı yayın ve gerçek veri işlemi yapılmadı. Sonuçlar: 274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme; odak/teslim 23/23, buluşma 22/22, tema 252/252. Günlükler ve gerçek yerel uygulama görselleri iş raporunda.
 
 
 ### n46 · Köy yenilemesi (A–H)

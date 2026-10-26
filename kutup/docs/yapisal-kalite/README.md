@@ -2,7 +2,7 @@
 
 26 Ekim 2026 · `codex/kutup-breadcrumb-urls` → `kutup-platform` · Taban `395c9b11`.
 
-[PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74): son devir kaydı hazırlanırken taslak.
+[PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır; checklist **18/18** tamamlandı.
 
 Kullanıcı: “aga bizim kütüpe breadcrumbs ekle, her eleman için ayrı url.” Ardından hikâye ekranını özellikle dahil etti; kaliteli sitelerin yapısal özelliklerinin araştırılıp Kütüp’e uygun olanların checklist ile uygulanmasını istedi.
 
