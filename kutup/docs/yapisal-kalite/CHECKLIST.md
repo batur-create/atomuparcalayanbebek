@@ -1,6 +1,6 @@
 # Kütüp — yapısal kalite checklist’i
 
-26 Ekim 2026 · Son durum: **274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme, 23/23 odak/teslim, 22/22 buluşma, 252/252 tema**. **18/18 tamamlandı.** [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır. Canlıya yayın veya birleştirme yapılmadı.
+26 Ekim 2026 · Son durum: **302/302 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme, 23/23 odak/teslim, 22/22 buluşma, 252/252 tema**. **18/18 tamamlandı.** PR #74, `59a933e2` güncel tabanıyla birlikte doğrulandı; Kuğulu Park, n48/n49/n50 dahil mevcut işler korundu. Bağlı hesaplar 10/10 ve Kuğulu Park uygulama kontrolleri de geçti. Canlıya yayın veya PR birleştirme yapılmadı.
 
 Dal: `codex/kutup-breadcrumb-urls` · Canlıya yayın yok.
 

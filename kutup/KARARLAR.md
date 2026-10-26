@@ -117,7 +117,7 @@ Uygulama · 26 Ekim 2026 · `codex/kutup-breadcrumb-urls` · göç yok
 
 **Doğrulamada öğrenilen:** Plan keşfi testinin sabit nadir sayısı 26 Ekim’de havuza katılan süresi dolmuş haftalık planı saymıyordu. Test, başlangıçtaki gerçek havuzdan iki kazanımı düşürür; keşif/ekonomi kodu değişmedi. Üretim derlemesindeki geri kaydırma, sonradan büyüyen içeriğin tarayıcı kaydırma sabitlemesine karşı ayrıca doğrulandı.
 
-**Teslim sınırı:** [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır, checklist 18/18; ayrı dal → `kutup-platform`; Kuğulu Park dalı ve orijinal işler korundu. Yalnız geçici yerel veritabanı/sentetik hesaplar. Birleştirme, canlı yayın ve gerçek veri işlemi yapılmadı. Sonuçlar: 274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme; odak/teslim 23/23, buluşma 22/22, tema 252/252. Günlükler ve gerçek yerel uygulama görselleri iş raporunda.
+**Teslim sınırı:** [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır, güncel tabanla doğrulandı, checklist 18/18; ayrı dal → `kutup-platform`; Kuğulu Park dalı ve orijinal işler korundu. Yalnız geçici yerel veritabanı/sentetik hesaplar. PR’ın ana dala birleştirilmesi, canlı yayın ve gerçek veri işlemi yapılmadı. Güncel taban sonuçları: 302/302 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme; odak/teslim 23/23, buluşma 22/22, bağlı hesaplar 10/10, Kuğulu Park uygulama entegrasyonu, tema 252/252. Günlükler ve gerçek yerel uygulama görselleri iş raporunda.
 
 
 ### n50 · Bağlı hesaplar (dört hesapta aynı anda odak)

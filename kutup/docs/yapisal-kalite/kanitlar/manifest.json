@@ -1,9 +1,9 @@
 {
   "clientDate": "2026-10-26",
-  "base": "395c9b11acf5396484280b4bc405948bb484f5c3",
+  "base": "59a933e22f07c6ae1dac0562dc94ff861e2dca27",
   "branch": "codex/kutup-breadcrumb-urls",
   "testAll": {
-    "passed": 274,
+    "passed": 302,
     "failed": 0,
     "skipped": 0
   },
@@ -12,12 +12,15 @@
     "navigationDev": 62,
     "navigationProductionNode": 66,
     "focusDelivery": 23,
-    "meetups": 22
+    "meetups": 22,
+    "linkedAccounts": 10
   },
   "themePairs": 252,
   "data": "temporary local databases and synthetic accounts",
   "physicalPhoneTested": false,
   "liveCloudflareCPUMeasured": false,
   "deployed": false,
-  "requestedLightDarkModesAssertedInDOM": true
+  "requestedLightDarkModesAssertedInDOM": true,
+  "initialBase": "395c9b11acf5396484280b4bc405948bb484f5c3",
+  "parkIntegrationVerified": true
 }

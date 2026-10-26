@@ -1,12 +1,12 @@
 # Kütüp — adresler, gezinme ve yapısal kalite
 
-26 Ekim 2026 · `codex/kutup-breadcrumb-urls` → `kutup-platform` · Taban `395c9b11`.
+26 Ekim 2026 · `codex/kutup-breadcrumb-urls` → `kutup-platform` · Güncel taban `59a933e2` (Kuğulu Park, n48/n49/n50 dahil); başlangıçtaki yerel referans `395c9b11` idi.
 
-[PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır; checklist **18/18** tamamlandı.
+[PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) güncel tabana karşı doğrulandı; checklist **18/18** tamamlandı.
 
 Kullanıcı: “aga bizim kütüpe breadcrumbs ekle, her eleman için ayrı url.” Ardından hikâye ekranını özellikle dahil etti; kaliteli sitelerin yapısal özelliklerinin araştırılıp Kütüp’e uygun olanların checklist ile uygulanmasını istedi.
 
-Güncel ilerleme: [CHECKLIST.md](CHECKLIST.md). Yayın/birleştirme yapılmaz. Kuğulu Park’ın ayrı `codex/kugulu-park` çalışması ve orijinal çalışma ağacı korunur; bu iş güncel `kutup-platform` tabanından ayrı çalışma ağacındadır.
+Güncel ilerleme: [CHECKLIST.md](CHECKLIST.md). Canlı yayın ve PR’ın ana dala birleştirilmesi yapılmaz. Kuğulu Park’ın ayrı `codex/kugulu-park` çalışması ve orijinal çalışma ağacı korunur; bu iş ayrı çalışma ağacındadır. Yerel takip referansı yalnız `main` için güncellendiğinden güncel taban açık refspec ile alınıp iş dalına birleştirildi; platform dalına PR birleştirmesi yapılmadı.
 
 ## Kapsam ve adresler
 
@@ -32,7 +32,9 @@ Eski `?tab=…`, `?tab=plans`, `?plan=…`, `?story`, `?action=here`, `?imece` a
 
 ## Teknik kararlar
 
-- `shared/routes.js` tek rota/hiyerarşi kaynağıdır; `src/routes.js` yeniden dışa aktarır. Node ve Worker aynı bilinen sayfaları tanır. Cloudflare’da `not_found_handling=none`; belge kabuğunu Worker seçer. Negatif yönlendirme kalıpları JS/font/görselleri mevcut statik sunumda tutar; belge yanıtı için D1 sorgusu yapılmaz. Yeni bağımlılık veya veritabanı şeması yok.
+- Kaynak tazeliği: bu çalışma kopyasında `origin.fetch` yalnız `main` dalını izliyordu. `git fetch origin refs/heads/kutup-platform:refs/remotes/origin/kutup-platform` ile gerçek taban güncellendi; PR tabanı ve Git SHA karşılaştırıldı. n48/n49/n50/Kuğulu Park değişiklikleri iş dalına korunarak alındı.
+
+- `shared/routes.js` tek rota/hiyerarşi kaynağıdır; `src/routes.js` yeniden dışa aktarır. Node ve Worker aynı bilinen sayfaları tanır. Cloudflare’da `not_found_handling=none`; belge kabuğunu Worker seçer. Negatif yönlendirme kalıpları JS/font/görselleri mevcut statik sunumda tutar; belge yanıtı için D1 sorgusu yapılmaz. Gezinme için yeni bağımlılık veya veritabanı göçü yok; tabanın n50 göç 35’i korunur.
 - History API ile sekme değişiminde belge, canlı bağlantı ve odak durumu yeniden kurulmaz. Gerçek bağlantılar kopyalama/yeni sekme davranışlarını korur. Owner ↔ uygulama geçişi mevcut ayrı açılış/yetki yaşam döngüsünü kullanır.
 - Kaydırma konumları geçmiş girdisi başına bellekte, en fazla 80 kayıtla tutulur. Geri/ileride tembel yüklenen içerik büyürken tarayıcı kaydırma sabitlemesinin konumu kaydırması engellenir. Geri yükleme kullanıcı girişiyle veya kısa sınırda biter; kullanıcıyla mücadele eden sürekli döngü yoktur.
 - Başlık ve genel açıklama ekrana göre güncellenir. Özel ekranlar `noindex, nofollow` kullanır; Node/Worker HTML yanıtı da `X-Robots-Tag` gönderir. Bu bir yetki denetimi değildir; mevcut API doğrulaması aynıdır. Bilinmeyen sayfa adresleri üretimde HTML hata ekranıyla **HTTP 404** döner; eksik dosyalar yine 404’tür.
@@ -46,21 +48,23 @@ Eski `?tab=…`, `?tab=plans`, `?plan=…`, `?story`, `?action=here`, `?imece` a
 
 `DESIGN.md` §1–4, §7–9: mevcut tema jetonları, telefon ölçüleri, 44 px hedefler, çalışan kontroller, hareket azaltma. `HANDOFF.md` §0, §3–4, §6b, §10–11 ve `KARARLAR.md` n17/n25/n34/n42: dört bölüm, özel ekip verisi, hesap başına yenileme, eski bildirimler ve kalıcı kayıtlar. `IKINCI-US.md` devir/yayın sınırları: teslim PR; yedek, yayın ve canlı veri işlemi yok. Uygulanacak AGENTS/CLAUDE talimat dosyası bulunmadı. Tarihî genel yayın talimatı bu sohbetin “canlıya yayın yapma” sınırını değiştirmez.
 
-Bu çalışma bütün site için WCAG uygunluk sertifikası, fiziksel iPhone/Android testi veya canlı Cloudflare performans ölçümü değildir. Kaynaklara dayalı seçilmiş 18 madde uygulanır ve kanıtıyla işaretlenir. Mevcut PWA, gizlilik ve doğrulama yapısı korunur. Küçük, giriş gerektiren bu uygulamaya herkese açık üye/ekip site haritası, reklam/izleme veya yeni ücretli servis eklenmez.
+Bu çalışma bütün site için WCAG uygunluk sertifikası, fiziksel iPhone/Android testi veya canlı Cloudflare performans ölçümü değildir. Kaynaklara dayalı seçilmiş 18 madde uygulanır ve kanıtıyla işaretlenir. Mevcut PWA, gizlilik ve doğrulama yapısı; 58 katalog kaydı, yeni tren ve bağlı hesap davranışı korunur. Küçük, giriş gerektiren bu uygulamaya herkese açık üye/ekip site haritası, reklam/izleme veya yeni ücretli servis eklenmez.
 
 ## Son doğrulama
 
 | Kontrol | Sonuç | Kanıt |
 | --- | --- | --- |
-| Üretim derlemesi + bütün Node/yerel Worker testleri | **274/274**, sıfır atlanan/iptal edilen | [test-all.txt](kanitlar/test-all.txt) |
+| Üretim derlemesi + bütün Node/yerel Worker testleri | **302/302**, sıfır atlanan/iptal edilen | [test-all.txt](kanitlar/test-all.txt) |
 | Genel gerçek tarayıcı | **100/100**, uygulama JavaScript hatası yok | [genel-tarayici.txt](kanitlar/genel-tarayici.txt) |
 | Yeni gezinme — geliştirme sunucusu | **62/62** | [gezinme-gelistirme.txt](kanitlar/gezinme-gelistirme.txt) |
 | Yeni gezinme — gerçek üretim Node sunucusu | **66/66** | [gezinme-uretim.txt](kanitlar/gezinme-uretim.txt) |
 | Odak/teslim/PWA boyutları | **23/23** | [odak-teslim.txt](kanitlar/odak-teslim.txt) |
 | Buluşma yaşam döngüsü ve eski bağlantılar | **22/22** | [bulusmalar.txt](kanitlar/bulusmalar.txt) |
+| Bağlı hesaplar (n50) | **10/10** | [bagli-hesaplar.txt](kanitlar/bagli-hesaplar.txt) |
+| Kuğulu Park uygulama entegrasyonu | Teslim/köy/gece, hareket/Sakin ve tam ekran URL yenilemesi geçti | [kugulu-park.json](kanitlar/kugulu-park.json) |
 | Tema kontrastı | **252/252 çift** | [tema.txt](kanitlar/tema.txt) |
 
-Geliştirme ve üretim gezinme testleri büyük ölçüde aynı davranışları tekrarlar; farklı bağımsız özellikler gibi toplanmaz. Geliştirme paketinde izole hata sınırı bileşeni denemesi; üretim paketinde beş HTTP/noindex denemesi var. Node/yerel Worker HTTP 404/noindex testleri tam 274 testin içindedir.
+Geliştirme ve üretim gezinme testleri büyük ölçüde aynı davranışları tekrarlar; farklı bağımsız özellikler gibi toplanmaz. Geliştirme paketinde izole hata sınırı bileşeni denemesi; üretim paketinde beş HTTP/noindex denemesi var. Node/yerel Worker HTTP 404/noindex testleri tam 302 testin içindedir.
 
 [Gündüz telefon](kanitlar/telefon-light.png) · [Koyu telefon](kanitlar/telefon-dark.png) · [Hikâye](kanitlar/hikaye-telefon.png) · [Odak](kanitlar/odak-telefon.png) · [Yapı ayrıntısı](kanitlar/katalog-detay.png) · [Masaüstü Pano](kanitlar/masaustu-pano.png). Bunlar gerçek uygulamada geçici yerel verilerle alındı. Hata sınırı denemesi ayrı bir bileşen fixture’ıdır; gerçek kullanıcı kaydı veya canlı arıza değildir.
 
@@ -76,7 +80,10 @@ npm run test:browser:routes -- --artifacts /tmp/kutup-gezinme
 npm run test:browser:routes -- --production --artifacts /tmp/kutup-gezinme-uretim
 npm run test:browser:relaxed -- --artifacts /tmp/kutup-odak
 npm run test:browser:plans -- --artifacts /tmp/kutup-bulusma
+npm run test:browser:linked -- --artifacts /tmp/kutup-bagli-hesaplar
 node scripts/theme-check.mjs
 ```
 
 Üretim testi `npm run test:all` veya `npm run build` sonrasındaki `dist/` kullanır. Mevcut büyük paket/PostCSS uyarıları derlemede sürer; hata değildir. Fiziksel cihaz, canlı veri ve canlı Cloudflare CPU ölçümü yok. Kaynaklar ve checkbox durumu [checklist’te](CHECKLIST.md).
+
+Güncel tabana uyumda, bağlı hesaplar tarayıcı denemesi bildirim iznini açıkça verir; bildirim izni engelini test eden ayrı koruma değiştirilmez. Genel parola denemesi, asenkron cihaz sorgusunun açtığı onay penceresini gerçekten bekler. Kuğulu Park betiği yenilemede tam ekranın korunmasını doğrular. Bunlar test varsayımlarının yeni URL sözleşmesine/ortama uyarlanmasıdır.

@@ -67,7 +67,7 @@ PASS Village recovers after a failed fetch
 PASS Focus creates a building and keyboard list opens its card
 PASS With motion on, the village map keeps moving
 PASS Kıpırtısız keeps the village map still
-Sound levels (RMS): {"Yağmur": 0.0337, "Kütüphane": 0.0359, "Şömine": 0.0431, "Orman": 0.0176, "Dalgalar": 0.0317, "Kafe": 0.0315, "Odak gürültüsü": 0.0458, "Kara delik": 0.0753}
+Sound levels (RMS): {"Yağmur": 0.0323, "Kütüphane": 0.0375, "Şömine": 0.0394, "Orman": 0.0194, "Dalgalar": 0.0368, "Kafe": 0.0372, "Odak gürültüsü": 0.0425, "Kara delik": 0.054}
 PASS Every ambient sound plays on its own (n24)
 PASS The week's story: tap on, tap back, hold pauses, Escape closes, 44px close, no overflow (n28)
 PASS Badge case: all 16 badges, no overflow at 375 px (n14)
@@ -103,4 +103,4 @@ PASS All twelve construction stages render
 PASS Reduced-motion collapse immediately shows rubble
 PASS A 1,000-building village paints in a real browser
 PASS No browser JavaScript errors
-{"buildings": 1000, "districts": 122, "worldMs": 220.90000000037253, "items": 4939, "nearbyItems": 149}
+{"buildings": 1000, "districts": 122, "worldMs": 125.59999999962747, "items": 4939, "nearbyItems": 149}
