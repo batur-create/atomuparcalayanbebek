@@ -70,6 +70,7 @@ import { darkAt } from "./villageWorld.js";
 import { mergeState } from "./sync.js";
 import { paintBar, useColorMode } from "./colorMode.js";
 import { deviceId, relaxedChoice } from "./device.js";
+import { linkedAccounts } from "./Linked.jsx";
 import { watchForNewVersion } from "./freshness.js";
 
 // Four tabs (n17): who is where (with plans), the village, the board, and me.
@@ -290,6 +291,9 @@ function KutupApp({ initial, restart }) {
       .then((d) => { navigation.go("/", { replace: true }); restart({ data: d, tab: "home", message: next }); })
       .catch(() => signedOut(message));
   const switchAccount = async (account) => {
+    // n50: a link is kept alive by whichever of its accounts is open here.
+    const watching = me?.focusLink && me.focusEnd > Date.now() && !me.focusRelaxed && me.focusWatch === deviceId();
+    if (watching && !linkedAccounts().some((a) => a.id === account.id && a.focusLink === me.focusLink) && !confirm(`${account.name} bağlı seansta değil. Ona geçersen bağlı şantiyelerin takibi durur ve binalar çatlayabilir. Yine de geçilsin mi?`)) return;
     try {
       const d = await api("/accounts/switch", { memberId: account.id });
       navigation.go(TAB_PATHS[tab], { replace: true });
@@ -1507,6 +1511,7 @@ function KutupApp({ initial, restart }) {
                 outcome={buildOutcome}
                 onJoin={joinFriend}
                 askNotifications={notificationsOn}
+                notify={notify}
               />
               <div className="focus-side">
                 <VillagePanel

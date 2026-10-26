@@ -5,7 +5,7 @@
 // team back with every building in place. Nothing here touches bricks,
 // minutes, rewards or deliveries.
 import React, { useEffect, useRef, useState } from "react";
-import { LoaderCircle, Map as MapIcon, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { LoaderCircle, Map as MapIcon, RefreshCw, RotateCcw, Sparkles, TrainFront } from "lucide-react";
 import { api, get, dateLabel } from "./api.js";
 import { BY_ID } from "../shared/catalog.js";
 import { Modal } from "./Modal.jsx";
@@ -14,7 +14,7 @@ import { buildWorld2 } from "./koy2/world2.js";
 import { skyAt, tinter } from "./villageWorld.js";
 import { createView } from "./villageView.js";
 
-const plan = (source, base) => runPlan({ kind: "draft", source, base });
+const plan = (source, base) => runPlan(source.kind ? source : { kind: "draft", source, base });
 
 /** What stands on a stored layout, in the shape the v2 drawing reads. */
 function thingsOf(items) {
@@ -101,16 +101,32 @@ export function OwnerVillage({ group, close }) {
       const planned = await plan(source, source.layout);
       if (planned.missing.length) throw new Error(`${planned.missing.length} yapıya yer bulunamadı (${missingNames(planned.missing)}); taslak kaydedilmedi, köy olduğu gibi duruyor.`);
       const stored = await api(`${base}/layouts`, { role, layout: planned.layout, base: layoutId, contentRev: source.contentRev });
-      setState(stored);
-      // Every rule, checked by the server a part at a time.
-      const id = (role === "draft" ? stored.draft : stored.previous).id;
-      for (let part = { checked: 0, sound: false }; !part.sound; ) {
-        setBusy(`Kurallar kontrol ediliyor… ${part.total ? `${part.checked}/${part.total}` : ""}`);
-        part = await api(`${base}/layouts/${id}/check`, { from: part.checked });
-      }
-      await load();
+      await checkAll(stored, role);
       setNote(layoutId ? "Eşitlendi: yerleşmiş yapılar yerinde kaldı, yeniler eklendi." : "Taslak hazır. Üyeler henüz eski köyü görüyor.");
     });
+  // Every rule of a stored layout, checked by the server a part at a time.
+  const checkAll = async (stored, role) => {
+    setState(stored);
+    const id = (role === "draft" ? stored.draft : stored.previous).id;
+    for (let part = { checked: 0, sound: false }; !part.sound; ) {
+      setBusy(`Kurallar kontrol ediliyor… ${part.total ? `${part.checked}/${part.total}` : ""}`);
+      part = await api(`${base}/layouts/${id}/check`, { from: part.checked });
+    }
+    await load();
+  };
+  // n49-2: the live village's railway re-laid in bends as a draft; every
+  // building stays exactly where it is, and nothing changes until "Yeni köyü aç".
+  const rerail = () => {
+    if (state.draft && !confirm(`${group.name}: rayı kıvıran taslak, bekleyen taslağın yerine geçsin mi?`)) return;
+    step("Ray kıvrılıyor…", async () => {
+      const source = await get(`${base}/source?layout=active`);
+      const planned = await plan({ kind: "rerail", source });
+      if (planned.error) throw new Error("Bu köyde rayı kıvıracak boş yer bulunamadı; ray olduğu gibi duruyor.");
+      if (planned.missing.length) throw new Error(`${planned.missing.length} yapıya yer bulunamadı (${missingNames(planned.missing)}); taslak kaydedilmedi, köy olduğu gibi duruyor.`);
+      await checkAll(await api(`${base}/layouts`, { role: "draft", rerail: true, layout: planned.layout, contentRev: source.contentRev }), "draft");
+      setNote(`Taslak hazır: ray ${planned.bends} yerde kıvrıldı, bütün binalar yerinde. Önizlemeye bak; beğenirsen “Yeni köyü aç”.`);
+    });
+  };
   const activate = () => {
     if (!confirm(`${group.name}: yeni köy açılsın mı?\n\nHerkes bir sonraki yenilemede yeni köyü görür. Binalar, tuğlalar, süreler aynı kalır. 14 gün boyunca buradan eski köye dönebilirsin.`)) return;
     step("Yeni köy açılıyor…", async () => {
@@ -174,6 +190,15 @@ export function OwnerVillage({ group, close }) {
             )}
           </section>
           <p>Komşu köyler: herkesin kalıcı merkezi, yakın sokakları ve doğal geçişleri var. Taslağı yeniden hazırlamak canlı köyü taşımaz; yeni düzen yalnız “Yeni köyü aç” ile etkinleşir.</p>
+          {state.active.kind === "v2" && state.active.generatorVersion >= 3 && state.active.terrainVersion === 2 && (
+            <section>
+              <h3>Demiryolu</h3>
+              <p>Bu köyün rayı hâlâ eski düz hat. Rayı kıvrımlı bir hatta çeviren bir taslak hazırlanır: binalar, sokaklar ve meydanlar olduğu yerde kalır, yalnız ray ve hemzemin geçitler değişir. “Yeni köyü aç” ile etkinleşir, 14 gün içinde geri dönülebilir.</p>
+              <button className="btn" disabled={!!busy} onClick={rerail}>
+                <TrainFront size={15} /> Rayı kıvır
+              </button>
+            </section>
+          )}
           {previous && (
             <section>
               <h3>{previous.kind === "legacy" ? "Eski köy" : "Önceki köy"}</h3>

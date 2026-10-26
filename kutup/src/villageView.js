@@ -4,10 +4,12 @@
 // villagers, balloons, window glow, birds, lamp light, a celebration) is painted
 // on a second, transparent canvas on top, so a puff of smoke never repaints
 // the whole map. The loop sleeps whenever nothing that moves is on screen.
-import { useCanvas, useSVG } from "./iso.js";
+import { drawParkMotion, PARK_LAMPS } from "./kuguluPark.js";
+import { useCanvas, useSVG, mirrored } from "./iso.js";
 import { GROUND, MEMBER_COLORS, pointOnPath } from "./villageWorld.js";
 import { AVATAR_BG, avatarImage, parseAvatar } from "../shared/avatars.js";
 import { HOUSE_SCREEN, lodFor } from "./koy2/life.js";
+import { drawCar, drawCrossing, drawPuffs, drawWhistle, obox } from "./koy2/trainArt.js";
 
 const TS = 256;
 const MAX_TILES = 40;
@@ -47,6 +49,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
   layer.style.cssText = "position:absolute;left:0;top:0;pointer-events:none";
   canvas.after(layer);
   const ctx = layer.getContext("2d");
+  let parks = [];
   let world = null,
     sky = null,
     tint = (c) => c,
@@ -71,6 +74,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     liveDue = 0,
     party = null,
     alive = false,
+    smooth = false,
     wakeIn = 0,
     lod = null;
   const start = performance.now();
@@ -143,14 +147,16 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       hh = H / 2 / cam.s + 4;
     return x1 > cam.x - hw && x0 < cam.x + hw && y1 > cam.y - hh && y0 < cam.y + hh;
   };
-  // Paints the live layer. Sets `alive` when something on screen is moving and
-  // `wakeIn` (ms) when nothing moves now but something will later (birds, the
-  // end of a still celebration), so the loop can sleep in between.
+  // Paints the live layer. Sets `alive` when something on screen is moving,
+  // `smooth` when that something needs every display frame (a train crossing
+  // the screen), and `wakeIn` (ms) when nothing moves now but something will
+  // later (birds, the end of a still celebration), so the loop can sleep in between.
   function drawLive(now, level) {
     const time = (now - start) / 1000;
     const s = cam.s,
       ambient = level === "full" && !still;
     alive = false;
+    smooth = false;
     wakeIn = 0;
     // Lamp glow at night.
     if (sky?.lamps)
@@ -198,6 +204,32 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+    }
+    // Kuğulu Park: water life only, on the existing transparent live canvas.
+    for (const park of parks) {
+      const center = atScreen(park.x, park.y);
+      const detail = world.detailFor(s);
+      if (!detail || !onScreen(center, s * 18)) continue;
+      const moving = ambient && detail === 2 && s >= 5;
+      if (moving) alive = true;
+      const base = lifeAt(park.x, park.y);
+      const facing = park.building.facing ?? 0;
+      const P = facing ? mirrored(base) : base;
+      // Emissive light stays warm after the world's night tint. These pools
+      // are still images on the existing live layer, not pulsing animations.
+      if (sky?.night > 0.5) for (const [x,y] of PARK_LAMPS) {
+        const q=P(x,y,.08),head=P(x,y,2.05),r=s*1.15;
+        ctx.save();ctx.translate(q[0],q[1]);ctx.scale(1,.55);
+        const glow=ctx.createRadialGradient(0,0,0,0,0,r);
+        glow.addColorStop(0,'rgba(255,218,139,.36)');glow.addColorStop(1,'rgba(255,218,139,0)');
+        ctx.fillStyle=glow;ctx.fillRect(-r,-r,r*2,r*2);ctx.restore();
+        const halo=ctx.createRadialGradient(head[0],head[1],0,head[0],head[1],s*.4);
+        halo.addColorStop(0,'rgba(255,231,170,.65)');halo.addColorStop(1,'rgba(255,219,140,0)');
+        ctx.fillStyle=halo;ctx.fillRect(head[0]-s*.4,head[1]-s*.4,s*.8,s*.8);
+      }
+      useCanvas(ctx, tint, Math.max(0.35, s / 15));
+      try { drawParkMotion(P, { time: moving ? time : 0, seed: park.building.seed || 0, detail, lit: sky?.night > 0.5, ctx }); }
+      finally { useSVG(); }
     }
     const k = Math.max(0.55, Math.min(1.6, s / 9));
     if (world.life) shared(level, time, k);
@@ -332,10 +364,166 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       villager(p[0], p[1], k, world.lookOf(f.home), f.walking ? f.step : null, face);
       cover(f.x, f.y, p, k);
     }
+    if (world.train) trainLayer(level, time, k);
+    if (out.ducks) ducks(out.ducks, time, k);
+    if (out.boat) rowboat(out.boat, time, k);
     if (out.nature) nature(out.nature, time, k);
     if (w.kind) weatherLayer(w, time, moving);
     if (out.moving && moving) alive = true;
     else if (moving && lod > 0) wakeIn = wakeIn ? Math.min(wakeIn, 2000) : 2000;
+  }
+  // ---------- the little train (src/koy2/train.js, n49) ----------
+  // Shown at every level of detail: from far away it is the village's one big
+  // moving thing. With motion off only a train standing at the platform shows.
+  const OCCLUDE = ["building", "tree", "bush", "rock", "lamp", "fountain"];
+  function trainLayer(level, time, k) {
+    const tr = world.train;
+    const motion = still ? "calm" : level;
+    const ambient = motion === "full";
+    const now = Date.now();
+    const out = tr.at(now, { motion });
+    const s = cam.s;
+    const A = (x, y, z = 0) => atScreen(x, y, z);
+    const night = sky?.night || 0;
+    // Passengers stand on the village's side of the track: behind the train.
+    // A materials train's workers wear a hard hat and a high-visibility vest.
+    for (const f of out.riders) {
+      const p = atScreen(f.x, f.y);
+      if (!onScreen(p, 30)) continue;
+      const face = f.face[0] - f.face[1] >= 0 ? 1 : -1;
+      const look = world.lookOf(f.home);
+      villager(p[0], p[1], k, f.worker ? { ...look, coat: "#ee7a2f", hat: 3, hatColor: "#f4c430" } : look, f.walking ? f.step : null, face);
+      if (f.load) shoulderLoad(p[0], p[1], k, face, f.load, f.walking ? f.step : null);
+      cover(f.x, f.y, p, k);
+    }
+    useCanvas(ctx, tint, Math.max(0.35, s / 15));
+    let seen = false,
+      carSeen = false;
+    try {
+      const blink = ambient ? Math.floor(time * 2.2) % 2 : null;
+      for (const c of out.crossings) {
+        if (!onScreen(atScreen(c.x, c.y), s * 4)) continue;
+        drawCrossing(A, c, c.close, blink, s, ctx, world.railWidth || 1.7);
+        if (ambient && c.close > 0) seen = true;
+      }
+      const cars = [...out.cars].sort((a, b) => a.x + a.y - (b.x + b.y));
+      for (const car of cars) {
+        const p = atScreen(car.x, car.y);
+        if (!onScreen(p, s * car.len)) continue;
+        seen = carSeen = true;
+        drawCar(A, car, { s, night, ctx });
+        trainCover(car, p);
+      }
+      if (out.puffs.length) drawPuffs(ctx, A, out.puffs, s, tint);
+      const loco = out.cars.find((c) => c.kind === "loco");
+      if (out.whistle !== null && loco) drawWhistle(ctx, A, loco, out.whistle, s);
+    } finally {
+      useSVG();
+    }
+    if (!ambient) return;
+    // A train sliding across the screen at 24 fps judders (the frames land
+    // 17, 50 or 67 ms apart): while one is seen moving, every display frame.
+    if (seen && out.moving) {
+      alive = true;
+      if (carSeen && out.speed > 0.05) smooth = true;
+    } else {
+      // Off screen: look again soon while a train is on the line, else when the next one is due.
+      const next = out.run ? 1000 : Math.max(500, tr.nextIn(now));
+      wakeIn = wakeIn ? Math.min(wakeIn, next) : next;
+    }
+  }
+  // A mother duck and her ducklings: paddling in a line, or resting by the shore.
+  function ducks(d, time, k) {
+    for (const [i, q] of d.brood.entries()) {
+      const p = atScreen(q.x, q.y);
+      if (!onScreen(p, 20)) continue;
+      const face = q.dx - q.dy >= 0 ? 1 : -1;
+      const r = q.big ? 2.7 * k : 1.6 * k;
+      if (d.moving) {
+        // A small V of ripples behind each one.
+        ctx.strokeStyle = "rgba(235,245,250,.55)";
+        ctx.lineWidth = Math.max(0.6, 0.5 * k);
+        ctx.beginPath();
+        const w = r * (1.6 + 0.25 * Math.sin(time * 3 + i));
+        ctx.moveTo(p[0] - face * r * 0.6, p[1]);
+        ctx.lineTo(p[0] - face * (r + w), p[1] - w * 0.35);
+        ctx.moveTo(p[0] - face * r * 0.6, p[1] + r * 0.3);
+        ctx.lineTo(p[0] - face * (r + w), p[1] + w * 0.45);
+        ctx.stroke();
+      }
+      const bob = d.moving ? Math.sin(time * 4 + i * 1.3) * 0.25 * k : 0;
+      ctx.fillStyle = tint(q.big ? "#8b6d4c" : "#f2d36b");
+      ctx.beginPath();
+      ctx.ellipse(p[0], p[1] - r * 0.45 + bob, r, r * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p[0] + face * r * 0.75, p[1] - r * 1.05 + bob, r * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = tint("#e89a3c");
+      ctx.beginPath();
+      ctx.ellipse(p[0] + face * r * 1.2, p[1] - r * 1.0 + bob, r * 0.24, r * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // A rowing boat with one rower, oars dipping in turn.
+  function rowboat(b, time, k) {
+    const p = atScreen(b.x, b.y);
+    if (!onScreen(p, 40)) return;
+    const len = Math.hypot(b.dx, b.dy) || 1,
+      dx = b.dx / len,
+      dy = b.dy / len;
+    const A = (x, y, z = 0) => atScreen(x, y, z);
+    // The wake: two lines opening behind.
+    ctx.strokeStyle = "rgba(235,245,250,.6)";
+    ctx.lineWidth = Math.max(0.8, 0.6 * k);
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      ctx.moveTo(...A(b.x - dx * 1.1, b.y - dy * 1.1));
+      ctx.lineTo(...A(b.x - dx * 3.2 - dy * side * 0.6, b.y - dy * 3.2 + dx * side * 0.6));
+    }
+    ctx.stroke();
+    useCanvas(ctx, tint, Math.max(0.35, cam.s / 15));
+    try {
+      obox(A, b.x, b.y, dx, dy, -1.1, 1.1, -0.42, 0.42, 0.02, 0.32, ["#7a5434", "#b07a45", "#9a6838"]);
+      obox(A, b.x, b.y, dx, dy, -0.9, 0.9, -0.3, 0.3, 0.2, 0.25, ["#5e4029", "#5e4029", "#5e4029"]);
+    } finally {
+      useSVG();
+    }
+    // Oars sweep back and forth.
+    const stroke = Math.sin(b.u * 2.6);
+    ctx.strokeStyle = tint("#c79a62");
+    ctx.lineWidth = Math.max(1, 0.5 * k);
+    ctx.beginPath();
+    for (const side of [-1, 1]) {
+      const o = [b.x - dy * side * 0.35, b.y + dx * side * 0.35];
+      const tip = [o[0] + dx * stroke * 0.7 - dy * side * 1.2, o[1] + dy * stroke * 0.7 + dx * side * 1.2];
+      ctx.moveTo(...A(o[0], o[1], 0.45));
+      ctx.lineTo(...A(tip[0], tip[1], 0.05 + Math.max(0, -stroke) * 0.25));
+    }
+    ctx.stroke();
+    const seat = atScreen(b.x - dx * 0.2, b.y - dy * 0.2, 0.25);
+    villager(seat[0], seat[1] + 3.5 * k, k, world.lookOf("boat"), null, dx - dy >= 0 ? -1 : 1);
+    cover(b.x, b.y, p, k * 1.6);
+  }
+  // What stands beyond the track, on the camera's side, is drawn again over a car.
+  function trainCover(car, p) {
+    const [sx, sy] = screen(car.x, car.y);
+    const reach = car.len * 0.6 + 1;
+    let nx = -car.dy,
+      ny = car.dx;
+    if (nx + ny < 0) [nx, ny] = [-nx, -ny];
+    const list = world.query(sx - reach, sy - 2.4, sx + reach, sy + 0.6).filter((it) => it.depth !== undefined && OCCLUDE.includes(it.type) && (it.x - car.x) * nx + (it.y - car.y) * ny > 1.4 && it.depth > car.x + car.y);
+    if (!list.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p[0] - reach * cam.s, p[1] - 2.4 * cam.s, reach * 2 * cam.s, 3 * cam.s);
+    ctx.clip();
+    try {
+      const v = { s: cam.s, ctx, at: lifeAt, tint, detail: world.detailFor(cam.s) };
+      for (const it of list) it.draw(v);
+    } finally {
+      ctx.restore();
+    }
   }
   // Redraws, clipped to a figure's own small box, whatever stands in front of it (B's depth mask).
   function cover(x, y, p, k) {
@@ -438,6 +626,28 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       }
       return;
     }
+    if (n.kind === "fireflies") {
+      // Little lights drifting low over the grass, each blinking on its own beat.
+      const fade = Math.min(1, n.u / 4, (n.stay - n.u) / 4);
+      for (let i = 0; i < n.count; i++) {
+        const a = i * 2.39996,
+          u = n.u * (0.35 + (i % 3) * 0.08);
+        const x = n.x + Math.cos(a + u) * n.r * (0.4 + 0.6 * ((i * 0.37) % 1)),
+          y = n.y + Math.sin(a * 1.3 + u * 1.2) * n.r * (0.4 + 0.6 * ((i * 0.61) % 1));
+        const p = atScreen(x, y, 0.5 + 0.4 * Math.sin(u * 2 + i));
+        if (!onScreen(p)) continue;
+        const glow = Math.max(0, Math.sin(time * (1.6 + (i % 4) * 0.35) + i * 1.7)) * fade;
+        if (glow < 0.05) continue;
+        const r = 4.5 * k;
+        const g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r);
+        g.addColorStop(0, `rgba(240,255,170,${glow})`);
+        g.addColorStop(0.25, `rgba(220,255,130,${0.6 * glow})`);
+        g.addColorStop(1, "rgba(200,255,120,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(p[0] - r, p[1] - r, r * 2, r * 2);
+      }
+      return;
+    }
     if (n.kind === "wind") {
       // A breath of wind: a few leaves leave each tree's crown and drift down.
       const q = n.u / n.stay;
@@ -506,12 +716,46 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       ctx.arc(hx, hy - 0.6 * k, 2.65 * k, Math.PI, Math.PI * 2);
       ctx.moveTo(hx + 0.9 * k, hy - 3.6 * k);
       ctx.arc(hx, hy - 3.6 * k, 0.9 * k, 0, Math.PI * 2);
+    } else if (v.hat === 3) {
+      // A builder's hard hat: a dome and a short brim all round.
+      ctx.arc(hx, hy - 0.9 * k, 2.75 * k, Math.PI, Math.PI * 2);
+      ctx.ellipse(hx, hy - 0.85 * k, 3.4 * k, 0.75 * k, 0, 0, Math.PI * 2);
     } else {
       // A flat cap, its peak towards where they are going.
       ctx.arc(hx, hy - 0.8 * k, 2.6 * k, Math.PI, Math.PI * 2);
       ctx.ellipse(hx + face * 2.1 * k, hy - 0.85 * k, 1.9 * k, 0.6 * k, 0, 0, Math.PI * 2);
     }
     ctx.fill();
+  }
+  // A load on a worker's shoulder: bricks, a few planks or a cement sack.
+  const LOAD_ART = { bricks: ["#c8603f", "#9c4630"], logs: ["#c08a55", "#8f6238"], cement: ["#ece3cf", "#b9ad92"] };
+  function shoulderLoad(x, y, k, face, load, step) {
+    const bob = step === null ? 0 : Math.abs(Math.sin(step)) * 0.9 * k;
+    const [fill, edge] = (LOAD_ART[load] || LOAD_ART.bricks).map(tint);
+    const cx = x - face * 1.6 * k,
+      cy = y - bob - 13.4 * k;
+    const [w, h] = load === "logs" ? [9 * k, 1.9 * k] : load === "cement" ? [5.6 * k, 2.8 * k] : [4.8 * k, 3.4 * k];
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = Math.max(0.5, 0.45 * k);
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(cx - w / 2, cy - h / 2, w, h, load === "cement" ? 1.2 * k : 0.4 * k);
+    else ctx.rect(cx - w / 2, cy - h / 2, w, h);
+    ctx.fill();
+    ctx.stroke();
+    if (load === "bricks") {
+      ctx.beginPath();
+      ctx.moveTo(cx - w / 2, cy);
+      ctx.lineTo(cx + w / 2, cy);
+      ctx.stroke();
+    }
+    // The near hand up to hold it.
+    ctx.strokeStyle = tint("#4b4458");
+    ctx.lineWidth = 1.2 * k;
+    ctx.beginPath();
+    ctx.moveTo(cx + face * 1.2 * k, cy + h / 2);
+    ctx.lineTo(x + face * 1.4 * k, y - bob - 8.5 * k);
+    ctx.stroke();
   }
   function birds(round, progress, time) {
     // The same round always flies the same way: alternate sides, a varying height.
@@ -759,6 +1003,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     ctx.clearRect(0, 0, W, H);
     drawLive(now, level);
     if (pending || flight || inertia || gestureActive()) request();
+    else if (animated() && visible && smooth) request();
     else if (animated() && visible) {
       // Live layer at ~24 fps: smoke, strollers and birds need no more, the battery thanks us.
       const wait = Math.max(0, 42 - (now - lastLive));
@@ -955,6 +1200,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     /** A new world (data or time of day changed): tiles are repainted lazily. */
     setWorld(next, nextSky, tintFn) {
       world = next;
+      parks = next.items.filter(i => i.type === "building" && i.building?.model === "kugulupark" && !i.building.site && !i.building.spot);
       sky = nextSky;
       tint = tintFn;
       gen++;

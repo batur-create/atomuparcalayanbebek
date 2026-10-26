@@ -23,8 +23,8 @@ const draft = (name) => {
   return drafts.get(name);
 };
 
-test("n46 B: the model contracts are the drawings' own numbers, for all 48 models", () => {
-  assert.equal(CATALOG.length, 48);
+test("n46 B: the model contracts are the drawings' own numbers, for all 58 models", () => {
+  assert.equal(CATALOG.length, 58);
   assert.deepEqual(measureAll(), MODEL_DATA, "run node scripts/koy/measure-models.mjs and bump GEOMETRY_VERSION");
   for (const item of CATALOG) {
     const m = modelSpec(item.id);

@@ -24,6 +24,10 @@ Açık işler panoda, bu sırayla (Batur onayladı, 16 Ekim akşamı): Kara v2'n
 | Kod | İş | Alan | Tarih | Commit |
 |---|---|---|---|---|
 | gezinme | Ayrı ekran URL’leri, breadcrumb, hikâye ve kaynaklı yapısal kalite checklist’i | Uygulama | 26 Eki | PR #74 |
+
+| n50 | Bağlı hesaplar: bir seans aynı cihazdaki diğer hesaplarda da başlar (kendi binası, kendi ekibi), tek seans gibi takip edilir; şimdilik yalnız Batur | Odak | 24 Eki | claude/n50-bagli-hesaplar PR |
+| n48 | 25 dakikalık katalog 5 → 12 (7 yeni yapı, hepsi ev değil) ve sonbahar haftalıkları; eski haftalıklar nadir plana | Katalog | 24 Eki | claude/n48 PR |
+| yapi-kugulu | Kuğulu Park: onaylı gerçek park minyatürü, peyzaj yapımı, kuğular ve gece ışıkları | Yapı Atölyesi | 22 Eki | PR #69 |
 | n46 | Köy yenilemesi A–H: görünür şantiye, sokak cephesinden yerleşim, paralel taslak ve geri dönüş (paketler halinde) | Köy | 21 Eki | claude/n46-* PR zinciri |
 | n45 | Komuta merkezi → Ekipler: boş ekip kurma (mükerrer yok), ad düzenleme, davet göster/kopyala/yenile; son üye ayrılınca ekip kalır | Batur | 21 Eki | claude/n45-ekip-yonetimi PR |
 | imece-katki | Toplam emeğin ve zorunlu bölüm paylarının açık sunumu | Anıtkabir | 20 Eki | codex/imece-contribution-clarity PR |
@@ -115,6 +119,47 @@ Uygulama · 26 Ekim 2026 · `codex/kutup-breadcrumb-urls` · göç yok
 
 **Teslim sınırı:** [PR #74](https://github.com/batur-create/atomuparcalayanbebek/pull/74) incelemeye hazır, checklist 18/18; ayrı dal → `kutup-platform`; Kuğulu Park dalı ve orijinal işler korundu. Yalnız geçici yerel veritabanı/sentetik hesaplar. Birleştirme, canlı yayın ve gerçek veri işlemi yapılmadı. Sonuçlar: 274/274 tam test, 100/100 genel tarayıcı, 62/62 geliştirme ve 66/66 üretim gezinme; odak/teslim 23/23, buluşma 22/22, tema 252/252. Günlükler ve gerçek yerel uygulama görselleri iş raporunda.
 
+
+### n50 · Bağlı hesaplar (dört hesapta aynı anda odak)
+Odak · 24 Ekim 2026 · `claude/n50-bagli-hesaplar` · göç 35 (`members.focus_link`)
+
+**İstek:** Batur (Ediz'in hesabından): "4 farklı hesabım var, odaklandığımda sadece birinde sayılıyor. Dördünde de aynı anda çalışıyor gözükmek, belki dördünde ayrı bina kurmak istiyorum. Önce benim için yapın; dört şantiyeyi birden başlatıp tek panelden takip edeyim. Odak süreleri sayımı gibi sıkıntılı detayları da düşün."
+**Neden sekmeler olmadı:** hesap çerezleri tarayıcı başına ortak; ikinci sekmede hesap değişince ilk sekme de o hesaba geçiyor ve "önce mevcut inşaatını bitir" çıkıyor.
+**Karar:** Köy kartında seans başlarken "Diğer hesaplarım da çalışsın" listesi: cihazdaki her diğer hesap için bina (aynı boy sınıfı, o hesabın açık planları, kendi tuğlası), "Binasız odak" ya da "Katılmasın"; seçimler cihazda hatırlanır. Ekrandaki hesap normal başlar, sonra her diğer hesap `/owner/linked/start` ile ayrı istekte başlar (her istek kendi CPU bütçesinde): bitişi ekrandakiyle aynı milisaniye, `focus_link` = başlatan hesabın id'si. Yeni köydeki (v2) hesabın arsası n46 G'deki gibi tarayıcıda Komuta merkezinin kaynağıyla planlanır, sunucu yalnız denetler.
+**Tek seans:** `/focus`'a gelen her izleme işlemi (beat, away, crack, rescue, pause, resume, cancel, wither, finish) aynı bağdaki diğer hesaplara aynı işleyiciyle uygulanır (`followLinked`); kurallar tek yerde kalır. Bağlı kopya anlık görüntü hesaplamaz (yalnız `onChange`). Telefondan çıkınca geri sayım ve bildirim yalnız ekrandaki hesapta; çatlayınca bağın tamamı aynı ayrılma anıyla çatlar. Ekrandaki hesap değişebilir (Hesaplarım): bağdaki hangi hesap açıksa bağı o yaşatır; bağda olmayan bir hesaba geçerken uyarı çıkar.
+**Sayım ve adalet:** Her hesap kendi dakikası, maaşı, serisi, günün ilk seansı bonusu, plan çekilişi ve kendi ekibinin Anıtkabir payını alır (isteğin özü). Aynı ekipte iki hesap bağlanamaz: imece bonusu ve "birlikte çalıştı" satırı kendi kendine şişmesin. Mod başlatanınki: izlenen inşaat → izlenen inşaat ya da izlenen binasız odak (uzakta geçen dakika sayılmaz); rahat inşaat → rahat inşaat ya da düz odak; binasız seans → binasız. Katılma yalnız ilk 2 dakikada; Anıtkabir görevine bağlanılmaz. Rahat inşaatın bitiş bildirimi ve "Ekibi çağır" yalnız başlatan hesapta (bildirim yağmuru olmasın).
+**Kimde:** Yalnız Batur: liste ve başlatma `/owner/*` altında, Komuta merkezine girilmiş cihazda görünür. Herkese açmak = `requireOwner` yerine cihazdaki hesap kontrolü.
+**Bilinen sınır:** Telefonda bağlı olmayan bir hesaba geçip orada kalınırsa izleme durur (uyarı var). Kurtarma ve çay molası bitişleri milisaniye düzeyinde kayabilir; sayıma etkisi yok.
+**Testler:** 290/290 (test:all, yeni `tests/linked.test.js` 8 test); tarayıcı `tests/linked_browser.py` 10/10 (telefon, 3 hesap: seçici, aynı bitiş, kendi tuğlası, hesap değişince beat, pes edince hepsi biter ve iade).
+**Kanıt:** /mnt/project-files/kutup/n50/ (seçici, panel, hesap değişince).
+
+### n48 · 25 dakikalık katalog genişletme
+Katalog · 24 Ekim 2026 · `claude/n48-katalog` · göç yok (şema değişmedi)
+
+**İstek:** Ediz: "kataloğu genişletelim, hepsi birbirine benzemesin, arada yaratıcı şeyler; şimdilik 7 tane ekle, 12'ye çıksın; bu haftanın yapıları yenilensin, eskiler gitsin."
+**Karar:** Yedi küçük (25 dk) yapı, açık katalogda: Taş Çeşme, Asma Çardak, Göletli Köprü, Arılık, Meteoroloji İstasyonu, Bahçe Süsleri (süs paketi), Çoban Kulübesi. Haftalık iki yeni yapı sonbahar temalı: Kestane Kebapçısı, Kuş Gözlem Kulesi (since = 24 Eki 00:00 TR, iki hafta). Hepsi `src/smallBuildings.js` içinde `design()` ile; aynı çizim şantiye, katalog ve iki köyde. Gerçek boyutlar `olcek.js` REAL'de, hepsi k = 1.
+**Eski haftalıklar nereye:** Postane ve Çay Ocağı'na `until` eklendi (24 Eki), sistemin zaten var olan kuralına geçtiler: nadir plan havuzu. Açık dönemde kuranlarda kalıcı açık, kurulmuş binalar yerinde; WEEKLY_LEGACY (göç 31) değişmedi. Normal katalogda sürekli açık tutmak da düşünüldü; uygulamanın "iki hafta sonra keşfedilir" sözünü bozacağı için seçilmedi. Geri almak için `until` satırlarını silmek yeter.
+**Adalet:** Haftalık planı açık dönemde *başlayan* seans kazanır (önceden bitiş zamanına bakılıyordu); yayın anında süren bir Çay Ocağı seansı planını kaybetmez.
+**Mühendislik notları:** çeşmede künk + maslak, sivri kemerin yükü ayaklara aktarması, kurşun örtü; çardakta çelik papuç (ahşap topraktan 10 cm yukarı) ve köşe payandaları; köprüde kil astar ve lamine kavisli kiriş; arılıkta 40 cm altlık ve renkli kovanlar; meteoroloji siperi 1,25–2 m, rüzgâr 10 m'de (WMO), 120° gergiler; güneş saatinde 40° (Ankara enlemi) kuzeye bakan gölge çubuğu; kulübede kavisli oluklu sacın rijitliği; kestanede çentik (buhar basıncı); kuş kulesinde X çapraz ve don derinliği altında tekil temel.
+**Testler:** 273/273 (test:all). Köy testlerindeki 49 sabiti 58 oldu; koy-a'da eklenenler açık liste. `scripts/koy/grow.mjs` her onuncu bina yuvası EVERYDAY'in son öğesini (pazar) hep gölgeliyordu; pazar ancak adım şansıyla geliyordu ve 58 modelle hiç gelmedi. Gündelik liste artık gündelik seçim sayısıyla yürüyor (koy-f pazar testi buna bağlı).
+**Kanıt:** /mnt/project-files/kutup/n48/ (bitmiş hâller, aşamalar, eski köy, Köy v2 gündüz/gece, telefonda katalog açık/koyu).
+
+### yapi-kugulu · Kuğulu Park
+Yapı Atölyesi · 22 Ekim 2026 · `codex/kugulu-park` · göç yok
+
+**İstek ve onay:** Kullanıcı “KUĞULU PARK” dedi, dokuz fotoğraf/çizim/uydu referansı verdi. Düşük ayrıntılı gündüz/gece ve mevcut evle ölçek çalışmasını gördükten sonra: “olur, ışık da olsun gece, uygula kapsamı”. 28 × 24 m oyun zemini, 75 dk, 180 tuğla, nadir plan, ek bonus olmaması onaylı. Kaynak/onay geçmişi `docs/yapi-atolyesi/isler/kugulu-park/` altında; gerçek alanın belediye kaydı 7.743 m², oyun alanı bunun birebir mühendislik ölçeği değil.
+
+**Uygulama:** `kuguluPark.js` kendi peyzaj sistemi ve 16 açıklamalı aşama: ağaç koruma/aplikasyon, kontrollü kazı, su hatları, havuz kabuğu, sızdırmazlık, kıyı, yollar, kafe/oyun alanı, ahşap çit, kuğu evleri/bank/heykel, ışık, peyzaj, su denemesi ve teslim. Olgun ağaçlar önceden var; kuğular su hazır olmadan görünmez. İşe uygun ekip ve küçük ekskavatör; tahminî kaplama/ahşap metrajı ve maliyet ağırlıklı hakediş. Tarihî yapım yöntemi veya gerçek parkın kesin metrajı iddiası yok.
+
+**Teknik kararlar:** Katalog/şantiye/teslim/köy ortak geometri. Kuru zeminde kendi havuzu; köyün gölüne bağlı değil. Çizimden ölçülen alan ve +y giriş; iki ayna yönü. Kuğu/fıskiye kendi küçük hareket katmanında, yakın görünümde; görünmez sekme ve hareket ayarları mevcut döngüyle korunuyor. Gece sabit sıcak lamba ışıkları; hareketi kapatmak ışıkları kapatmaz. İlk hareket ölçümündeki gereksiz örtücü çizimleri yalnız sprite'ın küçük alanını kesen nesnelere daraltıldı.
+
+**Uyumluluk:** Eski 48 modelin çizim/alan verisi ve geometri sürümü 2 aynı; yeni model satırı eklendi. Eski köyde park, tam boyunu sığdıran özel mahalle arar (en çok 24 aday); daha küçük yere sıkıştırılmaz. v2 kendi sözleşmesiyle planlanır. Şema, odak/maaş/iade/keşif olasılığı ve Anıtkabir değişmedi. Plan havuzu bir yeni yapı içerir, plan ücretsiz bitmiş park vermez.
+
+**Doğrulamada öğrenilen:** 49 model, büyüme aracının 7'lik adımının bazı modelleri hiç seçmemesine yol açıyordu. Test verisi üreticisi katalog sayısıyla aralarında asal bir adım seçiyor; 48 modelde eski sıra aynı. Tarihî n46 taban manifesti değiştirilmedi; test yeni katalog ekini açıkça ayırıyor. Genel aşama testi parka betonarme temel şartı dayatmıyor; kendi 16 aşamasını kontrol ediyor.
+
+**Teslim ve sınırlar:** [PR #69](https://github.com/batur-create/atomuparcalayanbebek/pull/69) → `kutup-platform`. Son tam test 273/273, genel tarayıcı 100/100, tema 252/252; 49 model taraması sıfır bulgu. Uygulama teslim/köy/gece, 375 px açık/koyu, iki ayna, aşamalar ve hareket/Sakin kanıtları iş kaydında. Yalnız geçici/sentetik veriler; gerçek Android/iPhone, pil veya Cloudflare CPU ölçümü yok. 4× yavaşlatmada yalnız su katmanının p95'i 44,9 ms; tam uygulama kare bütçesi garantisi verilmez. Birleştirme, canlı yayın ve köy etkinleştirme yapılmadı. Mevcut işler ve ana çalışma ağacı korundu.
+
+**Dosyalar:** `src/kuguluPark.js`, özel kayıt/katalog/ölçek/model alanı, dar şantiye/canlı katman bağlantıları, testler, Yenilikler ve atölye iş kaydı. Ürün dışındaki atölye başlangıç klasörü `codex/building-workshop-kit` dalından yalnız kendi klasörü olarak alındı; eski uygulama kaynak kopyaları alınmadı.
 
 ### n46 · Köy yenilemesi (A–H)
 Köy · 21 Ekim 2026 · claude/n46-a-taban → … (PR zinciri)

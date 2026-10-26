@@ -10,6 +10,68 @@
 
 export const YENILIKLER = [
   {
+    surum: 32,
+    tarih: "2026-10-25",
+    vakit: "gece",
+    baslik: "Tren akıcı, raylar kıvrımlı, malzeme geliyor",
+    maddeler: [
+      "Tren artık titremeden, akıcı kayıyor: ekranda tren varken harita her kareyi çiziyor.",
+      "Raylardaki boşluklar kapandı; raylar ve traversler baştan sona kesintisiz uzanıyor.",
+      "Yeni köydeki düz hat da kıvrılabiliyor: Komuta merkezi → Ekipler → Köy düzeni → “Rayı kıvır”. Binalar, sokaklar ve meydanlar yerinde kalır; “Yeni köyü aç” ile gelir, 14 gün içinde geri dönülebilir.",
+      "Yeni tren: malzeme treni. Tuğla paletleri, kereste ve çimento çuvallarıyla gelip durakta bekler.",
+      "Baretli üç işçi vagonlardan birer yük alıp sırtında sokaklardan şantiyeye, şantiye yoksa meydana taşır; vagonlar boşaldıkça yük azalır.",
+    ],
+  },
+  {
+    surum: 31,
+    tarih: "2026-10-24",
+    vakit: "gece",
+    baslik: "Batur'un denemesi: hesaplarında aynı anda inşaat",
+    maddeler: [
+      "Birden çok ekipte hesabı olan biri, bir seansı aynı telefondaki diğer hesaplarında da tek dokunuşla başlatabiliyor. Şimdilik yalnız Batur deniyor; beğenirse herkese açılacak.",
+      "Her hesap kendi binasını kendi tuğlasıyla kurar, dakikası ve maaşı kendi ekibine yazılır. Hepsi aynı anda biter.",
+      "Bağlı hesaplar tek seans gibidir: uygulamadan çıkınca hepsi çatlar, kurtarınca hepsi kurtulur, pes edince hepsi biter.",
+    ],
+  },
+  {
+    surum: 30,
+    tarih: "2026-10-24",
+    vakit: "akşam",
+    baslik: "Köye küçük bir tren uğruyor",
+    maddeler: [
+      "Yeni köyün demiryolundan arada bir küçük bir buharlı tren geçiyor. Yolcu treni köyün istasyonunda, istasyon yoksa ray kenarındaki küçük durakta durur.",
+      "Peronda bekleyenler trene biner, inenler istasyondan çıkıp köye yürür. Tren kalkarken düdük çalar; yük treni köyün önünden yavaşlayarak geçer.",
+      "Sokağın rayı kestiği yerde hemzemin geçit var: tren yaklaşınca bariyer iner, kırmızı lambalar yanıp söner.",
+      "Yeni hazırlanan köy taslaklarında ray artık dümdüz değil; virajlarla kıvrılıp köyün önüne kadar sokuluyor.",
+      "Göletteki ördek ailesi arada bir tur atıyor, dereden kürek çeken biri geçiyor, yaz gecelerinde ateşböcekleri yanıp sönüyor.",
+      "Hepsi yeni köyde ve hareket ayarına uyar: Sakin ve Kıpırtısız'da yalnız istasyonda bekleyen tren durağan bir resim olarak görünür.",
+    ],
+  },
+  {
+    surum: 29,
+    tarih: "2026-10-24",
+    vakit: "akşam",
+    baslik: "25 dakikada kurulacak 7 yeni yapı",
+    maddeler: [
+      "Küçük katalog 5'ten 12 yapıya çıktı ve hepsi ev değil: Taş Çeşme, Asma Çardak, Göletli Köprü, Arılık, Meteoroloji İstasyonu, Bahçe Süsleri ve tekerlekli Çoban Kulübesi.",
+      "Her birinin şantiyesi kendine göre: çeşmede önce künk ve taş temel, çardakta beton ayaklar ve payandalar, kulübede önce şase ve demir tekerlekler.",
+      "Bu haftanın yapıları sonbahardan: kestane ağacının altında Kestane Kebapçısı ve sazlık kıyısında Kuş Gözlem Kulesi. İki hafta herkese açık.",
+      "Köy Postanesi ile Çay Ocağı haftalık vitrinden çıktı, nadir planlara katıldı. Onları kurmuş olanlarda kalıcı açık; kurulmuş binalar yerinde duruyor.",
+      "Haftalık yapıya açık dönemde başladıysan, seans dönem bittikten sonra bitse de planı senin olur.",
+    ],
+  },
+  {
+    surum: 28,
+    tarih: "2026-10-22",
+    vakit: "akşam",
+    baslik: "Köyüne bir Kuğulu Park",
+    maddeler: [
+      "Ankara’nın Kuğulu Park minyatürü yeni nadir plan: 75 dakika çalışma ve 180 tuğla malzemeyle kurulur.",
+      "Kıvrımlı havuz, kuğu adaları, ahşap evler, ağaçlar ve oyun alanı aşama aşama hazırlanır; havuz hazır olunca kuğular gelir.",
+      "Geceleri park lambaları ve kafeterya ışıkları yanar. Kuğular ve fıskiyeler hareket ayarına uyar.",
+    ],
+  },
+  {
     surum: 27,
     tarih: "2026-10-21",
     vakit: "gece",

@@ -1,0 +1,28 @@
+{
+  "actualApp": {
+    "delivery": true,
+    "village": true,
+    "night": true,
+    "syntheticBuildings": 2
+  },
+  "mobile": {
+    "width": 375,
+    "modes": [
+      "light",
+      "dark"
+    ],
+    "overflow": false
+  },
+  "stages": 6,
+  "animation": {
+    "changed": true,
+    "calmStable": true,
+    "beforeHash": "f5a787d4b1d4c9f2cabbac2a1fc03386e9c4926ff975d0fa14a86d0d5340f188",
+    "afterHash": "ebc0b80ebe125d4e2c2ed1c7794822ed031edfcdf91fdc90825e1fb5eabd499c",
+    "layerMsDesktop": {
+      "median": 3.799999998882413,
+      "p95": 32.19999999925494
+    }
+  },
+  "pageErrors": []
+}

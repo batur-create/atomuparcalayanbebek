@@ -25,7 +25,7 @@ export const LANE_SHARE = { box: 0.72, own: 0.9 };
 const shareOf = (kind, model) => ((claimOf(model) || 0) > (FOOTPRINT[kind] || FOOTPRINT.cottage) ? LANE_SHARE.own : LANE_SHARE.box);
 // A footprint this big opens a new district rather than squeeze in smaller.
 export const LANDMARK = 5;
-export const footprintOf = (kind, model) => Math.max(FOOTPRINT[kind] || FOOTPRINT.cottage, claimOf(model) || 0);
+export const footprintOf = (kind, model) => model === "kugulupark" ? 9 : Math.max(FOOTPRINT[kind] || FOOTPRINT.cottage, claimOf(model) || 0);
 // n44: the widest landmarks (Anıtkabir, Keops…) get a district of their own:
 // they stand at its centre and its lanes become a ring road just inside the
 // edge, so they can be drawn about as big as a district allows. Such a
@@ -510,15 +510,16 @@ export function createPlanner(groupKey, districts, buildings, fullIds = []) {
       };
       // A monument opens a district of its own and stands on its centre.
       if (isMonument(model) && allocate)
-        for (let tries = 0; tries < 4; tries++) {
+        for (let tries = 0; tries < (model === "kugulupark" ? 24 : 4); tries++) {
           const taken = takeCell(memberId, newId);
           changes.push(taken);
           const placed = inside.get(taken.district.id),
             L = cellLayout(groupKey, taken.district.q, taken.district.r, true);
-          if (placed.length) continue;
+          if (placed.length || (model === "kugulupark" && L.room < 9)) continue;
           const round = (v) => Math.round(v * 100) / 100;
           return into(taken.district, { x: round(L.center[0]), y: round(L.center[1]), facing: facingFor(L, L.center) });
         }
+      if (model === "kugulupark") return null; // No smaller fallback for the approved park.
       const full = footprintOf(kind, model),
         big = full > (FOOTPRINT[kind] || FOOTPRINT.cottage);
       const found = attempt(false) || (full >= LANDMARK && allocate ? fresh() : null) || (big ? attempt(true) : null);

@@ -5,6 +5,7 @@
 // lets go of what is gone and plans only what is new.
 import { layoutFrom } from "./draft.js";
 import { emptyLayout, releaseSubject, seedNeighbourhoods } from "./planner.js";
+import { rerailLayout } from "./rerail.js";
 
 const keyOf = (s) => `${s.type}:${s.id}`;
 
@@ -23,4 +24,15 @@ export function planDraft({ seed, items, members = [] }, base = null) {
   const todo = items.filter((i) => !have.has(keyOf(i.subject))).map(({ subject, model, owner, created }) => ({ subject, model, owner, created }));
   const { layout: next, missing } = layoutFrom(seed, todo, layout);
   return { layout: next, missing, added: todo.length - missing.length, released };
+}
+
+/**
+ * n49-2: the team's live layout with its railway re-laid in bends (every house
+ * where it stands), brought up to date like any draft. { layout, missing,
+ * bends } or { error } when no bend fits.
+ */
+export function planRerail(source) {
+  const r = rerailLayout(source.layout);
+  if (r.error) return { error: r.error, layout: null, missing: [] };
+  return { ...planDraft(source, r.layout), bends: r.bends };
 }

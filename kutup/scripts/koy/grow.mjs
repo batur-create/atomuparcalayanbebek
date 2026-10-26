@@ -17,13 +17,21 @@ const groupOf = (model) => {
   return spec.context !== "dry" ? "water" : spec.landmark ? "dry-landmark" : "ordinary";
 };
 
-export function growth({ seed, count, unbalanced = false, onStep = null }) {
-  let layout = emptyLayout(seed);
+export function growth({ seed, count, unbalanced = false, onStep = null, terrainVersion }) {
+  // A stride sharing a factor with the catalogue size silently omits models
+  // (7 with 49 entries never reaches the pazar). Keep the old stride for 48.
+  const gcd = (a,b) => b ? gcd(b,a%b) : a;
+  let stride = 7;
+  while (gcd(stride, MODEL_IDS.length) !== 1) stride++;
+  let layout = terrainVersion ? emptyLayout(seed, undefined, terrainVersion) : emptyLayout(seed);
   const missed = [],
     near = [],
     times = [];
   for (let i = 0; i < count; i++) {
-    const model = i % 10 === 9 ? MODEL_IDS[(i * 7) % MODEL_IDS.length] : EVERYDAY[i % EVERYDAY.length];
+    // The everyday list is walked by everyday picks, so the slot that every
+    // tenth building takes for the catalogue no longer hides its last entry
+    // (the pazar, which then only came by luck of the stride; n48).
+    const model = i % 10 === 9 ? MODEL_IDS[(i * stride) % MODEL_IDS.length] : EVERYDAY[(i - Math.floor(i / 10)) % EVERYDAY.length];
     // Four people; "unbalanced" is the 76 / 8 / 8 / 8 of the baskin100 scene.
     const owner = unbalanced ? (i % 100 < 76 ? "m0" : `m${1 + (i % 3)}`) : `m${i % 4}`;
     const mine = layout.plots.filter((p) => p.owner === owner);

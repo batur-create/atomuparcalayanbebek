@@ -21,6 +21,14 @@ export const CATALOG = [
   { id: "bostan", name: "Bostan Evi", emoji: "🥕", class: "small", kind: "cottage", category: "home", cost: 15, done: "bostan evini", blurb: "Ahşap ev, önünde sebze tarhları.", look: { wall: "wood", roof: 2, beds: true } },
   { id: "cicekci", name: "Çiçekçi", emoji: "💐", class: "small", kind: "cottage", category: "fancy", cost: 25, done: "çiçekçisini", blurb: "Çizgili tente, pencerelerde saksılar.", look: { wall: "sage", roof: 4, awning: "#e98aa8", boxes: true } },
   { id: "kahve", name: "Kır Kahvesi", emoji: "☕", class: "small", kind: "cottage", category: "work", cost: 30, done: "kır kahvesini", blurb: "Önünde iki masa; mola burada verilir.", effect: "İmecede arkadaş başına +%8 (normalde +%5)", look: { wall: "cream", roof: 1, awning: "#c0533e", tables: true, sign: "KAHVE" } },
+  // n48: seven more 25-minute builds, and not all of them houses.
+  { id: "cesme", name: "Taş Çeşme", emoji: "⛲", class: "small", kind: "cottage", category: "fancy", cost: 30, done: "taş çeşmesini", blurb: "Sivri kemerli niş, ayna taşı, tunç lüle ve yalak; iki yanında taş sekiler.", look: { special: "cesme" } },
+  { id: "cardak", name: "Asma Çardak", emoji: "🍇", class: "small", kind: "cottage", category: "fancy", cost: 20, done: "asma çardağını", blurb: "Çelik papuçlu ahşap dikmeler, payandalar ve asma; altında masa ile iki bank.", look: { special: "cardak" } },
+  { id: "golkopru", name: "Göletli Köprü", emoji: "🪷", class: "small", kind: "cottage", category: "fancy", cost: 35, done: "göletli köprüsünü", blurb: "Kil astarlı gölet, kavisli lamine kirişli ahşap köprü, nilüfer ve kırmızı balıklar.", look: { special: "golkopru" } },
+  { id: "arilik", name: "Arılık", emoji: "🐝", class: "small", kind: "cottage", category: "work", cost: 30, done: "arılığını", blurb: "Dört renkli kovan, küçük bal evi, rüzgârkıran çit, lavanta ve taşlı sulak.", look: { special: "arilik" } },
+  { id: "meteo", name: "Meteoroloji İstasyonu", emoji: "🌦️", class: "small", kind: "cottage", category: "work", cost: 40, done: "meteoroloji istasyonunu", blurb: "Panjurlu beyaz siper, gergili 10 m direkte rüzgâr ölçer, yağış ölçer ve güneş küresi.", look: { special: "meteo" } },
+  { id: "sus", name: "Bahçe Süsleri", emoji: "🪺", class: "small", kind: "cottage", category: "fancy", cost: 25, done: "bahçe süslerini", blurb: "Süs paketi: 40° gölge çubuklu güneş saati, kuş evi, taş fener, saksılar ve bank.", look: { special: "sus" } },
+  { id: "cobankulube", name: "Çoban Kulübesi", emoji: "🐑", class: "small", kind: "cottage", category: "home", cost: 35, done: "çoban kulübesini", blurb: "Döküm demir tekerlekli taşınabilir kulübe; kavisli oluklu sac çatı ve odun sobası.", look: { special: "cobankulube" } },
   { id: "ev", name: "İki Katlı Ev", emoji: "🏠", class: "medium", kind: "house", category: "home", cost: 40, done: "iki katlı evini", blurb: "Bacası tüten, iki katlı aile evi." },
   { id: "sahaf", name: "Sahaf", emoji: "📚", class: "medium", kind: "house", category: "work", cost: 60, done: "sahafını", blurb: "Eski kitaplar, mavi tente.", effect: "Her seansta +3 🧱", look: { wall: "wood", roof: 0, awning: "#4a76b0", sign: "SAHAF", shutters: "#345d93" } },
   { id: "firin", name: "Fırın", emoji: "🥖", class: "medium", kind: "house", category: "work", cost: 70, done: "fırınını", blurb: "Taş fırının bacası hiç sönmez.", effect: "Her seansta maaşa +%5", look: { wall: "brick", roof: 3, chimney: true, awning: "#d4a24c", sign: "FIRIN" } },
@@ -51,10 +59,16 @@ export const CATALOG = [
 ];
 // Weekly buildings: each arrives on a Monday (since, Türkiye midnight), is
 // sold for two weeks, and after that only comes with a blueprint.
+// `until` ends a fortnight early when the next ones arrive (n48: Postane and
+// Çay Ocağı made room for the autumn pair on 24 Oct); after it, as after any
+// fortnight, the building is a blueprint and those who built it keep it.
 const mondayTR = (y, m, d) => Date.UTC(y, m - 1, d) - 3 * 3600000;
+const AUTUMN = mondayTR(2026, 10, 24); // a Saturday: the pair came mid-week
 CATALOG.push(
-  { id: "postane", name: "Köy Postanesi", emoji: "📮", class: "small", kind: "cottage", category: "work", cost: 35, since: mondayTR(2026, 10, 12), done: "köy postanesini", blurb: "Sarı tente, kapıda POSTA tabelası.", look: { wall: "brick", roof: 5, awning: "#f2c14e", sign: "POSTA", chimney: false } },
-  { id: "cay", name: "Çay Ocağı", emoji: "🫖", class: "small", kind: "cottage", category: "work", cost: 35, since: mondayTR(2026, 10, 19), done: "çay ocağını", blurb: "Yeşil tente, önünde çay masaları.", look: { wall: "wood", roof: 2, awning: "#4f9d8a", tables: true, sign: "ÇAY" } },
+  { id: "postane", name: "Köy Postanesi", emoji: "📮", class: "small", kind: "cottage", category: "work", cost: 35, since: mondayTR(2026, 10, 12), until: AUTUMN, done: "köy postanesini", blurb: "Sarı tente, kapıda POSTA tabelası.", look: { wall: "brick", roof: 5, awning: "#f2c14e", sign: "POSTA", chimney: false } },
+  { id: "cay", name: "Çay Ocağı", emoji: "🫖", class: "small", kind: "cottage", category: "work", cost: 35, since: mondayTR(2026, 10, 19), until: AUTUMN, done: "çay ocağını", blurb: "Yeşil tente, önünde çay masaları.", look: { wall: "wood", roof: 2, awning: "#4f9d8a", tables: true, sign: "ÇAY" } },
+  { id: "kestane", name: "Kestane Kebapçısı", emoji: "🌰", class: "small", kind: "cottage", category: "work", cost: 35, since: AUTUMN, done: "kestane kebapçısını", blurb: "Yaşlı kestane ağacının altında kırmızı araba: kömür mangalı, delikli tava ve çizgili tente.", look: { special: "kestane" } },
+  { id: "kusgozlem", name: "Kuş Gözlem Kulesi", emoji: "🪶", class: "small", kind: "cottage", category: "fancy", cost: 40, since: AUTUMN, done: "kuş gözlem kulesini", blurb: "Sazlık kıyısında X çaprazlı ayaklar, dar gözlem yarıkları ve kamış çatı; göçmen kuşlar geçer.", look: { special: "kusgozlem" } },
 );
 // Rare buildings need a blueprint, found by focusing (rare: true); the
 // observatory is the founder's own (rare: "founder").
@@ -73,12 +87,16 @@ CATALOG.push(
   {"id": "kervansaray", "name": "Kervansaray", "emoji": "🧳", "class": "medium", "kind": "house", "category": "fancy", "cost": 150, "rare": true, "done": "kervansarayını", "blurb": "Açık avlu, taş revaklar, taçkapı ve ortada serin bir çeşme.", "look": {"special": "caravanserai"}},
   {"id": "mardinevi", "name": "Mardin Evi", "emoji": "🏛️", "class": "medium", "kind": "house", "category": "famous", "cost": 130, "rare": true, "done": "Mardin evini", "blurb": "Sarı kalker duvarlar, kemerli pencereler, teras ve dış merdiven.", "look": {"special": "mardin"}},
   {"id": "atakule", "name": "Atakule", "emoji": "🗼", "class": "large", "kind": "tower", "category": "famous", "cost": 210, "rare": true, "done": "Atakule yapısını", "blurb": "Ankara’nın ince betonarme gövdesi, cam seyir kuşağı ve geniş restoran başlığı.", "look": {"special": "atakule"}},
+  { id: "kugulupark", name: "Kuğulu Park", emoji: "🦢", class: "large", kind: "house", category: "famous", cost: 180, rare: true, done: "Kuğulu Park minyatürünü", blurb: "Ankara’nın kıvrımlı havuzu, kuğu adaları, ağaçları ve gece lambaları.", look: { special: "kugulupark" } },
   { id: "gozlemevi", name: "Olay Ufku Gözlemevi", emoji: "🔭", class: "large", kind: "tower", category: "fancy", cost: 100, rare: "founder", done: "olay ufku gözlemevini", blurb: "Kubbesinin üstünde minik bir kara delik döner. Yalnız kurucunun.", look: { wall: "stone", dome: true, flag: false } },
 );
+// Catalogue entry below uses the existing permanent discovery/unlock flow.
 export const BY_ID = Object.fromEntries(CATALOG.map((item) => [item.id, item]));
 export const RARE = CATALOG.filter((item) => item.rare === true);
 export const WEEKLY_DAYS = 14;
 const DAY_MS = 24 * 3600000;
+/** When a weekly building's open fortnight ends (earlier if `until` says so). */
+export const weeklyEnd = (item) => Math.min(item.until ?? Infinity, item.since + WEEKLY_DAYS * DAY_MS);
 /**
  * Where a building stands for a member right now: "open" (buildable), "new"
  * (this fortnight's weekly building), "soon" (next week's), "locked" (needs a
@@ -88,7 +106,7 @@ export function stateOf(item, now, unlocks = [], founder = false) {
   if (item.rare === "founder") return founder ? "open" : "hidden";
   if (item.since) {
     if (now < item.since) return "soon";
-    if (now < item.since + WEEKLY_DAYS * DAY_MS) return "new";
+    if (now < weeklyEnd(item)) return "new";
     return unlocks.includes(item.id) ? "open" : "locked";
   }
   if (item.rare) return unlocks.includes(item.id) ? "open" : "locked";
@@ -97,7 +115,7 @@ export function stateOf(item, now, unlocks = [], founder = false) {
 /** Can this member build it now? */
 export const unlocked = (item, unlocks = [], founder = false, now = Date.now()) => ["open", "new"].includes(stateOf(item, now, unlocks, founder));
 /** Blueprints can turn up for rare buildings and for weekly ones whose fortnight is over. */
-export const blueprintPool = (now) => CATALOG.filter((item) => item.rare === true || (item.since && now >= item.since + WEEKLY_DAYS * DAY_MS));
+export const blueprintPool = (now) => CATALOG.filter((item) => item.rare === true || (item.since && now >= weeklyEnd(item)));
 export const BLUEPRINT_STREAKS = [7, 14, 30]; // day streaks that always do
 export const DEFAULT_MODEL = { cottage: "kulube", house: "ev", tower: "kule" };
 

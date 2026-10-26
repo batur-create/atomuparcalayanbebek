@@ -3,15 +3,16 @@
 // takes 15–30). Off the page's thread where the browser allows it, on it
 // otherwise; the same planner code either way.
 import { movePlans, planPlacement } from "../../shared/koy2/planner.js";
-import { planDraft } from "../../shared/koy2/switch.js";
+import { planDraft, planRerail } from "../../shared/koy2/switch.js";
 
 const inline = (job) => {
   if (job.kind === "place") return { plan: planPlacement(job.layout, job.req) };
   if (job.kind === "move") return { plans: movePlans(job.layout, job.subject) };
+  if (job.kind === "rerail") return planRerail(job.source);
   return planDraft(job.source, job.base);
 };
 
-/** Runs a planning job ({ kind: draft | place | move, ... }); rejects after `timeout` ms. */
+/** Runs a planning job ({ kind: draft | place | move | rerail, ... }); rejects after `timeout` ms. */
 export function runPlan(job, timeout = 0) {
   if (typeof Worker === "undefined") return Promise.resolve().then(() => inline(job));
   return new Promise((resolve, reject) => {

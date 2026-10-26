@@ -328,6 +328,7 @@ test("imece teams: migration and pre-32 backup restore retain every legacy minut
   // added by migration 34 (n46 C)
   for(const g of backup.tables.groups){delete g.active_layout_id;delete g.village_content_rev;}
   for(const m of backup.tables.members)delete m.focus_run_id;
+  for(const m of backup.tables.members)delete m.focus_link; // added by migration 35 (n50)
   for(const b of backup.tables.buildings||[])delete b.source_focus_run_id;
   for(const table of ["focus_runs","request_receipts","village_changes","village_layouts","village_regions","village_nodes","village_roads","village_neighborhoods","village_plots","village_placements"])delete backup.tables[table];
   backup.tables.imece_project=[{id:"bir-tas-da-senden",rev:3,started:1,completed:0}];
