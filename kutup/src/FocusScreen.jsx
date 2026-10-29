@@ -10,6 +10,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Expand, MapPinned,Headphones, Minus, Plus, RotateCcw, Shrink, X } from "lucide-react";
 import { ConstructionScene } from "./Village.jsx";
 import { useZoom } from "./zoom.js";
+import { SiteSurround } from "./SiteSurround.jsx";
 import { enterFullscreen, leaveFullscreen } from "./fullscreen.js";
 import { isIOS, keepScreenOn, releaseScreen, storage } from "./ui.jsx";
 import { DeskMates } from "./Together.jsx";
@@ -108,7 +109,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close,onVilla
   const screen = useRef(null);
   const opened = useRef(Date.now()),
     hide = useRef(0);
-  const zoom = useZoom();
+  const zoom = useZoom({ free: true });
   const session = me?.focusEnd > now ? { end: me.focusEnd, total: me.focusMinutes * 60000, at: me.focusPausedAt || now } : null;
   const item = session && me.focusStrict ? modelOf(me.focusModel, kindFor(me.focusMinutes)) : null;
   const showScene = !!(run || outcome) && pref.scene !== "hidden";
@@ -227,6 +228,7 @@ export function FocusScreen({ me, members = [], now, run, outcome, close,onVilla
         {showScene && (
           <div className={`fs-scene ${skyOf(now).tone}`} style={{ background: skyOf(now).background }} ref={zoom.box} {...zoom.handlers}>
             <div className="fs-zoom" style={{ transform: `translate(${zoom.view.x}px, ${zoom.view.y}px) scale(${zoom.view.s})` }}>
+              <SiteSurround />
               <ConstructionScene run={run} outcome={outcome} />
             </div>
           </div>
