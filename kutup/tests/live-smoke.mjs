@@ -49,9 +49,16 @@ async function fakeSubscription() {
 }
 
 // 0. Before: the real team is untouched.
-const before = await call("/owner/groups", { owner: true });
-check("owner panel reachable with key", before.status === 200);
-const realTeams = (before.data || []).map((g) => ({ id: g.id, members: g.members.length }));
+let before = await call("/owner/groups", { owner: true });
+// The owner key allows 20 tries a minute per address; the backup just before a
+// deploy may have used them. Wait the minute out once instead of failing.
+if (before.status === 429) {
+  console.log("     owner key rate-limited, waiting a minute…");
+  await new Promise((r) => setTimeout(r, 61000));
+  before = await call("/owner/groups", { owner: true });
+}
+check("owner panel reachable with key", before.status === 200 && Array.isArray(before.data), `status ${before.status}${before.data?.error ? ` · ${before.data.error}` : ""}`);
+const realTeams = (Array.isArray(before.data) ? before.data : []).map((g) => ({ id: g.id, members: g.members.length }));
 console.log("     teams before:", JSON.stringify(realTeams.map((t) => t.members)));
 // Right after a deploy the old version can still answer for a few seconds; the
 // new one migrates on its first request, so wake it and give it a moment.
