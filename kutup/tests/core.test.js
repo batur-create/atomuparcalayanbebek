@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { createApp, dayStart, weekStart } from "../server/app.js";
 import { sqliteAdapter } from "../server/sqlite.js";
-import { SCHEMA_VERSION, migrations } from "../server/schema.js";
+import { SCHEMA_VERSION, migrate, migrations } from "../server/schema.js";
 import { CAPACITY, cellLayout, chooseCell, placeIn, ringOf } from "../shared/village.js";
 import { achievementsOf } from "../server/achievements.js";
 import { ACHIEVEMENTS, shouting, teaCall } from "../shared/achievements.js";
@@ -1398,4 +1398,30 @@ test("join preview and confirmation enforce duration, price, pauses, mission sep
     assert.equal((await focus(bora,{action:"start",joinMember:aid,honest:false})).status,200);
     assert.equal(sqlite.prepare("SELECT focus_honest FROM members WHERE id=?").get(bid).focus_honest,1,"free joins always require watched minutes");
   }finally{sqlite.close();}
+});
+
+test("a failed schema read never rewinds a migrated database to schema 1", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  const adapter = sqliteAdapter(sqlite);
+  await migrate(adapter);
+  const schema = () => sqlite.prepare("SELECT value FROM settings WHERE key = 'schema'").get().value;
+  assert.equal(schema(), String(SCHEMA_VERSION));
+  // The live D1 once answered the version read with an error for a moment.
+  let hiccup = true;
+  const flaky = {
+    ...adapter,
+    get: (sql, params) => {
+      if (hiccup && sql.includes("key = 'schema'")) {
+        hiccup = false;
+        return Promise.reject(new Error("D1_ERROR: Network connection lost."));
+      }
+      return adapter.get(sql, params);
+    },
+  };
+  await assert.rejects(migrate(flaky), /Network connection lost/);
+  assert.equal(schema(), String(SCHEMA_VERSION), "the version stays");
+  await migrate(flaky);
+  // Even a migration batch that runs again cannot lower the recorded version.
+  await adapter.batch([[migrations[0][0], []], ["INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) < CAST(excluded.value AS INTEGER)", ["1"]]]);
+  assert.equal(schema(), String(SCHEMA_VERSION));
 });
