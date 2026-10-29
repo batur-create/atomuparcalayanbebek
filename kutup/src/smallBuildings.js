@@ -9,7 +9,7 @@ import { box, poly, seg, ellipse, wallText, LIT } from "./iso.js";
 import { lathe } from "./kit.js";
 import { design, WOOD, STONE, STEEL, TILE, gable, window, plate, quad, beam } from "./rareBuildings.js";
 
-const MARBLE = ["#eee9dc", "#d8d1c0", "#bdb4a0"],
+export const MARBLE = ["#eee9dc", "#d8d1c0", "#bdb4a0"],
   LEAD = ["#aab1b5", "#8d959a", "#6f777c"],
   WHITE = ["#f5f3ee", "#dedbd2", "#c5c1b6"],
   RED = ["#d0583f", "#ae4431", "#8c3424"],
@@ -22,11 +22,11 @@ const MARBLE = ["#eee9dc", "#d8d1c0", "#bdb4a0"],
   WATER = "#8cc0cf",
   CLAY = "#a88f6c";
 // A flat circle on the ground (or any height).
-const disc = (P, x, y, z, r, color, n = 18, ry = r) => poly(Array.from({ length: n }, (_, i) => P(x + r * Math.cos((i / n) * 2 * Math.PI), y + ry * Math.sin((i / n) * 2 * Math.PI), z)), color);
+export const disc = (P, x, y, z, r, color, n = 18, ry = r) => poly(Array.from({ length: n }, (_, i) => P(x + r * Math.cos((i / n) * 2 * Math.PI), y + ry * Math.sin((i / n) * 2 * Math.PI), z)), color);
 // A round bush or tree crown.
-const bush = (P, x, y, z, r, c = GREEN) => lathe(P, x, y, [[0, z - r * 0.5], [r * 0.8, z - r * 0.35], [r, z], [r * 0.75, z + r * 0.5], [0, z + r * 0.72]], c, { n: 9 });
+export const bush = (P, x, y, z, r, c = GREEN) => lathe(P, x, y, [[0, z - r * 0.5], [r * 0.8, z - r * 0.35], [r, z], [r * 0.75, z + r * 0.5], [0, z + r * 0.72]], c, { n: 9 });
 // A wheel standing in the plane y = const: rim, hub and spokes.
-function wheel(P, x, y, z, r, spokes = 8, color = IRON) {
+export function wheel(P, x, y, z, r, spokes = 8, color = IRON) {
   const at = (a, rr) => P(x + rr * Math.cos(a), y, z + rr * Math.sin(a));
   let s = "";
   for (let i = 0; i < 20; i++) s += seg(at((i / 20) * 2 * Math.PI, r), at(((i + 1) / 20) * 2 * Math.PI, r), color, 1.6);
@@ -34,13 +34,13 @@ function wheel(P, x, y, z, r, spokes = 8, color = IRON) {
   return s + seg(at(0, 0), at(0, 0.001), color, 2.6);
 }
 // A gently irregular pond outline.
-const pondPts = (P, cx, cy, rx, ry, z) => Array.from({ length: 28 }, (_, i) => {
+export const pondPts = (P, cx, cy, rx, ry, z) => Array.from({ length: 28 }, (_, i) => {
   const a = (i / 28) * 2 * Math.PI,
     w = 1 + 0.07 * Math.sin(3 * a) + 0.05 * Math.cos(5 * a);
   return P(cx + rx * w * Math.cos(a), cy + ry * w * Math.sin(a), z);
 });
 // Reeds: a tuft of thin stems with a brown head on some.
-function reeds(P, x, y, n, detail) {
+export function reeds(P, x, y, n, detail) {
   let s = "";
   for (let i = 0; i < (detail ? n : 2); i++) {
     const dx = ((i * 37) % 11) / 22 - 0.25,

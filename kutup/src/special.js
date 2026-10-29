@@ -19,6 +19,7 @@
 //   craneEnd, liftUntil     when the crane leaves; when lifting stops
 import { KUGULU_PARK } from "./kuguluPark.js";
 import { SMALL_BUILDINGS } from "./smallBuildings.js";
+import { MORE_SMALL_BUILDINGS } from "./moreSmallBuildings.js";
 import {MORE_DISCOVERY_BUILDINGS} from "./rareBuildings2.js";
 import { DISCOVERY_BUILDINGS } from "./rareBuildings.js";
 import { DOME } from "./geodesic.js";
@@ -31,7 +32,7 @@ import { ARCH_BRIDGE, SERENDER, BEEHIVE } from "./vernacular.js";
 
 let registry = null;
 // Built on first use: the modules import iso.js, which imports this one.
-const all = () => (registry ||= { ...DISCOVERY_BUILDINGS, ...SMALL_BUILDINGS,...MORE_DISCOVERY_BUILDINGS, kugulupark: KUGULU_PARK, geodesic: DOME, kemer: ARCH_BRIDGE, serender: SERENDER, kerpic: BEEHIVE, kabuk: SHELL_MARKET, gergi: TENSILE, konsol: CANTILEVER, kapsul: CAPSULE_TOWER, burgu: TWIST_TOWER, sukulesi: WATER_TOWER, keops: KEOPS, kolezyum: COLOSSEUM, pisa: PISA, suleymaniye: SULEYMANIYE, galata: GALATA, anitkabir: ANITKABIR, eyfel: EIFFEL, sidney: SYDNEY, burj: BURJ });
+const all = () => (registry ||= { ...DISCOVERY_BUILDINGS, ...SMALL_BUILDINGS, ...MORE_SMALL_BUILDINGS,...MORE_DISCOVERY_BUILDINGS, kugulupark: KUGULU_PARK, geodesic: DOME, kemer: ARCH_BRIDGE, serender: SERENDER, kerpic: BEEHIVE, kabuk: SHELL_MARKET, gergi: TENSILE, konsol: CANTILEVER, kapsul: CAPSULE_TOWER, burgu: TWIST_TOWER, sukulesi: WATER_TOWER, keops: KEOPS, kolezyum: COLOSSEUM, pisa: PISA, suleymaniye: SULEYMANIYE, galata: GALATA, anitkabir: ANITKABIR, eyfel: EIFFEL, sidney: SYDNEY, burj: BURJ });
 // n44: an enlarged building (sp.k > 1, see iso.js spec) answers through a
 // wrapper: its own methods see the drawing's spec and a projector scaled by
 // k, and the heights and positions they return are scaled back up.
