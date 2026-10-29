@@ -303,3 +303,37 @@ test("backup and restore keep a team Batur opened (n45)", async () => {
   assert.deepEqual({ ...copy.prepare("SELECT name, owner_made, request_key, request_name FROM groups WHERE id = ?").get(made.id) }, { name: "Hukuk", owner_made: 1, request_key: KEY, request_name: "Hukuk" });
   copy.close();
 });
+
+test("the backup also comes in small parts that add up to the full copy", async () => {
+  const sqlite = new DatabaseSync(":memory:");
+  sqlite.exec("PRAGMA foreign_keys = ON");
+  const app = createApp({ db: sqliteAdapter(sqlite), config: { adminKey: "n43-owner-key-123", backupPartRows: 2 } });
+  const owner = { "X-Owner-Key": "n43-owner-key-123" };
+  const batur = await call(app, "/groups", { method: "POST", body: { name: "Batur", username: "batur_part", password: "n43-pass-1" } });
+  for (const name of ["Sıla", "Ece", "Can", "Ali"])
+    await call(app, "/join", { method: "POST", body: { invite: batur.data.group.invite, name, username: `${name.toLowerCase()}_part`.replace("ı", "i"), password: "n43-pass-1" } });
+  const full = (await call(app, "/owner/backup", { headers: owner })).data;
+  assert.equal((await call(app, "/owner/backup?part=0:0")).status, 401, "needs the owner");
+  assert.equal((await call(app, "/owner/backup?part=x", { headers: owner })).status, 400);
+  const tables = {};
+  let part = "0:0", parts = 0;
+  while (part) {
+    const res = await call(app, `/owner/backup?part=${part}`, { headers: owner });
+    assert.equal(res.status, 200);
+    assert.equal(res.data.schema, full.schema);
+    for (const [t, rows] of Object.entries(res.data.tables)) {
+      assert.ok(rows.length <= 2);
+      tables[t] = (tables[t] || []).concat(rows);
+    }
+    part = res.data.next;
+    parts++;
+  }
+  assert.ok(parts > 3, "five members take several parts");
+  for (const [t, rows] of Object.entries(full.tables)) assert.deepEqual(tables[t] || [], rows, t);
+  assert.ok(tables.members.every((m) => !("token" in m) && !("backup_rowid" in m)));
+  const { restoreBackup } = await import("../server/restore.js");
+  const copy = new DatabaseSync(":memory:");
+  await restoreBackup({ ...full, tables }, copy);
+  assert.equal(copy.prepare("SELECT count(*) AS n FROM members").get().n, 5);
+  copy.close();
+});
