@@ -10,7 +10,7 @@
 
 export const YENILIKLER = [
   {
-    surum: 33,
+    surum: 35,
     tarih: "2026-10-29",
     vakit: "öğle",
     baslik: "Köydeki gri alan artık belli: Anıtkabir şantiyesi",
@@ -18,6 +18,30 @@ export const YENILIKLER = [
       "Köyde çitle çevrili gri arsa, ekibin ortak Anıtkabir şantiyesi. Üzerinde artık “Anıtkabir” tabelası var, uzaktan bakınca da adı ve yüzdesi görünüyor.",
       "Şantiyeye dokununca kart açılıyor: yüzde kaç bitti, kaç dakika toplandı.",
       "Anıtkabir tamamlanınca aynı arsada, çitlerin içinde yükselecek; yeri değişmez.",
+    ],
+  },
+  {
+    surum: 34,
+    tarih: "2026-10-29",
+    vakit: "öğle",
+    baslik: "Tren artık dokunulabilir",
+    maddeler: [
+      "Köydeki trene dokun: ne treni olduğunu, nereye vardığını ve sıradaki trenlerin saatlerini gösteren bir kart açılır.",
+      "Tren yaklaşırken haritanın üstünde “geliyor” uyarısı çıkar; “Bak” deyince kamera trenin peşine takılır.",
+      "Kartta “Treni takip et” kamerayı trenle birlikte götürür; haritayı kaydırınca takip biter.",
+      "“Düdük çal” ile lokomotif düdüğünü öttürür.",
+      "Malzeme treni kartında yüklerin şantiyeye mi meydana mı gittiği yazar. Harita düğmelerinde yeni bir tren simgesi de var.",
+    ],
+  },
+  {
+    surum: 33,
+    tarih: "2026-10-29",
+    vakit: "öğle",
+    baslik: "Şantiye ekranında rahat gezinme",
+    maddeler: [
+      "Odak ekranındaki şantiyeyi artık çok daha fazla uzaklaştırıp yakınlaştırabilirsin; fare tekerleği daha akıcı çalışıyor.",
+      "Şantiyeyi fareyle ya da parmakla her zoom düzeyinde sürükleyip istediğin yöne kaydırabilirsin, sınırlara takılmıyor.",
+      "Şantiyenin etrafında artık arazi var: ağaçlar, çalılar, tarlalar ve bir toprak yol. Uzaklaşıp etrafı rahatça gezebilirsin.",
     ],
   },
   {

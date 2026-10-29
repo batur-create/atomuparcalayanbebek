@@ -42,6 +42,8 @@ const KINDS = [
 ];
 /** What a worker carries off each wagon of a materials train. */
 export const LOADS = { bricks: "tuğla", logs: "kereste", cement: "çimento" };
+/** What people call each kind of train (n51). */
+export const KIND_NAMES = { yolcu: "Yolcu treni", kisa: "Kısa yolcu treni", yuk: "Yük treni", malzeme: "Malzeme treni" };
 
 /** Cumulative lengths of a polyline, for fast lookups by distance. */
 function measured(pts) {
@@ -529,6 +531,44 @@ export function createTrain(layout, graph = null) {
         moving: full,
         speed: h.v,
       };
+    },
+    /**
+     * n51: a cheap look for the notice and the card (no cars, no walkers).
+     * → null with no train on the line, else { kind, state, stops, dir, eta, leaves, cars }
+     * where eta / leaves are ms until it stands / pulls out (stopping trains).
+     */
+    status(clockMs) {
+      const t = clockMs / 1000;
+      const run = current(t);
+      if (!run) return null;
+      const tau = t - run.start;
+      const h = headAt(run, tau);
+      const standing = run.stops && t >= run.arrive && t < run.depart;
+      const state = standing ? "standing" : run.stops ? (t < run.arrive ? (h.a < 0 ? "braking" : "coming") : "leaving") : "passing";
+      return {
+        n: run.n,
+        kind: run.kind,
+        state,
+        stops: run.stops,
+        dir: run.dir,
+        cars: run.cars,
+        riders: run.riders,
+        eta: run.stops && t < run.arrive ? (run.arrive - t) * 1000 : 0,
+        leaves: run.stops && t < run.depart ? (run.depart - t) * 1000 : 0,
+        site: run.kind === "malzeme" ? !!haulOf()?.site : false,
+      };
+    },
+    /** n51: the next trains still to come (or on the line): [{ n, kind, at (ms, when it stands, else enters), stops }]. */
+    timetable(clockMs, count = 4) {
+      const t = clockMs / 1000;
+      const out = [];
+      const n = Math.floor(t / TRAIN.slot) - 1;
+      for (let k = n; k < n + 40 && out.length < count; k++) {
+        const run = runOf(k);
+        if (!run || run.start + run.duration <= t) continue;
+        out.push({ n: run.n, kind: run.kind, stops: run.stops, at: (run.stops ? run.arrive : run.start + run.duration * 0.5) * 1000 });
+      }
+      return out;
     },
     nextIn(clockMs) {
       const t = clockMs / 1000;

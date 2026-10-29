@@ -40,7 +40,7 @@ const FLOCK_EVERY = 17,
 const CONFETTI = ["#f2c14e", "#eca0b7", "#86bf98", "#8ab2da", "#a99be0", "#efac85", "#fffdf7"];
 const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 
-export function createView(canvas, { interactive = false, onPick = () => {}, onCamera = () => {} } = {}) {
+export function createView(canvas, { interactive = false, onPick = () => {}, onCamera = () => {}, onTrain = () => {}, onFollow = () => {} } = {}) {
   const bg = canvas.getContext("2d");
   // The live layer: same size, on top, never in the way of a finger.
   const layer = document.createElement("canvas");
@@ -158,6 +158,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     alive = false;
     smooth = false;
     wakeIn = 0;
+    trainHits = [];
     // Lamp glow at night.
     if (sky?.lamps)
       for (const item of world.lamps) {
@@ -417,12 +418,20 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         const p = atScreen(car.x, car.y);
         if (!onScreen(p, s * car.len)) continue;
         seen = carSeen = true;
+        trainHits.push({ x: p[0], y: p[1] - s * 0.8, r: Math.max(20, s * car.len * 0.7) });
         drawCar(A, car, { s, night, ctx });
         trainCover(car, p);
       }
       if (out.puffs.length) drawPuffs(ctx, A, out.puffs, s, tint);
       const loco = out.cars.find((c) => c.kind === "loco");
-      if (out.whistle !== null && loco) drawWhistle(ctx, A, loco, out.whistle, s);
+      let blow = out.whistle;
+      const tootAge = now - honkAt;
+      if (loco && tootAge >= 0 && tootAge < 1800) {
+        blow = tootAge / 1800;
+        alive = true;
+        smooth = true;
+      }
+      if (blow !== null && loco) drawWhistle(ctx, A, loco, blow, s);
     } finally {
       useSVG();
     }
@@ -971,6 +980,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     raf = 0;
     if (destroyed || !world || document.visibilityState === "hidden") return;
     const level = motionLevel();
+    if (following) followStep();
     if (flight) {
       const k = Math.min(1, (now - flight.t0) / flight.ms),
         e = 1 - Math.pow(1 - k, 3);
@@ -1008,7 +1018,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     drawLive(now, level);
-    if (pending || flight || inertia || gestureActive()) request();
+    if (pending || flight || inertia || gestureActive() || (following && followMoving)) request();
     else if (animated() && visible && smooth) request();
     else if (animated() && visible) {
       // Live layer at ~24 fps: smoke, strollers and birds need no more, the battery thanks us.
@@ -1044,6 +1054,41 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, s: Math.max(minS, Math.min(maxS, s)) };
   }
 
+  // ---------- the train, close up (n51) ----------
+  // Screen circles of the cars drawn last frame (for taps), the camera
+  // following the engine, and a toot of the whistle on request.
+  let trainHits = [],
+    following = false,
+    followMoving = false,
+    honkAt = 0;
+  const trainNow = () => {
+    const tr = world?.train;
+    if (!tr) return null;
+    const out = tr.at(Date.now(), { motion: still ? "calm" : motionLevel() });
+    return out.cars.length ? out : null;
+  };
+  function stopFollow() {
+    if (!following) return;
+    following = false;
+    onFollow(false);
+  }
+  function followStep() {
+    const out = trainNow();
+    if (!out) return stopFollow();
+    const mid = out.cars[Math.floor(out.cars.length / 2)];
+    const [tx, ty] = screen(mid.x, mid.y, 1);
+    followMoving = out.speed > 0.05;
+    if (flight) {
+      flight.to.x = tx;
+      flight.to.y = ty;
+    } else {
+      const k = followMoving ? 0.16 : 0.08;
+      cam.x += (tx - cam.x) * k;
+      cam.y += (ty - cam.y) * k;
+      onCamera(cam);
+    }
+  }
+
   // ---------- gestures ----------
   const pointers = new Map();
   let pinch = null,
@@ -1071,6 +1116,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     inertia = null;
     flight = null;
     track = [[p[0], p[1], e.timeStamp]];
+    stopFollow();
     if (pointers.size === 1) tap = { x: p[0], y: p[1], t: e.timeStamp, moved: false };
     else {
       tap = null;
@@ -1127,6 +1173,14 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     request();
   }
   function pick(px, py) {
+    // A tap on the train comes before the buildings behind it.
+    const car = trainHits.find((c) => Math.hypot(px - c.x, py - c.y) <= c.r);
+    if (car) {
+      selected = null;
+      onTrain(true);
+      request();
+      return;
+    }
     const x = cam.x + (px - W / 2) / cam.s,
       y = cam.y + (py - H / 2) / cam.s;
     const hits = world.query(x - 1, y - 1, x + 1, y + 1).filter(
@@ -1240,6 +1294,31 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
       clamp();
     },
     flyTo,
+    /** n51: the camera rides along with the train until the finger moves the map; false when none is on the line. */
+    follow(on) {
+      if (!on) return stopFollow();
+      const out = trainNow();
+      if (!out) return false;
+      following = true;
+      onFollow(true);
+      const mid = out.cars[Math.floor(out.cars.length / 2)];
+      const [tx, ty] = screen(mid.x, mid.y, 1);
+      flyTo({ x: tx, y: ty, s: Math.max(cam.s, 9) }, 650);
+      request();
+      return true;
+    },
+    /** n51: a toot of the engine's whistle; false when no engine is in view. */
+    honk() {
+      if (!trainHits.length) return false;
+      honkAt = Date.now();
+      request();
+      return true;
+    },
+    /** n51: fly to a spot given in village units. */
+    flyToWorld(x, y, s = 9, ms = 600) {
+      const [sx, sy] = screen(x, y, 0);
+      flyTo({ x: sx, y: sy, s }, ms);
+    },
     zoomBy: (factor) => zoomAt(W / 2, H / 2, factor),
     select(id) {
       selected = id;
@@ -1283,6 +1362,7 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
     redraw: request,
     destroy() {
       destroyed = true;
+      following = false;
       cancelAnimationFrame(raf);
       clearTimeout(liveTimer);
       observer?.disconnect();

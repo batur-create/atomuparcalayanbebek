@@ -263,3 +263,72 @@
     display: none;
   }
 }
+
+/* n51: the train notice, card and button. */
+.train-notice {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  left: 12px;
+  right: 64px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px #18171233;
+  animation: building-card-in 0.35s var(--ease-spring) backwards;
+}
+.train-notice span {
+  flex: 1;
+}
+.train-notice .text-button {
+  flex: none;
+  font-weight: 700;
+}
+.train-notice .icon-button {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  color: var(--muted);
+}
+.village-controls .train-live {
+  color: var(--accent, #7a5cc8);
+  box-shadow: 0 0 0 2px currentColor;
+}
+.train-facts {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #5f5b69;
+}
+.train-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+}
+.train-actions .text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.train-table {
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  list-style: none;
+  border-top: 1px solid #0000001a;
+  font-size: 12px;
+  color: #5f5b69;
+}
+.train-table b {
+  color: var(--ink);
+  margin-right: 6px;
+}

@@ -408,3 +408,22 @@
 }
 
 .fs-village { color: var(--studio-ink); border-color: var(--studio-faint); background: var(--studio); min-height: 44px; }
+
+/* The land around the site (n51): the whole sheet sits behind the site, which
+   keeps its place in the middle; it takes the time of day like the site does. */
+.fs-scene .fs-surround {
+  position: absolute;
+  left: -100%;
+  top: -100%;
+  width: 300%;
+  height: 300%;
+  max-width: none;
+  z-index: -1;
+  pointer-events: none;
+}
+.fs-scene.night .fs-surround {
+  filter: brightness(0.8) saturate(0.82);
+}
+.fs-scene.warm .fs-surround {
+  filter: sepia(0.14) saturate(1.08);
+}
