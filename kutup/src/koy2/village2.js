@@ -72,6 +72,7 @@ export function mergeVillage2(prev, raw) {
     layout,
     things,
     sites,
+    projects: raw.projects || [],
     buildings: buildings.sort((a, b) => a.created - b.created),
     districts: [],
     ruins: [],

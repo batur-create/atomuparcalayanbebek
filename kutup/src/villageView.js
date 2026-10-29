@@ -306,6 +306,12 @@ export function createView(canvas, { interactive = false, onPick = () => {}, onC
         }
         pill(p[0], p[1] - 8, name);
       }
+    // The shared Anıtkabir plot keeps its name on the map at any distance (v2 only).
+    if (interactive && world.siteLabels?.length && s > 0.65)
+      for (const l of world.siteLabels) {
+        const p = atScreen(l.at[0], l.at[1], 2.2);
+        if (onScreen(p, 100)) pill(p[0], p[1] - 8, l.text);
+      }
     if (selected) {
       const item = world.byId.get(selected);
       if (item) {

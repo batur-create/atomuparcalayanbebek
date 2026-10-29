@@ -311,6 +311,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
   const lit = new Set();
   for (const m of members) if ((m.status === "here" || focusing(m, now)) && newest.has(m.id)) lit.add(newest.get(m.id).id);
   const specs = new Map();
+  const siteLabels = [];
   for (const p of layout.plots) {
     const thing = things.get(subjectKey(p.subject));
     const sp = plotSpec(p, thing);
@@ -326,6 +327,13 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
     // site), so a session or a shared project that just began is already visible.
     const fenced = site ? plan.find((k) => k.key === "mobilize")?.b ?? 0 : 0;
     const shown = site ? Math.max(fenced, thing?.site?.shown ?? 0.35) : 1;
+    // The shared Anıtkabir plot says what it is: a sign at the plot's front corner
+    // and a pill while zoomed out, so the grey ground never reads as an unknown slab.
+    if (p.subject.type === "imece") {
+      const sx = p.plot[2] - 1.2, sy = p.plot[3] + 0.9, pct = Math.round((thing?.site?.shown ?? 1) * 100);
+      siteLabels.push({ id: p.subject.id, text: site ? `Anıtkabir · ortak şantiye %${pct}` : "Anıtkabir", at: [sx, sy] });
+      add(standing, { type: "sign", depth: sx + sy, x: sx, y: sy, bbox: boxOf(sx, sy, 2, 2, 2.2, 1), draw: (v) => signArt(v, sx, sy, "Anıtkabir", false, "#c9a227") });
+    }
     add(standing, {
       type: "building", id: p.subject.id, plotId: p.id, building: { ...thing, id: p.subject.id, model: p.model, memberId: p.owner, facing: p.facing, site }, owner, sp,
       depth: p.x + p.y, x: p.x, y: p.y,
@@ -563,6 +571,7 @@ export function buildWorld2({ layout, things = new Map(), members = [], me = nul
       return looks.get(plotId);
     },
     farLabels: new Set(districts.map((d) => d.id)),
+    siteLabels,
     lamps: standing.filter((item) => item.type === "lamp"),
     byId: new Map(standing.filter((item) => item.id).map((item) => [item.id, item])),
     names: new Map(members.map((m) => [m.id, m.name])),
