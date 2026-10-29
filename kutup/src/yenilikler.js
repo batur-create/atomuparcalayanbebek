@@ -10,6 +10,19 @@
 
 export const YENILIKLER = [
   {
+    surum: 34,
+    tarih: "2026-10-29",
+    vakit: "öğle",
+    baslik: "Tren artık dokunulabilir",
+    maddeler: [
+      "Köydeki trene dokun: ne treni olduğunu, nereye vardığını ve sıradaki trenlerin saatlerini gösteren bir kart açılır.",
+      "Tren yaklaşırken haritanın üstünde “geliyor” uyarısı çıkar; “Bak” deyince kamera trenin peşine takılır.",
+      "Kartta “Treni takip et” kamerayı trenle birlikte götürür; haritayı kaydırınca takip biter.",
+      "“Düdük çal” ile lokomotif düdüğünü öttürür.",
+      "Malzeme treni kartında yüklerin şantiyeye mi meydana mı gittiği yazar. Harita düğmelerinde yeni bir tren simgesi de var.",
+    ],
+  },
+  {
     surum: 33,
     tarih: "2026-10-29",
     vakit: "öğle",

@@ -3,7 +3,7 @@ import { RouteLink, useScreenState } from "./Navigation.jsx";
 // Köy tab panel and the home screen's "şu an" card. Loaded on demand (n29);
 // the data hook lives in villageData.js so the app shell can fetch early.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Expand, Heart, LocateFixed, Minus, Plus, Shrink, X } from "lucide-react";
+import { ArrowUpRight, Expand, Heart, LocateFixed, Minus, Plus, Shrink, TrainFront, X } from "lucide-react";
 import { api, dateLabel, get, minutesLabel, shortTime } from "./api.js";
 import { Avatar } from "./ui.jsx";
 import { buildWorld, focusing, skyAt, tinter } from "./villageWorld.js";
@@ -17,6 +17,7 @@ import { modelOf } from "../shared/catalog.js";
 import { SiteRoster } from "./Together.jsx";
 import { Modal } from "./Modal.jsx";
 import { Loading } from "./Illustrations.jsx";
+import { TrainCard, TrainNotice, useTrainStatus } from "./TrainCard.jsx";
 import "./koy.css";
 
 // Time of day, re-checked every few minutes; tiles repaint only when it changes.
@@ -68,7 +69,7 @@ export function useVillageWorld({ village, members, me, groupId, spots }) {
 }
 
 // ---------- canvas ----------
-function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "all", label, viewRef }) {
+function VillageCanvas({ world, sky, tint, interactive = false, onPick, onTrain, onFollow, fit = "all", label, viewRef }) {
   const wrap = useRef(null),
     canvas = useRef(null),
     view = useRef(null),
@@ -77,6 +78,10 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
     pickRef = useRef(onPick);
   const fitRef = useRef(null);
   pickRef.current = onPick;
+  const trainRef = useRef(onTrain),
+    followRef = useRef(onFollow);
+  trainRef.current = onTrain;
+  followRef.current = onFollow;
   const fitNow = (ms = 0) => {
     const v = view.current;
     if (!v || !world || !wrap.current?.clientWidth) return;
@@ -97,7 +102,7 @@ function VillageCanvas({ world, sky, tint, interactive = false, onPick, fit = "a
   };
   fitRef.current = fitNow;
   useEffect(() => {
-    const v = createView(canvas.current, { interactive, onPick: (b) => pickRef.current?.(b) });
+    const v = createView(canvas.current, { interactive, onPick: (b) => pickRef.current?.(b), onTrain: () => trainRef.current?.(), onFollow: (on) => followRef.current?.(on) });
     view.current = v;
     if (viewRef)
       viewRef.current = {
@@ -231,6 +236,15 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
     [buildingPage, setBuildingPage] = useState(0),
     [, tick] = useState(0);
   const map = useRef(null);
+  const train = world?.train || null,
+    trainStatus = useTrainStatus(train);
+  const [trainOpen, setTrainOpen] = useState(false),
+    [following, setFollowing] = useState(false),
+    [dismissed, setDismissed] = useState(null);
+  useEffect(() => {
+    // A new train gets a new notice; the card stays shut until asked for.
+    if (!trainStatus) setFollowing(false);
+  }, [trainStatus?.n]);
   const moveTo = async (spot) => {
     try {
       await api(`/buildings/${moving.building.id}/move`, { x: spot.x, y: spot.y, ...(spot.village ? { village: spot.village } : {}) });
@@ -369,8 +383,17 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 interactive
                 viewRef={map}
                 label={`Kütüp köyü: ${settled} mahalle, ${count} bina`}
+                onTrain={() => {
+                  if (moving) return;
+                  setPicked(null);
+                  setTrainOpen(true);
+                }}
+                onFollow={setFollowing}
                 onPick={(b) => {
-                  if (!moving) return setPicked(b ? b.id : null);
+                  if (!moving) {
+                    if (b) setTrainOpen(false);
+                    return setPicked(b ? b.id : null);
+                  }
                   if (b?.spot) moveTo(b);
                 }}
               />
@@ -382,6 +405,11 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
               <button className="icon-button" aria-label="Uzaklaştır" onClick={() => map.current?.view.zoomBy(1 / 1.4)}>
                 <Minus size={17} />
               </button>
+              {train && (
+                <button className={`icon-button ${trainStatus ? "train-live" : ""}`} aria-label="Köy treni" onClick={() => setTrainOpen(!trainOpen)}>
+                  <TrainFront size={17} />
+                </button>
+              )}
               {me && (
                 <button className="icon-button" aria-label="Mahalleme git" onClick={() => flyTo(me.id)}>
                   <LocateFixed size={17} />
@@ -424,7 +452,38 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 </button>
               </div>
             )}
-            {site && !moving && (
+            {train && !moving && !trainOpen && dismissed !== trainStatus?.n && (
+              <TrainNotice
+                status={trainStatus}
+                onOpen={() => {
+                  setTrainOpen(true);
+                  setPicked(null);
+                  if (!following) map.current?.view.follow(true);
+                }}
+                onDismiss={() => setDismissed(trainStatus?.n)}
+              />
+            )}
+            {train && trainOpen && !moving && (
+              <TrainCard
+                train={train}
+                status={trainStatus}
+                following={following}
+                onFollow={(on) => map.current?.view.follow(on)}
+                onHonk={() => {
+                  if (!map.current?.view.honk()) {
+                    map.current?.view.follow(true);
+                    setTimeout(() => map.current?.view.honk(), 700);
+                  }
+                  navigator.vibrate?.(25);
+                }}
+                onGoStop={train.stop ? () => map.current?.view.flyToWorld(train.stop.p[0], train.stop.p[1], 9) : null}
+                close={() => {
+                  map.current?.view.follow(false);
+                  setTrainOpen(false);
+                }}
+              />
+            )}
+            {site && !moving && !trainOpen && (
               <SiteCard
                 site={site}
                 owner={members.find((m) => m.id === site.memberId)}
@@ -435,7 +494,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 }}
               />
             )}
-            {building && !moving && (
+            {building && !moving && !trainOpen && (
               <BuildingCard
                 building={building}
                 owner={owner}
