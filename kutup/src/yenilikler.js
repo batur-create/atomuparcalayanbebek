@@ -10,7 +10,7 @@
 
 export const YENILIKLER = [
   {
-    surum: 35,
+    surum: 36,
     tarih: "2026-10-29",
     vakit: "akşam",
     baslik: "4 yeni yapı: kütük ev, demirci, köşk ve Kız Kulesi",
