@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 33,
+    tarih: "2026-10-29",
+    vakit: "öğle",
+    baslik: "Şantiye ekranında rahat gezinme",
+    maddeler: [
+      "Odak ekranındaki şantiyeyi artık çok daha fazla uzaklaştırıp yakınlaştırabilirsin; fare tekerleği daha akıcı çalışıyor.",
+      "Şantiyeyi fareyle ya da parmakla her zoom düzeyinde sürükleyip istediğin yöne kaydırabilirsin, sınırlara takılmıyor.",
+      "Şantiyenin etrafında artık arazi var: ağaçlar, çalılar, tarlalar ve bir toprak yol. Uzaklaşıp etrafı rahatça gezebilirsin.",
+    ],
+  },
+  {
     surum: 32,
     tarih: "2026-10-25",
     vakit: "gece",

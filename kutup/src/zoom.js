@@ -1,20 +1,29 @@
 import { useRef, useState } from "react";
 
 // Pinch (two fingers), wheel or the buttons zoom the site; drag pans it when
-// zoomed in; a double tap zooms in or back out.
-export function useZoom({ wheel = true } = {}) {
+// zoomed in; a double tap zooms in or back out. With `free` (the focus screen's
+// site) it also zooms out below 1 and drags at any zoom, over the terrain
+// drawn around the site, so the whole neighbourhood can be looked around.
+export function useZoom({ wheel = true, free = false } = {}) {
+  const MIN = free ? 0.45 : 1,
+    MAX = free ? 6 : 4;
   const [view, setView] = useState({ s: 1, x: 0, y: 0 });
   const box = useRef(null),
     pointers = useRef(new Map()),
     pinch = useRef(null),
     lastTap = useRef(0);
   const clampView = (v) => {
-    const s = Math.min(4, Math.max(1, v.s)),
+    const s = Math.min(MAX, Math.max(MIN, v.s)),
       el = box.current,
       w = el ? el.clientWidth : 0,
       h = el ? el.clientHeight : 0,
-      mx = ((s - 1) * w) / 2,
-      my = ((s - 1) * h) / 2;
+      // Free: roam anywhere over the land around the site (three site-widths
+      // across, centred on it), so the edge of the land never comes into view.
+      kid = free && el?.firstElementChild,
+      cw = kid ? kid.offsetWidth : 0,
+      ch = kid ? kid.offsetHeight : 0,
+      mx = free ? Math.max(0, 1.5 * s * cw - w / 2) : ((s - 1) * w) / 2,
+      my = free ? Math.max(0, 1.5 * s * ch - h / 2) : ((s - 1) * h) / 2;
     return { s, x: Math.max(-mx, Math.min(mx, v.x)), y: Math.max(-my, Math.min(my, v.y)) };
   };
   // Zoom by `k` keeping the screen point (cx, cy) where it is.
@@ -25,7 +34,7 @@ export function useZoom({ wheel = true } = {}) {
       const r = el.getBoundingClientRect(),
         px = cx - (r.left + r.width / 2),
         py = cy - (r.top + r.height / 2);
-      const s = Math.min(4, Math.max(1, v.s * k)),
+      const s = Math.min(MAX, Math.max(MIN, v.s * k)),
         f = s / v.s;
       return clampView({ s, x: px - (px - v.x) * f, y: py - (py - v.y) * f });
     });
@@ -35,7 +44,9 @@ export function useZoom({ wheel = true } = {}) {
   };
   const handlers = {
     // In a scrolling page the wheel keeps scrolling the page.
-    onWheel: (e) => wheel && zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY),
+    onWheel: (e) =>
+      wheel &&
+      zoomAt(free ? Math.exp(-Math.max(-120, Math.min(120, e.deltaY)) * 0.0022) : e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY),
     onPointerDown: (e) => {
       pointers.current.set(e.pointerId, [e.clientX, e.clientY]);
       e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -46,7 +57,7 @@ export function useZoom({ wheel = true } = {}) {
       const now = Date.now();
       if (pointers.current.size === 1 && now - lastTap.current < 300) {
         setView((v) => (v.s > 1.2 ? { s: 1, x: 0, y: 0 } : v));
-        if (view.s <= 1.2) zoomAt(2, e.clientX, e.clientY);
+        if (view.s <= 1.2) zoomAt(free && view.s < 1 ? 1 / view.s : 2, e.clientX, e.clientY);
       }
       lastTap.current = now;
     },
@@ -60,7 +71,7 @@ export function useZoom({ wheel = true } = {}) {
         zoomAt(d / pinch.current.d, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
         pinch.current.d = d;
       } else if (pointers.current.size === 1) {
-        setView((v) => (v.s > 1 ? clampView({ ...v, x: v.x + e.clientX - prev[0], y: v.y + e.clientY - prev[1] }) : v));
+        setView((v) => (free || v.s > 1 ? clampView({ ...v, x: v.x + e.clientX - prev[0], y: v.y + e.clientY - prev[1] }) : v));
       }
     },
     onPointerUp: (e) => {
