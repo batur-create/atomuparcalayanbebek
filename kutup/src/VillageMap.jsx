@@ -167,6 +167,34 @@ function SiteCard({ site, owner, me, close }) {
   );
 }
 
+// The shared Anıtkabir plot: what the grey ground with the fence is, and that the
+// finished monument stands right here.
+function ImeceCard({ project, close }) {
+  const done = !!project.completed || project.stage >= 1;
+  const minutes = Math.min(project.goal, project.minutes || 0);
+  return (
+    <div className="building-card" role="dialog" aria-label="Anıtkabir ortak şantiyesi">
+      <button className="icon-button building-card-close" aria-label="Kartı kapat" onClick={close}>
+        <X size={16} />
+      </button>
+      <div className="building-card-head">
+        <span className="building-card-emoji" aria-hidden="true">{done ? "🏛️" : "🏗️"}</span>
+        <div>
+          <strong>{done ? "Anıtkabir" : "Anıtkabir şantiyesi"}</strong>
+          <small>{done ? "Tamamlandı" : `%${Math.round(project.stage * 100)} · ${minutes} / ${project.goal} dk`}</small>
+        </div>
+      </div>
+      <div className="building-card-who">
+        <span>
+          {done
+            ? "Ekibin ortak eseri, köyde bu arsada yükseliyor."
+            : "Ekibin ortak şantiyesi: hepinizin odak dakikalarıyla yükseliyor. Anıtkabir tamamlanınca tam bu arsada, çitlerin içinde duracak."}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function BuildingCard({ building, owner, me, onLike, onMove, close, canLike, planned = false }) {
   const [busy, setBusy] = useState(false);
   const item = modelOf(building.model, building.kind),
@@ -292,6 +320,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
   const owner = building && members.find((m) => m.id === building.memberId);
   // n46: on a planned village a site can be picked too.
   const site = picked && !building && village?.v2 ? village.sites.find((s) => s.focusRunId === picked) : null;
+  const imece = picked && !building && !site && village?.v2 ? (village.projects || []).find((p) => p.id === picked) : null;
   const count = village?.buildings.length || 0;
   const settled = world?.districts.filter(d=>d.memberId).length || 0;
   const myCount = village?.buildings.filter((b) => b.memberId === me?.id).length || 0;
@@ -414,7 +443,7 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                 })}
               </div>
             )}
-            {picked && village && !building && !site && <p className="village-caption" role="status">Bu yapı açık hesabının köyünde bulunamadı. <RouteLink href="/koy">Köye dön</RouteLink></p>}
+            {picked && village && !building && !site && !imece && <p className="village-caption" role="status">Bu yapı açık hesabının köyünde bulunamadı. <RouteLink href="/koy">Köye dön</RouteLink></p>}
             {full && <span className="village-full-title">Kütüp köyü · {count} bina</span>}
             {moving && (
               <div className="move-banner" role="status">
@@ -423,6 +452,15 @@ export function VillagePanel({ me, members, groupId, village, like, run, outcome
                   Vazgeç
                 </button>
               </div>
+            )}
+            {imece && !moving && (
+              <ImeceCard
+                project={imece}
+                close={() => {
+                  setPicked(null);
+                  map.current?.view.select(null);
+                }}
+              />
             )}
             {site && !moving && (
               <SiteCard

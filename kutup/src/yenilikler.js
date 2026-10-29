@@ -10,6 +10,17 @@
 
 export const YENILIKLER = [
   {
+    surum: 33,
+    tarih: "2026-10-29",
+    vakit: "öğle",
+    baslik: "Köydeki gri alan artık belli: Anıtkabir şantiyesi",
+    maddeler: [
+      "Köyde çitle çevrili gri arsa, ekibin ortak Anıtkabir şantiyesi. Üzerinde artık “Anıtkabir” tabelası var, uzaktan bakınca da adı ve yüzdesi görünüyor.",
+      "Şantiyeye dokununca kart açılıyor: yüzde kaç bitti, kaç dakika toplandı.",
+      "Anıtkabir tamamlanınca aynı arsada, çitlerin içinde yükselecek; yeri değişmez.",
+    ],
+  },
+  {
     surum: 32,
     tarih: "2026-10-25",
     vakit: "gece",
