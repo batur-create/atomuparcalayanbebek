@@ -19,15 +19,40 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const file = (ext) => resolve(dir, `backup-before-${label}-${stamp}.${ext}`);
 const short = (path) => path.split(/[\\/]/).pop();
 
+// The owner key may be tried 20 times a minute per address, and the smoke test
+// right after the deploy needs it too. So the key is used once, to sign in; the
+// parts then go with the owner cookie, which does not count against that limit.
+async function signIn(key) {
+  const res = await fetch(`${base}/api/owner/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-kutup": "1" },
+    body: JSON.stringify({ key }),
+  });
+  const token = /kutup_owner=([^;]*)/.exec(res.headers.get("set-cookie") || "")?.[1];
+  return res.ok && token ? { cookie: `kutup_owner=${token}` } : { "x-owner-key": key };
+}
+async function signOut(auth) {
+  if (auth.cookie) await fetch(`${base}/api/owner/logout`, { method: "POST", headers: { ...auth, "x-kutup": "1" } }).catch(() => {});
+}
+
 async function partsBackup() {
   const key = readFileSync(resolve(dir, "batur-key-canli.txt"), "utf8").trim();
+  const auth = await signIn(key);
+  try {
+    await readParts(auth);
+  } finally {
+    await signOut(auth);
+  }
+}
+
+async function readParts(auth) {
   let backup = null;
   let part = "0:0";
   for (let parts = 0; part; parts++) {
     if (parts > 500) throw new Error("yedek bitmedi (500 parça)");
     let res;
     for (let attempt = 0; ; attempt++) {
-      res = await fetch(`${base}/api/owner/backup?part=${part}`, { headers: { "x-owner-key": key, "x-kutup": "1" } });
+      res = await fetch(`${base}/api/owner/backup?part=${part}`, { headers: { ...auth, "x-kutup": "1" } });
       // The owner key allows 20 tries a minute; wait the minute out instead of failing.
       if (res.status !== 429 || attempt === 2) break;
       await new Promise((r) => setTimeout(r, 61000));
