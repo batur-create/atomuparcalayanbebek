@@ -22,6 +22,8 @@ JSON dosyası da hassastır: kullanıcı adları, özel geri bildirimler ve paro
    npx wrangler d1 export kutup --remote --output=./data/kutup-before-deploy.sql
    ```
 
+   `npm run yayin` bunu kendisi yapar (`scripts/owner-backup.mjs`): JSON yedeği küçük parçalar hâlinde alır (`/api/owner/backup?part=0:0`, her parça en çok 1000 satır). Worker yedeği veremezse aynı adımda D1 SQL export'a geçer ve `data/backup-before-…sql` yazar; ikisi de olmazsa yayın durur.
+
 3. Yedek zamanını UTC olarak, mevcut Git commit’ini ve `settings.schema` değerini kaydet. Dosyanın oluştuğunu ve boş olmadığını doğrula; içeriğini sohbet çıktısına dökme.
 4. `npm ci` ve `npm run test:all` çalıştır. Şema 8/9/10, ilk API isteğinde otomatik uygulanır. Şema 1–7 değiştirilmemelidir.
 

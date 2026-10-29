@@ -46,6 +46,7 @@ const PUSH_HOSTS = [
 ];
 const MESSAGE_LIMIT = 50;
 const ACTIVITY_LIMIT = 25;
+const BACKUP_PART_ROWS = 1000; // rows per backup part (GET /owner/backup?part=…)
 const PUSH_COOLDOWN = 45 * 60000;
 // A real arrival (from away or on the way) always notifies; this only stops
 // someone from pinging everyone by flipping away/here in a loop.
@@ -3188,17 +3189,39 @@ export function createApp({ db, config = {}, live = "poll", onChange = () => {} 
 
   // Everything, as JSON: a copy Batur can keep. Secrets that open accounts or
   // sessions directly (cookie hashes, one-time codes, push keys) stay out.
-  route("GET", "/owner/backup", async ({ request, ip }) => {
+  // `?part=<table>:<rowid>` (first part: `?part=0:0`) returns the backup in
+  // small parts for `npm run yayin`: one request reading the whole database
+  // grew past what one free-plan Worker request can carry. Each part reads at
+  // most BACKUP_PART_ROWS rows; `next` names the following part, null at the end.
+  route("GET", "/owner/backup", async ({ request, ip, url }) => {
     await requireOwner(request, ip);
-    const tables = BACKUP_TABLES;
-    const rows = await db.read(tables.map((t) => [`SELECT * FROM ${t}`, []]));
+    const clean = (t, list) => t === "members" ? list.map(({ token, transfer_hash, reset_hash, ...m }) => m) : list;
     const backup = { app: "kutup", created: Date.now(), schema: SCHEMA_VERSION, tables: {} };
-    tables.forEach((t, i) => {
-      backup.tables[t] = t === "members"
-        ? rows[i].map(({ token, transfer_hash, reset_hash, ...m }) => m)
-        : rows[i];
-    });
-    return json(backup, 200, { "Content-Disposition": `attachment; filename="kutup-yedek-${new Date().toISOString().slice(0, 10)}.json"` });
+    try {
+      const part = url.searchParams.get("part");
+      if (part == null) {
+        const rows = await db.read(BACKUP_TABLES.map((t) => [`SELECT * FROM ${t}`, []]));
+        BACKUP_TABLES.forEach((t, i) => (backup.tables[t] = clean(t, rows[i])));
+        return json(backup, 200, { "Content-Disposition": `attachment; filename="kutup-yedek-${new Date().toISOString().slice(0, 10)}.json"` });
+      }
+      let [table, after] = part.split(":").map(Number);
+      if (!Number.isInteger(table) || table < 0 || !Number.isFinite(after)) fail("Yedek parçası okunamadı.");
+      let left = config.backupPartRows || BACKUP_PART_ROWS;
+      for (let queries = 0; table < BACKUP_TABLES.length && left > 0 && queries < 20; queries++) {
+        const t = BACKUP_TABLES[table];
+        const rows = await db.all(`SELECT rowid AS backup_rowid, * FROM ${t} WHERE rowid > ? ORDER BY rowid LIMIT ?`, [after, left]);
+        backup.tables[t] = (backup.tables[t] || []).concat(clean(t, rows.map(({ backup_rowid, ...row }) => row)));
+        left -= rows.length;
+        if (rows.length && left === 0) after = rows[rows.length - 1].backup_rowid;
+        else [table, after] = [table + 1, 0];
+      }
+      return json({ ...backup, next: table < BACKUP_TABLES.length ? `${table}:${after}` : null });
+    } catch (error) {
+      if (error.status) throw error;
+      // Only the owner reaches this line, so the database's own words are safe to show.
+      console.error("Kütüp backup:", error);
+      fail(`Yedek okunamadı: ${String(error?.message || error).slice(0, 300)}`, 500);
+    }
   }, false);
 
   route("DELETE", "/owner/members/:id", async ({ request, ip, params }) => {
