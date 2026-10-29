@@ -10,6 +10,19 @@
 
 export const YENILIKLER = [
   {
+    surum: 36,
+    tarih: "2026-10-29",
+    vakit: "akşam",
+    baslik: "4 yeni yapı: kütük ev, demirci, köşk ve Kız Kulesi",
+    maddeler: [
+      "Kütük Ev (Konut, 25 dk): taş ayaklar, geçme köşeli kütük duvarlar, çimli dam ve soba borusu. Şantiyede kütükler sıra sıra yükselir.",
+      "Demirci Atölyesi (İşlevsel, 25 dk): şamot ocak, yüksek tuğla baca, örs, körük ve söndürme yalağı. Gece ocağın közü parlar.",
+      "Sekizgen Köşk (Süs, 25 dk): halka kirişli sekiz dikme, sekiz yüzlü kırma çatı, korkuluk ve asma fener.",
+      "Kız Kulesi (Ünlü Yapı, 50 dk): denizdeki kayalığı saran taş duvar, kesme taş kule, galeri ve tepede fener. Köyde göletin kıyısına kendi kayalığıyla oturur.",
+      "Her yapının beş evresi gerçek yapım sırasını izler ve şantiye ekranındaki bilgi noktasında nedenini anlatır.",
+    ],
+  },
+  {
     surum: 35,
     tarih: "2026-10-29",
     vakit: "öğle",

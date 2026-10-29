@@ -28,6 +28,7 @@ export const CONTEXT = {
   sudegirmeni: "bank", // the wheel turns in a flowing river
   yuzenev: "lake", // floats, with a jetty to the shore
   fener: "shore", // stands on the lake shore
+  kizkulesi: "shore", // its own islet, off the lake shore
   asmakopru: "bridge", // spans the river between two landings
   kemer: "bridge",
   istasyon: "rail", // platform along the railway

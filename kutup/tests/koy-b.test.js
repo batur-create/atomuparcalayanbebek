@@ -23,8 +23,8 @@ const draft = (name) => {
   return drafts.get(name);
 };
 
-test("n46 B: the model contracts are the drawings' own numbers, for all 58 models", () => {
-  assert.equal(CATALOG.length, 58);
+test("n46 B: the model contracts are the drawings' own numbers, for all 62 models", () => {
+  assert.equal(CATALOG.length, 62);
   assert.deepEqual(measureAll(), MODEL_DATA, "run node scripts/koy/measure-models.mjs and bump GEOMETRY_VERSION");
   for (const item of CATALOG) {
     const m = modelSpec(item.id);
@@ -113,7 +113,7 @@ test("n46 B: the mill, the floating house, the bridges and the station stand on 
   assert.ok(layout.terrain.rail, "a railway");
   const placed = new Map(layout.plots.map((p) => [p.model, p]));
   for (const [id, ctx] of Object.entries(CONTEXT)) {
-    if (id === "fener") continue; // not in the scene
+    if (id === "fener" || id === "kizkulesi") continue; // not in the scene
     const p = placed.get(id);
     assert.ok(p, `${id} placed`);
     if (ctx === "bridge") assert.ok(layout.roads.some((r) => r.type === "kopru" && lineRect(r.pts, p.ground) === 0), `${id} deck`);
@@ -124,6 +124,10 @@ test("n46 B: the mill, the floating house, the bridges and the station stand on 
   const plan = planPlacement(layout, { subject: { type: "building", id: "x-fener" }, model: "fener", owner: "m0", created: 9e15 });
   assert.ok(plan.ok, plan.error);
   assert.deepEqual(validateLayout(applyPlan(layout, plan)), []);
+  // n52: so does Kız Kulesi, which brings its own islet.
+  const maiden = planPlacement(layout, { subject: { type: "building", id: "x-kizkulesi" }, model: "kizkulesi", owner: "m0", created: 9e15 });
+  assert.ok(maiden.ok, maiden.error);
+  assert.deepEqual(validateLayout(applyPlan(layout, maiden)), []);
 });
 
 test("n46 B: only a session that builds a model gets a site; it turns into its building in place", () => {
