@@ -398,8 +398,12 @@ export async function migrate(db) {
     try {
       const row = await db.get("SELECT value FROM settings WHERE key = 'schema'");
       return row ? Number(row.value) : 0;
-    } catch {
-      return 0; // settings table does not exist yet
+    } catch (error) {
+      // Only a brand-new database has no settings table. Any other failure (a
+      // D1 hiccup, a busy export) must fail this request, not restart the
+      // migrations from 1: that once rewrote a live schema 35 to 1.
+      if (/no such table/i.test(String(error?.message || error))) return 0;
+      throw error;
     }
   };
   let version = await current();
@@ -409,7 +413,8 @@ export async function migrate(db) {
       await db.batch([
         ...migrations[version].map((sql) => [sql, []]),
         [
-          "INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+          // The recorded version only ever goes up.
+          "INSERT INTO settings (key, value) VALUES ('schema', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE CAST(settings.value AS INTEGER) < CAST(excluded.value AS INTEGER)",
           [String(next)],
         ],
       ]);
